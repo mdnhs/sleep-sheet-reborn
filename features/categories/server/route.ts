@@ -10,11 +10,13 @@ const app = new Hono()
    try{
       const categories = await prisma.category.findMany({
          select: {
+           id: true,
            label: true,
-           value:true,
+           value: true,
+           parentId: true,
          },
        });
-       
+
     return c.json(categories);
    }catch(error){
     console.error("Failed to fetch Categories",error);
@@ -24,15 +26,22 @@ const app = new Hono()
 .post("/create",sessionMiddleware,zValidator('json',
    z.object({
       label:z.string().min(2).max(50),
-      value:z.string().min(2).max(50)
+      value:z.string().min(2).max(50),
+      parentId: z.string().optional().nullable(),
    })
 ), async(c)=>{
    try{
       const user = c.get("user");
-      const {label,value}=c.req.valid("json");
+      const {label,value,parentId}=c.req.valid("json");
 
       if(!user || user.role !== "ADMIN"){
          return c.json({ success: false, error: 'Unauthorized' }, 403);
+       }
+
+       if (parentId) {
+         const parentExists = await prisma.category.findUnique({ where: { id: parentId } });
+         if (!parentExists) return c.json({ error: "Parent category not found" }, 404);
+         if (parentExists.parentId) return c.json({ error: "Only one level of nesting allowed" }, 400);
        }
 
        const existingCategory = await prisma.category.findUnique({
@@ -46,10 +55,12 @@ const app = new Hono()
            id: cuid(),
            label,
            value,
+           parentId: parentId ?? null,
          },
          select: {
            label: true,
-           value: true
+           value: true,
+           parentId: true,
          }
        });
        return c.json(newCategory, 201);
@@ -61,16 +72,25 @@ const app = new Hono()
 .delete("/delete/:value", sessionMiddleware, async (c) => {
    const user = c.get("user");
    const { value } = c.req.param();
- 
+
    if (!user || user.role !== "ADMIN") {
      return c.json({ success: false, error: "Unauthorized" }, 403);
    }
- 
+
    try {
-     await prisma.category.delete({
+     const category = await prisma.category.findUnique({
        where: { value },
+       include: { children: { select: { id: true } } },
      });
- 
+
+     if (!category) return c.json({ success: false, error: "Category not found" }, 404);
+
+     if (category.children.length > 0) {
+       return c.json({ success: false, error: "Cannot delete category with subcategories. Delete subcategories first." }, 409);
+     }
+
+     await prisma.category.delete({ where: { value } });
+
      return c.json({ success: true, message: "Category deleted" }, 200);
    } catch (error) {
      console.error("Failed to delete category", error);

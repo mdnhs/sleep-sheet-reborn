@@ -5,16 +5,18 @@ import { toast } from "sonner";
 interface useCreateCategoriesProps{
     value:string,
     label:string;
+    parentId?: string | null;
 }
 export const useCreateCategories = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({value,label}:useCreateCategoriesProps) => {
+    mutationFn: async ({value,label,parentId}:useCreateCategoriesProps) => {
       const response = await client.api.categories.create.$post({
         json: {
           value,
-          label
+          label,
+          parentId: parentId ?? null,
         }
       });
       if (!response.ok) {

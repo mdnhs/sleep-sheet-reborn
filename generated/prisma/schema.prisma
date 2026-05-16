@@ -118,11 +118,14 @@ model Specification {
 }
 
 model Category {
-  id        String    @id
+  id        String     @id
   label     String
-  value     String    @unique
+  value     String     @unique
+  parent    Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  parentId  String?
+  children  Category[] @relation("CategoryChildren")
   products  Product[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
 }
 
 enum OrderStatus {
