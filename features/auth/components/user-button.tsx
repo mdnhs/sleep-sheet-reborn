@@ -1,22 +1,34 @@
 "use client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 import { useLogout } from "../api/use-logout";
 import { useCurrent } from "../api/use-current";
-import { Loader, LogOut } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { ChevronRight, Loader, LogOut, Moon, Sun } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
+
+const subscribe = () => () => {};
+const useHasMounted = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
 export const UserButton = () => {
   const { data: user, isLoading } = useCurrent();
   const { mutate: logout } = useLogout();
+  const { resolvedTheme, setTheme } = useTheme();
+  const hasMounted = useHasMounted();
   if (isLoading) {
     return (
       <div className=" size-10 rounded-full flex items-center justify-center border">
@@ -28,7 +40,9 @@ export const UserButton = () => {
   if (!user) {
     return null;
   }
+
   const { name, email } = user;
+  const displayName = name || "User";
 
   const avatarFallBack = name
     ? name.charAt(0).toUpperCase()
@@ -36,39 +50,71 @@ export const UserButton = () => {
 
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className=" outline-none relative">
-        <Avatar className=" size-9 hover:opacity-75 transition border">
-          <AvatarFallback className=" font-medium text-sm flex items-center justify-center">
-            {avatarFallBack}
-          </AvatarFallback>
-        </Avatar>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="icon"
+            className="group size-10 rounded-full border-border/70 bg-background/80 p-0 shadow-sm backdrop-blur-sm transition-all hover:border-border hover:bg-background hover:shadow-md data-[popup-open]:border-border data-[popup-open]:shadow-md"
+          />
+        }
+        aria-label="Open user menu"
+      >
+        <span className="relative block">
+          <Avatar className="size-9">
+            <AvatarFallback className="bg-gradient-to-br from-foreground to-foreground/70 font-semibold text-sm text-background">
+              {avatarFallBack}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-background bg-emerald-500" />
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         side="bottom"
-        className="w-60"
-        sideOffset={10}
+        className="w-72 rounded-3xl p-1.5"
+        sideOffset={12}
       >
-        <div className=" flex flex-col items-center justify-center gap-2 px-2.5 py-4">
-          <Link href="/account">
-            <Avatar className=" size-[52px] border">
-              <AvatarFallback className=" font-medium text-xl  flex items-center justify-center">
+        <div className="rounded-[20px] border border-border/60 bg-muted/30 p-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-14 shrink-0">
+              <AvatarFallback className="bg-gradient-to-br from-foreground to-foreground/70 font-semibold text-lg text-background">
                 {avatarFallBack}
               </AvatarFallback>
             </Avatar>
-          </Link>
-          <div className=" flex flex-col items-center justify-center">
-            <p className=" text-sm font-medium">{name || "user"}</p>
-            <p className=" text-xs ">{email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{displayName}</p>
+              <p className="truncate text-xs text-muted-foreground">{email}</p>
+            </div>
           </div>
+          <Link
+            href="/account"
+            className="mt-3 flex items-center justify-between rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            Manage account
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
         </div>
 
-        <Separator className=" mb-1" />
+        <DropdownMenuSeparator className="my-1.5" />
+        <DropdownMenuItem
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className="font-medium"
+        >
+          {hasMounted && resolvedTheme === "dark" ? (
+            <Sun className="size-4" />
+          ) : (
+            <Moon className="size-4" />
+          )}
+          {hasMounted && resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => logout()}
-          className=" h-10 flex items-center justify-center font-medium cursor-pointer"
+          variant="destructive"
+          className="font-medium"
         >
-          <LogOut className=" size-4 mr-2" /> Log out
+          <LogOut className="size-4" />
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

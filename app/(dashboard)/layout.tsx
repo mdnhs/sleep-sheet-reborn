@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import { DashboardBreadcrumb } from "@/components/dashboard-breadcrumb";
+import { DashboardHeaderActions } from "@/components/dashboard-header-actions";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -23,7 +23,8 @@ function DashBoardLayout({ children }: DashBoardLayoutProps) {
             orientation="vertical"
             className="mr-2 data-vertical:h-4 data-vertical:self-auto"
           />
-          <DashboardBreadcrumb />
+          {/* <DashboardBreadcrumb /> */}
+          <DashboardHeaderActions />
         </header>
         <main className="flex-1">{children}</main>
       </SidebarInset>

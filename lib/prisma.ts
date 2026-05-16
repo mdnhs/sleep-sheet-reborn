@@ -8,12 +8,20 @@ const prismaClientSingleton = () => {
   return new PrismaClient({ adapter });
 };
 
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+
 declare global {
-  // eslint-disable-next-line no-var
-  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+  var prisma: undefined | PrismaClientSingleton;
 }
 
-const prisma = globalThis.prisma ?? prismaClientSingleton();
+const hasCurrentDelegates = (
+  client: PrismaClientSingleton | undefined
+): client is PrismaClientSingleton =>
+  Boolean(client?.campaign);
+
+const prisma: PrismaClientSingleton = hasCurrentDelegates(globalThis.prisma)
+  ? globalThis.prisma
+  : prismaClientSingleton();
 
 if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
 

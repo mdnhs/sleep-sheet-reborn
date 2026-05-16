@@ -10,9 +10,9 @@ const Footer = () => {
   return (
     <footer className="bg-secondary mt-20 py-16">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-x-12 md:gap-y-12 lg:grid-cols-4">
           {/* Brand Column */}
-          <div className="space-y-4">
+          <div className="space-y-4 md:max-w-md lg:max-w-none">
             <h3 className="font-bold text-xl">LUXESTORE</h3>
             <p className="text-sm text-muted-foreground">
               Premium quality, ethically made products for the modern lifestyle.
@@ -121,7 +121,7 @@ const Footer = () => {
           </div>
 
           {/* Contact Column */}
-          <div className="space-y-4">
+          <div className="space-y-4 md:col-span-2 lg:col-span-1">
             <h4 className="font-semibold">Contact</h4>
             <ul className="space-y-2">
               <li className="flex items-center text-sm text-muted-foreground">
@@ -133,17 +133,17 @@ const Footer = () => {
                 +1 (555) 123-4567
               </li>
             </ul>
-            <div className="pt-4">
+            <div className="pt-4 md:max-w-xl lg:max-w-none">
               <h4 className="font-semibold">Subscribe to our newsletter</h4>
-              <form className="mt-2 flex">
+              <form className="mt-2 flex flex-col sm:flex-row">
                 <input
                   type="email"
                   placeholder="Your email"
-                  className="flex-1 border border-border rounded-l-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="min-w-0 flex-1 rounded-t-md border border-border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary sm:rounded-l-md sm:rounded-r-none sm:rounded-tr-none"
                 />
                 <button
                   type="submit"
-                  className="bg-primary text-primary-foreground px-4 rounded-r-md hover:bg-primary/90 transition-colors"
+                  className="rounded-b-md rounded-bl-md bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90 sm:rounded-b-none sm:rounded-r-md sm:rounded-l-none"
                 >
                   Subscribe
                 </button>
@@ -153,11 +153,11 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-border mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
+          <p className="text-center text-xs text-muted-foreground md:text-left">
             © {new Date().getFullYear()} LUXESTORE. All rights reserved.
           </p>
-          <div className="flex space-x-6 mt-4 sm:mt-0">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:justify-end">
             <Link
               href="/privacy-policy"
               className="text-xs text-muted-foreground hover:text-primary/80 transition-colors"

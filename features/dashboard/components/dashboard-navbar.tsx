@@ -1,21 +1,16 @@
 "use client";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { UserButton } from "@/features/auth/components/user-button";
-import { Moon, PanelLeft, Sun, User } from "lucide-react";
-import { useTheme } from "next-themes";
+import { PanelLeft, User } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import DashBoardSideBar from "./dashboard-sidebar";
 
 function DashBoardNavBar() {
   const { data: user } = useCurrent();
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b">
       <div className="container mx-auto px-4">
@@ -27,18 +22,7 @@ function DashBoardNavBar() {
             <h1 className=" text-lg font-bold  uppercase">Luxestore</h1>
           </div>
           <div className=" flex items-center gap-4 flex-row">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              aria-label="Toggle theme"
-            >
-              {hasMounted && resolvedTheme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
+            <ModeToggle />
             {!user ? (
               <Button
                 variant="ghost"

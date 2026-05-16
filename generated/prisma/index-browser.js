@@ -150,6 +150,24 @@ exports.Prisma.ProductScalarFieldEnum = {
   isFeatured: 'isFeatured'
 };
 
+exports.Prisma.CampaignScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  headline: 'headline',
+  subheadline: 'subheadline',
+  badgeLabel: 'badgeLabel',
+  ctaLabel: 'ctaLabel',
+  layout: 'layout',
+  pageLayout: 'pageLayout',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  status: 'status',
+  productId: 'productId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.ReviewScalarFieldEnum = {
   id: 'id',
   comment: 'comment',
@@ -304,6 +322,11 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
 exports.Prisma.QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
@@ -313,10 +336,23 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
 exports.Role = exports.$Enums.Role = {
   USER: 'USER',
   ADMIN: 'ADMIN',
   MODERATOR: 'MODERATOR'
+};
+
+exports.CampaignStatus = exports.$Enums.CampaignStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  ENDED: 'ENDED'
 };
 
 exports.OrderStatus = exports.$Enums.OrderStatus = {
@@ -354,6 +390,7 @@ exports.OTPType = exports.$Enums.OTPType = {
 exports.Prisma.ModelName = {
   User: 'User',
   Product: 'Product',
+  Campaign: 'Campaign',
   Review: 'Review',
   Specification: 'Specification',
   Category: 'Category',

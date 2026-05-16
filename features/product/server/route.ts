@@ -106,7 +106,7 @@ const app = new Hono()
   const priceRange = c.req.query("price");
   const page = parseInt(c.req.query("page") || "1");
   const search = c.req.query("search");
-  const limit = 8;
+  const limit = Math.min(parseInt(c.req.query("limit") || "8", 10) || 8, 100);
 
   // 1. Build price filter
   let priceFilter: Prisma.FloatFilter | undefined;

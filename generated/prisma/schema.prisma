@@ -56,8 +56,39 @@ model Product {
   OrderItem       OrderItem[]
   CartItem        CartItem[]
   WishlistItem    WishlistItem[]
+  Campaign        Campaign[]
 
   @@map("products")
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique
+  headline    String?
+  subheadline String?
+  badgeLabel  String?
+  ctaLabel    String         @default("Buy Now")
+  layout      Json?
+  pageLayout  Json?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  status      CampaignStatus @default(DRAFT)
+  product     Product        @relation(fields: [productId], references: [id])
+  productId   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([productId])
+  @@index([status])
+  @@map("campaigns")
 }
 
 model Review {

@@ -1,7 +1,19 @@
 "use client";
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { UserButton } from "@/features/auth/components/user-button";
+import { useCurrent } from "@/features/auth/api/use-current";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { selectTotalItems } from "@/features/cart/state/cart-slice";
 import Link from "next/link";
 import React, { useState, useSyncExternalStore } from "react";
+import { Menu, ShoppingBag, User } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const subscribe = () => () => {};
 const useHasMounted = () =>
@@ -10,14 +22,9 @@ const useHasMounted = () =>
     () => true,
     () => false,
   );
-import { ShoppingBag, User, Menu, X, Sun, Moon } from "lucide-react";
-import { useTheme } from "next-themes";
-import { Button } from "./ui/button";
+
 import CartDrawer from "./cart/cart-drawer";
-import { useCurrent } from "@/features/auth/api/use-current";
-import { UserButton } from "@/features/auth/components/user-button";
-import { useSelector } from "react-redux";
-import { selectTotalItems } from "@/features/cart/state/cart-slice";
+import { Button } from "./ui/button";
 
 const NAV_LINKS = [
   { id: 1, name: "Home", path: "/" },
@@ -27,124 +34,180 @@ const NAV_LINKS = [
   { id: 6, name: "Contact", path: "/contact" },
 ];
 
+function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
+  return NAV_LINKS.map((link) => (
+    <Link
+      key={link.name}
+      href={link.path}
+      className="text-sm font-medium transition-colors hover:text-primary/80"
+      onClick={onNavigate}
+    >
+      {link.name}
+    </Link>
+  ));
+}
+
+function NavbarActions({
+  hasMounted,
+  onCartOpen,
+}: {
+  hasMounted: boolean;
+  onCartOpen: () => void;
+}) {
+  const { data: user } = useCurrent();
+  const totalItems = useSelector(selectTotalItems);
+
+  return (
+    <div className="flex items-center space-x-4">
+      {!user ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Account"
+          nativeButton={false}
+          render={<Link href="/signin" />}
+        >
+          <User className="h-5 w-5" />
+        </Button>
+      ) : (
+        <UserButton />
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onCartOpen}
+        aria-label="Cart"
+        className="relative"
+      >
+        <ShoppingBag className="h-5 w-5" />
+        {hasMounted && totalItems > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            {totalItems}
+          </span>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function MobileNavbarMenu({
+  isOpen,
+  onOpenChange,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="left" className="flex w-full max-w-xs flex-col">
+        <SheetHeader className="border-b pb-4">
+          <SheetTitle>LUXESTORE</SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-col gap-6 p-6">
+          <div className="flex flex-col gap-4">
+            <NavbarLinks onNavigate={() => onOpenChange(false)} />
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function MobileNavbarAccount({
+  hasMounted,
+  onCartOpen,
+}: {
+  hasMounted: boolean;
+  onCartOpen: () => void;
+}) {
+  const { data: user } = useCurrent();
+  const totalItems = useSelector(selectTotalItems);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onCartOpen}
+        aria-label="Cart"
+        className="relative"
+      >
+        <ShoppingBag className="h-5 w-5" />
+        {hasMounted && totalItems > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            {totalItems}
+          </span>
+        )}
+      </Button>
+      {!user ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Account"
+          nativeButton={false}
+          render={<Link href="/signin" />}
+        >
+          <User className="h-5 w-5" />
+        </Button>
+      ) : (
+        <UserButton />
+      )}
+    </div>
+  );
+}
+
 function Navbar() {
   const isMobile = useIsMobile();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const totalItems = useSelector(selectTotalItems);
-  const { resolvedTheme, setTheme } = useTheme();
-
   const hasMounted = useHasMounted();
 
-  const { data: user } = useCurrent();
-
   return (
-    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b">
+    <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold">
-            LUXESTORE
-          </Link>
-          {!isMobile && (
-            <div className="hidden md:flex space-x-8">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.path}
-                  className="text-sm font-medium hover:text-primary/80 transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-center space-x-4">
-            {/* <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSearchOpen(true)}
-              aria-label="Search"
-            >
-              <Search className="h-5 w-5" />
-            </Button> */}
-
-            {!user ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Account"
-                nativeButton={false}
-                render={<Link href="/signin" />}
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            ) : (
-              <UserButton />
-            )}
-
+        {isMobile ? (
+          <div className="relative flex h-16 items-center justify-between">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
-              }
-              aria-label="Toggle theme"
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Open menu"
             >
-              {hasMounted && resolvedTheme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
+              <Menu className="h-5 w-5" />
             </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsCartOpen(true)}
-              aria-label="Cart"
-              className="relative"
+            <Link
+              href="/"
+              className="absolute left-1/2 -translate-x-1/2 text-xl font-bold"
             >
-              <ShoppingBag className="h-5 w-5" />
-              {hasMounted && totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {isMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </Button>
-            )}
+              LUXESTORE
+            </Link>
+            <MobileNavbarAccount
+              hasMounted={hasMounted}
+              onCartOpen={() => setIsCartOpen(true)}
+            />
           </div>
-        </div>
-        {isMobile && isMenuOpen && (
-          <div className="md:hidden py-4 animate-fade-in">
-            <div className="flex flex-col space-y-4">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.path}
-                  className="text-sm font-medium py-2 hover:text-primary/80 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
+        ) : (
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="text-xl font-bold">
+              LUXESTORE
+            </Link>
+            <div className="hidden md:flex space-x-8">
+              <NavbarLinks />
             </div>
+            <NavbarActions
+              hasMounted={hasMounted}
+              onCartOpen={() => setIsCartOpen(true)}
+            />
           </div>
         )}
       </div>
+
+      {isMobile && (
+        <MobileNavbarMenu
+          isOpen={isMenuOpen}
+          onOpenChange={setIsMenuOpen}
+        />
+      )}
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
