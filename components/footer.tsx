@@ -8,7 +8,7 @@ import Link from "next/link";
 
 const Footer = () => {
   return (
-    <footer className="bg-secondary mt-20 py-16">
+    <footer className="bg-secondary py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-x-12 md:gap-y-12 lg:grid-cols-4">
           {/* Brand Column */}

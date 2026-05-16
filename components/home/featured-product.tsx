@@ -10,28 +10,45 @@ const FeaturedProduct = () => {
   const { data: products, isLoading } = useGetProducts({
     sort: "featured",
   });
+
   if (isLoading) {
-    return <div className="container mx-auto py-16">Loading...</div>;
+    return (
+      <section className="py-20 md:py-28">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-3/4 bg-secondary animate-pulse rounded-sm"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   if (!products) {
-    return <div className="container mx-auto py-16">No products found</div>;
+    return null;
   }
 
   return (
-    <section className="py-16 md:py-24">
-      <div className=" container mx-auto p-4">
-        <div className=" flex flex-col md:flex-row items-start justify-between mb-8">
+    <section className="py-20 md:py-28 bg-secondary/20">
+      <div className="container mx-auto px-4">
+        {/* Section header */}
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12 gap-4">
           <div>
-            <h2 className=" text-3xl font-bold mb-2">Featured Product</h2>
-            <p className=" text-muted-foreground">
-              Our most loved products by our customers
-            </p>
+            <span className="text-xs font-medium uppercase tracking-[0.25em] text-primary">
+              Handpicked
+            </span>
+            <h2 className="font-heading text-3xl md:text-4xl font-light text-foreground mt-2">
+              Featured Products
+            </h2>
           </div>
           <Button
             variant="ghost"
             nativeButton={false}
-            className="mt-4 md:mt-0"
+            className="rounded-none px-0 text-sm font-medium gap-2 hover:bg-transparent hover:text-primary transition-colors group"
             render={
               <Link
                 href="/products?sort=featured"
@@ -39,10 +56,12 @@ const FeaturedProduct = () => {
               />
             }
           >
-            View All Products <ArrowRight className="h-4 w-4" />
+            View All Products
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
-        <div className=" grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {products?.data.slice(0, 4).map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
