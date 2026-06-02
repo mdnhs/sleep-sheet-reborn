@@ -65,5 +65,14 @@
     "tsx": "^4.21.0",
     "typescript": "^5",
     "wrangler": "^4.97.0"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@opennextjs/cloudflare@1.19.11": "patches/@opennextjs__cloudflare@1.19.11.patch"
+    },
+    "ignoredBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
