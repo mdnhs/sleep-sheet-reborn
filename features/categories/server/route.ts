@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import prisma from '@/lib/prisma';
+import { parseStringArray } from '@/lib/json-fields';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
@@ -104,8 +105,9 @@ const app = new Hono()
       value: true,
       products: {
         where: {
+          // images is a JSON string in D1; exclude the empty-array default.
           images: {
-            isEmpty: false,
+            not: "[]",
           },
         },
         select: {
@@ -132,7 +134,7 @@ const app = new Hono()
         })
         .sort((a, b) => b.avgRating - a.avgRating)[0];
 
-      const image = bestProduct?.images?.[0] ?? null;
+      const image = parseStringArray(bestProduct?.images)[0] ?? null;
       if (!image) return null;
 
       return {

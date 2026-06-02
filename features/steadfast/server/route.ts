@@ -8,7 +8,7 @@ import {
   getSteadfastBalance,
 } from "@/lib/steadfast";
 import prisma from "@/lib/prisma";
-import type { OrderStatus } from "@/generated/prisma";
+import type { OrderStatus } from "@/lib/enums";
 
 function mapSteadfastStatus(s: string): OrderStatus | null {
   switch (s) {

@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cloudflare / opennext
+/.open-next/
+.wrangler/
+.dev.vars
+/prisma/local.db*
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

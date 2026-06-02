@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { imageStorage } from '@/lib/imageStorage';
 import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
+import { parseStringArray, serializeStringArray, deserializeProduct } from '@/lib/json-fields';
 
 const app = new Hono();
 
@@ -41,12 +42,12 @@ app.post('/upload',sessionMiddleware, async (c) => {
       price: Number(formData.get('productPrice')),
       stock: Number(formData.get('productStock')),
       sku: formData.get('productSKU') as string,
-      variants: JSON.parse(formData.get('productVariants') as string),
-      tags: JSON.parse(formData.get('productTags') as string),
-      sizes: JSON.parse(formData.get('productSize') as string),
-      features:JSON.parse(formData.get('productFeature') as string),
+      variants: serializeStringArray(JSON.parse(formData.get('productVariants') as string)),
+      tags: serializeStringArray(JSON.parse(formData.get('productTags') as string)),
+      sizes: serializeStringArray(JSON.parse(formData.get('productSize') as string)),
+      features: serializeStringArray(JSON.parse(formData.get('productFeature') as string)),
       careInstruction: formData.get("careInstruction") as string,
-      images: uploadedImageUrls,
+      images: serializeStringArray(uploadedImageUrls),
       isFeatured: isFeatured,
       category: {
         connect: {
@@ -79,10 +80,10 @@ app.post('/upload',sessionMiddleware, async (c) => {
           productPrice: product.price,
           productStock: product.stock,
           productSKU: product.sku,
-          productVariants: product.variants,
-          productTags: product.tags,
-          productImages: product.images,
-          productSize: product.sizes,
+          productVariants: parseStringArray(product.variants),
+          productTags: parseStringArray(product.tags),
+          productImages: parseStringArray(product.images),
+          productSize: parseStringArray(product.sizes),
           isFeatured: product.isFeatured,
           productCategory: product.category.value,
           productSpecifications: product.specifications,
@@ -130,7 +131,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       }
     }
 
-    const removedImages = existingProduct.images.filter(
+    const removedImages = parseStringArray(existingProduct.images).filter(
       (oldImg) => !uploadedImageUrls.includes(oldImg)
     );
 
@@ -144,12 +145,12 @@ app.post('/upload',sessionMiddleware, async (c) => {
       price: Number(formData.get("productPrice")),
       stock: Number(formData.get("productStock")),
       sku: formData.get("productSKU") as string,
-      variants: JSON.parse(formData.get("productVariants") as string),
-      tags: JSON.parse(formData.get("productTags") as string),
-      sizes: JSON.parse(formData.get("productSize") as string),
-      features: JSON.parse(formData.get("productFeature") as string),
+      variants: serializeStringArray(JSON.parse(formData.get("productVariants") as string)),
+      tags: serializeStringArray(JSON.parse(formData.get("productTags") as string)),
+      sizes: serializeStringArray(JSON.parse(formData.get("productSize") as string)),
+      features: serializeStringArray(JSON.parse(formData.get("productFeature") as string)),
       careInstruction: formData.get("careInstruction") as string,
-      images: uploadedImageUrls,
+      images: serializeStringArray(uploadedImageUrls),
       isFeatured: formData.get("isFeatured") === "true",
       category: {
         connect: { value: formData.get("productCategory") as string },
@@ -174,7 +175,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       },
     });
 
-    return c.json({ success: true, product: updatedProduct }, 200);
+    return c.json({ success: true, product: deserializeProduct(updatedProduct) }, 200);
   } catch (error) {
     console.error("Error updating product:", error);
     return c.json({
@@ -197,7 +198,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) return c.json({ error: "Product not found" }, 404);
 
-    for (const img of product.images) {
+    for (const img of parseStringArray(product.images)) {
       await deleteImageFromStorage(img);
     }
 

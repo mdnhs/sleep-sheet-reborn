@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import prisma from "@/lib/prisma";
 import { getDateRange, getStartDate } from "@/lib/utils";
+import { parseStringArray } from "@/lib/json-fields";
 
 const app = new Hono()
 
@@ -199,29 +200,33 @@ const app = new Hono()
   }
   
   try {
-    const cohorts = await prisma.$queryRaw<
-      { cohort_month: Date; total_users: bigint; retained_users: bigint }[]
-    >`
-      SELECT 
-        DATE_TRUNC('month', u."createdAt") as cohort_month,
-        COUNT(DISTINCT u.id) as total_users,
-        COUNT(DISTINCT o."userId") as retained_users
-      FROM "User" u
-      LEFT JOIN "orders" o 
-        ON u.id = o."userId"
-        AND o."createdAt" BETWEEN u."createdAt" AND u."createdAt" + INTERVAL '30 days'
-      GROUP BY cohort_month
-      ORDER BY cohort_month
-    `;
+    // SQLite (D1) has no DATE_TRUNC/INTERVAL; aggregate in JS instead.
+    const users = await prisma.user.findMany({
+      select: { id: true, createdAt: true, Order: { select: { createdAt: true } } },
+    });
 
-    return c.json(cohorts.map(c => ({
-      cohortMonth: c.cohort_month.toISOString(),
-      totalUsers: Number(c.total_users),
-      retainedUsers: Number(c.retained_users),
-      retentionRate: Number(c.total_users) > 0 
-        ? (Number(c.retained_users) / Number(c.total_users)) * 100
-        : 0
-    })));
+    const buckets: Record<string, { total: number; retained: number }> = {};
+    for (const u of users) {
+      const month = u.createdAt.toISOString().slice(0, 7); // YYYY-MM
+      buckets[month] ??= { total: 0, retained: 0 };
+      buckets[month].total++;
+      const limit = new Date(u.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const retained = u.Order.some(
+        (o) => o.createdAt >= u.createdAt && o.createdAt <= limit
+      );
+      if (retained) buckets[month].retained++;
+    }
+
+    const cohorts = Object.entries(buckets)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({
+        cohortMonth: new Date(`${month}-01T00:00:00.000Z`).toISOString(),
+        totalUsers: v.total,
+        retainedUsers: v.retained,
+        retentionRate: v.total > 0 ? (v.retained / v.total) * 100 : 0,
+      }));
+
+    return c.json(cohorts);
   } catch (error) {
     console.error("Cohort error:", error);
     return c.json({ error: "Failed to fetch cohort data" }, 500);
@@ -294,22 +299,39 @@ const app = new Hono()
     const { period = 'month' } = c.req.query();
     const startDate = getStartDate(period);
 
-    const users = await prisma.$queryRaw<
-      { period: Date; count: bigint }[]
-    >`
-      SELECT 
-        DATE_TRUNC(${period}, "createdAt") as period,
-        COUNT(*) as count
-      FROM "User"
-      WHERE "createdAt" >= ${startDate}
-      GROUP BY period
-      ORDER BY period ASC
-    `;
+    // SQLite (D1) has no DATE_TRUNC; bucket in JS.
+    const rows = await prisma.user.findMany({
+      where: { createdAt: { gte: startDate } },
+      select: { createdAt: true },
+      orderBy: { createdAt: "asc" },
+    });
 
-    return c.json(users.map(u => ({
-      date: u.period.toISOString(),
-      count: Number(u.count)
-    })));
+    const truncate = (d: Date): Date => {
+      const t = new Date(d);
+      t.setUTCHours(0, 0, 0, 0);
+      if (period === "week") {
+        const day = t.getUTCDay(); // 0=Sun
+        const diff = (day + 6) % 7; // days since Monday
+        t.setUTCDate(t.getUTCDate() - diff);
+      } else if (period === "month") {
+        t.setUTCDate(1);
+      } else if (period === "year") {
+        t.setUTCMonth(0, 1);
+      }
+      return t;
+    };
+
+    const buckets: Record<string, number> = {};
+    for (const u of rows) {
+      const key = truncate(u.createdAt).toISOString();
+      buckets[key] = (buckets[key] || 0) + 1;
+    }
+
+    return c.json(
+      Object.entries(buckets)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, count }))
+    );
   } catch (error) {
     console.error("Acquisition error:", error);
     return c.json({ error: "Failed to fetch acquisition data" }, 500);
@@ -326,11 +348,11 @@ const app = new Hono()
         Array<{
           productId: string;
           productName: string;
-          productImages: string[];
+          productImages: string;
           totalSold: bigint;
         }>
       >`
-        SELECT 
+        SELECT
           p.id as "productId",
           p."productName",
           p."productImages",
@@ -341,11 +363,11 @@ const app = new Hono()
         ORDER BY "totalSold" DESC
         LIMIT 5
       `;
-  
+
       return c.json(data.map(item => ({
         ...item,
         totalSold: Number(item.totalSold),
-        productImages: item.productImages || []
+        productImages: parseStringArray(item.productImages)
       })));
     } catch (error) {
       console.error("Most purchased error:", error);
@@ -364,11 +386,11 @@ const app = new Hono()
         Array<{
           productId: string;
           productName: string;
-          productImages: string[];
+          productImages: string;
           wishlistCount: bigint;
         }>
       >`
-        SELECT 
+        SELECT
           p.id as "productId",
           p."productName",
           p."productImages",
@@ -379,11 +401,11 @@ const app = new Hono()
         ORDER BY "wishlistCount" DESC
         LIMIT 5
       `;
-  
+
       return c.json(data.map(item => ({
         ...item,
         wishlistCount: Number(item.wishlistCount),
-        productImages: item.productImages || []
+        productImages: parseStringArray(item.productImages)
       })));
     } catch (error) {
       console.error("Most wishlisted error:", error);

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
 import prisma from "@/lib/prisma";
+import { parseStringArray } from "@/lib/json-fields";
 import { CartResponse } from "../type";
 
 const addToCartSchema = z.object({
@@ -168,7 +169,7 @@ const app = new Hono()
             id: item.product.id,
             name: item.product.name,
             price: item.product.price,
-            image: item.product.images[0],
+            image: parseStringArray(item.product.images)[0],
             description: item.product.description
           }
         })) || []

@@ -2,6 +2,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { z } from "zod";
 import prisma from '@/lib/prisma';
+import { parseStringArray } from '@/lib/json-fields';
 
 
 
@@ -91,7 +92,7 @@ const app = new Hono()
         wishlistId: wishlist.id,
         items: wishlist.items.map((item) => ({
           id: item.id,
-          product: item.product,
+          product: { ...item.product, images: parseStringArray(item.product.images) },
         })),
       }
     } : { success: false, error: "No wishlist found" };

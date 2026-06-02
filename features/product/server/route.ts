@@ -1,31 +1,12 @@
 import { Hono } from 'hono';
 import prisma from '@/lib/prisma';
-import fs from 'fs/promises';
-import path from 'path';
 import { Product } from '@/lib/types';
 import { Prisma } from '@/generated/prisma';
-const IMAGE_DIR = path.join(process.cwd(), 'images');
+import { parseStringArray } from '@/lib/json-fields';
+
 const app = new Hono()
 
 
-. get('/images/:filename', async (c) => {
-  const { filename } = c.req.param();
-  const filePath = path.join(IMAGE_DIR, filename);
-
-  try {
-    const file = await fs.readFile(filePath);
-    const extension = path.extname(filename).substring(1);
-
-    return new Response(file, {
-      headers: {
-        'Content-Type': `image/${extension}`,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
-  } catch {
-    return c.text('Image not found', 404);
-  }
-})
 .get("/:id",async(c)=>{
 
   const id = c.req.param("id");
@@ -68,17 +49,17 @@ const app = new Hono()
       price: product.price,
       stock: product.stock,
       sku: product.sku,
-      tags: product.tags,
-      images: product.images,
+      tags: parseStringArray(product.tags),
+      images: parseStringArray(product.images),
       category: product.category.value,
       categoryLabel: product.category.label,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
       specifications:product.specifications,
       care:product.careInstruction||"",
-      colors:product.variants,
-      sizes:product.sizes,
-      features:product.features,
+      colors:parseStringArray(product.variants),
+      sizes:parseStringArray(product.sizes),
+      features:parseStringArray(product.features),
       isFeatured:product.isFeatured,
       reviews: product.reviews.map((review) => ({
         id: review.id,
@@ -138,9 +119,10 @@ const app = new Hono()
   if (search) {
     filterConditions.push({
       OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { category: { label: { contains: search, mode: 'insensitive' } } }
+        // SQLite LIKE is case-insensitive for ASCII; `mode` is Postgres-only.
+        { name: { contains: search } },
+        { description: { contains: search } },
+        { category: { label: { contains: search } } }
       ]
     });
   }
@@ -192,8 +174,8 @@ const app = new Hono()
         price: product.price,
         stock: product.stock,
         sku: product.sku,
-        tags: product.tags,
-        images: product.images,
+        tags: parseStringArray(product.tags),
+        images: parseStringArray(product.images),
         category: product.category.value,
         categoryLabel: product.category.label,
         createdAt: product.createdAt,

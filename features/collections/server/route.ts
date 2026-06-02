@@ -1,14 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Hono } from 'hono'
 import prisma from '@/lib/prisma'
+import { parseStringArray } from '@/lib/json-fields'
 
 const app = new Hono()
 
 .get('/', async (c) => {
   const products = await prisma.product.findMany({
     where: {
+      // tags is a JSON string in D1; exclude the empty-array default.
       tags: {
-        isEmpty: false,
+        not: "[]",
       },
     },
     select: {
@@ -40,7 +42,8 @@ const app = new Hono()
         ? product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length
         : 0;
 
-    for (const tag of product.tags) {
+    const productImages = parseStringArray(product.images);
+    for (const tag of parseStringArray(product.tags)) {
       const lowercasedTag = tag.toLowerCase();
 
       if (!tagCategoryMap[lowercasedTag]) {
@@ -52,7 +55,7 @@ const app = new Hono()
         tagProductMap[lowercasedTag] = [];
       }
       tagProductMap[lowercasedTag].push({
-        image: product.images?.[0] || '',
+        image: productImages[0] || '',
         avgRating,
         category: product.category.label,
       });

@@ -1,0 +1,20 @@
+# Local secrets/vars for `next dev` and `opennextjs-cloudflare preview`.
+# Copy to `.dev.vars` and fill in. In production set these with
+# `wrangler secret put <NAME>`. (D1 + R2 come from wrangler.jsonc bindings.)
+
+JWT_SECRET="change-me-long-random-string"
+
+# Email — Gmail SMTP via worker-mailer (use a Gmail App Password, not your login)
+NEXT_PUBLIC_EMAIL_USER="you@gmail.com"
+EMAIL_PASS="gmail-app-password"
+
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Image storage (Cloudinary HTTP API — works on Workers)
+CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+
+# Steadfast courier
+STEADFAST_API_KEY=""
+STEADFAST_SECRET_KEY=""

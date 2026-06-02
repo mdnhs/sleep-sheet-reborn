@@ -1,5 +1,3 @@
-import nodemailer from 'nodemailer';
-
 const luxstoreEmailTemplate = (otp: string) => `
 <!DOCTYPE html>
 <html>
@@ -73,21 +71,30 @@ export const sendEmail = async ({
   subject: string; 
   otp: string 
 }) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.NEXT_PUBLIC_EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+  // Gmail SMTP via worker-mailer (uses Cloudflare's native socket API — plain
+  // nodemailer cannot run on Workers). Auth with a Gmail App Password.
+  // Imported lazily: worker-mailer pulls in `cloudflare:sockets`, which only
+  // exists on workerd — a top-level import breaks the Node-side `next build`.
+  const { WorkerMailer } = await import('worker-mailer');
+
+  const user = process.env.NEXT_PUBLIC_EMAIL_USER!;
+  const pass = process.env.EMAIL_PASS!;
+
+  return WorkerMailer.send(
+    {
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // STARTTLS on 587
+      startTls: true,
+      authType: 'login',
+      credentials: { username: user, password: pass },
     },
-  });
-
-  const mailOptions = {
-    from: `LUXSTORE <${process.env.NEXT_PUBLIC_EMAIL_USER}>`,
-    to,
-    subject,
-    text: `Your LUXSTORE verification code is: ${otp}`,
-    html: luxstoreEmailTemplate(otp)
-  };
-
-  return transporter.sendMail(mailOptions);
+    {
+      from: { name: 'LUXSTORE', email: user },
+      to: { email: to },
+      subject,
+      text: `Your LUXSTORE verification code is: ${otp}`,
+      html: luxstoreEmailTemplate(otp),
+    }
+  );
 };

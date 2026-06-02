@@ -4,15 +4,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
-enum Role {
-  USER
-  ADMIN
-  MODERATOR
-}
+// NOTE: Migrated Postgres -> Cloudflare D1 (SQLite).
+// SQLite has no native enums, scalar arrays, or Json type.
+//  - enums      -> String  (allowed values documented in comments)
+//  - String[]   -> String  (JSON-encoded array, default "[]")
+//  - Json?      -> String? (JSON-encoded)
+// (De)serialization is handled at the route boundary, see lib/json-fields.ts.
 
+// Role: USER | ADMIN | MODERATOR
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -20,7 +22,7 @@ model User {
   password  String
   phone     String?
   address   String?
-  role      Role     @default(USER)
+  role      String   @default("USER")
   reviews   Review[]
   createdAt DateTime @default(now())
 
@@ -40,11 +42,11 @@ model Product {
   price           Float           @map("productPrice")
   stock           Int             @map("productStock")
   sku             String          @unique @map("productSKU")
-  variants        String[]        @map("productVariants")
-  tags            String[]        @map("productTags")
-  images          String[]        @map("productImages")
-  sizes           String[]        @map("productSize")
-  features        String[]        @map("productFeatures")
+  variants        String          @default("[]") @map("productVariants") // JSON string[]
+  tags            String          @default("[]") @map("productTags") // JSON string[]
+  images          String          @default("[]") @map("productImages") // JSON string[]
+  sizes           String          @default("[]") @map("productSize") // JSON string[]
+  features        String          @default("[]") @map("productFeatures") // JSON string[]
   careInstruction String?
   category        Category        @relation(fields: [categoryId], references: [id])
   categoryId      String          @map("productCategory")
@@ -61,30 +63,24 @@ model Product {
   @@map("products")
 }
 
-enum CampaignStatus {
-  DRAFT
-  ACTIVE
-  PAUSED
-  ENDED
-}
-
+// CampaignStatus: DRAFT | ACTIVE | PAUSED | ENDED
 model Campaign {
-  id          String         @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
-  slug        String         @unique
+  slug        String    @unique
   headline    String?
   subheadline String?
   badgeLabel  String?
-  ctaLabel    String         @default("Buy Now")
-  layout      Json?
-  pageLayout  Json?
+  ctaLabel    String    @default("Buy Now")
+  layout      String? // JSON
+  pageLayout  String? // JSON
   startsAt    DateTime?
   endsAt      DateTime?
-  status      CampaignStatus @default(DRAFT)
-  product     Product        @relation(fields: [productId], references: [id])
+  status      String    @default("DRAFT")
+  product     Product   @relation(fields: [productId], references: [id])
   productId   String
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([productId])
   @@index([status])
@@ -128,32 +124,17 @@ model Category {
   createdAt DateTime   @default(now())
 }
 
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-enum PaymentMethod {
-  COD
-  CARD
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
+// OrderStatus: PENDING | PROCESSING | SHIPPED | DELIVERED | CANCELLED
+// PaymentMethod: COD | CARD
+// PaymentStatus: PENDING | COMPLETED | FAILED
 
 model OrderTimelineEvent {
-  id        String      @id @default(cuid())
-  order     Order       @relation(fields: [orderId], references: [id])
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id])
   orderId   String
-  status    OrderStatus
+  status    String // OrderStatus
   message   String?
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   @@index([orderId])
   @@map("order_timeline_events")
@@ -172,8 +153,8 @@ model Order {
   subtotal           Float
   shippingCost       Float
   tax                Float
-  paymentMethod      PaymentMethod
-  paymentStatus      PaymentStatus        @default(PENDING)
+  paymentMethod      String // PaymentMethod
+  paymentStatus      String               @default("PENDING") // PaymentStatus
   shippingAddress    String
   shippingCity       String?
   shippingState      String?
@@ -181,7 +162,7 @@ model Order {
   shippingCountry    String?
   shippingMethod     ShippingMethod?      @relation(fields: [shippingMethodId], references: [id])
   shippingMethodId   String?
-  status             OrderStatus          @default(PENDING)
+  status             String               @default("PENDING") // OrderStatus
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   trackingNumber     String?
@@ -212,17 +193,17 @@ model OrderItem {
 }
 
 model Payment {
-  id             String        @id @default(cuid())
-  order          Order         @relation(fields: [orderId], references: [id])
-  orderId        String        @unique
+  id             String   @id @default(cuid())
+  order          Order    @relation(fields: [orderId], references: [id])
+  orderId        String   @unique
   amount         Float
-  method         PaymentMethod
+  method         String // PaymentMethod
   transactionId  String?
   last4Digits    String?
   expirationDate String?
-  status         PaymentStatus @default(PENDING)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status         String   @default("PENDING") // PaymentStatus
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([orderId])
   @@index([transactionId])
@@ -266,22 +247,16 @@ model CartItem {
   @@map("cart_items")
 }
 
-enum TestimonialUserRole {
-  FASHION_ENTHUSIAST
-  CUSTOMER
-  INFLUENCER
-  OTHER
-}
-
+// TestimonialUserRole: FASHION_ENTHUSIAST | CUSTOMER | INFLUENCER | OTHER
 model Testimonial {
-  id        String              @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
   message   String
   rating    Int
   image     String?
-  role      TestimonialUserRole @default(CUSTOMER)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  role      String   @default("CUSTOMER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Wishlist {
@@ -307,19 +282,14 @@ model WishlistItem {
   @@map("wishlist_items")
 }
 
-enum OTPType {
-  EMAIL_VERIFICATION
-  PASSWORD_RESET
-  LOGIN_OTP
-}
-
+// OTPType: EMAIL_VERIFICATION | PASSWORD_RESET | LOGIN_OTP
 model OTPVerification {
   id        String   @id @default(cuid())
   user      User?    @relation(fields: [userId], references: [id])
   userId    String?
   email     String
   code      String
-  type      OTPType  @default(EMAIL_VERIFICATION)
+  type      String   @default("EMAIL_VERIFICATION")
   expiresAt DateTime
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())

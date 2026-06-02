@@ -3,6 +3,21 @@ import prisma from "@/lib/prisma";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
+import { deserializeProduct } from "@/lib/json-fields";
+
+// Order items embed a Product whose array fields are JSON strings in D1.
+// Deserialize them so clients receive real arrays (images, tags, ...).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function withProductArrays<T extends { items?: any[] }>(order: T): T {
+  if (!order?.items) return order;
+  return {
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      product: item.product ? deserializeProduct(item.product) : item.product,
+    })),
+  };
+}
 
 const app = new Hono()
 
@@ -13,11 +28,11 @@ const app = new Hono()
     const orders = await prisma.order.findMany({
       where: search ? {
         OR: [
-          { orderNumber: { contains: search, mode: "insensitive" } },
-          { user: { 
+          { orderNumber: { contains: search } },
+          { user: {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } }
+              { name: { contains: search } },
+              { email: { contains: search } }
             ]
           } }
         ]
@@ -31,7 +46,7 @@ const app = new Hono()
       orderBy: { createdAt: "desc" }
     });
 
-    return c.json({ orders });
+    return c.json({ orders: orders.map(withProductArrays) });
   } catch (error) {
     console.error("Failed to fetch orders:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);
@@ -105,7 +120,7 @@ const app = new Hono()
         }}
       }
     })
-    return c.json({order},200);
+    return c.json({order: order.map(withProductArrays)},200);
   }
   catch(error){
     console.error("Failed to Fetch Order",error)
@@ -129,7 +144,7 @@ const app = new Hono()
       orderBy: { createdAt: "desc" },
     });
 
-    return c.json({ orders });
+    return c.json({ orders: orders.map(withProductArrays) });
   } catch (error) {
     console.error("Failed to fetch orders by phone:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);
@@ -157,7 +172,7 @@ const app = new Hono()
       return c.json({ error: "Order not found" }, 404);
     }
 
-    return c.json({ order });
+    return c.json({ order: withProductArrays(order) });
   } catch (error) {
     console.error("Failed to fetch order:", error);
     return c.json({ error: "Failed to fetch order" }, 500);

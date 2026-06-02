@@ -10,7 +10,7 @@ import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { randomBytes } from "crypto";
 import { addMinutes } from "date-fns";
-import { OTPType } from "@/generated/prisma";
+import { OTPType } from "@/lib/enums";
 import { sendEmail } from "@/lib/email";
 import { z } from "zod";
 
