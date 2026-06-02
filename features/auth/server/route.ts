@@ -5,7 +5,7 @@ import Jwt from "jsonwebtoken";
 import { deleteCookie, setCookie } from "hono/cookie";
 
 import bcrypt from "bcryptjs"; 
-import prisma from "@/lib/prisma";
+import db from "@/lib/db";
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { randomBytes } from "crypto";
@@ -31,7 +31,7 @@ const app = new Hono()
     const { name, email, password } = c.req.valid("json");
 
     try {
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await db.user.findUnique({
         where: { email },
       });
 
@@ -41,7 +41,7 @@ const app = new Hono()
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await prisma.user.create({
+      const user = await db.user.create({
         data: {
           name,
           email,
@@ -60,7 +60,7 @@ const app = new Hono()
     const { email, password } = c.req.valid("json");
   
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await db.user.findUnique({ where: { email } });
   
       if (!user || !user.password) {
         return c.json({ error: "Invalid credentials" }, 401);
@@ -128,7 +128,7 @@ const app = new Hono()
 
       const shouldCheckUser = [OTPType.LOGIN_OTP, OTPType.PASSWORD_RESET].includes(type as any);
       if (shouldCheckUser) {
-        user = await prisma.user.findUnique({
+        user = await db.user.findUnique({
           where: { email },
         });
 
@@ -137,7 +137,7 @@ const app = new Hono()
         }
       }
 
-      const existingOtp = await prisma.oTPVerification.findFirst({
+      const existingOtp = await db.oTPVerification.findFirst({
         where: {
           email,
           type,
@@ -165,7 +165,7 @@ const app = new Hono()
       const otpCode = generateOtpCode();
       const expiresAt = addMinutes(new Date(), 5);
 
-      await prisma.oTPVerification.create({
+      await db.oTPVerification.create({
         data: {
           userId: shouldCheckUser ? user?.id : null,
           email,
@@ -201,7 +201,7 @@ const app = new Hono()
     const { email, otpCode } = c.req.valid('json');
 
     try {
-      const otpVerification = await prisma.oTPVerification.findFirst({
+      const otpVerification = await db.oTPVerification.findFirst({
         where: {
           email,
           code: otpCode,
@@ -218,7 +218,7 @@ const app = new Hono()
       }
 
   
-      await prisma.oTPVerification.update({
+      await db.oTPVerification.update({
         where: { id: otpVerification.id },
         data: { verified: true },
       });
@@ -237,7 +237,7 @@ const app = new Hono()
     const { email, otpCode, newPassword } = c.req.valid("json");
 
     try {
-      const otpVerification = await prisma.oTPVerification.findFirst({
+      const otpVerification = await db.oTPVerification.findFirst({
         where: {
           email,
           code: otpCode,
@@ -255,10 +255,14 @@ const app = new Hono()
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      const user = await prisma.user.update({
+      const user = await db.user.update({
         where: { email },
         data: { password: hashedPassword },
       });
+
+      if (!user) {
+        return c.json({ error: "User not found" }, 404);
+      }
 
       return c.json({ message: "Password reset successfully", userId: user.id });
     } catch (error) {
@@ -299,14 +303,14 @@ const app = new Hono()
       if (!body.currentPassword) {
         return c.json({ error: "Current password required" }, 400);
       }
-      const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+      const dbUser = await db.user.findUnique({ where: { id: user.id } });
       if (!dbUser) return c.json({ error: "User not found" }, 404);
       const valid = await bcrypt.compare(body.currentPassword, dbUser.password);
       if (!valid) return c.json({ error: "Current password is incorrect" }, 400);
       updateData.password = await bcrypt.hash(body.newPassword, 10);
     }
 
-    const updated = await prisma.user.update({
+    const updated = await db.user.update({
       where: { id: user.id },
       data: updateData,
       select: { id: true, name: true, email: true, phone: true, address: true, role: true },

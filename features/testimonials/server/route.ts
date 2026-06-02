@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
-import prisma from '@/lib/prisma'
+import db from '@/lib/db'
 
 const app = new Hono()
 
 .get('/', async (c) => {
   try {
-    const testimonials = await prisma.testimonial.findMany({
+    const testimonials = await db.testimonial.findMany({
       orderBy: {
         createdAt: 'desc',
       },

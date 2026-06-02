@@ -1,8 +1,18 @@
 import { Hono } from 'hono';
-import prisma from '@/lib/prisma';
+import db from '@/lib/db';
 import { Product } from '@/lib/types';
-import { Prisma } from '@/generated/prisma';
 import { parseStringArray } from '@/lib/json-fields';
+
+type ProductReviewRelation = {
+  id: string;
+  rating: number;
+  createdAt: Date;
+  comment: string;
+  user: {
+    id: string;
+    name: string;
+  };
+};
 
 const app = new Hono()
 
@@ -12,7 +22,7 @@ const app = new Hono()
   const id = c.req.param("id");
 
   try{
-    const product = await prisma.product.findUnique({
+    const product = await db.product.findUnique({
       where:{id},
       include:{
         category:true,
@@ -61,7 +71,7 @@ const app = new Hono()
       sizes:parseStringArray(product.sizes),
       features:parseStringArray(product.features),
       isFeatured:product.isFeatured,
-      reviews: product.reviews.map((review) => ({
+      reviews: (product.reviews as ProductReviewRelation[]).map((review) => ({
         id: review.id,
         rating: review.rating,
         date: review.createdAt.toISOString(),
@@ -90,7 +100,7 @@ const app = new Hono()
   const limit = Math.min(parseInt(c.req.query("limit") || "8", 10) || 8, 100);
 
   // 1. Build price filter
-  let priceFilter: Prisma.FloatFilter | undefined;
+  let priceFilter: Record<string, number> | undefined;
   switch (priceRange) {
     case "under-50": priceFilter = { lte: 50 }; break;
     case "50-100": priceFilter = { gte: 50, lte: 100 }; break;
@@ -102,7 +112,7 @@ const app = new Hono()
   const isFeatured = sort === "featured" ? true : undefined;
 
   // 3. Build filter conditions
-  const filterConditions: Prisma.ProductWhereInput[] = [];
+  const filterConditions: Record<string, unknown>[] = [];
 
   if (category) {
     filterConditions.push({ category: { label: category } });
@@ -128,12 +138,12 @@ const app = new Hono()
   }
 
   // 4. Build final where clause
-  const whereFilter: Prisma.ProductWhereInput = filterConditions.length > 0 
+  const whereFilter = filterConditions.length > 0
     ? { AND: filterConditions }
     : {};
 
   // 5. Build orderBy clause
-  const orderBy: Prisma.ProductOrderByWithRelationInput[] = [];
+  const orderBy: Record<string, string>[] = [];
   switch (sort) {
     case "newest":
       orderBy.push({ createdAt: "desc" });
@@ -154,9 +164,9 @@ const app = new Hono()
 
   try {
     // 6. Execute queries
-    const [totalCount, products] = await prisma.$transaction([
-      prisma.product.count({ where: whereFilter }),
-      prisma.product.findMany({
+    const [totalCount, products] = await db.$transaction([
+      db.product.count({ where: whereFilter }),
+      db.product.findMany({
         where: whereFilter,
         orderBy,
         take: limit,
@@ -167,7 +177,7 @@ const app = new Hono()
 
     // 7. Format response
     return c.json({
-      data: products.map(product => ({
+      data: (products as Record<string, any>[]).map((product) => ({
         id: product.id,
         name: product.name,
         description: product.description,

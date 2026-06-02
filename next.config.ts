@@ -7,7 +7,7 @@ initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   /* config options here */
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-d1", "worker-mailer"],
+  serverExternalPackages: ["worker-mailer"],
   images: {
     remotePatterns: [
       {

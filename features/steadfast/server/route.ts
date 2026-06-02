@@ -7,7 +7,7 @@ import {
   getSteadfastStatusByInvoice,
   getSteadfastBalance,
 } from "@/lib/steadfast";
-import prisma from "@/lib/prisma";
+import db from "@/lib/db";
 import type { OrderStatus } from "@/lib/enums";
 
 function mapSteadfastStatus(s: string): OrderStatus | null {
@@ -64,7 +64,7 @@ const app = new Hono()
 
       const { orderId, recipient_phone, note } = c.req.valid("json");
 
-      const order = await prisma.order.findUnique({
+      const order = await db.order.findUnique({
         where: { id: orderId },
         include: { user: { select: { name: true } } },
       });
@@ -94,7 +94,7 @@ const app = new Hono()
       try {
         const result = await createSteadfastOrder(payload);
 
-        await prisma.order.update({
+        await db.order.update({
           where: { id: orderId },
           data: {
             trackingNumber: result.consignment?.tracking_code ?? null,
@@ -102,7 +102,7 @@ const app = new Hono()
           },
         });
 
-        await prisma.orderTimelineEvent.create({
+        await db.orderTimelineEvent.create({
           data: {
             orderId,
             status: "PROCESSING",
@@ -126,7 +126,7 @@ const app = new Hono()
     }
 
     const orderId = c.req.param("orderId");
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    const order = await db.order.findUnique({ where: { id: orderId } });
     if (!order) return c.json({ error: "Order not found" }, 404);
     if (!order.trackingNumber) return c.json({ error: "No tracking number" }, 400);
 
@@ -135,11 +135,11 @@ const app = new Hono()
       const mapped = mapSteadfastStatus(data.delivery_status);
 
       if (mapped && mapped !== order.status) {
-        await prisma.order.update({
+        await db.order.update({
           where: { id: orderId },
           data: { status: mapped },
         });
-        await prisma.orderTimelineEvent.create({
+        await db.orderTimelineEvent.create({
           data: {
             orderId,
             status: mapped,

@@ -13,8 +13,7 @@ wrangler login
 # 1. Create the D1 database, then paste the printed database_id into wrangler.jsonc
 wrangler d1 create sleep-sheet-reborn
 
-# 2. Apply the schema (generated from prisma/schema.prisma)
-pnpm db:diff                 # regenerates prisma/migrations-d1/0001_init.sql (optional)
+# 2. Apply the D1 migrations
 pnpm db:migrate:remote       # applies migrations to the live D1 db
 # pnpm db:migrate:local      # ...or to the local dev D1 instead
 ```
@@ -24,7 +23,7 @@ pnpm db:migrate:remote       # applies migrations to the live D1 db
 ```bash
 # Point at the OLD Postgres db, then generate INSERTs and load them into D1.
 NEON_DATABASE_URL="postgresql://...neon..." npx tsx scripts/migrate-neon-to-d1.ts
-wrangler d1 execute sleep-sheet-reborn --remote --file=./prisma/data-d1.sql
+wrangler d1 execute sleep-sheet-reborn --remote --file=./migrations/data-d1.sql
 ```
 
 Array columns (productImages, tags, …) and the campaign JSON columns are written
@@ -67,14 +66,13 @@ pnpm cf:deploy  # build + deploy to Cloudflare
 - **`mode: 'insensitive'`** removed (Postgres-only). SQLite `LIKE` is
   case-insensitive for ASCII.
 - **Analytics**: `DATE_TRUNC`/`INTERVAL` raw SQL replaced with JS aggregation.
-- **Prisma client** is request-scoped (`lib/prisma.ts`) — D1 bindings only exist
-  per request.
+- **D1 access** is request-scoped (`lib/db.ts` compatibility shim for now)
+  because D1 bindings only exist per request.
 
 ## Needs verification on a live D1 (could not be tested locally)
 
 - Date/time storage + comparison in analytics date ranges and OTP `expiresAt`.
 - The bulk `data-d1.sql` import for large tables (D1 file-size limits — split if
   needed).
-- Seed scripts in `scripts/` and `prisma/seed-*.ts` import `lib/prisma`, which
-  now needs the Worker context; prefer the data-migration path or run them via
-  `wrangler d1 execute`.
+- Prefer the data-migration path or direct `wrangler d1 execute` imports until
+  Drizzle migrations/seeds are added.

@@ -1,8 +1,18 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { z } from "zod";
-import prisma from '@/lib/prisma';
+import db from '@/lib/db';
 import { parseStringArray } from '@/lib/json-fields';
+
+type WishlistRelationItem = {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    images: string;
+  };
+};
 
 
 
@@ -30,17 +40,17 @@ const app = new Hono()
 
       const {productId}= parsed.data;
 
-      let wishlist = await prisma?.wishlist.findUnique({
+      let wishlist = await db?.wishlist.findUnique({
         where:{userId:user.id}
       });
 
       if (!wishlist) {
-        wishlist = await prisma?.wishlist.create({
+        wishlist = await db?.wishlist.create({
           data: { userId: user.id },
         });
       }
 
-      const existingItem = await prisma?.wishlistItem.findUnique({
+      const existingItem = await db?.wishlistItem.findUnique({
         where: {
           wishlistId_productId: {
             wishlistId: wishlist?.id as string,
@@ -53,7 +63,7 @@ const app = new Hono()
         return c.json({ success: false, message: "Product already in wishlist" });
       }
 
-      await prisma?.wishlistItem.create({
+      await db?.wishlistItem.create({
         data: {
           wishlistId: wishlist?.id as string,
           productId,
@@ -67,7 +77,7 @@ const app = new Hono()
     const user = c.get("user");
     if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
   
-    const wishlist = await prisma.wishlist.findUnique({
+    const wishlist = await db.wishlist.findUnique({
       where: { userId: user.id },
       include: {
         items: {
@@ -90,7 +100,7 @@ const app = new Hono()
       success: true,
       data: {
         wishlistId: wishlist.id,
-        items: wishlist.items.map((item) => ({
+        items: (wishlist.items as WishlistRelationItem[]).map((item) => ({
           id: item.id,
           product: { ...item.product, images: parseStringArray(item.product.images) },
         })),
@@ -110,7 +120,7 @@ const app = new Hono()
   
     const { productId } = parsed.data;
   
-    const wishlist = await prisma.wishlist.findUnique({
+    const wishlist = await db.wishlist.findUnique({
       where: { userId: user.id },
     });
   
@@ -118,7 +128,7 @@ const app = new Hono()
       return c.json({ success: false, error: "Wishlist not found" }, 404);
     }
   
-    await prisma.wishlistItem.deleteMany({
+    await db.wishlistItem.deleteMany({
       where: {
         wishlistId: wishlist.id,
         productId,

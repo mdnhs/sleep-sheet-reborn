@@ -1,5 +1,5 @@
 import React from "react";
-import DashBoardClientPage from "./client";
+import DashboardClientLoader from "./dashboard-client-loader";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 
@@ -9,7 +9,7 @@ async function DashBoardPage() {
     redirect("/");
   }
 
-  return <DashBoardClientPage />;
+  return <DashboardClientLoader />;
 }
 
 export default DashBoardPage;

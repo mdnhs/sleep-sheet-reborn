@@ -1,16 +1,16 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import prisma from "@/lib/prisma";
+import db from "@/lib/db";
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
-  const setting = await prisma.siteSetting.findUnique({ where: { key } });
+  const setting = await db.siteSetting.findUnique({ where: { key } });
   return setting ? Number(setting.value) : (zone === "outside_dhaka" ? 120 : 60);
 }
 
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
   const key = method === "card" ? "payment_method_card" : "payment_method_cod";
-  const setting = await prisma.siteSetting.findUnique({ where: { key } });
+  const setting = await db.siteSetting.findUnique({ where: { key } });
   return setting ? setting.value !== "false" : true;
 }
 
@@ -36,7 +36,7 @@ const app = new Hono()
   }[] = [];
 
   if (user) {
-    const cart = await prisma.cart.findUnique({
+    const cart = await db.cart.findUnique({
       where: { userId: user.id },
       include: { items: { include: { product: true } } },
     });
@@ -63,7 +63,7 @@ const app = new Hono()
     const totalAmount = subtotal + shippingCost;
 
     try {
-      const order = await prisma.order.create({
+      const order = await db.order.create({
         data: {
           orderNumber: `ORD-${Date.now()}`,
           userId: user.id,
@@ -102,13 +102,13 @@ const app = new Hono()
       });
 
       for (const item of cartItemsForOrder) {
-        await prisma.product.update({
+        await db.product.update({
           where: { id: item.productId },
           data: { stock: { decrement: item.quantity } },
         });
       }
 
-      await prisma.cartItem.deleteMany({
+      await db.cartItem.deleteMany({
         where: { cart: { userId: user.id } },
       });
 
@@ -125,7 +125,7 @@ const app = new Hono()
   }
 
   const productIds: string[] = guestItems.map((i: { productId: string }) => i.productId);
-  const products = await prisma.product.findMany({
+  const products = await db.product.findMany({
     where: { id: { in: productIds } },
   });
 
@@ -151,8 +151,8 @@ const app = new Hono()
   const totalAmount = subtotal + shippingCost;
 
   try {
-    // Create order with scalar fields only — avoids Prisma XOR relation ambiguity for guest (no userId)
-    const order = await prisma.order.create({
+    // Create order with scalar fields only for guest checkout.
+    const order = await db.order.create({
       data: {
         orderNumber: `ORD-${Date.now()}`,
         userId: undefined,
@@ -172,7 +172,11 @@ const app = new Hono()
       },
     });
 
-    await prisma.orderItem.createMany({
+    if (!order) {
+      return c.json({ message: "Failed to create order" }, 500);
+    }
+
+    await db.orderItem.createMany({
       data: cartItemsForOrder.map((item) => ({
         orderId: order.id,
         productId: item.productId,
@@ -184,7 +188,7 @@ const app = new Hono()
     });
 
     if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
-      await prisma.payment.create({
+      await db.payment.create({
         data: {
           orderId: order.id,
           amount: totalAmount,
@@ -198,7 +202,7 @@ const app = new Hono()
     }
 
     for (const item of cartItemsForOrder) {
-      await prisma.product.update({
+      await db.product.update({
         where: { id: item.productId },
         data: { stock: { decrement: item.quantity } },
       });
@@ -213,7 +217,7 @@ const app = new Hono()
 
 .get("/shipping-methods", async (c) => {
   try {
-    const shippingMethods = await prisma.shippingMethod.findMany({
+    const shippingMethods = await db.shippingMethod.findMany({
       where: { active: true },
       orderBy: { cost: "asc" },
     });

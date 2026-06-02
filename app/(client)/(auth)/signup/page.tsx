@@ -1,4 +1,4 @@
-import SignUpCard from "@/features/auth/components/sign-up-card";
+import SignUpClientLoader from "./sign-up-client-loader";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -8,7 +8,7 @@ async function SignUpPage() {
   if (user) {
     redirect("/");
   }
-  return <SignUpCard />;
+  return <SignUpClientLoader />;
 }
 
 export default SignUpPage;

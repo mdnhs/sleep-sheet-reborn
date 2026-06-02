@@ -1,8 +1,8 @@
 import React from "react";
-import CheckoutClient from "./checkout-client";
+import CheckoutClientLoader from "./checkout-client-loader";
 
 async function CheckoutPage() {
-  return <CheckoutClient />;
+  return <CheckoutClientLoader />;
 }
 
 export default CheckoutPage;

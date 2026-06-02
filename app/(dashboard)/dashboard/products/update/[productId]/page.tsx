@@ -1,5 +1,5 @@
 import React from "react";
-import UpdateProductClient from "./update-product-client";
+import UpdateProductClientLoader from "./update-product-client-loader";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 
@@ -9,7 +9,7 @@ async function UpdateProduct() {
     redirect("/");
   }
 
-  return <UpdateProductClient />;
+  return <UpdateProductClientLoader />;
 }
 
 export default UpdateProduct;

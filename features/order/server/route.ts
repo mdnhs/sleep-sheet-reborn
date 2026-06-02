@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import prisma from "@/lib/prisma";
+import db from "@/lib/db";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -25,7 +25,7 @@ const app = new Hono()
   const { search } = c.req.query();
   
   try {
-    const orders = await prisma.order.findMany({
+    const orders = await db.order.findMany({
       where: search ? {
         OR: [
           { orderNumber: { contains: search } },
@@ -69,13 +69,13 @@ const app = new Hono()
   };
 
   try {
-    const [updatedOrder] = await prisma.$transaction([
-      prisma.order.update({
+    const [updatedOrder] = await db.$transaction([
+      db.order.update({
         where: { id },
         data: { status, paymentStatus },
         include: { user: true, items: true }
       }),
-      prisma.orderTimelineEvent.create({
+      db.orderTimelineEvent.create({
         data: {
           orderId: id,
           status,
@@ -95,10 +95,10 @@ const app = new Hono()
   const id = c.req.param("id");
 
   try {
-    await prisma.$transaction([
-      prisma.orderItem.deleteMany({ where: { orderId: id } }),
-      prisma.payment.deleteMany({ where: { orderId: id } }),
-      prisma.order.delete({ where: { id } })
+    await db.$transaction([
+      db.orderItem.deleteMany({ where: { orderId: id } }),
+      db.payment.deleteMany({ where: { orderId: id } }),
+      db.order.delete({ where: { id } })
     ]);
 
     return c.json({ success: true });
@@ -112,7 +112,7 @@ const app = new Hono()
   if (!user) return c.json({ error: "Unauthorized" }, 401);
 
   try{
-   const order = await prisma.order.findMany({
+   const order = await db.order.findMany({
       where: { userId: user.id },
       include:{
         items:{include:{
@@ -136,7 +136,7 @@ const app = new Hono()
   }
 
   try {
-    const orders = await prisma.order.findMany({
+    const orders = await db.order.findMany({
       where: { guestPhone: phone },
       include: {
         items: { include: { product: true } },
@@ -155,7 +155,7 @@ const app = new Hono()
   const id = c.req.param("id");
 
   try {
-    const order = await prisma.order.findUnique({
+    const order = await db.order.findUnique({
       where: { id },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },

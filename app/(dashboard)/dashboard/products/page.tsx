@@ -1,5 +1,5 @@
 import React from "react";
-import ProductsClientPage from "./client";
+import ProductsClientLoader from "./products-client-loader";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 
@@ -9,7 +9,7 @@ async function ProductPage() {
     redirect("/");
   }
 
-  return <ProductsClientPage />;
+  return <ProductsClientLoader />;
 }
 
 export default ProductPage;

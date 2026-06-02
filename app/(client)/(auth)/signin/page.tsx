@@ -1,4 +1,4 @@
-import SignInCard from "@/features/auth/components/sign-in-card";
+import SignInClientLoader from "./sign-in-client-loader";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -11,7 +11,7 @@ async function SignInPage() {
     );
   }
 
-  return <SignInCard />;
+  return <SignInClientLoader />;
 }
 
 export default SignInPage;

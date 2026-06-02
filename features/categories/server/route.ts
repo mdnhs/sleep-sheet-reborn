@@ -1,15 +1,20 @@
 import { Hono } from 'hono';
-import prisma from '@/lib/prisma';
+import db from '@/lib/db';
 import { parseStringArray } from '@/lib/json-fields';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import cuid from 'cuid';
 
+type CategoryProductForImage = {
+  images: string;
+  reviews: Array<{ rating: number }>;
+};
+
 const app = new Hono()
 .get("/", async(c)=>{
    try{
-      const categories = await prisma.category.findMany({
+      const categories = await db.category.findMany({
          select: {
            id: true,
            label: true,
@@ -40,18 +45,18 @@ const app = new Hono()
        }
 
        if (parentId) {
-         const parentExists = await prisma.category.findUnique({ where: { id: parentId } });
+         const parentExists = await db.category.findUnique({ where: { id: parentId } });
          if (!parentExists) return c.json({ error: "Parent category not found" }, 404);
          if (parentExists.parentId) return c.json({ error: "Only one level of nesting allowed" }, 400);
        }
 
-       const existingCategory = await prisma.category.findUnique({
+       const existingCategory = await db.category.findUnique({
          where: { value }
        });
        if (existingCategory) {
          return c.json({ error: "Category value already exists" }, 409);
        }
-       const newCategory = await prisma.category.create({
+       const newCategory = await db.category.create({
          data: {
            id: cuid(),
            label,
@@ -79,7 +84,7 @@ const app = new Hono()
    }
 
    try {
-     const category = await prisma.category.findUnique({
+     const category = await db.category.findUnique({
        where: { value },
        include: { children: { select: { id: true } } },
      });
@@ -90,7 +95,7 @@ const app = new Hono()
        return c.json({ success: false, error: "Cannot delete category with subcategories. Delete subcategories first." }, 409);
      }
 
-     await prisma.category.delete({ where: { value } });
+     await db.category.delete({ where: { value } });
 
      return c.json({ success: true, message: "Category deleted" }, 200);
    } catch (error) {
@@ -99,7 +104,7 @@ const app = new Hono()
    }
  })
  .get('/category', async (c) => {
-  const categories = await prisma.category.findMany({
+  const categories = await db.category.findMany({
     select: {
       label: true,
       value: true,
@@ -124,7 +129,7 @@ const app = new Hono()
     .map((category) => {
       if (category.products.length === 0) return null;
 
-      const bestProduct = category.products
+      const bestProduct = (category.products as CategoryProductForImage[])
         .map((p) => {
           const avgRating =
             p.reviews.length > 0
@@ -156,4 +161,3 @@ const app = new Hono()
 
 
 export default app;
-

@@ -1,7 +1,7 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { reviewSchema, updateReviewSchema } from "../schema";
-import prisma from '@/lib/prisma';
+import db from '@/lib/db';
 import { zValidator } from "@hono/zod-validator";
 
 const app = new Hono()
@@ -27,7 +27,7 @@ const app = new Hono()
 
       const { productId, rating, comment } = validation.data;
 
-      const product = await prisma.product.findUnique({
+      const product = await db.product.findUnique({
         where: { id: productId },
       });
 
@@ -38,7 +38,7 @@ const app = new Hono()
         );
       }
 
-      const newReview = await prisma.review.create({
+      const newReview = await db.review.create({
         data: {
           comment,
           rating,
@@ -90,7 +90,7 @@ const app = new Hono()
       }, 400);
     }
 
-    const existingReview = await prisma.review.findUnique({
+    const existingReview = await db.review.findUnique({
       where: { id: reviewId },
     });
 
@@ -102,7 +102,7 @@ const app = new Hono()
       return c.json({ success: false, error: "Forbidden" }, 403);
     }
 
-    const updatedReview = await prisma.review.update({
+    const updatedReview = await db.review.update({
       where: { id: reviewId },
       data: {
         rating: validation.data.rating,
@@ -123,7 +123,7 @@ const app = new Hono()
   
       const reviewId = c.req.param("reviewId");
   
-      const existingReview = await prisma.review.findUnique({
+      const existingReview = await db.review.findUnique({
         where: { id: reviewId },
       });
   
@@ -135,7 +135,7 @@ const app = new Hono()
         return c.json({ error: "Forbidden" }, 403);
       }
   
-      await prisma.review.delete({ where: { id: reviewId } });
+      await db.review.delete({ where: { id: reviewId } });
   
       return c.json({ success: true });
     } catch (error) {

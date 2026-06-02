@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 
+type FeaturedCategoriesResponse = {
+  success: boolean;
+  categories: Array<{
+    label: string;
+    value: string;
+    image: string;
+  }>;
+};
 
 export const useGetCategory = () => {
-  return useQuery({
+  return useQuery<FeaturedCategoriesResponse>({
     queryKey: ["category"],
     queryFn: async () => {
       const response = await client.api.categories["category"].$get();
@@ -12,7 +20,7 @@ export const useGetCategory = () => {
         throw new Error("Failed to fetch category");
       }
 
-      return response.json();
+      return response.json() as Promise<FeaturedCategoriesResponse>;
     },
   });
 };

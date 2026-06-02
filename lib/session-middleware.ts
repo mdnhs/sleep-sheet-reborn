@@ -3,13 +3,13 @@ import { createMiddleware } from 'hono/factory'
 import { getCookie } from 'hono/cookie'
 
 import jwt from 'jsonwebtoken'
-import prisma from '@/lib/prisma'
+import db from '@/lib/db'
 import { AUTH_COOKIE } from '@/features/auth/constants'
 
 
 type CustomContext = {
   Variables: {
-    prisma: typeof prisma
+    db: typeof db
     user: {
       id: string
       email: string
@@ -24,7 +24,7 @@ type CustomContext = {
 export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next) => {
   const token = getCookie(c, AUTH_COOKIE)
 
-  c.set('prisma', prisma)
+  c.set('db', db)
 
   if (!token) {
     c.set('user', null)
@@ -37,7 +37,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       email: string
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: decoded.id },
     })
 

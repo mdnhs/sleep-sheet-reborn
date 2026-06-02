@@ -1,6 +1,5 @@
-// SQLite/D1 has no native enums. These mirror the enums that used to live in
-// the Prisma schema, so existing `Enum.VALUE` access and z.nativeEnum() keep
-// working. Stored in the DB as plain strings.
+// SQLite/D1 has no native enums. These constants keep existing `Enum.VALUE`
+// access and z.nativeEnum() working. Stored in the DB as plain strings.
 
 export const Role = {
   USER: "USER",

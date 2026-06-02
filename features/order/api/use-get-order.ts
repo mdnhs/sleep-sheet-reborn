@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
+import type { Order } from "@/features/order/types";
 
+type AccountOrdersResponse = {
+  order: Order[];
+};
 
 export const useGetOrder = () => {
-  return useQuery({
+  return useQuery<AccountOrdersResponse>({
     queryKey: ["order",],
     queryFn: async () => {
       const response = await client.api.orders["order"].$get();
@@ -12,7 +16,7 @@ export const useGetOrder = () => {
         throw new Error("Failed to fetch orders");
       }
 
-      return response.json();
+      return response.json() as Promise<AccountOrdersResponse>;
     },
   });
 };

@@ -2,14 +2,14 @@ import { getCurrentUser } from "@/lib/is-authenticated";
 import React from "react";
 
 import { redirect } from "next/navigation";
-import AccountClientPage from "./account-client";
+import AccountClientLoader from "./account-client-loader";
 
 async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/signup");
   }
-  return <AccountClientPage name={user.name} />;
+  return <AccountClientLoader name={user.name} />;
 }
 
 export default AccountPage;

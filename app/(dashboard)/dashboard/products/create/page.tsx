@@ -2,7 +2,7 @@ import React from "react";
 
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
-import AddProductClient from "./create-product-client";
+import CreateProductClientLoader from "./create-product-client-loader";
 
 async function AddProduct() {
   const user = await getCurrentUser();
@@ -10,7 +10,7 @@ async function AddProduct() {
     redirect("/");
   }
 
-  return <AddProductClient />;
+  return <CreateProductClientLoader />;
 }
 
 export default AddProduct;

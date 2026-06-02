@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import prisma from '@/lib/prisma';
+import db from '@/lib/db';
 import { imageStorage } from '@/lib/imageStorage';
 import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
@@ -61,7 +61,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
         })),
       },
     };
-    const product = await prisma.product.create({
+    const product = await db.product.create({
       data: {
         ...productData,
       },
@@ -70,6 +70,10 @@ app.post('/upload',sessionMiddleware, async (c) => {
         specifications: true,
       }
     });
+
+    if (!product) {
+      return c.json({ success: false, error: "Failed to create product" }, 500);
+    }
 
     return c.json({
       success: true,
@@ -109,7 +113,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
     const formData = await c.req.formData();
     const productId = formData.get("id") as string;
 
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = await db.product.findUnique({
       where: { id: productId },
     });
 
@@ -166,7 +170,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       },
     };
 
-    const updatedProduct = await prisma.product.update({
+    const updatedProduct = await db.product.update({
       where: { id: productId },
       data: updateData,
       include: {
@@ -174,6 +178,10 @@ app.post('/upload',sessionMiddleware, async (c) => {
         specifications: true,
       },
     });
+
+    if (!updatedProduct) {
+      return c.json({ success: false, error: "Product not found" }, 404);
+    }
 
     return c.json({ success: true, product: deserializeProduct(updatedProduct) }, 200);
   } catch (error) {
@@ -195,19 +203,19 @@ app.delete('/:id', sessionMiddleware, async (c) => {
   const productId = c.req.param("id");
 
   try {
-    const product = await prisma.product.findUnique({ where: { id: productId } });
+    const product = await db.product.findUnique({ where: { id: productId } });
     if (!product) return c.json({ error: "Product not found" }, 404);
 
     for (const img of parseStringArray(product.images)) {
       await deleteImageFromStorage(img);
     }
 
-    await prisma.wishlistItem.deleteMany({ where: { productId } });
-    await prisma.cartItem.deleteMany({ where: { productId } });
-    await prisma.review.deleteMany({ where: { productId } });
-    await prisma.specification.deleteMany({ where: { productId } });
-    await prisma.$executeRaw`UPDATE order_items SET "productId" = NULL WHERE "productId" = ${productId}`;
-    await prisma.product.delete({ where: { id: productId } });
+    await db.wishlistItem.deleteMany({ where: { productId } });
+    await db.cartItem.deleteMany({ where: { productId } });
+    await db.review.deleteMany({ where: { productId } });
+    await db.specification.deleteMany({ where: { productId } });
+    await db.$executeRaw`UPDATE order_items SET "productId" = NULL WHERE "productId" = ${productId}`;
+    await db.product.delete({ where: { id: productId } });
 
     return c.json({ success: true });
   } catch (error) {

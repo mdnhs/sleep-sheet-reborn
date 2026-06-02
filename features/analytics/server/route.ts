@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import prisma from "@/lib/prisma";
+import db from "@/lib/db";
 import { getDateRange, getStartDate } from "@/lib/utils";
 import { parseStringArray } from "@/lib/json-fields";
 
@@ -18,14 +18,14 @@ const app = new Hono()
     const { startDate, endDate } = getDateRange(period);
 
     const [totalRevenue, totalOrders, salesTrend] = await Promise.all([
-      prisma.order.aggregate({
+      db.order.aggregate({
         _sum: { totalAmount: true },
         where: { createdAt: { gte: startDate, lte: endDate } },
       }),
-      prisma.order.count({
+      db.order.count({
         where: { createdAt: { gte: startDate, lte: endDate } },
       }),
-      prisma.order.findMany({
+      db.order.findMany({
         where: { createdAt: { gte: startDate, lte: endDate } },
         select: { createdAt: true, totalAmount: true },
         orderBy: { createdAt: "asc" },
@@ -55,7 +55,7 @@ const app = new Hono()
   }
   
   try {
-    const result = await prisma.order.groupBy({
+    const result = await db.order.groupBy({
       by: ['userId'],
       _sum: { totalAmount: true },
       where: { userId: { not: undefined } }
@@ -81,7 +81,7 @@ const app = new Hono()
   }
   
   try {
-    const data = await prisma.order.groupBy({
+    const data = await db.order.groupBy({
       by: ['shippingState'],
       _sum: { totalAmount: true },
       _count: { id: true },
@@ -102,7 +102,7 @@ const app = new Hono()
 // Category Breakdown
 // .get('/categories', async (c) => {
 //     try {
-//       const data = await prisma.$queryRaw<
+//       const data = await db.$queryRaw<
 //         { category: string; items_sold: bigint; revenue: number }[]
 //       >`
 //         SELECT c.label as category, 
@@ -137,12 +137,12 @@ const app = new Hono()
       const startOfYear = new Date(now.getFullYear(), 0, 1);
   
       const [sales, startingInventory, endingInventory] = await Promise.all([
-        prisma.orderItem.aggregate({
+        db.orderItem.aggregate({
           _sum: { quantity: true },
           where: { createdAt: { gte: startOfYear } }
         }),
-        prisma.product.aggregate({ _sum: { stock: true } }),
-        prisma.product.aggregate({ _sum: { stock: true } })
+        db.product.aggregate({ _sum: { stock: true } }),
+        db.product.aggregate({ _sum: { stock: true } })
       ]);
   
       const totalSales = sales._sum.quantity || 0;
@@ -171,8 +171,8 @@ const app = new Hono()
   
   try {
     const [totalCarts, convertedCarts] = await Promise.all([
-      prisma.cart.count(),
-      prisma.cart.count({
+      db.cart.count(),
+      db.cart.count({
         where: { user: { Order: { some: {} } } }
       })
     ]);
@@ -201,7 +201,7 @@ const app = new Hono()
   
   try {
     // SQLite (D1) has no DATE_TRUNC/INTERVAL; aggregate in JS instead.
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       select: { id: true, createdAt: true, Order: { select: { createdAt: true } } },
     });
 
@@ -212,7 +212,7 @@ const app = new Hono()
       buckets[month].total++;
       const limit = new Date(u.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
       const retained = u.Order.some(
-        (o) => o.createdAt >= u.createdAt && o.createdAt <= limit
+        (o: { createdAt: Date }) => o.createdAt >= u.createdAt && o.createdAt <= limit
       );
       if (retained) buckets[month].retained++;
     }
@@ -236,7 +236,7 @@ const app = new Hono()
 // Delivery Times
 // .get('/delivery-times', async (c) => {
 //     try {
-//       const data = await prisma.$queryRaw<
+//       const data = await db.$queryRaw<
 //         { status: string; avg_hours: number }[]
 //       >`
 //         SELECT 
@@ -264,7 +264,7 @@ const app = new Hono()
   }
   
   try {
-    const segments = await prisma.$queryRaw<
+    const segments = await db.$queryRaw<
       { segment: string; customers: bigint }[]
     >`
       SELECT 
@@ -300,7 +300,7 @@ const app = new Hono()
     const startDate = getStartDate(period);
 
     // SQLite (D1) has no DATE_TRUNC; bucket in JS.
-    const rows = await prisma.user.findMany({
+    const rows = await db.user.findMany({
       where: { createdAt: { gte: startDate } },
       select: { createdAt: true },
       orderBy: { createdAt: "asc" },
@@ -344,7 +344,7 @@ const app = new Hono()
   }
   
     try {
-      const data = await prisma.$queryRaw<
+      const data = await db.$queryRaw<
         Array<{
           productId: string;
           productName: string;
@@ -382,7 +382,7 @@ const app = new Hono()
     }
     
     try {
-      const data = await prisma.$queryRaw<
+      const data = await db.$queryRaw<
         Array<{
           productId: string;
           productName: string;

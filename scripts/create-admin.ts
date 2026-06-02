@@ -1,10 +1,10 @@
 import "dotenv/config";
-import prisma from "../lib/prisma";
+import db from "../lib/db";
 import bcrypt from "bcryptjs";
 
 async function main() {
   const hash = await bcrypt.hash("So1421997@@", 10);
-  const u = await prisma.user.upsert({
+  const u = await db.user.upsert({
     where: { email: "mdnhs.cse@gmail.com" },
     update: { role: "ADMIN", password: hash },
     create: {
@@ -14,9 +14,10 @@ async function main() {
       role: "ADMIN",
     },
   });
+  if (!u) throw new Error("Failed to create admin user");
   console.log("Done:", u.email, u.role);
 }
 
 main()
   .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .finally(() => db.$disconnect());

@@ -1,8 +1,8 @@
 import React from "react";
-import CategoriesClientPage from "./categories-client";
+import CategoriesClientLoader from "./categories-client-loader";
 
 function CategoriesPage() {
-  return <CategoriesClientPage />;
+  return <CategoriesClientLoader />;
 }
 
 export default CategoriesPage;

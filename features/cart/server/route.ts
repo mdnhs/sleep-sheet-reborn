@@ -1,11 +1,25 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { z } from "zod";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
-import prisma from "@/lib/prisma";
+import db from "@/lib/db";
 import { parseStringArray } from "@/lib/json-fields";
 import { CartResponse } from "../type";
+
+type CartRelationItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  size?: string | null;
+  color?: string | null;
+  product?: {
+    id: string;
+    name: string;
+    price: number;
+    images: string;
+    description: string;
+  };
+};
 
 const addToCartSchema = z.object({
   productId: z.string(),
@@ -29,31 +43,35 @@ const app = new Hono()
     }
 
     try {
-      let cart = await prisma.cart.findUnique({
+      let cart = await db.cart.findUnique({
         where: { userId: user.id },
         include: { items: true },
       });
 
       if (!cart) {
-        cart = await prisma.cart.create({
+        cart = await db.cart.create({
           data: { userId: user.id },
           include: { items: true },
         });
       }
 
-      const existingItem = cart.items.find(item =>
+      if (!cart) {
+        return c.json({ error: "Failed to create cart" }, 500);
+      }
+
+      const existingItem = (cart.items as CartRelationItem[]).find((item) =>
         item.productId === parsed.data.productId &&
         item.size === parsed.data.size &&
         item.color === parsed.data.color
       );
 
       if (existingItem) {
-        await prisma.cartItem.update({
+        await db.cartItem.update({
           where: { id: existingItem.id },
           data: { quantity: existingItem.quantity + parsed.data.quantity },
         });
       } else {
-        await prisma.cartItem.create({
+        await db.cartItem.create({
           data: {
             cartId: cart.id,
             productId: parsed.data.productId,
@@ -86,7 +104,7 @@ const app = new Hono()
   }
 
   try {
-    const cart = await prisma.cart.findFirst({
+    const cart = await db.cart.findFirst({
       where: { userId: user.id },
       select: { id: true }
     });
@@ -95,7 +113,7 @@ const app = new Hono()
       return c.json({ error: "Cart not found" }, 404);
     }
 
-    const item = await prisma.cartItem.update({
+    const item = await db.cartItem.update({
       where: { 
         id: parsed.data.cartItemId,
         cartId: cart.id 
@@ -106,13 +124,6 @@ const app = new Hono()
     return c.json({ success: true, item });
   } catch (error) {
     console.error("Update cart error:", error);
-    
-    if (error instanceof PrismaClientKnownRequestError) {
-      if (error.code === "P2025") {
-        return c.json({ error: "Cart item not found" }, 404);
-      }
-    }
-    
     
     return c.json({ error: "Failed to update cart item" }, 500);
   }
@@ -130,7 +141,7 @@ const app = new Hono()
     }
 
     try {
-      await prisma.cartItem.delete({
+      await db.cartItem.delete({
         where: { 
           id: parsed.data.cartItemId,
           cart: { userId: user.id }
@@ -148,7 +159,7 @@ const app = new Hono()
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     try {
-      const cart = await prisma.cart.findUnique({
+      const cart = await db.cart.findUnique({
         where: { userId: user.id },
         include: {
           items: {
@@ -159,18 +170,18 @@ const app = new Hono()
       });
 
       const response: CartResponse = {
-        items: cart?.items.map(item => ({
+        items: (cart?.items as CartRelationItem[] | undefined)?.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: item.quantity,
           size: item.size || undefined,
           color: item.color || undefined,
           product: {
-            id: item.product.id,
-            name: item.product.name,
-            price: item.product.price,
-            image: parseStringArray(item.product.images)[0],
-            description: item.product.description
+            id: item.product!.id,
+            name: item.product!.name,
+            price: item.product!.price,
+            image: parseStringArray(item.product!.images)[0],
+            description: item.product!.description
           }
         })) || []
       };
