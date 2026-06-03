@@ -155,6 +155,34 @@ Type: Many To Many.
 
 ---
 
+# DEMO DATA
+
+## demo_datasets → demo_imports
+
+```text
+demo_datasets (1)
+        ↓
+demo_imports (N)
+```
+
+## organizations → demo_imports
+
+```text
+organizations (1)
+        ↓
+demo_imports (N)
+```
+
+## demo_imports → seeded rows (logical, via batch)
+
+```text
+demo_imports.batch_id  ──tags──>  tenant rows where is_demo = true (demo_batch_id)
+```
+
+Clearing an import removes all tagged rows for that organization.
+
+---
+
 # AUTH
 
 ## users → employees

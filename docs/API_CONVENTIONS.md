@@ -174,6 +174,14 @@ POST  /api/v1/billing/renew
 GET   /api/v1/billing/usage                -- current usage vs plan limits
 ```
 
+## Demo Data (organization self-service)
+```text
+GET   /api/v1/demo/datasets                -- available datasets
+GET   /api/v1/demo/status                  -- whether demo data exists for this org
+POST  /api/v1/demo/import                   -- import a dataset (body: datasetId); Idempotency-Key
+POST  /api/v1/demo/clear                    -- hard-delete this org's demo data
+```
+
 ## Marketplace (org-side install)
 ```text
 GET   /api/v1/marketplace/themes
@@ -197,6 +205,7 @@ GET             /api/v1/admin/invoices
 GET|POST        /api/v1/admin/marketplace/themes
 GET|POST        /api/v1/admin/marketplace/funnels
 GET             /api/v1/admin/analytics            -- MRR, ARR, churn, sales
+GET|POST|PATCH  /api/v1/admin/demo-datasets        -- curate demo dataset catalog
 ```
 
 Platform routes are not tenant-scoped; require `requirePlatformPermission(...)`.
@@ -310,7 +319,7 @@ Critical actions are idempotent (Transfer Receive, Refund Approval, Order Delive
 
 # 24. Soft Delete
 
-DELETE archives. Never hard-delete: Products, Customers, Suppliers, Orders, Organizations.
+DELETE archives. Never hard-delete: Products, Customers, Suppliers, Orders, Organizations. **Exception:** demo data (`is_demo = true`) is hard-deleted by `POST /api/v1/demo/clear`.
 
 ---
 

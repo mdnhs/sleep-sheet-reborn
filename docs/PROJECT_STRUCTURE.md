@@ -157,6 +157,7 @@ features/
 │   ├── organization/
 │   ├── billing/
 │   ├── subscription/
+│   ├── demo-data/        import/clear demo datasets (tagged, plan-capped)
 │   └── platform-admin/
 │
 ├── (erp-core)

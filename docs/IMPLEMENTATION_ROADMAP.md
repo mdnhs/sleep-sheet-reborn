@@ -165,6 +165,7 @@ Wrap the SaaS layer around the working ERP core.
 - Server-side enforcement in services (`enforceLimit`, `requireActiveSubscription`, `requireFeature`)
 - Billing providers: bKash, Nagad, SSLCommerz (verified webhooks, idempotent)
 - Feature flags
+- Demo Data Import (onboarding): `demo_datasets`, `demo_imports`, `is_demo` tagging, import-via-services, clear (hard-delete tagged), plan-capped. Depends on ERP modules (Phases 1-7).
 
 ## Deliverables
 ```text

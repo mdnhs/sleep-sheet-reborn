@@ -293,6 +293,20 @@ Asset belongs to installing org only (isolation)
 
 ---
 
+# 5f. Demo Data Tests
+
+```text
+Import into Org A → rows tagged is_demo + demo_batch_id; visible only to Org A
+Import respects plan limits → over-limit dataset capped/rejected (422)
+Import via services → inventory seeded through movements; no negative stock; rules hold
+Blocked if real (non-demo) transactional data exists
+Clear → hard-deletes only is_demo rows; real data untouched
+Import/clear idempotent (per batch); double-call no duplicate / no error
+Cross-tenant: Org B never sees Org A demo data
+```
+
+---
+
 # 6. Unit Testing
 
 Target:
@@ -1222,3 +1236,9 @@ Billing webhooks are tested for verification + idempotency (no double activation
 Rule N
 
 Per-org uniqueness (not global) is validated for SKU/slug/order_number.
+
+---
+
+Rule O
+
+Demo data import is rule-compliant, plan-capped, tagged, isolated, and fully reversible.

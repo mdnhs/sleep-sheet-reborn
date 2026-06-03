@@ -226,6 +226,17 @@ organization_apps    (id, organization_id, app_id, status[INSTALLED|CONFIGURED|A
 
 ---
 
+## Demo Data
+
+```text
+demo_datasets        (global catalog: id, name, business_type, version, r2_key?, status)
+demo_imports         (org-scoped: id, organization_id, dataset_id, batch_id, status, counts_json, created_at, cleared_at)
+```
+
+Seeded tenant rows are tagged `is_demo` + `demo_batch_id`. Clearing demo data hard-deletes tagged rows for the organization (exempt from soft-delete).
+
+---
+
 # 5. Authentication & Authorization
 
 ## users (global)

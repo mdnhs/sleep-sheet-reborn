@@ -225,6 +225,9 @@ Large buttons, fast search, barcode support, keyboard navigation. Speed is prior
 ## Billing
 Subscription page: current plan, usage meters, invoices list (status badges), upgrade/renew actions.
 
+## Demo Data / Onboarding
+For empty/trial orgs: prompt to import a demo dataset (pick business type). Show a persistent "Demo data active" banner with a "Clear Demo Data" action (Alert Dialog confirm — hard delete). Disable import if real data exists or plan limit would be exceeded (with explanation).
+
 ## Storefront Management
 Theme list/marketplace, one-active-theme indicator, homepage builder, pages, blogs, menus, SEO. (Edits the storefront; rendered storefront uses the theme.)
 

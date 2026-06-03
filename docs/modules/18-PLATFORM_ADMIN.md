@@ -100,6 +100,12 @@ Numbers-first presentation (see `UI_GUIDELINES.md`). Derived from subscription/i
 
 ---
 
+# 8b. Demo Dataset Management
+
+Curate the global demo dataset catalog (`demo_datasets`): create, version, publish, deprecate datasets by business type. Permission `platform.demo_datasets.manage`. Organizations import these into their own tenant (see `15-ORGANIZATION` §9b).
+
+---
+
 # 9. Feature Flag Management
 
 Toggle platform/plan feature flags (`theme_marketplace`, `funnels`, `apps`, `advanced_reports`, `ai_features`) globally or per plan.
@@ -139,6 +145,7 @@ platform.plans.view            platform.plans.manage
 platform.subscriptions.view    platform.subscriptions.manage
 platform.invoices.view         platform.invoices.manage
 platform.marketplace.themes    platform.marketplace.funnels     platform.marketplace.apps
+platform.demo_datasets.manage
 platform.analytics.view
 platform.feature_flags.manage
 ```

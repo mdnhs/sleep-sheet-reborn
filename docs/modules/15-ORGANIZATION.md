@@ -131,6 +131,28 @@ Editable by OWNER/ADMIN: business info, currency, timezone, logo, invoice settin
 
 ---
 
+# 9b. Demo Data Import (Onboarding)
+
+Purpose: let a new organization explore the platform with realistic sample data.
+
+```text
+Browse datasets (by business type) → Import → Explore → Clear
+```
+
+Rules:
+- Predefined datasets (Grocery, Electronics, Fashion, Pharmacy, Restaurant) from `demo_datasets`.
+- Imported into the current organization only; every seeded row tagged `is_demo` + `demo_batch_id`.
+- Seeded **through services** — inventory via movements, orders via reservations; no rule bypass.
+- Capped to plan limits; intended for empty/trial orgs; blocked if real (non-demo) transactional data exists.
+- "Clear Demo Data" hard-deletes tagged rows (exception to soft-delete). Real data untouched.
+- Import + clear are idempotent (per `demo_batch_id`) and audited.
+
+Entities: `demo_datasets` (global), `demo_imports` (org). Permission: `organization.demo_data` (OWNER/ADMIN). SUPER_ADMIN curates the catalog (`platform.demo_datasets.manage`).
+
+Events: `demo.import_started`, `demo.import_completed`, `demo.cleared`.
+
+---
+
 # 10. Custom Domains (Future)
 
 V1: subdomain only. Future: map `custom_domain` → organization. No architectural change required.
@@ -150,16 +172,17 @@ V1: subdomain only. Future: map `custom_domain` → organization. No architectur
 
 ```text
 organization.view      organization.manage
+organization.demo_data
 team.view  team.invite  team.manage
 ```
 
-(Platform-scope org management uses `platform.organizations.*`.)
+(Platform-scope org management uses `platform.organizations.*`; demo catalog uses `platform.demo_datasets.manage`.)
 
 ---
 
 # 13. Audit Logging
 
-Mandatory for: organization creation, settings change, member invite/remove, role change, status change (suspension/reactivation).
+Mandatory for: organization creation, settings change, member invite/remove, role change, status change (suspension/reactivation), demo data import/clear.
 
 ---
 
@@ -197,4 +220,5 @@ D.  Tenant data never crosses organizations.
 E.  Team size is bound by the plan's user limit.
 F.  Organization status gates access (driven by Billing).
 G.  Organizations are archived, never hard-deleted.
+H.  Demo data is tagged, rule-compliant, plan-capped, and reversible (clear hard-deletes tagged rows).
 ```

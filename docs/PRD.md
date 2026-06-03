@@ -141,6 +141,7 @@ Every critical action generates logs. Billing must be auditable.
 - Subdomain tenant resolution
 - Team management (multiple users per org)
 - Organization settings (business info, currency, timezone, logo, invoice settings)
+- Demo data import (onboarding) — import/clear predefined datasets; org-scoped, tagged, reversible
 
 ## Subscriptions & Billing
 - Plans: Free, Starter, Business, Enterprise

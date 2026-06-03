@@ -58,7 +58,11 @@ Every organization has isolated: Products, Inventory, Customers, Orders, Employe
 
 ## Organization Features
 
-Profile, Settings, Billing, Subscription, Team Management.
+Profile, Settings, Billing, Subscription, Team Management, Demo Data Import.
+
+## Demo Data
+
+New organizations may import predefined demo datasets (by business type) to explore the platform, and clear them anytime. Org-scoped, tagged, rule-compliant, plan-capped, reversible. (Full spec: `SAAS_REQUIREMENTS.md` §9b.)
 
 (Full multi-tenancy spec: `SAAS_REQUIREMENTS.md`.)
 

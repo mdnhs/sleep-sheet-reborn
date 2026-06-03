@@ -481,6 +481,28 @@ All reports are organization-scoped. Platform analytics (MRR, ARR, churn, market
 
 ---
 
+# 24b. Demo Data Rules
+
+## Rule 24b.1
+Demo data is imported per organization from predefined datasets; it is org-scoped like all tenant data.
+
+## Rule 24b.2
+Every demo-seeded row is tagged `is_demo = true` + `demo_batch_id`.
+
+## Rule 24b.3
+Demo import runs through services and respects all business rules — inventory is seeded via movements, orders via reservation logic. No raw inserts that bypass rules; inventory never goes negative.
+
+## Rule 24b.4
+Demo import is capped to the organization's plan limits and is intended for empty/trial organizations. It is rejected (or capped) if it would exceed limits, and is blocked if real (non-demo) transactional data already exists.
+
+## Rule 24b.5
+"Clear Demo Data" hard-deletes all rows where `is_demo = true` for the organization. Demo data is the one exception to the soft-delete rule.
+
+## Rule 24b.6
+Import and clear are idempotent (per `demo_batch_id`), org-scoped, and audited.
+
+---
+
 # 25. Golden Rules
 
 ```text
@@ -498,4 +520,5 @@ K.  Permissions are always enforced on the server.
 L.  Themes control UI only; funnels control conversion only.
 M.  Marketplace assets are versioned and org-owned.
 N.  Inventory is the foundation; any feature touching it respects all inventory rules.
+O.  Demo data is tagged, org-scoped, rule-compliant, plan-capped, and reversible.
 ```

@@ -181,6 +181,7 @@ Status: ⬜ Not Started
 - [ ] Server-side enforcement (enforceLimit / requireActiveSubscription / requireFeature)
 - [ ] Billing providers (bKash, Nagad, SSLCommerz) — idempotent webhooks
 - [ ] Feature flags
+- [ ] Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited)
 
 ---
 

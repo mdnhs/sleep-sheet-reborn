@@ -412,6 +412,8 @@ organization_users
 subscription_plans
 subscriptions
 subscription_invoices
+demo_datasets
+demo_imports
 ```
 
 ## Marketplace Tables (global scope)

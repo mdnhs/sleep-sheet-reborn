@@ -217,6 +217,40 @@ Inventory Manager
 
 ---
 
+# 9b. Demo Data (Onboarding)
+
+Purpose:
+
+Let a new organization explore the platform with realistic sample data.
+
+Supports:
+
+```text
+Predefined Datasets (by business type)
+
+Import Demo Data
+
+Clear Demo Data
+```
+
+Rules:
+
+```text
+Org-scoped; tagged is_demo + demo_batch_id
+
+Seeded through services (respects all business rules)
+
+Capped to plan limits; intended for empty/trial orgs
+
+Clear = hard-delete tagged rows (exception to soft-delete)
+
+Import + clear are idempotent and audited
+```
+
+SUPER_ADMIN curates the demo dataset catalog.
+
+---
+
 # 10. Subscription System
 
 Purpose:

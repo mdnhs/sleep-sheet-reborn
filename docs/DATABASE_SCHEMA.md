@@ -1039,6 +1039,46 @@ enabled
 updated_at
 ```
 
+## demo_datasets (Global)
+
+```text
+id PK
+name
+business_type                -- GROCERY | ELECTRONICS | FASHION | PHARMACY | RESTAURANT
+description
+version
+r2_key NULL                  -- dataset definition bundle (optional; else bundled)
+status
+created_at
+updated_at
+```
+
+## demo_imports (Tenant)
+
+```text
+id PK
+organization_id FK → organizations.id
+dataset_id FK → demo_datasets.id
+batch_id                     -- tags all rows seeded by this import
+status                       -- PENDING | COMPLETED | FAILED | CLEARED
+counts_json                  -- {products: n, orders: n, ...}
+created_at
+cleared_at NULL
+```
+
+## Demo Tagging Convention (Tenant tables)
+
+Tenant business tables seeded by demo import carry:
+
+```text
+is_demo BOOLEAN DEFAULT false
+demo_batch_id TEXT NULL      -- → demo_imports.batch_id
+```
+
+Applies to: products, product_variants, categories, brands, customers, suppliers, orders, order_items, inventory, inventory_movements, pos_sales, purchase_orders, locations (and other seeded tenant rows). Clearing demo data hard-deletes rows where `is_demo = true` for the organization.
+
+---
+
 ## audit_logs (Tenant)
 
 ```text
@@ -1098,6 +1138,8 @@ suppliers(organization_id, phone)
 campaigns(organization_id, slug)
 shipments(organization_id, tracking_number)
 inventory(organization_id, variant_id, location_id)
+demo_imports(organization_id)
+demo_batch_id (on tagged tenant tables, for fast clear)
 ```
 
 ---

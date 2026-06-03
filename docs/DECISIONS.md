@@ -1104,6 +1104,34 @@ Tradeoffs: webhook verification + idempotency store required.
 
 ---
 
+# ADR-031
+
+## Decision
+
+Demo Data Import — Tagged, Reversible, Service-Based Seeding
+
+## Status
+
+Accepted
+
+## Context
+
+New organizations need to explore the platform with realistic data. Raw seed inserts would bypass inventory/finance rules and could contaminate real business data or leak across tenants.
+
+## Decision
+
+- Demo data is imported per organization from predefined datasets (by business type).
+- Every seeded row is tagged `is_demo = true` + `demo_batch_id`; "Clear Demo Data" hard-deletes those rows (demo data is exempt from the soft-delete rule).
+- Import runs **through services** (inventory via movements, orders via reservation logic) — never raw inserts that bypass business rules.
+- Import is org-scoped, capped to the plan's limits, intended for empty/trial organizations, and audited.
+
+## Consequences
+
+Benefits: safe, realistic onboarding; one-click cleanup; no rule bypass; no cross-tenant risk.
+Tradeoffs: tenant business tables need an `is_demo` flag + batch id; import respects limits so large datasets may be capped.
+
+---
+
 # Future Decision Rule
 
 Before changing architecture:

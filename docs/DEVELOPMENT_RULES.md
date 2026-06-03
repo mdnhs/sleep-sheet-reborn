@@ -218,7 +218,9 @@ Mandatory for: product create/update/archive, inventory adjustment/transfer, pur
 
 # 19. Soft Delete Rules
 
-No hard deletes of business entities (Products, Customers, Suppliers, Orders, Organizations). Use `is_active` / `archived_at`.
+No hard deletes of business entities (Products, Customers, Suppliers, Orders, Organizations). Use `is_active` / `archived_at`. **Exception:** demo data (`is_demo = true`) is hard-deleted on "Clear Demo Data".
+
+Demo Data: import per organization through services (never raw inserts that bypass rules); tag rows `is_demo` + `demo_batch_id`; cap to plan limits; idempotent + audited.
 
 ---
 

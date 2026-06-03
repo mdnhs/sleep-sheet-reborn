@@ -76,6 +76,10 @@ Triggered: status change by SUPER_ADMIN or billing. Consumers: Access Gate, Noti
 ## organization.settings_updated
 Triggered: profile/currency/timezone/logo changed.
 
+## demo.import_started / demo.import_completed / demo.cleared
+Triggered: demo data import begins/finishes, or demo data cleared. Consumers: Notifications, Analytics.
+Payload: `{ organizationId; datasetId; batchId; counts? }`
+
 Payload (organization.*):
 ```ts
 { organizationId: string; status?: string; }

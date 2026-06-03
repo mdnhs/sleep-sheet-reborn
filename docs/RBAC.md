@@ -196,6 +196,7 @@ marketing.analytics
 ## Organization Administration
 ```text
 organization.view  organization.manage   -- profile, settings
+organization.demo_data                    -- import / clear demo data (OWNER/ADMIN)
 team.view  team.invite  team.manage       -- organization_users
 billing.view  billing.manage              -- subscription, invoices, payment methods
 roles.view  roles.create  roles.update  roles.delete
@@ -214,6 +215,7 @@ platform.plans.view            platform.plans.manage
 platform.subscriptions.view    platform.subscriptions.manage
 platform.invoices.view         platform.invoices.manage
 platform.marketplace.themes    platform.marketplace.funnels     platform.marketplace.apps
+platform.demo_datasets.manage
 platform.analytics.view
 platform.feature_flags.manage
 ```

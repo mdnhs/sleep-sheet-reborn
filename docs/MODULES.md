@@ -23,6 +23,7 @@ Features:
 - Team Management (`organization_users`, roles)
 - Tenant Resolution (subdomain; custom domain future)
 - Organization Switcher
+- Demo Data Import (onboarding) — import/clear predefined datasets; tagged, plan-capped, reversible
 
 ## S2. Subscription & Billing — `16-BILLING`
 

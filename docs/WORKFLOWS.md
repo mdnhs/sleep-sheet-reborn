@@ -839,6 +839,50 @@ Emit `organization.suspended` / `organization.reactivated`. Audited.
 
 ---
 
+# 27b. Demo Data Import Workflow (Organization)
+
+## Flow
+
+```text
+Browse Datasets (by business type)
+        ↓
+Check: empty/trial org + within plan limits
+        ↓
+Import (batch_id) — seed via services
+        ↓
+Rows tagged is_demo + demo_batch_id
+        ↓
+Completed → explore app
+```
+
+## Actions
+
+- Validate org has no real (non-demo) transactional data
+- Enforce plan limits (cap/reject if exceeded)
+- Seed through services (inventory via movements, orders via reservations)
+- Tag every row `is_demo` + `demo_batch_id`
+- Record `demo_imports`; emit `demo.import_started` / `demo.import_completed`; audit
+
+---
+
+# 27c. Clear Demo Data Workflow (Organization)
+
+## Flow
+
+```text
+Clear Demo Data
+        ↓
+Hard-delete rows where is_demo = true (org)
+        ↓
+Mark demo_imports CLEARED
+        ↓
+Emit demo.cleared; audit
+```
+
+Demo data is the one exception to soft-delete. Real data is never touched.
+
+---
+
 # 28. Golden Workflow Rules
 
 Rule A
@@ -924,3 +968,9 @@ Subscription/billing transitions occur only via verified, idempotent webhooks an
 Rule N
 
 Themes affect UI only; funnels affect conversion only — neither mutates ERP data.
+
+---
+
+Rule O
+
+Demo import seeds through services (rule-compliant, plan-capped, tagged); clear hard-deletes only tagged demo rows.
