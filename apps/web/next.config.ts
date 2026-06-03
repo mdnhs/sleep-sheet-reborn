@@ -7,7 +7,12 @@ initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   /* config options here */
-  serverExternalPackages: ["worker-mailer"],
+  serverExternalPackages: [
+    "worker-mailer",
+    "better-auth",
+    "@better-auth/kysely-adapter",
+    "kysely",
+  ],
   images: {
     remotePatterns: [
       {
