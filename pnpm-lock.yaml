@@ -7,11 +7,17 @@ settings:
 patchedDependencies:
   '@opennextjs/cloudflare@1.19.11':
     hash: 95fc68555afa435c239eb3b28ca522aa989a0d841f1920bc05ee8d6c1d505d44
-    path: patches/@opennextjs__cloudflare@1.19.11.patch
+    path: apps/web/patches/@opennextjs__cloudflare@1.19.11.patch
 
 importers:
 
   .:
+    devDependencies:
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  apps/web:
     dependencies:
       '@base-ui/react':
         specifier: ^1.4.1
@@ -19,9 +25,6 @@ importers:
       '@dnd-kit/react':
         specifier: ^0.4.0
         version: 0.4.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@hono/zod-validator':
-        specifier: ^0.7.6
-        version: 0.7.6(hono@4.12.18)(zod@4.4.3)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.75.0(react@19.2.4))
@@ -31,6 +34,18 @@ importers:
       '@reduxjs/toolkit':
         specifier: ^2.11.2
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@repo/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@repo/worker':
+        specifier: workspace:*
+        version: link:../worker
       '@tabler/icons-react':
         specifier: ^3.43.0
         version: 3.43.0(react@19.2.4)
@@ -55,9 +70,6 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
-      dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
       hono:
         specifier: ^4.12.18
         version: 4.12.18
@@ -122,6 +134,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.2.4
+      '@types/bcryptjs':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
@@ -155,6 +170,94 @@ importers:
       wrangler:
         specifier: ^4.97.0
         version: 4.97.0(@cloudflare/workers-types@4.20260602.1)
+
+  apps/worker:
+    dependencies:
+      '@hono/zod-validator':
+        specifier: ^0.7.6
+        version: 0.7.6(hono@4.12.18)(zod@4.4.3)
+      '@opennextjs/cloudflare':
+        specifier: ^1.19.11
+        version: 1.19.11(patch_hash=95fc68555afa435c239eb3b28ca522aa989a0d841f1920bc05ee8d6c1d505d44)(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(wrangler@4.97.0(@cloudflare/workers-types@4.20260602.1))
+      '@repo/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
+      cuid:
+        specifier: ^3.0.0
+        version: 3.0.0
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
+      hono:
+        specifier: ^4.12.18
+        version: 4.12.18
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
+      uuid:
+        specifier: ^14.0.0
+        version: 14.0.0
+      worker-mailer:
+        specifier: ^1.2.1
+        version: 1.2.1
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260602.1
+        version: 4.20260602.1
+      '@types/bcryptjs':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      wrangler:
+        specifier: ^4.97.0
+        version: 4.97.0(@cloudflare/workers-types@4.20260602.1)
+
+  packages/auth: {}
+
+  packages/billing: {}
+
+  packages/database:
+    dependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260602.1
+        version: 4.20260602.1
+      '@opennextjs/cloudflare':
+        specifier: ^1.19.11
+        version: 1.19.11(patch_hash=95fc68555afa435c239eb3b28ca522aa989a0d841f1920bc05ee8d6c1d505d44)(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(wrangler@4.97.0(@cloudflare/workers-types@4.20260602.1))
+      cuid:
+        specifier: ^3.0.0
+        version: 3.0.0
+
+  packages/domain: {}
+
+  packages/permissions: {}
+
+  packages/shared: {}
+
+  packages/tenancy: {}
+
+  packages/types: {}
+
+  packages/ui: {}
+
+  packages/validations: {}
 
 packages:
 
@@ -2591,6 +2694,10 @@ packages:
 
   '@tybys/wasm-util@0.10.2':
     resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
+
+  '@types/bcryptjs@3.0.0':
+    resolution: {integrity: sha512-WRZOuCuaz8UcZZE4R5HXTco2goQSI2XxjGY3hbM/xDvwmqFWd4ivooImsMx65OKM6CtNKbnZ5YL+YwAwK7c1dg==}
+    deprecated: This is a stub types definition. bcryptjs provides its own type definitions, so you do not need this installed.
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -8113,6 +8220,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@types/bcryptjs@3.0.0':
+    dependencies:
+      bcryptjs: 3.0.3
 
   '@types/d3-array@3.2.2': {}
 
