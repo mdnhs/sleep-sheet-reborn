@@ -1,4 +1,3 @@
-import { getCurrentUser } from "@/lib/is-authenticated";
 import React from "react";
 
 import { redirect } from "next/navigation";

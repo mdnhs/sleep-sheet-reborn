@@ -71,11 +71,14 @@ Status: 🟨 In Progress
 - [x] Drizzle adapter configured (user, session, account, verification, org tables)
 - [x] Better Auth handler in worker (apps/worker/src/index.ts — /api/auth/*)
 - [x] Better Auth handler in web (apps/web/app/api/auth/[[...all]]/route.ts)
-- [x] Better Auth client (packages/auth/src/client.ts)
-- [ ] Login / Logout UI
-- [ ] Session Validation UI
+- [x] Better Auth client — Next.js (apps/web/lib/auth-client.ts — same-origin, no explicit baseURL)
+- [x] Better Auth server helper (apps/web/lib/auth-server.ts — getCurrentSession via getCloudflareContext)
+- [x] Dashboard Login UI (apps/web/app/(auth)/login/ — email/password via authClient.signIn.email)
+- [x] Logout UI (UserButton uses authClient.signOut, redirects to /login)
+- [x] Session Validation (dashboard layout + page server-side via getCurrentSession)
+- [x] Protected Routes (middleware.ts checks better-auth.session_token cookie; layout does full validation)
 - [ ] Organization Membership on login
-- [ ] Protected Routes
+- [ ] Platform admin login page (/admin/login)
 
 ## RBAC (two-scope)
 Status: 🟨 In Progress
@@ -260,9 +263,10 @@ E2E Tests:               ⬜ Not Started
 
 - `packages/database/src/client.ts` — custom D1 ORM (`getCloudflareContext`). Migrate to Drizzle (Phase 0).
 - `apps/web/stores/` — Redux Toolkit. Migrate to Zustand (Phase 0).
-- `apps/web/features/auth/` — JWT + custom session. Migrate to Better Auth (Phase 0).
-- `apps/worker/middleware/tenant.ts` — stub. Needs subdomain → organization_id resolution.
-- `apps/web/middleware.ts` — stub. Needs tenant header injection for Next.js server components.
+- `apps/web/features/auth/` — dashboard auth migrated to Better Auth. Storefront auth (storefront signin/account) still uses old JWT hooks; migrate when storefront auth is scoped.
+- `apps/web/lib/is-authenticated.ts` — dead code (old JWT). Safe to delete once storefront auth is migrated.
+- `apps/worker/middleware/tenant.ts` — real subdomain→organization_id resolution is implemented; verify in local dev.
+- `apps/web/middleware.ts` — session check + tenant header injection implemented. Cookie check is shallow (existence only); layout does full validation.
 
 ---
 

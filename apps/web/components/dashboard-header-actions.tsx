@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { ExternalLink, User } from "lucide-react";
 
+
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
-import { useCurrent } from "@/features/auth/api/use-current";
+import { authClient } from "@/lib/auth-client";
 import { UserButton } from "@/features/auth/components/user-button";
 
 export function DashboardHeaderActions() {
-  const { data: user } = useCurrent();
+  const { data: session } = authClient.useSession();
 
   return (
     <div className="ml-auto flex items-center gap-2">
@@ -23,18 +24,18 @@ export function DashboardHeaderActions() {
         <ExternalLink className="h-5 w-5" />
       </Button>
       <ModeToggle />
-      {!user ? (
+      {session ? (
+        <UserButton />
+      ) : (
         <Button
           variant="ghost"
           size="icon"
           aria-label="Account"
           nativeButton={false}
-          render={<Link href="/signin" />}
+          render={<Link href="/login" />}
         >
           <User className="h-5 w-5" />
         </Button>
-      ) : (
-        <UserButton />
       )}
     </div>
   );

@@ -1,12 +1,6 @@
 import React from "react"
-import { getCurrentUser } from "@/lib/is-authenticated"
-import { redirect } from "next/navigation"
 
 async function NotificationsPage() {
-  const user = await getCurrentUser()
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
-    redirect("/")
-  }
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">

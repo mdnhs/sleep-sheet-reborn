@@ -1,5 +1,4 @@
 import SignInClientLoader from "./sign-in-client-loader";
-import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 import React from "react";
 

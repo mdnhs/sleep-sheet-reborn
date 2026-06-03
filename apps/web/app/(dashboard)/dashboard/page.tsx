@@ -1,15 +1,10 @@
-import React from "react";
-import DashboardClientLoader from "./dashboard-client-loader";
-import { getCurrentUser } from "@/lib/is-authenticated";
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation'
+import { getCurrentSession } from '@/lib/auth-server'
+import DashboardClientLoader from './dashboard-client-loader'
 
-async function DashBoardPage() {
-  const user = await getCurrentUser();
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
-    redirect("/");
-  }
+export default async function DashboardPage() {
+  const session = await getCurrentSession()
+  if (!session) redirect('/login')
 
-  return <DashboardClientLoader />;
+  return <DashboardClientLoader />
 }
-
-export default DashBoardPage;

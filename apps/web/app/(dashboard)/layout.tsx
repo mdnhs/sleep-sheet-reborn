@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { getCurrentSession } from '@/lib/auth-server'
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardHeaderActions } from "@/components/dashboard-header-actions";
 import { Separator } from "@/components/ui/separator";
@@ -12,7 +14,10 @@ interface DashBoardLayoutProps {
   children: React.ReactNode;
 }
 
-function DashBoardLayout({ children }: DashBoardLayoutProps) {
+async function DashBoardLayout({ children }: DashBoardLayoutProps) {
+  const session = await getCurrentSession()
+  if (!session) redirect('/login')
+
   return (
     <SidebarProvider>
       <AppSidebar />
