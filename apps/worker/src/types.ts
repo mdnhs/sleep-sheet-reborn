@@ -15,7 +15,8 @@ export type HonoEnv = {
     DB: D1Database
     WEB_URL: string
     BETTER_AUTH_SECRET: string
-    JWT_SECRET: string
+    TRUSTED_ORIGINS: string       // comma-separated, e.g. "http://localhost:3000,https://app.example.com"
+    SUPER_ADMIN_EMAIL: string
     CLOUDINARY_CLOUD_NAME: string
     CLOUDINARY_API_KEY: string
     CLOUDINARY_API_SECRET: string

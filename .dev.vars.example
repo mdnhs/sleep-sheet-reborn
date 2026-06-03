@@ -1,20 +1,30 @@
 # Local secrets/vars for `next dev` and `opennextjs-cloudflare preview`.
-# Copy to `.dev.vars` and fill in. In production set these with
+# Copy to `.dev.vars` and fill in values. In production set with
 # `wrangler secret put <NAME>`. (D1 + R2 come from wrangler.jsonc bindings.)
 
-JWT_SECRET="change-me-long-random-string"
+# ── Better Auth (REQUIRED) ──────────────────────────────────────────────────
+# Must be ≥32 chars. Generate: openssl rand -hex 32
+BETTER_AUTH_SECRET="change-me-min-32-chars-long-random-string"
+# Comma-separated allowed origins for CORS + cookie trust
+TRUSTED_ORIGINS="http://localhost:3000"
+# Email of the platform SUPER_ADMIN user
+SUPER_ADMIN_EMAIL="admin@example.com"
 
-# Email — Gmail SMTP via worker-mailer (use a Gmail App Password, not your login)
+# ── URLs ────────────────────────────────────────────────────────────────────
+WEB_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_API_URL="http://localhost:8787"
+
+# ── Email — Gmail SMTP via worker-mailer ────────────────────────────────────
+# Use a Gmail App Password (not your login password)
 NEXT_PUBLIC_EMAIL_USER="you@gmail.com"
 EMAIL_PASS="gmail-app-password"
 
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-
-# Image storage (Cloudinary HTTP API — works on Workers)
+# ── Image storage — Cloudinary ──────────────────────────────────────────────
 CLOUDINARY_CLOUD_NAME=""
 CLOUDINARY_API_KEY=""
 CLOUDINARY_API_SECRET=""
 
-# Steadfast courier
+# ── Steadfast courier (optional) ────────────────────────────────────────────
 STEADFAST_API_KEY=""
 STEADFAST_SECRET_KEY=""

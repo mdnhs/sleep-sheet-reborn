@@ -17,7 +17,12 @@ export type OrgRole =
   | 'DELIVERY_MANAGER'
   | 'EMPLOYEE'
 
-export function createAuth(db: Database) {
+export type AuthOptions = {
+  secret?: string
+  trustedOrigins?: string[]
+}
+
+export function createAuth(db: Database, opts?: AuthOptions) {
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: 'sqlite',
@@ -57,8 +62,8 @@ export function createAuth(db: Database) {
         maxAge: 60 * 5,
       },
     },
-    secret: process.env.BETTER_AUTH_SECRET ?? 'development-secret-change-in-production',
-    trustedOrigins: (process.env.TRUSTED_ORIGINS ?? 'http://localhost:3000').split(','),
+    secret: opts?.secret ?? process.env.BETTER_AUTH_SECRET ?? 'development-secret-change-in-production',
+    trustedOrigins: opts?.trustedOrigins ?? (process.env.TRUSTED_ORIGINS ?? 'http://localhost:3000').split(','),
   })
 }
 

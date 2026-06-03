@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { createAuth } from '@repo/auth'
 import { createDb } from '@repo/database'
+import { validateWorkerEnv } from './env'
 import { tenantMiddleware } from '../middleware/tenant'
 import authRoutes from '../routes/auth'
 import products from '../routes/products'
@@ -30,10 +31,20 @@ app.use('*', cors({
 // Initialize db + resolve tenant on every request
 app.use('*', tenantMiddleware)
 
+// Validate env on first request — throws with descriptive error if vars are missing
+app.use('*', async (c, next) => {
+  validateWorkerEnv(c.env)
+  await next()
+})
+
 // Better Auth handler — intercepts /api/auth/* requests
 app.on(['GET', 'POST'], '/auth/*', async (c) => {
+  const env = validateWorkerEnv(c.env)
   const db = createDb(c.env.DB)
-  const auth = createAuth(db)
+  const auth = createAuth(db, {
+    secret: env.BETTER_AUTH_SECRET,
+    trustedOrigins: env.TRUSTED_ORIGINS.split(',').map((s) => s.trim()),
+  })
   return auth.handler(c.req.raw)
 })
 

@@ -45,7 +45,7 @@ Sprint Status: 🟨 Active
 Status: 🟩 Completed
 - [x] Monorepo Setup (pnpm workspaces — apps/web, apps/worker, packages/*)
 - [x] TypeScript Configuration (tsconfig.base.json + per-package extends)
-- [ ] Environment Configuration (.dev.vars, env validation)
+- [x] Environment Configuration (.dev.vars with all required vars; Zod validation in apps/web/env.ts + apps/worker/src/env.ts)
 
 ## Cloudflare Setup
 Status: 🟨 In Progress

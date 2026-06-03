@@ -1,6 +1,7 @@
 import { createMiddleware } from 'hono/factory'
 import { createAuth } from '@repo/auth'
 import { createDb } from '@repo/database'
+import { validateWorkerEnv } from '../src/env'
 import type { HonoEnv } from '../src/types'
 
 type OrgRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'INVENTORY_MANAGER' | 'PURCHASE_MANAGER' | 'CASHIER' | 'DELIVERY_MANAGER' | 'EMPLOYEE'
@@ -17,8 +18,12 @@ export const requireOrgRole = (...roles: OrgRole[]) =>
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
+    const workerEnv = validateWorkerEnv(c.env)
     const db = c.get('db') ?? createDb(c.env.DB)
-    const auth = createAuth(db)
+    const auth = createAuth(db, {
+      secret: workerEnv.BETTER_AUTH_SECRET,
+      trustedOrigins: workerEnv.TRUSTED_ORIGINS.split(',').map((s) => s.trim()),
+    })
 
     const session = await auth.api.getSession({ headers: c.req.raw.headers })
     const orgMember = await auth.api.getActiveMember({
@@ -39,10 +44,8 @@ export const requirePlatformAdmin = createMiddleware<HonoEnv>(async (c, next) =>
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
-  // TODO: check user has platform SUPER_ADMIN role (from users.platformRole field)
-  // For now, checking email against env var as a bootstrap mechanism
-  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL
-  if (superAdminEmail && user.email !== superAdminEmail) {
+  const { SUPER_ADMIN_EMAIL } = validateWorkerEnv(c.env)
+  if (user.email !== SUPER_ADMIN_EMAIL) {
     return c.json({ error: 'Forbidden' }, 403)
   }
   await next()
