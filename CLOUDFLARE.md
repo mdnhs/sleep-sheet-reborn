@@ -1,7 +1,7 @@
 # Deploying to Cloudflare Workers (D1 + OpenNext)
 
-This app was migrated off Neon (Postgres) to **Cloudflare D1 (SQLite)** and now
-runs on **Workers** via `@opennextjs/cloudflare`. Images go to **Cloudinary**,
+This app runs on **Cloudflare D1 (SQLite)** on **Workers** via
+`@opennextjs/cloudflare`. Images go to **Cloudinary**,
 email uses **Gmail SMTP** via `worker-mailer` (plain nodemailer cannot run on
 Workers).
 
@@ -18,22 +18,18 @@ pnpm db:migrate:remote       # applies migrations to the live D1 db
 # pnpm db:migrate:local      # ...or to the local dev D1 instead
 ```
 
-## Migrate existing Neon data
+## Seed data
 
 ```bash
-# Point at the OLD Postgres db, then generate INSERTs and load them into D1.
-NEON_DATABASE_URL="postgresql://...neon..." npx tsx scripts/migrate-neon-to-d1.ts
+# Load the bundled data dump into D1.
 wrangler d1 execute sleep-sheet-reborn --remote --file=./migrations/data-d1.sql
 ```
 
-Array columns (productImages, tags, …) and the campaign JSON columns are written
-as JSON strings; booleans become 1/0; timestamps become ISO strings.
+Array columns (productImages, tags, …) and the campaign JSON columns are stored
+as JSON strings; booleans as 1/0; timestamps as ISO strings.
 
-> Existing product images were on the local filesystem. New uploads go straight
-> to Cloudinary (absolute `https://res.cloudinary.com/...` URLs). Old image URLs
-> that pointed at `/api/products/images/<file>` no longer resolve — re-upload
-> those products' images, or migrate the files into Cloudinary and update the
-> rows.
+> New image uploads go straight to Cloudinary (absolute
+> `https://res.cloudinary.com/...` URLs).
 
 ## Secrets / vars
 
