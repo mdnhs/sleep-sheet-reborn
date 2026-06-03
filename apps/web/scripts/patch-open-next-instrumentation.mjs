@@ -1,8 +1,20 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
+
+// Resolve the next pnpm dir dynamically — its version is in the folder name,
+// so a hardcoded path breaks on every Next.js bump.
+const pnpmDir = ".open-next/server-functions/default/node_modules/.pnpm";
+const nextInstrumentationTargets = existsSync(pnpmDir)
+  ? readdirSync(pnpmDir)
+      .filter((d) => d.startsWith("next@"))
+      .map(
+        (d) =>
+          `${pnpmDir}/${d}/node_modules/next/dist/server/lib/router-utils/instrumentation-globals.external.js`,
+      )
+  : [];
 
 const targets = [
   ".open-next/server-functions/default/handler.mjs",
-  ".open-next/server-functions/default/node_modules/.pnpm/next@16.2.6_@babel+core@7.29.0_react-dom@19.2.4_react@19.2.4__react@19.2.4/node_modules/next/dist/server/lib/router-utils/instrumentation-globals.external.js",
+  ...nextInstrumentationTargets,
 ];
 
 const dynamicInstrumentationRequire =

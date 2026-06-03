@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [
     "worker-mailer",
     "better-auth",
+    "@better-auth/core",
+    "@better-auth/utils",
     "@better-auth/kysely-adapter",
     "kysely",
   ],
