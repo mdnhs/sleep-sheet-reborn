@@ -11,7 +11,11 @@
     "web:cf:build": "pnpm --filter @repo/web cf:build",
     "web:cf:deploy": "pnpm --filter @repo/web cf:deploy",
     "db:migrate:local": "pnpm --filter @repo/worker db:migrate:local",
-    "db:migrate:remote": "pnpm --filter @repo/worker db:migrate:remote"
+    "db:migrate:remote": "pnpm --filter @repo/worker db:migrate:remote",
+    "secrets:push": "node scripts/push-secrets.mjs",
+    "secrets:push:dry": "node scripts/push-secrets.mjs --dry-run",
+    "secrets:push:api": "node scripts/push-secrets.mjs --api-only",
+    "secrets:push:web": "node scripts/push-secrets.mjs --web-only"
   },
   "devDependencies": {
     "typescript": "^5"
