@@ -3,9 +3,13 @@
   "compilerOptions": {
     "paths": {
       "@repo/database": ["../../packages/database/src/index.ts"],
+      "@repo/database/schema": ["../../packages/database/src/schema/index.ts"],
       "@repo/types": ["../../packages/types/src/index.ts"],
-      "@repo/shared": ["../../packages/shared/src/index.ts"]
-    }
+      "@repo/shared": ["../../packages/shared/src/index.ts"],
+      "@repo/auth": ["../../packages/auth/src/index.ts"],
+      "@repo/tenancy": ["../../packages/tenancy/src/index.ts"]
+    },
+    "types": ["@cloudflare/workers-types"]
   },
   "include": ["src/**/*.ts", "routes/**/*.ts", "services/**/*.ts", "middleware/**/*.ts", "integrations/**/*.ts", "utils/**/*.ts", "repositories/**/*.ts"],
   "exclude": ["node_modules"]

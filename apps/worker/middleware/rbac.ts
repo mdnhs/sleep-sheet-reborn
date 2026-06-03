@@ -1,23 +1,63 @@
-import { createMiddleware } from "hono/factory";
+import { createMiddleware } from 'hono/factory'
+import { createAuth } from '@repo/auth'
+import { createDb } from '@repo/database'
+import type { HonoEnv } from '../src/types'
 
-/**
- * Guards admin-only routes. Must run after `sessionMiddleware` so that
- * `c.get("user")` is populated. Responds 403 when the caller is not an admin.
- */
-export const requireAdmin = createMiddleware(async (c, next) => {
-  const user = c.get("user");
-  if (!user || user.role !== "ADMIN") {
-    return c.json({ success: false, error: "Unauthorized" }, 403);
-  }
-  await next();
-});
+type OrgRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'INVENTORY_MANAGER' | 'PURCHASE_MANAGER' | 'CASHIER' | 'DELIVERY_MANAGER' | 'EMPLOYEE'
 
-/** Guards a route to any of the given roles. Run after `sessionMiddleware`. */
-export const requireRole = (...roles: string[]) =>
-  createMiddleware(async (c, next) => {
-    const user = c.get("user");
-    if (!user || !roles.includes(user.role)) {
-      return c.json({ error: "Unauthorized" }, 403);
+/** Guards org routes to users with any of the given org roles.
+ *  Run after tenantMiddleware + sessionMiddleware.
+ *  Returns 403 (not 404) — role check doesn't leak tenant existence. */
+export const requireOrgRole = (...roles: OrgRole[]) =>
+  createMiddleware<HonoEnv>(async (c, next) => {
+    const user = c.get('user')
+    const tenant = c.get('tenant')
+
+    if (!user || !tenant) {
+      return c.json({ error: 'Unauthorized' }, 401)
     }
-    await next();
-  });
+
+    const db = c.get('db') ?? createDb(c.env.DB)
+    const auth = createAuth(db)
+
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    const orgMember = await auth.api.getActiveMember({
+      headers: c.req.raw.headers,
+    }).catch(() => null)
+
+    if (!orgMember || !roles.includes((orgMember.role as OrgRole))) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
+    await next()
+  })
+
+/** Guards platform-only routes to SUPER_ADMIN.
+ *  Does NOT require tenant context — platform scope is unscoped. */
+export const requirePlatformAdmin = createMiddleware<HonoEnv>(async (c, next) => {
+  const user = c.get('user')
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  // TODO: check user has platform SUPER_ADMIN role (from users.platformRole field)
+  // For now, checking email against env var as a bootstrap mechanism
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL
+  if (superAdminEmail && user.email !== superAdminEmail) {
+    return c.json({ error: 'Forbidden' }, 403)
+  }
+  await next()
+})
+
+/** Require authenticated user (any role). */
+export const requireAuth = createMiddleware<HonoEnv>(async (c, next) => {
+  if (!c.get('user')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  await next()
+})
+
+// Backward-compat aliases for existing route files
+/** @deprecated Use requireOrgRole('OWNER', 'ADMIN') instead */
+export const requireAdmin = requireOrgRole('OWNER', 'ADMIN')
+/** @deprecated Use requireOrgRole(...roles) instead */
+export const requireRole = (...roles: OrgRole[]) => requireOrgRole(...roles)

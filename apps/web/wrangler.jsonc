@@ -10,5 +10,12 @@
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sleep-sheet-reborn",
+			"database_id": "8576bc91-1a4c-402c-a198-056eac70b959"
+		}
+	]
 }

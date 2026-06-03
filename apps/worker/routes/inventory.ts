@@ -24,7 +24,7 @@ import {
   listBatches,
 } from "../services/inventory.service";
 
-const requireStaff = requireRole("ADMIN", "MODERATOR");
+const requireStaff = requireRole("ADMIN", "MANAGER");
 
 function fail(c: Context, error: unknown, msg: string) {
   if (isServiceError(error)) return c.json({ success: false, error: error.message }, error.status);

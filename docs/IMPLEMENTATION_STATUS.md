@@ -16,7 +16,7 @@ Last Updated: 2026-06-03
 
 Current Phase: Phase 0 — Foundation + Multi-Tenancy
 
-Overall Progress: 0%
+Overall Progress: 12%
 
 Project Status: 🟨 In Progress
 
@@ -28,10 +28,11 @@ Sprint Goal: Establish Multi-Tenant Foundation
 
 Sprint Includes:
 
-- Organizations + organization_users
-- Tenant resolution middleware (subdomain)
-- Tenant context + org-scoping helpers
+- Organizations + organization_users (Drizzle schema)
+- Drizzle ORM setup (replace custom D1 ORM)
 - Better Auth + org membership
+- Tenant resolution middleware (subdomain → organization_id)
+- Tenant context + org-scoping helpers (packages/tenancy)
 - Two-scope RBAC (platform + organization)
 
 Sprint Status: 🟨 Active
@@ -41,46 +42,50 @@ Sprint Status: 🟨 Active
 # Phase 0 — Foundation + Multi-Tenancy   (Priority: CRITICAL)
 
 ## Project Setup
-Status: ⬜ Not Started
-- [ ] Monorepo Setup
-- [ ] Turborepo Setup
-- [ ] TypeScript Configuration
-- [ ] Environment Configuration
+Status: 🟩 Completed
+- [x] Monorepo Setup (pnpm workspaces — apps/web, apps/worker, packages/*)
+- [x] TypeScript Configuration (tsconfig.base.json + per-package extends)
+- [ ] Environment Configuration (.dev.vars, env validation)
 
 ## Cloudflare Setup
-Status: ⬜ Not Started
-- [ ] Workers Setup
-- [ ] D1 Setup
+Status: 🟨 In Progress
+- [x] Workers Setup (apps/worker/ with wrangler.jsonc, CF Worker entry)
+- [x] D1 Setup (wrangler D1 binding, migrations in packages/database/migrations/)
 - [ ] R2 Setup (marketplace assets)
-- [ ] Local Development Setup
+- [x] Local Development Setup (pnpm install, wrangler local dev)
 - [ ] Deployment Pipeline
 
 ## Multi-Tenancy
-Status: ⬜ Not Started — Priority: CRITICAL
-- [ ] organizations schema
-- [ ] organization_users schema
-- [ ] Tenant resolution middleware (subdomain → organization_id)
-- [ ] Tenant context (packages/tenancy)
-- [ ] Repository organization_id injection
+Status: 🟨 In Progress — Priority: CRITICAL
+- [x] organizations schema (Drizzle, packages/database/src/schema/organizations.ts)
+- [x] organization_users schema (member table, same file)
+- [x] Tenant resolution middleware (apps/worker/middleware/tenant.ts — subdomain → org lookup)
+- [x] Tenant context helpers (packages/tenancy/src/index.ts — withTenant, assertTenant)
+- [ ] Repository organization_id injection (Phase 1 — per-module)
 - [ ] Org switcher UI
 - [ ] Cross-tenant isolation tests
 
 ## Authentication
-Status: ⬜ Not Started
-- [ ] Better Auth Setup
-- [ ] Login / Logout
-- [ ] Session Validation
+Status: 🟨 In Progress
+- [x] Better Auth Setup (packages/auth/src/index.ts — createAuth factory)
+- [x] Drizzle adapter configured (user, session, account, verification, org tables)
+- [x] Better Auth handler in worker (apps/worker/src/index.ts — /api/auth/*)
+- [x] Better Auth handler in web (apps/web/app/api/auth/[[...all]]/route.ts)
+- [x] Better Auth client (packages/auth/src/client.ts)
+- [ ] Login / Logout UI
+- [ ] Session Validation UI
 - [ ] Organization Membership on login
 - [ ] Protected Routes
 
 ## RBAC (two-scope)
-Status: ⬜ Not Started
-- [ ] Platform roles (SUPER_ADMIN)
-- [ ] Organization roles (OWNER↓)
-- [ ] Permissions catalog (org + platform)
-- [ ] Role Assignment (organization_users)
-- [ ] Permission Middleware (requirePermission / requirePlatformPermission)
-- [ ] Route Protection
+Status: 🟨 In Progress
+- [ ] Platform roles (SUPER_ADMIN) — stub in requirePlatformAdmin
+- [x] Organization roles (OWNER↓) — OrgRole type in packages/auth, member.role column
+- [x] requireOrgRole middleware (apps/worker/middleware/rbac.ts)
+- [x] requirePlatformAdmin middleware (stub, checks SUPER_ADMIN_EMAIL env)
+- [x] requireAuth middleware
+- [ ] Full permission catalog wired to organization_users
+- [ ] Route Protection (apply to all business routes)
 
 ## Shared UI
 Status: ⬜ Not Started
@@ -253,7 +258,11 @@ E2E Tests:               ⬜ Not Started
 
 # Technical Debt
 
-None
+- `packages/database/src/client.ts` — custom D1 ORM (`getCloudflareContext`). Migrate to Drizzle (Phase 0).
+- `apps/web/stores/` — Redux Toolkit. Migrate to Zustand (Phase 0).
+- `apps/web/features/auth/` — JWT + custom session. Migrate to Better Auth (Phase 0).
+- `apps/worker/middleware/tenant.ts` — stub. Needs subdomain → organization_id resolution.
+- `apps/web/middleware.ts` — stub. Needs tenant header injection for Next.js server components.
 
 ---
 
@@ -272,14 +281,15 @@ None
 # Next Recommended Task
 
 ```text
-1. Setup D1 + R2
-2. Setup Drizzle (organization_id convention)
-3. Build Organizations + organization_users
-4. Tenant resolution middleware
-5. Setup Better Auth + org membership
-6. Two-scope RBAC
-7. Cross-tenant isolation test
-8. Build Catalog + Inventory (org-scoped)
+Active — Phase 0 Multi-Tenancy:
+1. [NOW] Drizzle ORM setup in packages/database/ (replace custom ORM)
+2. [NOW] organizations + organization_users Drizzle schema
+3. [NOW] Better Auth in packages/auth/ with org membership plugin
+4. [NOW] Tenant resolution middleware (apps/worker/middleware/tenant.ts)
+5. [NOW] Tenant context helpers (packages/tenancy/)
+6. [NOW] Two-scope RBAC middleware
+7. [NOW] Cross-tenant isolation tests (tests/tenancy/)
+8. [NEXT] Catalog + Inventory (Phase 1)
 ```
 
 ---

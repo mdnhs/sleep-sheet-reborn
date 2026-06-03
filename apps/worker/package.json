@@ -10,18 +10,22 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
+    "@opennextjs/cloudflare": "^1.19.11",
+    "@repo/database": "workspace:*",
+    "@repo/shared": "workspace:*",
+    "@repo/types": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "better-auth": "^1.6.14",
+    "cuid": "^3.0.0",
+    "date-fns": "^4.1.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.18",
     "jsonwebtoken": "^9.0.3",
     "uuid": "^14.0.0",
     "worker-mailer": "^1.2.1",
     "zod": "^4.4.3",
-    "@repo/database": "workspace:*",
-    "@repo/types": "workspace:*",
-    "@repo/shared": "workspace:*",
-    "date-fns": "^4.1.0",
-    "cuid": "^3.0.0",
-    "@opennextjs/cloudflare": "^1.19.11"
+    "@repo/auth": "workspace:*",
+    "@repo/tenancy": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260602.1",

@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import auth from '../routes/auth'
+import { createAuth } from '@repo/auth'
+import { createDb } from '@repo/database'
+import { tenantMiddleware } from '../middleware/tenant'
+import authRoutes from '../routes/auth'
 import products from '../routes/products'
 import dashboard from '../routes/dashboard'
 import categories from '../routes/categories'
@@ -15,16 +18,27 @@ import analytics from '../routes/analytics'
 import steadfast from '../routes/steadfast'
 import settings from '../routes/settings'
 import inventory from '../routes/inventory'
+import type { HonoEnv } from './types'
 
-const app = new Hono().basePath('/api')
+const app = new Hono<HonoEnv>().basePath('/api')
 
 app.use('*', cors({
   origin: (origin) => origin,
   credentials: true,
 }))
 
+// Initialize db + resolve tenant on every request
+app.use('*', tenantMiddleware)
+
+// Better Auth handler — intercepts /api/auth/* requests
+app.on(['GET', 'POST'], '/auth/*', async (c) => {
+  const db = createDb(c.env.DB)
+  const auth = createAuth(db)
+  return auth.handler(c.req.raw)
+})
+
 const routes = app
-  .route('/auth', auth)
+  .route('/auth', authRoutes)
   .route('/products', products)
   .route('/product', dashboard)
   .route('/categories', categories)

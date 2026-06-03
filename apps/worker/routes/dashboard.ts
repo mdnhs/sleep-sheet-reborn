@@ -35,7 +35,7 @@ app
     }
   });
 
-app.delete("/:id", sessionMiddleware, requireRole("ADMIN", "MODERATOR"), async (c) => {
+app.delete("/:id", sessionMiddleware, requireRole("ADMIN", "MANAGER"), async (c) => {
   try {
     return c.json(await deleteProduct(c.req.param("id")));
   } catch (error) {
