@@ -1,22 +1,15 @@
+"use client";
+
 import { useQuery } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth-client";
 
-import { client } from "@/lib/rpc";
-
-
-export const useCurrent= ()=>{
-    const query =useQuery({
-        queryKey:["current"],
-        queryFn:async()=>{
-            const response = await client.api.auth.current.$get();
-            if(!response.ok){
-                return null;
-            }
-
-            const {data}= await response.json();
-
-            return data;
-        }
-
-    })
-    return query;
-}
+export const useCurrent = () => {
+  const query = useQuery({
+    queryKey: ["current"],
+    queryFn: async () => {
+      const res = await authClient.getSession();
+      return res?.data?.user ?? null;
+    },
+  });
+  return query;
+};

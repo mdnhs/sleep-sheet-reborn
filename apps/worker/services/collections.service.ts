@@ -1,7 +1,4 @@
-import { parseStringArray } from "@repo/database";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import type { D1Database } from "@cloudflare/workers-types";
-import { ServiceError } from "../utils/service-error";
+import { parseStringArray, resolveD1 } from "@repo/database";
 
 type CollectionRow = {
   id: string;
@@ -13,9 +10,7 @@ type CollectionRow = {
 };
 
 export async function getCollections() {
-  const { env } = getCloudflareContext();
-  const db = (env as { DB?: D1Database }).DB;
-  if (!db) throw new ServiceError("D1 binding `DB` not found", 500);
+  const db = resolveD1();
 
   const { results } = await db
     .prepare(

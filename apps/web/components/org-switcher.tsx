@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +20,22 @@ import { IconBuilding, IconChevronDown, IconPlus } from '@tabler/icons-react'
 
 export function OrgSwitcher() {
   const router = useRouter()
-  const { data: orgs } = authClient.useListOrganizations()
-  const { data: activeOrg } = authClient.useActiveOrganization()
+
+  const { data: orgs } = useQuery({
+    queryKey: ['organizations'],
+    queryFn: async () => {
+      const res = await authClient.organization.list()
+      return res?.data ?? []
+    },
+  })
+
+  const { data: activeOrg } = useQuery({
+    queryKey: ['active-organization'],
+    queryFn: async () => {
+      const res = await authClient.organization.getFullOrganization()
+      return res?.data ?? null
+    },
+  })
 
   async function switchOrg(orgId: string) {
     await authClient.organization.setActive({ organizationId: orgId })

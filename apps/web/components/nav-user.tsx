@@ -22,16 +22,23 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { IconSelector, IconRosetteDiscountCheck, IconBell, IconLogout } from "@tabler/icons-react"
+import { useQuery } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
 
 export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const { data: session } = authClient.useSession()
+  const { data: sessionUser } = useQuery({
+    queryKey: ['current'],
+    queryFn: async () => {
+      const res = await authClient.getSession()
+      return res?.data?.user ?? null
+    },
+  })
 
-  const name = session?.user.name ?? '—'
-  const email = session?.user.email ?? ''
-  const image = session?.user.image ?? ''
+  const name = sessionUser?.name ?? '—'
+  const email = sessionUser?.email ?? ''
+  const image = sessionUser?.image ?? ''
 
   async function handleLogout() {
     await authClient.signOut()

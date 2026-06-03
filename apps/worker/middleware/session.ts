@@ -14,6 +14,7 @@ export const sessionMiddleware = createMiddleware<HonoEnv>(async (c, next) => {
   const auth = createAuth(db, {
     secret: workerEnv.BETTER_AUTH_SECRET,
     trustedOrigins: workerEnv.TRUSTED_ORIGINS.split(',').map((s) => s.trim()),
+    baseURL: new URL(c.req.url).origin,
   })
   const session = await auth.api.getSession({ headers: c.req.raw.headers })
 
@@ -23,12 +24,14 @@ export const sessionMiddleware = createMiddleware<HonoEnv>(async (c, next) => {
     return await next()
   }
 
+  const u = session.user as Record<string, unknown>
   c.set('user', {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
-    phone: (session.user as Record<string, unknown>).phone as string | null ?? null,
-    address: (session.user as Record<string, unknown>).address as string | null ?? null,
+    role: (u.role as string) ?? 'USER',
+    phone: (u.phone as string | null) ?? null,
+    address: (u.address as string | null) ?? null,
   })
 
   // Resolve org membership for the subdomain-resolved tenant.

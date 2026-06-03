@@ -1,12 +1,11 @@
-import SignUpClientLoader from "./sign-up-client-loader";
 import { redirect } from "next/navigation";
 import React from "react";
+import { getCurrentSession } from "@/lib/auth-server";
+import SignUpClientLoader from "./sign-up-client-loader";
 
 async function SignUpPage() {
-  const user = await getCurrentUser();
-  if (user) {
-    redirect("/");
-  }
+  const session = await getCurrentSession();
+  if (session) redirect("/");
   return <SignUpClientLoader />;
 }
 

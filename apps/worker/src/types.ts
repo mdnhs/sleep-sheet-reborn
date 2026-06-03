@@ -5,6 +5,7 @@ export type User = {
   id: string
   email: string
   name: string
+  role: string         // legacy single-user role (storefront routes); org roles use orgRole
   phone: string | null
   address: string | null
 }

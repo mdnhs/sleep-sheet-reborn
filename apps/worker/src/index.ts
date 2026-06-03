@@ -48,6 +48,7 @@ app.on(['GET', 'POST'], '/auth/*', async (c) => {
   const auth = createAuth(db, {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: env.TRUSTED_ORIGINS.split(',').map((s) => s.trim()),
+    baseURL: new URL(c.req.url).origin,
   })
   return auth.handler(c.req.raw)
 })

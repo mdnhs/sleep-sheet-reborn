@@ -1,14 +1,11 @@
-import SignInClientLoader from "./sign-in-client-loader";
 import { redirect } from "next/navigation";
 import React from "react";
+import { getCurrentSession } from "@/lib/auth-server";
+import SignInClientLoader from "./sign-in-client-loader";
 
 async function SignInPage() {
-  const user = await getCurrentUser();
-  if (user) {
-    redirect(
-      user.role === "ADMIN" || user.role === "MODERATOR" ? "/dashboard" : "/"
-    );
-  }
+  const session = await getCurrentSession();
+  if (session) redirect("/");
 
   return <SignInClientLoader />;
 }

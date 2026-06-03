@@ -20,10 +20,12 @@ export type OrgRole =
 export type AuthOptions = {
   secret?: string
   trustedOrigins?: string[]
+  baseURL?: string
 }
 
 export function createAuth(db: Database, opts?: AuthOptions) {
   return betterAuth({
+    baseURL: opts?.baseURL ?? process.env.BETTER_AUTH_URL ?? process.env.WEB_URL,
     database: drizzleAdapter(db, {
       provider: 'sqlite',
       schema: {

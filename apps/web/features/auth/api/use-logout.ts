@@ -1,35 +1,28 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InferResponseType } from "hono";
+"use client";
 
-import { client } from "@/lib/rpc";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 
-type ResponseType= InferResponseType<typeof client.api.auth.logout["$post"]>
+export const useLogout = () => {
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
+  const mutation = useMutation<void, Error>({
+    mutationFn: async () => {
+      await authClient.signOut();
+    },
+    onSuccess: () => {
+      toast.success("Logged out");
+      queryClient.invalidateQueries({ queryKey: ["current"] });
+      router.push("/signin");
+      router.refresh();
+    },
+    onError: () => {
+      toast.error("Failed to log out");
+    },
+  });
 
-export const useLogout =()=>{
-
-    const router = useRouter();
-    const queryclient = useQueryClient();
-    const mutation= useMutation<ResponseType,Error>({
-        mutationFn:async()=>{
-            const response = await client.api.auth.logout["$post"]();
-            if(!response.ok){
-                throw new Error("Failed to log out");
-            }
-            return await response.json();
-
-        },
-        onSuccess:()=>{
-            toast.success("Logged out");
-            router.refresh();
-            queryclient.invalidateQueries({queryKey:["current"]});
-            // queryclient.invalidateQueries({queryKey:["workspaces"]});
-        },
-        onError:()=>{
-            toast.error("Failed to log out");
-        }
-    })
-    return mutation;
-}
+  return mutation;
+};

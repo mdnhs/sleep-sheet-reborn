@@ -84,11 +84,28 @@ function map(fields: string[]) {
   return Object.fromEntries(fields.map((field) => [field, field]));
 }
 
-function getDb(): D1Database {
+/** Worker (Hono) sets this in middleware so the legacy ORM works outside Next.js.
+ *  Next.js still resolves DB via getCloudflareContext(). Remove once all
+ *  services migrate to Drizzle (packages/database/src/db.ts). */
+export function setWorkerD1(db: D1Database) {
+  (globalThis as { __WORKER_D1__?: D1Database }).__WORKER_D1__ = db;
+}
+
+/** Resolves the raw D1 binding in either context (Worker or Next.js).
+ *  Use this instead of calling getCloudflareContext() directly in services. */
+export function resolveD1(): D1Database {
+  // Worker context (no OpenNext): use the binding stashed by middleware.
+  const workerDb = (globalThis as { __WORKER_D1__?: D1Database }).__WORKER_D1__;
+  if (workerDb) return workerDb;
+
   const { env } = getCloudflareContext();
   const db = (env as { DB?: D1Database }).DB;
   if (!db) throw new Error("D1 binding `DB` not found");
   return db;
+}
+
+function getDb(): D1Database {
+  return resolveD1();
 }
 
 function q(name: string) {

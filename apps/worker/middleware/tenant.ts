@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory'
-import { createDb } from '@repo/database'
+import { createDb, setWorkerD1 } from '@repo/database'
 import { eq } from 'drizzle-orm'
 import { organization } from '@repo/database/schema'
 import type { HonoEnv } from '../src/types'
@@ -17,6 +17,9 @@ function extractSlug(host: string): string | null {
 export const tenantMiddleware = createMiddleware<HonoEnv>(async (c, next) => {
   const db = createDb(c.env.DB)
   c.set('db', db)
+  // Expose the D1 binding to the legacy custom ORM (client.ts) which can't
+  // use getCloudflareContext() inside a plain Worker.
+  setWorkerD1(c.env.DB)
 
   const host = c.req.header('host') ?? ''
   const slug = extractSlug(host)
