@@ -10,7 +10,7 @@
     "worker:deploy": "pnpm --filter @repo/worker deploy",
     "cf:build": "pnpm --filter @repo/web cf:build",
     "cf:deploy": "pnpm --filter @repo/web cf:deploy",
-    "deploy": "pnpm run cf:deploy & pnpm run worker:deploy && wait",
+    "deploy:all": "pnpm run cf:deploy & pnpm run worker:deploy && wait",
     "build:all": "pnpm run build & pnpm run cf:build && wait",
     "web:cf:build": "pnpm --filter @repo/web cf:build",
     "web:cf:deploy": "pnpm --filter @repo/web cf:deploy",
