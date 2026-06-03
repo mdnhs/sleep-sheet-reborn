@@ -5,7 +5,7 @@ import { env } from '@/env'
 
 async function getAuth() {
   const { env: cfEnv } = await getCloudflareContext({ async: true })
-  const db = createDb(cfEnv.DB as D1Database)
+  const db = createDb(cfEnv.DB)
   return createAuth(db, {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: env.TRUSTED_ORIGINS?.split(',').map((s) => s.trim()),

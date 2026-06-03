@@ -51,7 +51,9 @@ export const UserButton = () => {
           router.push("/login");
           router.refresh();
         },
-        onError: () => toast.error("Failed to log out"),
+        onError: () => {
+          toast.error("Failed to log out");
+        },
       },
     });
   }

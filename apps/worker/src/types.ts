@@ -1,5 +1,6 @@
 import type { Database, Organization } from '@repo/database'
 import type { OrgRole } from '@repo/permissions'
+import type { D1Database, R2Bucket } from '@cloudflare/workers-types'
 
 export type User = {
   id: string

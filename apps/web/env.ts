@@ -1,5 +1,39 @@
 import { z } from 'zod'
 
+// Next.js doesn't read wrangler's .dev.vars. During local dev/build (Node),
+// load it into process.env so server modules + Turbopack workers see the vars.
+// On Cloudflare the file is absent; build/runtime vars come from the platform.
+function loadDevVars() {
+  if (process.env.BETTER_AUTH_SECRET) return // already populated
+  if (typeof process === 'undefined' || !process.versions?.node) return
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('node:fs') as typeof import('node:fs')
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require('node:path') as typeof import('node:path')
+    for (const p of [
+      path.resolve(process.cwd(), '.dev.vars'),
+      path.resolve(process.cwd(), '../../.dev.vars'),
+    ]) {
+      if (!fs.existsSync(p)) continue
+      for (const line of fs.readFileSync(p, 'utf-8').split('\n')) {
+        const t = line.trim()
+        if (!t || t.startsWith('#')) continue
+        const i = t.indexOf('=')
+        if (i === -1) continue
+        const k = t.slice(0, i).trim()
+        const v = t.slice(i + 1).trim().replace(/^["']|["']$/g, '')
+        if (k && !(k in process.env)) process.env[k] = v
+      }
+      break
+    }
+  } catch {
+    // ignore — validation below surfaces missing vars
+  }
+}
+
+loadDevVars()
+
 const serverSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be ≥32 chars'),
   TRUSTED_ORIGINS: z.string().min(1).optional(),

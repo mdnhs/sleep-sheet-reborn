@@ -7,7 +7,7 @@
     "start": "pnpm --filter @repo/web start",
     "lint": "pnpm --filter @repo/web lint",
     "worker:dev": "pnpm --filter @repo/worker dev",
-    "worker:deploy": "pnpm --filter @repo/worker deploy",
+    "worker:deploy": "pnpm --filter @repo/worker run deploy",
     "cf:build": "pnpm --filter @repo/web cf:build",
     "cf:deploy": "pnpm --filter @repo/web cf:deploy",
     "release": "pnpm run cf:deploy & pnpm run worker:deploy && wait",

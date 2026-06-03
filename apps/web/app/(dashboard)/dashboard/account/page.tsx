@@ -1,6 +1,12 @@
 import React from "react"
+import { redirect } from "next/navigation"
+import { getCurrentSession } from "@/lib/auth-server"
 
 async function AccountPage() {
+  const session = await getCurrentSession()
+  if (!session) redirect("/login")
+
+  const { name, email } = session.user
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -12,9 +18,8 @@ async function AccountPage() {
         <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
           <h2 className="text-lg font-semibold mb-2">Profile Information</h2>
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Name: <span className="text-foreground font-medium">{user.name}</span></p>
-            <p className="text-sm text-muted-foreground">Email: <span className="text-foreground font-medium">{user.email}</span></p>
-            <p className="text-sm text-muted-foreground">Role: <span className="text-foreground font-medium">{user.role}</span></p>
+            <p className="text-sm text-muted-foreground">Name: <span className="text-foreground font-medium">{name}</span></p>
+            <p className="text-sm text-muted-foreground">Email: <span className="text-foreground font-medium">{email}</span></p>
           </div>
         </div>
       </div>

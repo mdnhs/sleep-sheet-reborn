@@ -1,6 +1,9 @@
 // Minimal binding/var types for getCloudflareContext().env.
 // Regenerate the full version anytime with: pnpm cf-typegen
 // Using declare global so this merges with @opennextjs/cloudflare's global CloudflareEnv.
+// Import CF types instead of relying on the @cloudflare/workers-types global lib,
+// so the web app keeps the DOM Response type (Response.json() → any).
+import type { D1Database, Fetcher, R2Bucket } from '@cloudflare/workers-types'
 
 declare global {
   interface CloudflareEnv {

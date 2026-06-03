@@ -52,7 +52,7 @@ export default function TrackOrderPage() {
 
     try {
       const res = await fetch(`/api/orders/by-phone?phone=${encodeURIComponent(phone.trim())}`);
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; orders?: Order[] };
 
       if (!res.ok) {
         setError(data.error || "Failed to fetch orders");

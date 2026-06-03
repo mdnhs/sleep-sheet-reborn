@@ -28,7 +28,7 @@ async function DashBoardLayout({ children }: DashBoardLayoutProps) {
   const activeOrgId = (session.session as Record<string, unknown>).activeOrganizationId as string | null | undefined
   if (activeOrgId) {
     const { env: cfEnv } = await getCloudflareContext({ async: true })
-    const db = createDb(cfEnv.DB as D1Database)
+    const db = createDb(cfEnv.DB)
     activeOrg = await db.query.organization.findFirst({
       where: eq(organization.id, activeOrgId),
     })
