@@ -39,6 +39,14 @@ type LineItem = {
   price: number;
 };
 
+type CartItemRow = {
+  productId: string;
+  quantity: number;
+  size: string | null;
+  color: string | null;
+  product: { stock: number; name: string; price: number };
+};
+
 type PlaceOrderInput = {
   user: SessionUser | null;
   shippingInfo: ShippingInfo;
@@ -100,7 +108,7 @@ async function buildItemsForUser(userId: string): Promise<LineItem[]> {
     throw new ServiceError("Cart is empty");
   }
 
-  return cart.items.map((item: any) => {
+  return (cart.items as CartItemRow[]).map((item) => {
     if (item.product.stock < item.quantity) {
       throw new ServiceError(`Insufficient stock for ${item.product.name}`);
     }
@@ -122,10 +130,10 @@ async function buildItemsForGuest(guestItems: GuestItem[]): Promise<LineItem[]> 
   const products = await db.product.findMany({
     where: { id: { in: guestItems.map((i) => i.productId) } },
   });
-  const productMap = new Map(products.map((p: any) => [p.id, p]));
+  const productMap = new Map(products.map((p) => [p.id, p]));
 
   return guestItems.map((item) => {
-    const product: any = productMap.get(item.productId);
+    const product = productMap.get(item.productId);
     if (!product) throw new ServiceError("Product not found");
     if (product.stock < item.quantity) {
       throw new ServiceError(`Insufficient stock for ${product.name}`);

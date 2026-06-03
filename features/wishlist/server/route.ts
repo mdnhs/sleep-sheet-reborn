@@ -1,149 +1,43 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { z } from "zod";
-import db from '@/lib/db';
-import { parseStringArray } from '@/lib/json-fields';
+import { isServiceError } from "@/lib/service-error";
+import { addToWishlist, getWishlist, removeFromWishlist } from "./wishlist.service";
 
-type WishlistRelationItem = {
-  id: string;
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    images: string;
-  };
-};
+const WishlistSchema = z.object({ productId: z.string().min(1) });
 
-
-
-const WishlistSchema = z.object({
-    productId: z.string().min(1),
-  });
-  
 const app = new Hono()
-.post("/",sessionMiddleware,async(c)=>{
+
+  .post("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user) {
-        return c.json(
-          { success: false, error: "UnAuthorized" }, 
-          403
-        );
-      }
+    if (!user) return c.json({ success: false, error: "UnAuthorized" }, 403);
 
-      const body = await c.req.json();
+    const parsed = WishlistSchema.safeParse(await c.req.json());
+    if (!parsed.success) return c.json({ success: false, error: "invalid Input" }, 400);
 
-    
-      const parsed = WishlistSchema.safeParse(body);
-      if(!parsed.success){
-        return c.json({success:false, error:"invalid Input"},400)
-      }
-
-      const {productId}= parsed.data;
-
-      let wishlist = await db?.wishlist.findUnique({
-        where:{userId:user.id}
-      });
-
-      if (!wishlist) {
-        wishlist = await db?.wishlist.create({
-          data: { userId: user.id },
-        });
-      }
-
-      const existingItem = await db?.wishlistItem.findUnique({
-        where: {
-          wishlistId_productId: {
-            wishlistId: wishlist?.id as string,
-            productId,
-          },
-        },
-      });
-
-      if (existingItem) {
-        return c.json({ success: false, message: "Product already in wishlist" });
-      }
-
-      await db?.wishlistItem.create({
-        data: {
-          wishlistId: wishlist?.id as string,
-          productId,
-        },
-      });
-
-      return c.json({ success: true, message: "Product added to wishlist" });
-})
-
-.get("/", sessionMiddleware, async (c) => {
-    const user = c.get("user");
-    if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
-  
-    const wishlist = await db.wishlist.findUnique({
-      where: { userId: user.id },
-      include: {
-        items: {
-          select: {
-            id: true,
-            product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                images: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const response = wishlist ? {
-      success: true,
-      data: {
-        wishlistId: wishlist.id,
-        items: (wishlist.items as WishlistRelationItem[]).map((item) => ({
-          id: item.id,
-          product: { ...item.product, images: parseStringArray(item.product.images) },
-        })),
-      }
-    } : { success: false, error: "No wishlist found" };
-  
-    return c.json(response);
+    return c.json(await addToWishlist(user.id, parsed.data.productId));
   })
-  
-   .delete("/", sessionMiddleware, async (c) => {
+
+  .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
-  
-    const body = await c.req.json();
-    const parsed = WishlistSchema.safeParse(body);
-    if (!parsed.success) return c.json({ success: false, error: "Invalid input" }, 400);
-  
-    const { productId } = parsed.data;
-  
-    const wishlist = await db.wishlist.findUnique({
-      where: { userId: user.id },
-    });
-  
-    if (!wishlist) {
-      return c.json({ success: false, error: "Wishlist not found" }, 404);
-    }
-  
-    await db.wishlistItem.deleteMany({
-      where: {
-        wishlistId: wishlist.id,
-        productId,
-      },
-    });
-  
-    return c.json({ success: true, message: "Product removed from wishlist" });
-  });
-  
-  export default app;
 
-  
-  
-  
-  
-  
-  
-  
+    return c.json(await getWishlist(user.id));
+  })
+
+  .delete("/", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
+
+    const parsed = WishlistSchema.safeParse(await c.req.json());
+    if (!parsed.success) return c.json({ success: false, error: "Invalid input" }, 400);
+
+    try {
+      return c.json(await removeFromWishlist(user.id, parsed.data.productId));
+    } catch (error) {
+      if (isServiceError(error)) return c.json({ success: false, error: error.message }, error.status);
+      throw error;
+    }
+  });
+
+export default app;

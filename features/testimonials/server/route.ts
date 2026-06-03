@@ -1,22 +1,15 @@
-import { Hono } from 'hono'
-import db from '@/lib/db'
+import { Hono } from "hono";
+import { getTestimonials } from "./testimonials.service";
 
 const app = new Hono()
 
-.get('/', async (c) => {
-  try {
-    const testimonials = await db.testimonial.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 3,  
-    })
+  .get("/", async (c) => {
+    try {
+      return c.json(await getTestimonials());
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return c.json({ success: false, message: "Failed to fetch testimonials", error: errorMessage }, 500);
+    }
+  });
 
-    return c.json({ success: true, testimonials })
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return c.json({ success: false, message: 'Failed to fetch testimonials', error: errorMessage }, 500)
-  }
-})
-
-export default app
+export default app;
