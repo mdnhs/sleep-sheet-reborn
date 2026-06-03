@@ -25,6 +25,7 @@ export interface Review {
     sizes: string[];
     tags: string[];
     stock: number;
+    lowStockThreshold?: number;
     categoryLabel: string;
     rating?: number;
     reviewCount?: number;

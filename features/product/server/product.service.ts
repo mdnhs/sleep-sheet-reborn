@@ -46,6 +46,7 @@ export async function getProductById(id: string): Promise<{ formattedProduct: Pr
     description: product.description,
     price: product.price,
     stock: product.stock,
+    lowStockThreshold: product.lowStockThreshold ?? 5,
     sku: product.sku,
     tags: parseStringArray(product.tags),
     images: parseStringArray(product.images),

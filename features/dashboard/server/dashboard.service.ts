@@ -26,6 +26,9 @@ function parseProductFields(formData: FormData, imageUrls: string[]) {
     description: formData.get("productDescription") as string,
     price: Number(formData.get("productPrice")),
     stock: Number(formData.get("productStock")),
+    lowStockThreshold: formData.get("lowStockThreshold") != null
+      ? Number(formData.get("lowStockThreshold"))
+      : 5,
     sku: formData.get("productSKU") as string,
     variants: serializeStringArray(JSON.parse(formData.get("productVariants") as string)),
     tags: serializeStringArray(JSON.parse(formData.get("productTags") as string)),
@@ -61,6 +64,7 @@ export async function createProduct(formData: FormData) {
     productDescription: product.description,
     productPrice: product.price,
     productStock: product.stock,
+    lowStockThreshold: product.lowStockThreshold ?? 5,
     productSKU: product.sku,
     productVariants: parseStringArray(product.variants),
     productTags: parseStringArray(product.tags),

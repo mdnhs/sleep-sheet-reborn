@@ -47,9 +47,20 @@ const models = {
       createdAt: "createdAt",
       updatedAt: "updatedAt",
       isFeatured: "productIsFeatured",
+      lowStockThreshold: "lowStockThreshold",
     },
     bools: ["isFeatured"],
     dates: ["createdAt", "updatedAt"],
+  },
+  inventoryBatch: {
+    table: "inventory_batches",
+    fields: map(["id", "productId", "batchNumber", "quantity", "initialQuantity", "costPrice", "supplierName", "manufactureDate", "expiryDate", "receivedAt", "createdAt", "updatedAt"]),
+    dates: ["manufactureDate", "expiryDate", "receivedAt", "createdAt", "updatedAt"],
+  },
+  inventoryMovement: {
+    table: "inventory_movements",
+    fields: map(["id", "productId", "batchId", "type", "quantity", "reason", "reference", "unitCost", "note", "createdBy", "createdAt"]),
+    dates: ["createdAt"],
   },
   campaign: { table: "campaigns", fields: map(["id", "title", "slug", "headline", "subheadline", "badgeLabel", "ctaLabel", "layout", "pageLayout", "startsAt", "endsAt", "status", "productId", "createdAt", "updatedAt"]), dates: ["startsAt", "endsAt", "createdAt", "updatedAt"] },
   review: { table: "product_reviews", fields: map(["id", "comment", "rating", "userId", "productId", "createdAt", "updatedAt"]), dates: ["createdAt", "updatedAt"] },
@@ -229,6 +240,11 @@ async function hydrate(model: keyof typeof models, item: any, include?: AnyRecor
     if (include.OrderTimelineEvent) item.OrderTimelineEvent = await db.orderTimelineEvent.findMany({ where: { orderId: item.id }, orderBy: include.OrderTimelineEvent.orderBy });
   }
   if (model === "orderItem" && include.product) item.product = item.productId ? await db.product.findUnique({ where: { id: item.productId } }) : null;
+  if (model === "inventoryMovement") {
+    if (include.product) item.product = item.productId ? await db.product.findUnique({ where: { id: item.productId } }) : null;
+    if (include.batch) item.batch = item.batchId ? await db.inventoryBatch.findUnique({ where: { id: item.batchId } }) : null;
+  }
+  if (model === "inventoryBatch" && include.product) item.product = item.productId ? await db.product.findUnique({ where: { id: item.productId } }) : null;
   return item;
 }
 
@@ -299,6 +315,14 @@ function modelClient(model: keyof typeof models): ModelClient {
         await getDb()
           .prepare(`UPDATE ${q(config.table)} SET ${q(toColumn(config, "stock"))} = MAX(0, ${q(toColumn(config, "stock"))} - ?), ${q(toColumn(config, "updatedAt"))} = ?${where.sql ? ` WHERE ${where.sql}` : ""}`)
           .bind(Number(args.data.stock.decrement), new Date().toISOString(), ...where.values)
+          .run();
+        return this.findUnique({ where: args.where, include: args.include });
+      }
+      if (model === "product" && args.data?.stock?.increment != null) {
+        const where = whereSql(model, args.where);
+        await getDb()
+          .prepare(`UPDATE ${q(config.table)} SET ${q(toColumn(config, "stock"))} = ${q(toColumn(config, "stock"))} + ?, ${q(toColumn(config, "updatedAt"))} = ?${where.sql ? ` WHERE ${where.sql}` : ""}`)
+          .bind(Number(args.data.stock.increment), new Date().toISOString(), ...where.values)
           .run();
         return this.findUnique({ where: args.where, include: args.include });
       }
@@ -396,6 +420,8 @@ async function templateQuery(strings: TemplateStringsArray, values: any[], write
 const db = {
   user: modelClient("user"),
   product: modelClient("product"),
+  inventoryBatch: modelClient("inventoryBatch"),
+  inventoryMovement: modelClient("inventoryMovement"),
   campaign: modelClient("campaign"),
   review: modelClient("review"),
   specification: modelClient("specification"),

@@ -40,6 +40,7 @@ function AddProductClient() {
       productDescription: "",
       productPrice: 0,
       productStock: 0,
+      lowStockThreshold: 5,
       productCategory: "",
       productSKU: "",
       productVariants: [],
@@ -71,6 +72,7 @@ function AddProductClient() {
     formData.append("productDescription", values.productDescription);
     formData.append("productPrice", values.productPrice.toString());
     formData.append("productStock", values.productStock.toString());
+    formData.append("lowStockThreshold", (values.lowStockThreshold ?? 5).toString());
     formData.append("productCategory", values.productCategory);
     formData.append("productSKU", values.productSKU);
     formData.append("productVariants", JSON.stringify(values.productVariants));
@@ -190,6 +192,30 @@ function AddProductClient() {
                             placeholder="0"
                             required
                             {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="lowStockThreshold"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem className=" w-full">
+                        <label className="text-sm font-semibold">
+                          Low Stock Threshold
+                        </label>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="5"
+                            {...field}
+                            value={field.value ?? ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value))
                             }

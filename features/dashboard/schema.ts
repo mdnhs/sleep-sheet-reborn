@@ -5,6 +5,7 @@ export const ProductSchema = z.object({
   productDescription: z.string().trim().min(1, "Required"),
   productPrice: z.number().min(1, "Required"),
   productStock: z.number().min(1, "Required"),
+  lowStockThreshold: z.number().min(0, "Cannot be negative").optional(),
   productCategory: z.string().trim().min(1, "Required"),
   productSKU: z.string().trim().min(1, "Required"),
   productVariants: z.array(z.string()).min(1, "Required"),

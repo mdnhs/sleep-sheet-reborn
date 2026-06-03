@@ -53,3 +53,13 @@ export const OTPType = {
   LOGIN_OTP: "LOGIN_OTP",
 } as const;
 export type OTPType = (typeof OTPType)[keyof typeof OTPType];
+
+export const MovementType = {
+  STOCK_IN: "STOCK_IN",
+  STOCK_OUT: "STOCK_OUT",
+  ADJUSTMENT: "ADJUSTMENT",
+  DAMAGE: "DAMAGE",
+  LOSS: "LOSS",
+  RETURN: "RETURN",
+} as const;
+export type MovementType = (typeof MovementType)[keyof typeof MovementType];

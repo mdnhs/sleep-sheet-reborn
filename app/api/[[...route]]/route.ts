@@ -14,6 +14,7 @@ import wishlist from "@/features/wishlist/server/route"
 import analytics from "@/features/analytics/server/route";
 import steadfast from "@/features/steadfast/server/route";
 import settings from "@/features/settings/server/route";
+import inventory from "@/features/inventory/server/route";
 const app = new Hono().basePath("/api");
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -32,6 +33,7 @@ const routes =app
 .route("/analytics",analytics)
 .route("/steadfast",steadfast)
 .route("/settings",settings)
+.route("/inventory",inventory)
 
 
 

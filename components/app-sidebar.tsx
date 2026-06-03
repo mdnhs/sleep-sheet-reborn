@@ -21,6 +21,7 @@ import {
   IconSettings,
   IconLayoutDashboard,
   IconBed,
+  IconBoxSeam,
 } from "@tabler/icons-react"
 
 const data = {
@@ -46,6 +47,12 @@ const data = {
       title: "Products",
       url: "/dashboard/products",
       icon: <IconPackage />,
+      items: [],
+    },
+    {
+      title: "Inventory",
+      url: "/dashboard/inventory",
+      icon: <IconBoxSeam />,
       items: [],
     },
     {
