@@ -8,6 +8,8 @@
     "lint": "pnpm --filter @repo/web lint",
     "worker:dev": "pnpm --filter @repo/worker dev",
     "worker:deploy": "pnpm --filter @repo/worker deploy",
+    "cf:build": "pnpm --filter @repo/web cf:build",
+    "cf:deploy": "pnpm --filter @repo/web cf:deploy",
     "web:cf:build": "pnpm --filter @repo/web cf:build",
     "web:cf:deploy": "pnpm --filter @repo/web cf:deploy",
     "db:migrate:local": "pnpm --filter @repo/worker db:migrate:local",
