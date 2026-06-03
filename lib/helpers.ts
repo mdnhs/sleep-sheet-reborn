@@ -1,7 +1,7 @@
 
 import { useAddWishList } from "@/features/wishlist/api/use-add-wishlist";
 import { useDeleteFromWishlist } from "@/features/wishlist/api/use-delete-from-wishlist";
-import { useWishlist } from "@/features/wishlist/api/use-wishlist";
+import { useWishlistContext } from "@/provider/wishlist-provider";
 
 interface UseWishlistToggleProps {
   productId: string;
@@ -10,8 +10,9 @@ interface UseWishlistToggleProps {
 export const useWishlistToggle = ({ productId }: UseWishlistToggleProps) => {
   const { mutate: addToWishlist, isPending: isAdding } = useAddWishList();
   const { mutate: deleteFromWishlist, isPending: isRemoving } = useDeleteFromWishlist();
-  const { data: wishlist } = useWishlist();
-  const isInWishlist = wishlist?.items.some((item) => item.product.id === productId);
+  // Membership comes from the shared provider — no per-card wishlist fetch.
+  const { wishlistIds } = useWishlistContext();
+  const isInWishlist = wishlistIds.has(productId);
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
