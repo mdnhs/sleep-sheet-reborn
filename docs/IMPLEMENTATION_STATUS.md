@@ -91,8 +91,11 @@ Status: 🟨 In Progress
 - [ ] Route Protection (apply to all business routes)
 
 ## Shared UI
-Status: ⬜ Not Started
-- [ ] Data Table / Forms / Dialogs / Layout
+Status: 🟨 In Progress
+- [x] DataTable (components/data-table/ — TanStack Table v8, sorting + pagination + search + column visibility + row selection)
+- [x] Checkbox UI primitive (components/ui/checkbox.tsx — @base-ui, supports checked/indeterminate/"mixed")
+- [x] PageShell + PageHeader layout components (components/page-shell.tsx, components/page-header.tsx)
+- [x] ConfirmDeleteDialog (components/confirm-delete-dialog.tsx — shared across all CRUD modules)
 - [ ] Org Switcher
 - [ ] Tenant + Subscription providers
 
