@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,7 +9,14 @@ import { IconBuilding } from '@tabler/icons-react'
 
 export default function OrgSelectPage() {
   const router = useRouter()
-  const { data: orgs, isPending } = authClient.useListOrganizations()
+
+  const { data: orgs, isPending } = useQuery({
+    queryKey: ['organizations'],
+    queryFn: async () => {
+      const res = await authClient.organization.list()
+      return res?.data ?? []
+    },
+  })
 
   async function select(orgId: string) {
     await authClient.organization.setActive({ organizationId: orgId })

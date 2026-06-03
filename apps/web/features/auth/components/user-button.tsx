@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { useQuery } from "@tanstack/react-query";
 import {
   ChevronRight,
   Loader,
@@ -31,7 +32,13 @@ const useHasMounted = () =>
   );
 
 export const UserButton = () => {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useQuery({
+    queryKey: ['current'],
+    queryFn: async () => {
+      const res = await authClient.getSession()
+      return res?.data ?? null
+    },
+  });
   const { resolvedTheme, setTheme } = useTheme();
   const hasMounted = useHasMounted();
   const router = useRouter();
