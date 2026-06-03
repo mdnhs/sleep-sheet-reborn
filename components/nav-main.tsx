@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -34,6 +35,9 @@ export function NavMain({
   }[]
 }) {
   const pathname = usePathname()
+  // Controlled open state per group. Falls back to "open if the active route is
+  // inside this group" until the user toggles it — keeps Base UI fully controlled.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
 
   return (
     <SidebarGroup>
@@ -43,7 +47,10 @@ export function NavMain({
           item.items && item.items.length > 0 ? (
             <Collapsible
               key={item.title}
-              defaultOpen={item.isActive || pathname.startsWith(item.url)}
+              open={openMap[item.title] ?? (item.isActive || pathname.startsWith(item.url))}
+              onOpenChange={(open) =>
+                setOpenMap((prev) => ({ ...prev, [item.title]: open }))
+              }
               className="group/collapsible"
               render={<SidebarMenuItem />}
             >
