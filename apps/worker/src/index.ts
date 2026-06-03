@@ -4,6 +4,7 @@ import { createAuth } from '@repo/auth'
 import { createDb } from '@repo/database'
 import { validateWorkerEnv } from './env'
 import { tenantMiddleware } from '../middleware/tenant'
+import { sessionMiddleware } from '../middleware/session'
 import authRoutes from '../routes/auth'
 import products from '../routes/products'
 import dashboard from '../routes/dashboard'
@@ -28,14 +29,17 @@ app.use('*', cors({
   credentials: true,
 }))
 
-// Initialize db + resolve tenant on every request
+// 1. Init db + resolve tenant from subdomain on every request
 app.use('*', tenantMiddleware)
 
-// Validate env on first request — throws with descriptive error if vars are missing
+// 2. Validate env vars
 app.use('*', async (c, next) => {
   validateWorkerEnv(c.env)
   await next()
 })
+
+// 3. Authenticate user + resolve org membership for the resolved tenant
+app.use('*', sessionMiddleware)
 
 // Better Auth handler — intercepts /api/auth/* requests
 app.on(['GET', 'POST'], '/auth/*', async (c) => {

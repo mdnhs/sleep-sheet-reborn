@@ -1,10 +1,10 @@
 import type { Database, Organization } from '@repo/database'
+import type { OrgRole } from '@repo/permissions'
 
 export type User = {
   id: string
   email: string
   name: string
-  role: string
   phone: string | null
   address: string | null
 }
@@ -30,5 +30,6 @@ export type HonoEnv = {
     db: Database
     user: User | null
     tenant: Organization | null
+    orgRole: OrgRole | null    // resolved member role for (tenant, user); null if no membership
   }
 }

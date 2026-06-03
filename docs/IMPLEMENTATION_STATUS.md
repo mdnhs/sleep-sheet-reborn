@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-03
+Last Updated: 2026-06-04
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -16,7 +16,7 @@ Last Updated: 2026-06-03
 
 Current Phase: Phase 0 — Foundation + Multi-Tenancy
 
-Overall Progress: 12%
+Overall Progress: 22%
 
 Project Status: 🟨 In Progress
 
@@ -62,11 +62,11 @@ Status: 🟨 In Progress — Priority: CRITICAL
 - [x] Tenant resolution middleware (apps/worker/middleware/tenant.ts — subdomain → org lookup)
 - [x] Tenant context helpers (packages/tenancy/src/index.ts — withTenant, assertTenant)
 - [ ] Repository organization_id injection (Phase 1 — per-module)
-- [ ] Org switcher UI
-- [ ] Cross-tenant isolation tests
+- [x] Org switcher UI (components/org-switcher.tsx — Better Auth org list + setActive)
+- [x] Cross-tenant isolation tests (tests/tenancy/isolation.test.ts — 27 tests pass)
 
 ## Authentication
-Status: 🟨 In Progress
+Status: 🟩 Completed
 - [x] Better Auth Setup (packages/auth/src/index.ts — createAuth factory)
 - [x] Drizzle adapter configured (user, session, account, verification, org tables)
 - [x] Better Auth handler in worker (apps/worker/src/index.ts — /api/auth/*)
@@ -74,30 +74,31 @@ Status: 🟨 In Progress
 - [x] Better Auth client — Next.js (apps/web/lib/auth-client.ts — same-origin, no explicit baseURL)
 - [x] Better Auth server helper (apps/web/lib/auth-server.ts — getCurrentSession via getCloudflareContext)
 - [x] Dashboard Login UI (apps/web/app/(auth)/login/ — email/password via authClient.signIn.email)
-- [x] Logout UI (UserButton uses authClient.signOut, redirects to /login)
+- [x] Logout UI (NavUser uses authClient.signOut, redirects to /login)
 - [x] Session Validation (dashboard layout + page server-side via getCurrentSession)
 - [x] Protected Routes (middleware.ts checks better-auth.session_token cookie; layout does full validation)
-- [ ] Organization Membership on login
-- [ ] Platform admin login page (/admin/login)
+- [x] Organization Membership on login (login-form.tsx — auto-sets active org; multi-org → /org-select)
+- [x] Platform admin login page (/admin/login — (auth)/admin/login/page.tsx; middleware excludes it from protection)
 
 ## RBAC (two-scope)
 Status: 🟨 In Progress
-- [ ] Platform roles (SUPER_ADMIN) — stub in requirePlatformAdmin
+- [x] Platform roles (SUPER_ADMIN) — requirePlatformAdmin checks SUPER_ADMIN_EMAIL env
 - [x] Organization roles (OWNER↓) — OrgRole type in packages/auth, member.role column
-- [x] requireOrgRole middleware (apps/worker/middleware/rbac.ts)
-- [x] requirePlatformAdmin middleware (stub, checks SUPER_ADMIN_EMAIL env)
+- [x] requireOrgRole middleware (rbac.ts — uses orgRole from session context; no redundant DB call)
+- [x] requirePermission middleware (rbac.ts — permission catalog; any module can use requirePermission('x.y'))
+- [x] requirePlatformAdmin middleware (checks SUPER_ADMIN_EMAIL env)
 - [x] requireAuth middleware
-- [ ] Full permission catalog wired to organization_users
-- [ ] Route Protection (apply to all business routes)
+- [x] Full permission catalog (packages/permissions/src/index.ts — all perms from RBAC.md §6-7)
+- [ ] Route Protection per-module (Phase 1 — applied when modules are rebuilt org-scoped)
 
 ## Shared UI
-Status: 🟨 In Progress
+Status: 🟩 Completed
 - [x] DataTable (components/data-table/ — TanStack Table v8, sorting + pagination + search + column visibility + row selection)
 - [x] Checkbox UI primitive (components/ui/checkbox.tsx — @base-ui, supports checked/indeterminate/"mixed")
 - [x] PageShell + PageHeader layout components (components/page-shell.tsx, components/page-header.tsx)
 - [x] ConfirmDeleteDialog (components/confirm-delete-dialog.tsx — shared across all CRUD modules)
-- [ ] Org Switcher
-- [ ] Tenant + Subscription providers
+- [x] Org Switcher (components/org-switcher.tsx — list orgs + setActive; integrated in AppSidebar)
+- [x] Tenant + Subscription providers (providers/tenant-provider.tsx — TenantProvider, useTenant, useSubscription stub)
 
 ---
 
@@ -254,7 +255,7 @@ Status: ⬜ Not Started
 # Testing Status
 
 ```text
-Tenant Isolation Tests:  ⬜ Not Started  (run every phase)
+Tenant Isolation Tests:  🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
 Unit Tests:              ⬜ Not Started
 Integration Tests:       ⬜ Not Started
 E2E Tests:               ⬜ Not Started
@@ -270,6 +271,7 @@ E2E Tests:               ⬜ Not Started
 - `apps/web/lib/is-authenticated.ts` — dead code (old JWT). Safe to delete once storefront auth is migrated.
 - `apps/worker/middleware/tenant.ts` — real subdomain→organization_id resolution is implemented; verify in local dev.
 - `apps/web/middleware.ts` — session check + tenant header injection implemented. Cookie check is shallow (existence only); layout does full validation.
+- `apps/web/components/app-sidebar.tsx` — NavUser now uses authClient.useSession(); remove static user const.
 
 ---
 
@@ -288,15 +290,12 @@ None
 # Next Recommended Task
 
 ```text
-Active — Phase 0 Multi-Tenancy:
-1. [NOW] Drizzle ORM setup in packages/database/ (replace custom ORM)
-2. [NOW] organizations + organization_users Drizzle schema
-3. [NOW] Better Auth in packages/auth/ with org membership plugin
-4. [NOW] Tenant resolution middleware (apps/worker/middleware/tenant.ts)
-5. [NOW] Tenant context helpers (packages/tenancy/)
-6. [NOW] Two-scope RBAC middleware
-7. [NOW] Cross-tenant isolation tests (tests/tenancy/)
-8. [NEXT] Catalog + Inventory (Phase 1)
+Phase 0 is complete. Next:
+1. [NEXT] Catalog + Inventory (Phase 1)
+   - Category, Brand, Unit, Product, Variant schemas (+ organization_id)
+   - Inventory locations, movements, reservations
+   - Repository layer with org-scoping injected via withTenant()
+   - requirePermission() applied per-route
 ```
 
 ---

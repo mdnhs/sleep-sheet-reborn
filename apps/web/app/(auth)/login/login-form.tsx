@@ -37,11 +37,27 @@ export default function LoginForm({ redirectTo }: { redirectTo: string }) {
       email: values.email,
       password: values.password,
     })
-    setIsPending(false)
 
     if (error) {
+      setIsPending(false)
       toast.error(error.message ?? 'Sign in failed')
       return
+    }
+
+    // After sign-in, resolve active organization.
+    // Auto-select if user belongs to exactly one org; redirect to /org-select for multiple.
+    try {
+      const { data: orgs } = await authClient.organization.list()
+      if (orgs && orgs.length === 1) {
+        await authClient.organization.setActive({ organizationId: orgs[0].id })
+      } else if (orgs && orgs.length > 1) {
+        router.push('/org-select')
+        router.refresh()
+        return
+      }
+      // orgs.length === 0 → continue to dashboard; user will be prompted to create an org
+    } catch {
+      // org resolution failure is non-fatal; proceed to dashboard
     }
 
     router.push(redirectTo)

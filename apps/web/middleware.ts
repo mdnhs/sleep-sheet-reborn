@@ -4,7 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 const SESSION_COOKIE = 'better-auth.session_token'
 
 const PROTECTED = ['/dashboard', '/admin']
-const AUTH_PATHS = ['/login']
+// Paths that skip protection even if they start with a protected prefix
+const PROTECTED_EXCLUSIONS = ['/admin/login']
+const AUTH_PATHS = ['/login', '/admin/login']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -15,9 +17,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Protect dashboard and platform admin routes
-  if (PROTECTED.some((p) => pathname.startsWith(p)) && !hasSession) {
-    const loginUrl = new URL('/login', request.url)
+  // Protect dashboard and platform admin routes (excluding login pages)
+  const isExcluded = PROTECTED_EXCLUSIONS.some((p) => pathname.startsWith(p))
+  if (!isExcluded && PROTECTED.some((p) => pathname.startsWith(p)) && !hasSession) {
+    const isAdmin = pathname.startsWith('/admin')
+    const loginUrl = new URL(isAdmin ? '/admin/login' : '/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
