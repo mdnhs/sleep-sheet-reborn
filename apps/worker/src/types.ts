@@ -13,6 +13,7 @@ export type User = {
 export type HonoEnv = {
   Bindings: {
     DB: D1Database
+    BUCKET: R2Bucket
     WEB_URL: string
     BETTER_AUTH_SECRET: string
     TRUSTED_ORIGINS: string       // comma-separated, e.g. "http://localhost:3000,https://app.example.com"

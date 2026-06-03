@@ -1,28 +1,23 @@
-# Deploying to Cloudflare Workers (D1 + OpenNext)
+# Deploying to Cloudflare
 
-This app runs on **Cloudflare Workers** with a **D1 (SQLite)** database via
-`@opennextjs/cloudflare`. Images go to **Cloudinary**, email uses **Gmail SMTP**
-via `worker-mailer` (plain nodemailer cannot run on Workers).
+Two Workers in this monorepo:
 
-This guide takes you from a fresh clone to a **live deployment on your own
-Cloudflare account**. Follow top to bottom.
+| Worker | Path | Description |
+|--------|------|-------------|
+| `sleep-sheet-reborn` | `apps/web/` | Next.js via OpenNext |
+| `sleep-sheet-reborn-api` | `apps/worker/` | Hono REST API |
+
+Both share one **D1** database and one **R2** bucket.
 
 ---
 
 ## 0. Prerequisites
 
 - A [Cloudflare account](https://dash.cloudflare.com/sign-up) (free plan works).
-- **Node.js 20+** and **pnpm** (`npm i -g pnpm`).
-- The project source (this repo).
+- Node.js 22+ and pnpm (`npm i -g pnpm`).
+- `pnpm install` in repo root.
 
-Install dependencies:
-
-```bash
-pnpm install
-```
-
-`wrangler` (the Cloudflare CLI) ships as a dev dependency — run it with
-`pnpm wrangler ...` or `pnpm dlx wrangler ...`. Log in once:
+Log in to Cloudflare:
 
 ```bash
 pnpm wrangler login
@@ -30,91 +25,43 @@ pnpm wrangler login
 
 ---
 
-## 1. Point the project at YOUR Cloudflare account
+## 1. Create Cloudflare resources (one-time)
 
-Everything account-specific lives in [`wrangler.jsonc`](wrangler.jsonc).
-
-### 1a. Create your own D1 database
+### 1a. D1 database
 
 ```bash
 pnpm wrangler d1 create sleep-sheet-reborn
 ```
 
-This prints a block like:
+Paste the printed `database_id` into **both**:
+- `apps/worker/wrangler.jsonc` → `d1_databases[0].database_id`
+- `apps/web/wrangler.jsonc` → `d1_databases[0].database_id`
 
-```jsonc
-{
-  "binding": "DB",
-  "database_name": "sleep-sheet-reborn",
-  "database_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
-Open [`wrangler.jsonc`](wrangler.jsonc) and replace the existing
-`database_id` under `d1_databases` with **your** new id. Keep
-`"database_name": "sleep-sheet-reborn"` and `"binding": "DB"` as-is — the npm
-scripts and app code reference those names.
-
-> Want a different database name? Then also update the name in the
-> `db:migrate:local` / `db:migrate:remote` scripts in
-> [`package.json`](package.json) and the seed command in step 3. Easiest path:
-> keep the name `sleep-sheet-reborn`.
-
-### 1b. (Optional) Rename the Worker
-
-`"name": "sleep-sheet-reborn"` in [`wrangler.jsonc`](wrangler.jsonc) becomes your
-`*.workers.dev` subdomain. Change it if you want a different URL.
-
----
-
-## 2. Apply the database schema (migrations)
-
-Migrations live in [`migrations/d1/`](migrations/d1/).
+### 1b. R2 bucket (marketplace assets)
 
 ```bash
-pnpm db:migrate:remote      # apply schema to the LIVE D1 database
-# pnpm db:migrate:local     # ...or to the local dev D1 instead
+pnpm wrangler r2 bucket create sleep-sheet-reborn-marketplace
 ```
 
----
+The bucket name is already wired in both `wrangler.jsonc` files as binding `BUCKET`.
+No ID to paste — R2 uses the bucket name directly.
 
-## 3. Load seed / starter data (optional)
+> **Local dev:** wrangler simulates R2 locally via `.wrangler/state/`. No extra setup.
 
-A data dump is bundled at [`migrations/data-d1.sql`](migrations/data-d1.sql):
+### 1c. Apply D1 migrations
 
 ```bash
-pnpm wrangler d1 execute sleep-sheet-reborn --remote --file=./migrations/data-d1.sql
+pnpm db:migrate:remote        # applies packages/database/migrations/ to live D1
+# pnpm db:migrate:local       # local D1 only
 ```
-
-Notes:
-- Array columns (`productImages`, `tags`, …) and campaign JSON columns are
-  stored as JSON strings; booleans as `1/0`; timestamps as ISO strings.
-- New image uploads go straight to Cloudinary
-  (`https://res.cloudinary.com/...` URLs).
-- Large tables may hit D1 file-size limits — split the SQL file if the import
-  fails.
 
 ---
 
-## 4. Configure secrets and variables
+## 2. Environment variables
 
-The app needs the following keys (see [`.dev.vars.example`](.dev.vars.example)):
+### 2a. Local development
 
-| Key | What it is | Secret? |
-|-----|-----------|---------|
-| `JWT_SECRET` | random string for signing auth tokens | yes |
-| `EMAIL_PASS` | Gmail **App Password** | yes |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret | yes |
-| `STEADFAST_API_KEY` | Steadfast courier API key | yes |
-| `STEADFAST_SECRET_KEY` | Steadfast courier secret | yes |
-| `NEXT_PUBLIC_APP_URL` | public URL of YOUR deployment | no |
-| `NEXT_PUBLIC_EMAIL_USER` | Gmail address that sends mail | no |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | no |
-| `CLOUDINARY_API_KEY` | Cloudinary API key | no |
-
-### 4a. Local development
-
-Copy the example and fill in your values:
+Copy and fill in:
 
 ```bash
 cp .dev.vars.example .dev.vars
@@ -122,90 +69,136 @@ cp .dev.vars.example .dev.vars
 
 `.dev.vars` is git-ignored — never commit real secrets.
 
-### 4b. Production (Cloudflare)
+### 2b. Production secrets (push to Cloudflare)
 
-Push secrets one at a time (you'll be prompted to paste each value):
+Required secrets for **both** workers:
 
 ```bash
-pnpm wrangler secret put JWT_SECRET
-pnpm wrangler secret put EMAIL_PASS              # Gmail App Password
-pnpm wrangler secret put CLOUDINARY_API_SECRET
-pnpm wrangler secret put STEADFAST_API_KEY
-pnpm wrangler secret put STEADFAST_SECRET_KEY
+# Better Auth (must be ≥32 chars — generate: openssl rand -hex 32)
+pnpm wrangler secret put BETTER_AUTH_SECRET --name sleep-sheet-reborn-api
+pnpm wrangler secret put BETTER_AUTH_SECRET --name sleep-sheet-reborn
+
+# Comma-separated allowed origins
+pnpm wrangler secret put TRUSTED_ORIGINS --name sleep-sheet-reborn-api
+pnpm wrangler secret put TRUSTED_ORIGINS --name sleep-sheet-reborn
+
+# Platform super-admin email
+pnpm wrangler secret put SUPER_ADMIN_EMAIL --name sleep-sheet-reborn-api
+pnpm wrangler secret put SUPER_ADMIN_EMAIL --name sleep-sheet-reborn
+
+# Web app URL (e.g. https://your-worker.workers.dev)
+pnpm wrangler secret put WEB_URL --name sleep-sheet-reborn-api
+pnpm wrangler secret put WEB_URL --name sleep-sheet-reborn
+
+# Public URLs
+pnpm wrangler secret put NEXT_PUBLIC_APP_URL --name sleep-sheet-reborn
+pnpm wrangler secret put NEXT_PUBLIC_API_URL --name sleep-sheet-reborn
+
+# Cloudinary (image storage)
+pnpm wrangler secret put CLOUDINARY_CLOUD_NAME --name sleep-sheet-reborn-api
+pnpm wrangler secret put CLOUDINARY_API_KEY    --name sleep-sheet-reborn-api
+pnpm wrangler secret put CLOUDINARY_API_SECRET --name sleep-sheet-reborn-api
+
+# Gmail SMTP (App Password, not login password)
+pnpm wrangler secret put EMAIL_PASS             --name sleep-sheet-reborn-api
+pnpm wrangler secret put NEXT_PUBLIC_EMAIL_USER --name sleep-sheet-reborn-api
+
+# Steadfast courier (optional)
+pnpm wrangler secret put STEADFAST_API_KEY    --name sleep-sheet-reborn-api
+pnpm wrangler secret put STEADFAST_SECRET_KEY --name sleep-sheet-reborn-api
 ```
-
-Non-secret vars can either be pushed the same way, or added to a `vars` block in
-[`wrangler.jsonc`](wrangler.jsonc):
-
-```jsonc
-"vars": {
-  "NEXT_PUBLIC_APP_URL": "https://your-worker.workers.dev",
-  "NEXT_PUBLIC_EMAIL_USER": "you@gmail.com",
-  "CLOUDINARY_CLOUD_NAME": "your-cloud",
-  "CLOUDINARY_API_KEY": "your-key"
-}
-```
-
-> **Gmail App Password:** enable 2-Step Verification on the Google account, then
-> create an App Password at <https://myaccount.google.com/apppasswords>. Use that
-> 16-char value for `EMAIL_PASS` (not the normal account password).
->
-> **Cloudinary:** sign up at <https://cloudinary.com>; cloud name + key + secret
-> are on the dashboard.
 
 ---
 
-## 5. Develop, preview, deploy
+## 3. Local development
 
 ```bash
-pnpm dev        # next dev, with D1 binding via initOpenNextCloudflareForDev()
-pnpm preview    # build with OpenNext + run the Workers runtime locally
-pnpm cf:deploy  # build + deploy to Cloudflare
+pnpm dev          # Next.js dev server (port 3000) — D1 via initOpenNextCloudflareForDev()
+pnpm worker:dev   # Hono API worker (port 8787) — wrangler dev
 ```
 
-After `pnpm cf:deploy`, wrangler prints the live URL
-(`https://<name>.workers.dev`). Set `NEXT_PUBLIC_APP_URL` to that URL (or your
-custom domain) and redeploy so absolute links/emails point to the right place.
+Both use `.dev.vars` for secrets and local D1/R2 state in `.wrangler/state/`.
 
-### Type generation
+---
 
-Regenerate binding/var TypeScript types after changing
-[`wrangler.jsonc`](wrangler.jsonc):
+## 4. Deploy manually
 
 ```bash
+# API worker
+pnpm worker:deploy
+
+# Next.js web (build then deploy)
+pnpm web:cf:deploy
+```
+
+Or from the monorepo root:
+
+```bash
+pnpm web:cf:build    # build only (outputs to apps/web/.open-next/)
+pnpm web:cf:deploy   # build + deploy
+```
+
+---
+
+## 5. CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml` triggers on every push to `main`:
+
+1. **migrate** — applies D1 migrations remotely
+2. **deploy-api** — deploys the Hono worker (runs in parallel with deploy-web after migrate)
+3. **deploy-web** — builds OpenNext + deploys the Next.js worker
+
+### GitHub repository secrets to set
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Description |
+|--------|-------------|
+| `CLOUDFLARE_API_TOKEN` | API token with Workers + D1 + R2 write permissions |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
+| `BETTER_AUTH_SECRET` | ≥32-char random string |
+| `TRUSTED_ORIGINS` | Comma-separated allowed origins |
+| `SUPER_ADMIN_EMAIL` | Platform super-admin email |
+| `WEB_URL` | Live web URL (e.g. `https://sleep-sheet-reborn.workers.dev`) |
+| `NEXT_PUBLIC_APP_URL` | Same as WEB_URL (public) |
+| `NEXT_PUBLIC_API_URL` | API worker URL (e.g. `https://sleep-sheet-reborn-api.workers.dev`) |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `EMAIL_PASS` | Gmail App Password |
+| `NEXT_PUBLIC_EMAIL_USER` | Gmail address |
+| `STEADFAST_API_KEY` | (optional) Steadfast courier key |
+| `STEADFAST_SECRET_KEY` | (optional) Steadfast courier secret |
+
+### Create a Cloudflare API token
+
+Dashboard → **My Profile → API Tokens → Create Token**:
+- Template: **Edit Cloudflare Workers**
+- Add permissions: **D1 Edit**, **R2 Edit**
+- Scope: your account
+
+---
+
+## 6. TypeScript types
+
+After changing either `wrangler.jsonc`, regenerate CF env types:
+
+```bash
+# From apps/web/
 pnpm cf-typegen
+
+# Or from root
+pnpm --filter @repo/web cf-typegen
 ```
 
 ---
 
-## Deploy checklist (handoff summary)
+## Deploy checklist
 
-- [ ] `pnpm install`
 - [ ] `pnpm wrangler login`
-- [ ] `pnpm wrangler d1 create sleep-sheet-reborn` → paste `database_id` into [`wrangler.jsonc`](wrangler.jsonc)
+- [ ] `pnpm wrangler d1 create sleep-sheet-reborn` → paste `database_id` into both `wrangler.jsonc`
+- [ ] `pnpm wrangler r2 bucket create sleep-sheet-reborn-marketplace`
 - [ ] `pnpm db:migrate:remote`
-- [ ] (optional) load seed data — step 3
-- [ ] push secrets — step 4b
-- [ ] set `NEXT_PUBLIC_APP_URL` + non-secret vars
-- [ ] `pnpm cf:deploy`
-
----
-
-## Architecture notes (Postgres → SQLite caveats)
-
-- **enums → strings**: see [`lib/enums.ts`](lib/enums.ts) (allowed values unchanged).
-- **`String[]` / `Json` → TEXT (JSON)**: (de)serialized at the route boundary via
-  [`lib/json-fields.ts`](lib/json-fields.ts). Clients still receive real arrays.
-- **`mode: 'insensitive'`** removed (Postgres-only). SQLite `LIKE` is
-  case-insensitive for ASCII.
-- **Analytics**: `DATE_TRUNC`/`INTERVAL` raw SQL replaced with JS aggregation.
-- **D1 access** is request-scoped ([`lib/db.ts`](lib/db.ts) compatibility shim)
-  because D1 bindings only exist per request.
-
-## Verify on a live D1
-
-- Date/time storage + comparison in analytics date ranges and OTP `expiresAt`.
-- The bulk [`data-d1.sql`](migrations/data-d1.sql) import for large tables (split
-  if it hits D1 file-size limits).
-</content>
-</invoke>
+- [ ] Push all secrets (step 2b) to both workers
+- [ ] `pnpm worker:deploy` + `pnpm web:cf:deploy`
+- [ ] Set GitHub Actions secrets (step 5) for automated deploys

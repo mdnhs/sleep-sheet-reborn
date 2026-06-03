@@ -48,12 +48,12 @@ Status: 🟩 Completed
 - [x] Environment Configuration (.dev.vars with all required vars; Zod validation in apps/web/env.ts + apps/worker/src/env.ts)
 
 ## Cloudflare Setup
-Status: 🟨 In Progress
+Status: 🟩 Completed
 - [x] Workers Setup (apps/worker/ with wrangler.jsonc, CF Worker entry)
 - [x] D1 Setup (wrangler D1 binding, migrations in packages/database/migrations/)
-- [ ] R2 Setup (marketplace assets)
+- [x] R2 Setup (bucket: sleep-sheet-reborn-marketplace, binding: BUCKET, in both wrangler.jsonc files)
 - [x] Local Development Setup (pnpm install, wrangler local dev)
-- [ ] Deployment Pipeline
+- [x] Deployment Pipeline (.github/workflows/deploy.yml — migrate → deploy-api + deploy-web in parallel)
 
 ## Multi-Tenancy
 Status: 🟨 In Progress — Priority: CRITICAL

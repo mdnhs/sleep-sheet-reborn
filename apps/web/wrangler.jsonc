@@ -17,5 +17,12 @@
 			"database_name": "sleep-sheet-reborn",
 			"database_id": "8576bc91-1a4c-402c-a198-056eac70b959"
 		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "sleep-sheet-reborn-marketplace",
+			"preview_bucket_name": "sleep-sheet-reborn-marketplace"
+		}
 	]
 }

@@ -1,0 +1,157 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false   # never cancel an in-flight deploy
+
+env:
+  PNPM_VERSION: "10.32.1"
+  NODE_VERSION: "22"
+
+jobs:
+  # ── 1. Run D1 migrations before any deployment ──────────────────────────────
+  migrate:
+    name: D1 Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/worker
+          command: d1 migrations apply sleep-sheet-reborn --remote
+
+  # ── 2a. Deploy Hono API Worker ───────────────────────────────────────────────
+  deploy-api:
+    name: Deploy API Worker
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/worker
+          command: deploy
+          # Push / update all Worker secrets on every deploy
+          secrets: |
+            BETTER_AUTH_SECRET
+            TRUSTED_ORIGINS
+            SUPER_ADMIN_EMAIL
+            WEB_URL
+            CLOUDINARY_CLOUD_NAME
+            CLOUDINARY_API_KEY
+            CLOUDINARY_API_SECRET
+            EMAIL_PASS
+            NEXT_PUBLIC_EMAIL_USER
+            STEADFAST_API_KEY
+            STEADFAST_SECRET_KEY
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          TRUSTED_ORIGINS: ${{ secrets.TRUSTED_ORIGINS }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+          WEB_URL: ${{ secrets.WEB_URL }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          NEXT_PUBLIC_EMAIL_USER: ${{ secrets.NEXT_PUBLIC_EMAIL_USER }}
+          STEADFAST_API_KEY: ${{ secrets.STEADFAST_API_KEY }}
+          STEADFAST_SECRET_KEY: ${{ secrets.STEADFAST_SECRET_KEY }}
+
+  # ── 2b. Build + Deploy Next.js via OpenNext ──────────────────────────────────
+  deploy-web:
+    name: Deploy Web (OpenNext)
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build — env vars needed for Next.js build-time validation (apps/web/env.ts)
+      - name: Build (OpenNext)
+        run: pnpm web:cf:build
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          TRUSTED_ORIGINS: ${{ secrets.TRUSTED_ORIGINS }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NODE_ENV: production
+
+      # Deploy built output + push/update Worker secrets
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/web
+          command: deploy
+          secrets: |
+            BETTER_AUTH_SECRET
+            TRUSTED_ORIGINS
+            SUPER_ADMIN_EMAIL
+            WEB_URL
+            NEXT_PUBLIC_APP_URL
+            NEXT_PUBLIC_API_URL
+            CLOUDINARY_CLOUD_NAME
+            CLOUDINARY_API_KEY
+            CLOUDINARY_API_SECRET
+            EMAIL_PASS
+            NEXT_PUBLIC_EMAIL_USER
+            STEADFAST_API_KEY
+            STEADFAST_SECRET_KEY
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          TRUSTED_ORIGINS: ${{ secrets.TRUSTED_ORIGINS }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+          WEB_URL: ${{ secrets.WEB_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          NEXT_PUBLIC_EMAIL_USER: ${{ secrets.NEXT_PUBLIC_EMAIL_USER }}
+          STEADFAST_API_KEY: ${{ secrets.STEADFAST_API_KEY }}
+          STEADFAST_SECRET_KEY: ${{ secrets.STEADFAST_SECRET_KEY }}
