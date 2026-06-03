@@ -20,7 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { IconSelector, IconSparkles, IconRosetteDiscountCheck, IconCreditCard, IconBell, IconLogout } from "@tabler/icons-react"
+import { IconSelector, IconRosetteDiscountCheck, IconBell, IconLogout } from "@tabler/icons-react"
 
 export function NavUser({
   user,
@@ -73,25 +73,12 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconSparkles
-                />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={<a href="/dashboard/account" />}>
                 <IconRosetteDiscountCheck
                 />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={<a href="/dashboard/notifications" />}>
                 <IconBell
                 />
                 Notifications
