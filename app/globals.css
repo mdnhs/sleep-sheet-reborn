@@ -131,23 +131,3 @@
     @apply font-sans;
   }
 }
-
-/* Accordion-style open/close for Base UI Collapsible panels.
-   Base UI exposes the measured height in --collapsible-panel-height. */
-@keyframes collapsible-down {
-  from {
-    height: 0;
-  }
-  to {
-    height: var(--collapsible-panel-height);
-  }
-}
-
-@keyframes collapsible-up {
-  from {
-    height: var(--collapsible-panel-height);
-  }
-  to {
-    height: 0;
-  }
-}

@@ -22,7 +22,10 @@ function CollapsibleContent({
     <CollapsiblePrimitive.Panel
       data-slot="collapsible-content"
       className={cn(
-        "overflow-hidden data-open:animate-[collapsible-down_200ms_ease-out] data-closed:animate-[collapsible-up_200ms_ease-out]",
+        // Base UI drives open/close via a height transition between
+        // --collapsible-panel-height and 0 (data-starting-style on open,
+        // data-ending-style on close) rather than keyframes.
+        "h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0",
         className,
       )}
       {...props}

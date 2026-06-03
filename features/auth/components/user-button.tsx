@@ -11,7 +11,14 @@ import { Button } from "@/components/ui/button";
 
 import { useLogout } from "../api/use-logout";
 import { useCurrent } from "../api/use-current";
-import { ChevronRight, Loader, LogOut, Moon, Sun } from "lucide-react";
+import {
+  ChevronRight,
+  LayoutDashboard,
+  Loader,
+  LogOut,
+  Moon,
+  Sun,
+} from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
@@ -41,8 +48,9 @@ export const UserButton = () => {
     return null;
   }
 
-  const { name, email } = user;
+  const { name, email, role } = user;
   const displayName = name || "User";
+  const isAdmin = role === "ADMIN";
 
   const avatarFallBack = name
     ? name.charAt(0).toUpperCase()
@@ -94,6 +102,18 @@ export const UserButton = () => {
             Manage account
             <ChevronRight className="size-4 text-muted-foreground" />
           </Link>
+          {isAdmin && (
+            <Link
+              href="/dashboard"
+              className="mt-2 flex items-center justify-between rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <LayoutDashboard className="size-4 text-muted-foreground" />
+                Dashboard
+              </span>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+          )}
         </div>
 
         <DropdownMenuSeparator className="my-1.5" />

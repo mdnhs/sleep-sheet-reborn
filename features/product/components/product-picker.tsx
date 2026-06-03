@@ -5,7 +5,8 @@ import { addToCart } from "@/features/cart/state/cart-slice";
 import { useWishlistToggle } from "@/lib/helpers";
 import { Product } from "@/lib/types";
 import { useAppDispatch } from "@/store/hooks";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ function ProductPicker({ product }: ProductPickerProps) {
   const isInStock = product.stock > 0;
 
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
@@ -33,13 +35,13 @@ function ProductPicker({ product }: ProductPickerProps) {
   };
 
   // components/ProductCard.tsx
-  const handleAddToCart = () => {
+  const addProductToCart = () => {
     if (
       (!selectedSize && isSizeAvailable) ||
       (!selectedColor && isColorAvailable)
     ) {
       toast.error("Please select options before adding to cart");
-      return;
+      return false;
     }
 
     dispatch(
@@ -61,6 +63,17 @@ function ProductPicker({ product }: ProductPickerProps) {
         },
       })
     );
+    return true;
+  };
+
+  const handleAddToCart = () => {
+    addProductToCart();
+  };
+
+  const handleBuyNow = () => {
+    if (addProductToCart()) {
+      router.push("/checkout");
+    }
   };
 
   return (
@@ -131,12 +144,22 @@ function ProductPicker({ product }: ProductPickerProps) {
         </div>
 
         <Button
+          variant="outline"
           className="flex-1 py-6 cursor-pointer"
           disabled={!isInStock}
           onClick={handleAddToCart}
         >
           <ShoppingBag className="mr-2 h-4 w-4" />
           {isInStock ? "Add to Cart" : "Out of Stock"}
+        </Button>
+
+        <Button
+          className="flex-1 py-6 cursor-pointer"
+          disabled={!isInStock}
+          onClick={handleBuyNow}
+        >
+          <Zap className="mr-2 h-4 w-4" />
+          Buy Now
         </Button>
 
         <Button
