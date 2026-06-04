@@ -21,10 +21,9 @@ export async function getCollections() {
         p.productImages AS images,
         p.productCategory AS categoryId,
         c.label AS category,
-        COALESCE(AVG(r.rating), 0) AS avgRating
+        0 AS avgRating
       FROM products p
       INNER JOIN Category c ON c.id = p.productCategory
-      LEFT JOIN product_reviews r ON r.productId = p.id
       WHERE p.productTags <> '[]'
       GROUP BY p.id, p.productTags, p.productImages, p.productCategory, c.label
       `,

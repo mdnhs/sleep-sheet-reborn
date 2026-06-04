@@ -8,7 +8,7 @@ const PROTECTED = ['/dashboard', '/admin']
 const PROTECTED_EXCLUSIONS = ['/admin/login']
 const AUTH_PATHS = ['/login', '/admin/login']
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hasSession = !!request.cookies.get(SESSION_COOKIE)
 
