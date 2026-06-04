@@ -209,5 +209,24 @@ export function createPurchasesService(db: Database, organizationId: string) {
         due: Math.max(0, totalPurchased - totalPaid),
       }
     },
+
+    async listSupplierDues() {
+      const suppliers = await supplierRepo.findMany()
+      const dues = await Promise.all(suppliers.map(async s => {
+        const [totalPurchased, totalPaid] = await Promise.all([
+          repo.getTotalPurchased(s.id),
+          supplierRepo.getTotalPaid(s.id),
+        ])
+        return {
+          supplierId: s.id,
+          supplierName: s.name,
+          phone: s.phone,
+          totalPurchased,
+          totalPaid,
+          due: Math.max(0, totalPurchased - totalPaid),
+        }
+      }))
+      return dues
+    },
   }
 }

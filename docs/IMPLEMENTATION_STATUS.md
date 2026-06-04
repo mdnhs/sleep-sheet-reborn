@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 4 complete — POS Sales, Returns, Cash Registers, Register Sessions)
+Last Updated: 2026-06-04 (Phase 5 complete — Finance: Accounts, Transactions, Expenses, P&L, Supplier Due)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-04 (Phase 4 complete — POS Sales, Returns, Cash Register
 
 # Project Status
 
-Current Phase: Phase 4 — POS
+Current Phase: Phase 5 — Finance
 
-Overall Progress: 65%
+Overall Progress: 72%
 
 Project Status: 🟨 In Progress
 
@@ -224,12 +224,24 @@ Status: ✅ Complete
 ---
 
 # Phase 5 — Finance — Priority: HIGH
-Status: ⬜ Not Started
-- [ ] Accounts
-- [ ] Transactions (income/expense)
-- [ ] Expenses
-- [ ] Integrate Orders / POS / Purchases
-- [ ] Financial Reports (P&L)
+Status: ✅ Complete
+- [x] Finance schema: fin_account, fin_transaction, fin_expense — all org-scoped (migration 0010, table prefix avoids conflict with Better Auth `account`)
+- [x] Accounts repository + service + API (GET/POST /api/v1/accounts, PATCH /:id — balance maintained via adjustBalance delta)
+- [x] Transactions repository + service + API (GET/POST /api/v1/transactions — immutable ledger, positive=credit/negative=debit, updates account balance atomically)
+- [x] Expenses repository + service + API (GET/POST /api/v1/expenses, POST /:id/approve|reject — approve creates EXPENSE transaction + debits account if set)
+- [x] Finance reports API (/api/v1/finance/summary|pnl|cash-book|supplier-due)
+- [x] listSupplierDues() added to purchases.service (aggregates purchase orders vs payments per supplier)
+- [x] UI hooks (apps/web/features/(erp-core)/finance/api/v1-finance.ts): accounts, transactions, expenses, summary, pnl, cash-book, supplier-due
+- [x] Finance Dashboard (/dashboard/finance/dashboard — balance/income/expense/profit cards + pending expense alert + recent transactions)
+- [x] Accounts UI (/dashboard/finance/accounts — account cards with balance + create + deactivate)
+- [x] Transactions UI (/dashboard/finance/transactions — full ledger with account filter + manual record dialog)
+- [x] Expenses UI (/dashboard/finance/expenses — tabbed by status + create + approve/reject inline)
+- [x] Income UI (/dashboard/finance/income — credit-only transactions with total)
+- [x] Cash Book UI (/dashboard/finance/cash-book — chronological ledger with running balance table)
+- [x] Supplier Due UI (/dashboard/finance/supplier-due — per-supplier outstanding balance from purchases data)
+- [x] P&L UI (/dashboard/finance/profit-and-loss — date-range P&L with margin %)
+- [x] TypeScript: worker compiles clean (npx tsc --noEmit)
+- [x] Tests: 87/87 pass (all pre-existing isolation tests)
 
 ---
 

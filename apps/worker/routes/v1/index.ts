@@ -16,6 +16,10 @@ import cashRegisters from './cash-registers'
 import registerSessions from './register-sessions'
 import posSales from './pos-sales'
 import posSaleReturns from './pos-sale-returns'
+import accounts from './accounts'
+import transactions from './transactions'
+import expenses from './expenses'
+import financeReports from './finance-reports'
 
 const v1 = new Hono<HonoEnv>()
   .route('/categories', categories)
@@ -34,5 +38,9 @@ const v1 = new Hono<HonoEnv>()
   .route('/register-sessions', registerSessions)
   .route('/pos-sales', posSales)
   .route('/pos-sale-returns', posSaleReturns)
+  .route('/accounts', accounts)
+  .route('/transactions', transactions)
+  .route('/expenses', expenses)
+  .route('/finance', financeReports)
 
 export default v1
