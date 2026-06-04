@@ -1,492 +1,384 @@
-"use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { PageShell } from "@/components/page-shell"
+import { PageHeader } from "@/components/page-header"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog"
+import { DeleteAlertMessage } from "@/components/DeleteAlertMessage"
+import { useProductId } from "@/features/(erp-core)/products/hooks/use-product-id"
 import {
-  Select,
-  SelectContent,
-  SelectTrigger,
-  SelectValue,
-  SelectItem,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Package, Save, Settings } from "lucide-react";
-import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ProductSchema } from "@/features/(erp-core)/dashboard/schema";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { ChipsInput } from "@/components/chip-input";
-import { FileUpload } from "@/features/(erp-core)/dashboard/components/file-upload";
-import { SpecificationFields } from "@/features/(erp-core)/dashboard/components/specifications-fields";
-import { useGetCategories } from "@/features/(erp-core)/categories/api/use-get-categories";
-import { useGetProduct } from "@/features/(erp-core)/products/api/use-get-product";
-import { useUpdateProduct } from "@/features/(erp-core)/dashboard/api/use-update-product";
-import { useProductId } from "@/features/(erp-core)/products/hooks/use-product-id";
+  useGetProductV1, useUpdateProductV1, useArchiveProductV1,
+  useGetVariants, useCreateVariant,
+  type Variant,
+} from "@/features/(erp-core)/catalog/api/products-v1"
+import { useGetCategoriesV1 } from "@/features/(erp-core)/catalog/api/categories-v1"
+import { useGetBrands } from "@/features/(erp-core)/catalog/api/brands"
+import { useGetUnits } from "@/features/(erp-core)/catalog/api/units"
+import { ArrowLeft, Package, Plus, Save, Layers, Trash } from "lucide-react"
+import Link from "next/link"
+import { buttonVariants } from "@/components/ui/button"
 
-function UpdateProductClient() {
-  const id = useProductId();
+const STATUS_OPTIONS = ["DRAFT", "ACTIVE", "INACTIVE", "ARCHIVED"] as const
+const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  ACTIVE: "default", DRAFT: "secondary", INACTIVE: "outline", ARCHIVED: "destructive",
+}
 
-  const { data: product, isLoading: productLoading } = useGetProduct({
-    id,
-  });
-  const { mutate } = useUpdateProduct();
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+}
 
-  const { data: categories, isLoading: categoryLoading } = useGetCategories();
+// ── Add Variant Dialog ────────────────────────────────────────────────────────
 
-  const form = useForm<z.infer<typeof ProductSchema>>({
-    resolver: zodResolver(ProductSchema),
-    defaultValues: {
-      productName: "",
-      productDescription: "",
-      productPrice: 0,
-      productStock: 0,
-      lowStockThreshold: 5,
-      productCategory: "",
-      productSKU: "",
-      productVariants: [],
-      productImages: [],
-      productTags: [],
-      productSize: [],
-      specifications: [
-        { key: "Material", value: "" },
-        { key: "Weight", value: "" },
-        { key: "Origin", value: "" },
-      ],
-      productFeatures: [],
-      careInstructions: "",
-      isFeatured: false,
-    },
-  });
+function AddVariantDialog({
+  productId,
+  open,
+  onOpenChange,
+}: {
+  productId: string
+  open: boolean
+  onOpenChange: (v: boolean) => void
+}) {
+  const { data: units = [] } = useGetUnits()
+  const { mutate: create, isPending } = useCreateVariant()
 
-  useEffect(() => {
-    if (product) {
-      form.reset({
-        productName: product.name,
-        productDescription: product.description,
-        productPrice: product.price,
-        productStock: product.stock,
-        lowStockThreshold: product.lowStockThreshold ?? 5,
-        productCategory: product.category,
-        productSKU: product.sku,
-        productVariants: product.colors,
-        productImages: product.images,
-        productTags: product.tags,
-        productSize: product.sizes,
-        specifications: product.specifications,
-        productFeatures: product.features,
-        careInstructions: product.care,
-        isFeatured: product.isFeatured,
-      });
-    }
-  }, [product, form]);
+  const [name, setName] = useState("")
+  const [sku, setSku] = useState("")
+  const [barcode, setBarcode] = useState("")
+  const [unitId, setUnitId] = useState("")
+  const [costPrice, setCostPrice] = useState("")
+  const [sellingPrice, setSellingPrice] = useState("")
 
-  type ProductFormValues = z.infer<typeof ProductSchema>;
+  function reset() {
+    setName(""); setSku(""); setBarcode(""); setUnitId(""); setCostPrice(""); setSellingPrice("")
+  }
 
-  const onSubmit = async (values: ProductFormValues) => {
-    const formData = new FormData();
-    formData.append("id", id as string);
-    formData.append("productName", values.productName);
-    formData.append("productDescription", values.productDescription);
-    formData.append("productPrice", values.productPrice.toString());
-    formData.append("productStock", values.productStock.toString());
-    formData.append("lowStockThreshold", (values.lowStockThreshold ?? 5).toString());
-    formData.append("productCategory", values.productCategory);
-    formData.append("productSKU", values.productSKU);
-    formData.append("productVariants", JSON.stringify(values.productVariants));
-    formData.append("productTags", JSON.stringify(values.productTags));
-    formData.append("specifications", JSON.stringify(values.specifications));
-    formData.append("productSize", JSON.stringify(values.productSize));
-    formData.append("productFeature", JSON.stringify(values.productFeatures));
-    formData.append("careInstruction", values.careInstructions || "");
-    formData.append("isFeatured", values.isFeatured ? "true" : "false");
-
-    values.productImages.forEach((file) => {
-      if (file instanceof File) {
-        formData.append("productImages", file);
-      } else {
-        formData.append("productImages", file);
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    create(
+      {
+        productId,
+        name,
+        sku,
+        barcode: barcode || undefined,
+        unitId: unitId || undefined,
+        costPrice: costPrice ? parseFloat(costPrice) : 0,
+        sellingPrice: sellingPrice ? parseFloat(sellingPrice) : 0,
+      },
+      {
+        onSuccess: () => { reset(); onOpenChange(false) },
       }
-    });
-
-    mutate(formData);
-  };
-
-  if (productLoading && categoryLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        Loading...
-      </div>
-    );
+    )
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Update Product</h1>
-
-      <Form {...form}>
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-6 lg:flex-row">
-            <Card className="w-full lg:w-2/3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Package size={24} />
-                  Product Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  name="productName"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-sm font-semibold">
-                        Product Name
-                      </label>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Product Name"
-                          required
-                          {...field}
-                          className="w-full mb-4"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="productDescription"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-sm font-semibold">
-                        Product Description
-                      </label>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Product Description"
-                          required
-                          {...field}
-                          className="w-full mb-4"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <FormField
-                    name="productPrice"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
-                          Product Price
-                        </label>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="0.00"
-                            required
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    name="productStock"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
-                          Product Stock
-                        </label>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            required
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    name="lowStockThreshold"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
-                          Low Stock Threshold
-                        </label>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="5"
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  name="productSKU"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="block text-sm font-semibold">
-                        SKU (Stock Keeping Unit)
-                      </label>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter product SKU"
-                          required
-                          {...field}
-                          className="w-full mb-2"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <FormField
-                    name="productVariants"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="block text-sm font-semibold mt-4">
-                          Variants
-                        </label>
-                        <FormControl>
-                          <ChipsInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Add variants (press Enter or comma)"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    name="productTags"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="block text-sm font-semibold ">
-                          Tags
-                        </label>
-                        <FormControl>
-                          <ChipsInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Add tags (press Enter or comma)"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  name="productFeatures"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className=" w-full">
-                      <label className="block text-sm font-semibold ">
-                        Product Features
-                      </label>
-                      <FormControl>
-                        <ChipsInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Add Features (press Enter or comma)"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="careInstructions"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-sm font-semibold mt-4">
-                        Care Instruction (optional)
-                      </label>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder=" Care Instruction"
-                          required
-                          {...field}
-                          className="w-full mb-4"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="isFeatured"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className="flex items-center gap-2 mt-4">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <label className="text-sm font-semibold inline-block">
-                        Mark as Featured Product (optional)
-                      </label>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Product Settings Card */}
-            <Card className="w-full lg:w-1/3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Settings size={24} />
-                  Product Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  name="productCategory"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="block text-sm font-semibold mb-2">
-                        Category
-                      </label>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => field.onChange(value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select categories" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories?.map((category) => (
-                              <SelectItem
-                                key={category.label}
-                                value={category.value}
-                              >
-                                {category.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="productSize"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className=" w-full">
-                      <label className="block text-sm font-semibold mt-4">
-                        Product size (optional)
-                      </label>
-                      <FormControl>
-                        <ChipsInput
-                          value={field.value || []}
-                          onChange={field.onChange}
-                          placeholder="Add Product Size (press Enter or comma)"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <SpecificationFields
-                  control={form.control}
-                  setValue={form.setValue}
-                />
-                <FormField
-                  name="productImages"
-                  control={form.control}
-                  render={() => (
-                    <>
-                      <label className="block text-sm font-semibold my-4">
-                        Upload
-                      </label>
-                      <FileUpload form={form} name="productImages" />
-                    </>
-                  )}
-                />
-              </CardContent>
-            </Card>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Variant</DialogTitle>
+        </DialogHeader>
+        <form id="add-variant-form" onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-sm text-muted-foreground">Variant Name *</label>
+            <Input placeholder="e.g. 1kg" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
-
-          <div className="  flex flex-col lg:flex-row gap-y-4 lg:justify-end mt-6">
-            <Button
-              type="button"
-              size="lg"
-              variant="outline"
-              className="w-full lg:w-[120px] mr-4"
-              onClick={() => form.reset()}
-            >
-              Clear
-            </Button>
-
-            <Button size="lg" className=" w-full lg:w-[120px]">
-              <Save />
-              Update
-            </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">SKU *</label>
+              <Input placeholder="RICE-001-1KG" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Barcode</label>
+              <Input placeholder="Optional" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm text-muted-foreground">Unit</label>
+            <Select value={unitId} onValueChange={(v) => setUnitId(v ?? "")}>
+              <SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger>
+              <SelectContent>
+                {units.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.name} ({u.shortName})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Cost Price</label>
+              <Input type="number" min={0} step={0.01} placeholder="0.00" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Selling Price</label>
+              <Input type="number" min={0} step={0.01} placeholder="0.00" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} />
+            </div>
           </div>
         </form>
-      </Form>
-    </div>
-  );
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { reset(); onOpenChange(false) }}>Cancel</Button>
+          <Button type="submit" form="add-variant-form" disabled={isPending}>
+            {isPending ? "Adding…" : "Add Variant"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
-export default UpdateProductClient;
+// ── Variants Tab ──────────────────────────────────────────────────────────────
+
+function VariantsTab({ productId }: { productId: string }) {
+  const { data: variants = [], isLoading } = useGetVariants(productId)
+  const [addOpen, setAddOpen] = useState(false)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setAddOpen(true)}>
+          <Plus className="w-4 h-4 mr-1" />Add Variant
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Layers className="w-4 h-4" />Variants
+            {variants.length > 0 && <span className="text-sm font-normal text-muted-foreground">({variants.length})</span>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}</div>
+          ) : variants.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <Layers className="w-8 h-8 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">No variants yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Inventory is tracked per variant per location.</p>
+              <Button className="mt-4" variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="w-3 h-3 mr-1" />Add First Variant
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Barcode</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(variants as Variant[]).map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="font-medium">{v.name}</TableCell>
+                    <TableCell className="font-mono text-xs">{v.sku}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{v.barcode ?? "—"}</TableCell>
+                    <TableCell className="text-right text-sm">{v.costPrice.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-sm font-medium">{v.sellingPrice.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={v.status === "ACTIVE" ? "default" : "secondary"}>{v.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DeleteAlertMessage
+                        title="Deactivate variant?"
+                        description={`Variant "${v.name}" (${v.sku}) will be marked inactive. Existing inventory records are preserved.`}
+                        onConfirm={() => {/* deactivate handled by future hook */}}
+                      >
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                          <Trash className="w-3 h-3" />
+                        </Button>
+                      </DeleteAlertMessage>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <AddVariantDialog productId={productId} open={addOpen} onOpenChange={setAddOpen} />
+    </div>
+  )
+}
+
+// ── Details Tab ───────────────────────────────────────────────────────────────
+
+function DetailsTab({ productId }: { productId: string }) {
+  const { data, isLoading } = useGetProductV1(productId)
+  const { data: categories = [] } = useGetCategoriesV1()
+  const { data: brands = [] } = useGetBrands()
+  const { mutate: update, isPending: saving } = useUpdateProductV1()
+
+  const product = data?.product
+
+  const [name, setName] = useState("")
+  const [slug, setSlug] = useState("")
+  const [description, setDescription] = useState("")
+  const [categoryId, setCategoryId] = useState("")
+  const [brandId, setBrandId] = useState("")
+  const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]>("DRAFT")
+
+  useEffect(() => {
+    if (!product) return
+    setName(product.name)
+    setSlug(product.slug)
+    setDescription(product.description ?? "")
+    setCategoryId(product.categoryId ?? "")
+    setBrandId(product.brandId ?? "")
+    setStatus(product.status)
+  }, [product])
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    update({
+      id: productId,
+      name,
+      slug,
+      description: description || null,
+      categoryId: categoryId || null,
+      brandId: brandId || null,
+      status,
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Package className="w-4 h-4" />Basic Info</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Product Name *</label>
+                <Input
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); if (!product || slug === slugify(product.name)) setSlug(slugify(e.target.value)) }}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Slug *</label>
+                <Input value={slug} onChange={(e) => setSlug(e.target.value)} pattern="[a-z0-9-]+" required />
+                <p className="text-xs text-muted-foreground">Unique per organization.</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Description</label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Classification</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Status</label>
+                <Select value={status} onValueChange={(v) => setStatus((v ?? "DRAFT") as typeof STATUS_OPTIONS[number])}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Category</label>
+                <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.filter((c) => c.status === "ACTIVE").map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Brand</label>
+                <Select value={brandId} onValueChange={(v) => setBrandId(v ?? "")}>
+                  <SelectTrigger><SelectValue placeholder="Select brand" /></SelectTrigger>
+                  <SelectContent>
+                    {brands.filter((b) => b.status === "ACTIVE").map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button type="submit" className="w-full" disabled={saving}>
+            <Save className="w-4 h-4 mr-1" />{saving ? "Saving…" : "Save Changes"}
+          </Button>
+        </div>
+      </div>
+    </form>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function UpdateProductClient() {
+  const productId = useProductId()
+  const router = useRouter()
+  const { data, isLoading } = useGetProductV1(productId)
+  const { mutate: archive, isPending: archiving } = useArchiveProductV1()
+
+  const productName = data?.product.name ?? "Product"
+
+  return (
+    <PageShell>
+      <PageHeader title={isLoading ? "Loading…" : productName} description="Edit product details and manage variants.">
+        <Link href="/dashboard/products" className={buttonVariants({ variant: "outline" })}>
+          <ArrowLeft className="w-4 h-4 mr-1" />Back
+        </Link>
+        <DeleteAlertMessage
+          title="Archive product?"
+          description="Archived products are hidden from sales and e-commerce. Inventory records are preserved."
+          loading={archiving}
+          onConfirm={() => archive(productId, { onSuccess: () => router.push("/dashboard/products") })}
+        >
+          <Button variant="destructive" size="sm">Archive</Button>
+        </DeleteAlertMessage>
+      </PageHeader>
+
+      <Tabs defaultValue="details">
+        <TabsList>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="variants">Variants</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" className="mt-4">
+          <DetailsTab productId={productId} />
+        </TabsContent>
+        <TabsContent value="variants" className="mt-4">
+          <VariantsTab productId={productId} />
+        </TabsContent>
+      </Tabs>
+    </PageShell>
+  )
+}
