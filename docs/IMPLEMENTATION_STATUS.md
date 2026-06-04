@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 1 fully complete — inventory tests, audit logs, transfer UI)
+Last Updated: 2026-06-04 (Phase 2 complete — Suppliers + Purchases)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -16,7 +16,7 @@ Last Updated: 2026-06-04 (Phase 1 fully complete — inventory tests, audit logs
 
 Current Phase: Phase 1 — Catalog + Inventory
 
-Overall Progress: 46%
+Overall Progress: 54%
 
 Project Status: 🟨 In Progress
 
@@ -160,11 +160,21 @@ Status: 🟩 Completed
 ---
 
 # Phase 2 — Purchases
-Status: ⬜ Not Started
-- [ ] Suppliers (CRUD, ledger, payments)
-- [ ] Purchase Orders (workflow, approval)
-- [ ] Goods Receiving (inventory + movements)
-- [ ] Purchase Returns
+Status: 🟩 Completed
+- [x] Drizzle schema: supplier, supplier_payment, purchase_order, purchase_item (migration 0006)
+- [x] Supplier repository (org-scoped, per-org unique phone, payments, total-paid aggregate)
+- [x] Purchases repository (org-scoped, order CRUD, items, received-qty update, total-purchased aggregate)
+- [x] Supplier service (list, get, create/update/archive — phone uniqueness, audit logged)
+- [x] Purchases service (create → DRAFT, approve, receive partial/full → inventory PURCHASE movements, cancel, getSupplierDue)
+- [x] API routes: GET/POST /api/v1/suppliers, PATCH/POST-archive /:id, GET/POST /:id/payments
+- [x] API routes: GET/POST /api/v1/purchase-orders, GET /:id, POST /:id/approve|receive|cancel, GET /:id/due
+- [x] Supplier UI (/dashboard/suppliers/all-suppliers — list + create dialog + archive)
+- [x] Purchase Orders UI (/dashboard/purchases/purchase-orders — status-tabbed list + inline detail + approve/receive/cancel)
+- [x] Create Purchase UI (/dashboard/purchases/create-purchase — supplier + location + line items + totals)
+- [x] Supplier Payments UI (/dashboard/purchases/supplier-payments — due summary + payment form + history)
+- [x] Audit logs: supplier create/update/archive/payment + purchase_order create/approve/receive/cancel
+- [ ] Purchase Returns (Phase 2 extension — schema not in DATABASE_SCHEMA.md for V1)
+- [ ] Purchases isolation tests
 
 ---
 
@@ -327,18 +337,15 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 + Phase 1 fully complete (62 tests pass). Next options (pick one):
+Phase 0 + Phase 1 + Phase 2 complete (62 tests pass). Next options (pick one):
 
-1. [HIGH] Phase 2 — Purchases
-   - Supplier schema + repo + service + API + UI (CRUD, ledger)
-   - Purchase Order schema + workflow (DRAFT→APPROVED→RECEIVED)
-   - Goods Receiving → inventory.incrementStock + PURCHASE movement created
-   - Audit logged throughout
-
-2. [HIGH] Phase 3 — Orders
+1. [HIGH] Phase 3 — Orders (CRITICAL PATH)
    - Order schema (org-scoped, source, status, payment_status, grand_total)
    - Inventory reservation on create; consume on delivered; release on cancel
    - Order list + detail + timeline UI
+
+2. [MEDIUM] Purchases isolation tests
+   - tests/purchases/isolation.test.ts — supplier, purchase_order repos; cross-tenant 404
 
 3. [LOW] Variant deactivate hook
    - Add useDeactivateVariant → DELETE /api/v1/products/:id/variants/:variantId

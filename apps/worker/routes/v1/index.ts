@@ -6,6 +6,8 @@ import units from './units'
 import products from './products'
 import locations from './locations'
 import inventory from './inventory'
+import suppliers from './suppliers'
+import purchases from './purchases'
 
 const v1 = new Hono<HonoEnv>()
   .route('/categories', categories)
@@ -14,5 +16,7 @@ const v1 = new Hono<HonoEnv>()
   .route('/products', products)
   .route('/locations', locations)
   .route('/inventory', inventory)
+  .route('/suppliers', suppliers)
+  .route('/purchase-orders', purchases)
 
 export default v1

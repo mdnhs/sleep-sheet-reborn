@@ -1,17 +1,11 @@
-import React from "react"
+"use client"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
-async function ComingSoonPage() {
-
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl bg-muted/50 border border-dashed">
-        <h1 className="text-2xl font-bold">Receive Products</h1>
-        <p className="text-muted-foreground text-center">
-          This feature is currently under development.
-        </p>
-      </div>
-    </div>
-  )
+export default function ReceiveProductsPage() {
+  const router = useRouter()
+  useEffect(() => {
+    router.replace("/dashboard/purchases/purchase-orders")
+  }, [router])
+  return null
 }
-
-export default ComingSoonPage
