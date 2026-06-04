@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 1 fully complete — images, audit logs, isolation tests)
+Last Updated: 2026-06-04 (Phase 1 fully complete — inventory tests, audit logs, transfer UI)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -16,7 +16,7 @@ Last Updated: 2026-06-04 (Phase 1 fully complete — images, audit logs, isolati
 
 Current Phase: Phase 1 — Catalog + Inventory
 
-Overall Progress: 43%
+Overall Progress: 46%
 
 Project Status: 🟨 In Progress
 
@@ -32,11 +32,12 @@ Sprint Delivered:
 - v1 services: categories, brands, units, products (+ plan limit + audit), product-variants (SKU/barcode uniqueness), product-images (Cloudinary upload/delete), locations (+ plan limit), inventory (stock, adjustments, movement ledger, transfers)
 - v1 API routes at /api/v1/ — full CRUD with requirePermission() + Zod validation
 - Plan enforcement (enforceSubscriptionActive, enforceLimit wired to products + locations)
-- Audit log wired to product create/update/archive + image upload/delete
-- Dashboard UI: brands, units, products list + create + edit (Details/Variants/Images tabs), warehouses/outlets, stock adjustment + movement history
-- React Query v1 hooks for all modules including product images (raw fetch for multipart)
+- Audit log wired to product create/update/archive + image upload/delete + inventory adjustments + transfer create/approve/receive
+- Dashboard UI: brands, units, products list + create + edit (Details/Variants/Images tabs), warehouses/outlets, stock adjustment + movement history, stock transfer (create + approve + receive + cancel workflow)
+- React Query v1 hooks for all modules including product images (raw fetch for multipart) + full transfer hooks
 - Catalog isolation tests: 20 tests (category, brand, product, variant repos — per-org uniqueness, cross-tenant 404)
-- Total test suite: 47 tests pass (27 tenancy + 20 catalog)
+- Inventory isolation tests: 15 tests (stock, movements, transfers — repo scoping, cross-tenant 404, upsert/update no-ops across tenant)
+- Total test suite: 62 tests pass (27 tenancy + 20 catalog + 15 inventory)
 
 Sprint Status: 🟩 Complete
 
@@ -140,7 +141,7 @@ Status: 🟩 Completed
 - [x] Catalog isolation tests (tests/catalog/isolation.test.ts — 20 tests: category, brand, product, variant repos; per-org slug/SKU uniqueness; cross-tenant 404)
 
 ## Inventory — Priority: CRITICAL
-Status: 🟨 In Progress
+Status: 🟩 Completed
 - [x] Locations schema (packages/database/src/schema/locations.ts — branches + locations, org-scoped)
 - [x] Inventory schema (packages/database/src/schema/inventory.ts — inventory + movements + transfers)
 - [x] Migration (packages/database/migrations/0004_phase1_catalog_inventory.sql)
@@ -151,10 +152,10 @@ Status: 🟨 In Progress
 - [x] Transfer service + API routes (POST /api/v1/inventory/transfers, /approve, /receive, /cancel — stock + movements on RECEIVED)
 - [x] Locations UI (/dashboard/inventory/warehouses — tabbed warehouses + outlets, create forms)
 - [x] Stock Adjustment UI (/dashboard/inventory/stock-adjustment — absolute qty form + adjustment movement history)
+- [x] Stock Transfer UI (/dashboard/inventory/stock-transfer — create + approve + receive + cancel workflow, status-filtered list, detail panel)
+- [x] Audit logs: inventory adjustments + transfer create/approve/receive (actor ID from session)
+- [x] Inventory isolation tests (tests/inventory/isolation.test.ts — 15 tests: stock, movement, transfer repos; cross-tenant 404; upsert/update no-ops across orgs)
 - [ ] Inventory Reservations schema + repository (depends on orders — Phase 3)
-- [ ] Stock Transfer UI (/dashboard/inventory/stock-transfer — create + approve + receive workflow)
-- [ ] Audit logs: inventory adjustments, transfer approve/receive
-- [ ] Inventory isolation tests
 
 ---
 
@@ -288,12 +289,12 @@ Status: ⬜ Not Started
 # Testing Status
 
 ```text
-Tenant Isolation Tests:  🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
-Catalog Isolation Tests: 🟩 20 tests pass  (tests/catalog/isolation.test.ts)
-Inventory Tests:         ⬜ Not Started
-Unit Tests:              ⬜ Not Started
-Integration Tests:       ⬜ Not Started
-E2E Tests:               ⬜ Not Started
+Tenant Isolation Tests:    🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
+Catalog Isolation Tests:   🟩 20 tests pass  (tests/catalog/isolation.test.ts)
+Inventory Isolation Tests: 🟩 15 tests pass  (tests/inventory/isolation.test.ts)
+Unit Tests:                ⬜ Not Started
+Integration Tests:         ⬜ Not Started
+E2E Tests:                 ⬜ Not Started
 ```
 
 ---
@@ -307,9 +308,7 @@ E2E Tests:               ⬜ Not Started
 - `apps/web/proxy.ts` — cookie check is shallow (existence only); layout does full server-side validation.
 - `apps/web/components/app-sidebar.tsx` — NavUser uses authClient.useSession(); remove static user const.
 - Old routes at `/api/*` still hit the legacy ORM; storefront pages use them. Do not remove until storefront migrated.
-- Audit logs — inventory adjustments and transfer approve/receive not yet writing audit log entries (only product + image ops are audited).
 - Variant deactivate — delete button in Variants tab wired to `onConfirm={() => {}}` stub; need `useDeactivateVariant` hook.
-- Inventory isolation tests — not yet written (tests/inventory/ is a placeholder).
 
 ---
 
@@ -328,28 +327,20 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 + Phase 1 fully complete (47 tests pass). Next options (pick one):
+Phase 0 + Phase 1 fully complete (62 tests pass). Next options (pick one):
 
-1. [HIGH] Stock Transfer UI (/dashboard/inventory/stock-transfer)
-   - Create transfer (select from/to location, add variant rows with qty)
-   - Approve + Receive workflow UI; real-time stock + movement log per transfer
-
-2. [HIGH] Phase 2 — Purchases
+1. [HIGH] Phase 2 — Purchases
    - Supplier schema + repo + service + API + UI (CRUD, ledger)
    - Purchase Order schema + workflow (DRAFT→APPROVED→RECEIVED)
    - Goods Receiving → inventory.incrementStock + PURCHASE movement created
    - Audit logged throughout
 
-3. [HIGH] Phase 3 — Orders
+2. [HIGH] Phase 3 — Orders
    - Order schema (org-scoped, source, status, payment_status, grand_total)
    - Inventory reservation on create; consume on delivered; release on cancel
    - Order list + detail + timeline UI
 
-4. [MEDIUM] Inventory audit logs + isolation tests
-   - Wire audit log into adjustments + transfer approve/receive
-   - tests/inventory/isolation.test.ts — stock, movement, transfer repos
-
-5. [LOW] Variant deactivate hook
+3. [LOW] Variant deactivate hook
    - Add useDeactivateVariant → DELETE /api/v1/products/:id/variants/:variantId
    - Wire into delete button in Variants tab (currently a stub)
 ```

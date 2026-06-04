@@ -2,12 +2,14 @@ import type { Database } from '@repo/database'
 import { createInventoryRepository } from '../../repositories/inventory.repository'
 import { createLocationRepository } from '../../repositories/locations.repository'
 import { createProductVariantRepository } from '../../repositories/product-variants.repository'
+import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { ServiceError } from '../../utils/service-error'
 
 export function createInventoryService(db: Database, organizationId: string) {
   const repo = createInventoryRepository(db, organizationId)
   const locationRepo = createLocationRepository(db, organizationId)
   const variantRepo = createProductVariantRepository(db, organizationId)
+  const auditRepo = createAuditLogRepository(db, organizationId)
 
   async function assertVariant(variantId: string) {
     const v = await variantRepo.findById(variantId)
@@ -62,6 +64,13 @@ export function createInventoryService(db: Database, organizationId: string) {
         quantity: delta,
         notes: data.notes,
       })
+      await auditRepo.log('inventory', data.variantId, 'adjustment', data.createdBy, {
+        locationId: data.locationId,
+        previousQuantity: current?.quantity ?? 0,
+        newQuantity: data.quantity,
+        delta,
+        notes: data.notes,
+      })
 
       return repo.findByVariantAndLocation(data.variantId, data.locationId)
     },
@@ -110,6 +119,12 @@ export function createInventoryService(db: Database, organizationId: string) {
         await repo.addTransferItem({ transferId: transfer.id, variantId: item.variantId, quantity: item.quantity })
       }
 
+      await auditRepo.log('transfer', transfer.id, 'create', undefined, {
+        fromLocationId: data.fromLocationId,
+        toLocationId: data.toLocationId,
+        itemCount: data.items.length,
+      })
+
       return this.getTransfer(transfer.id)
     },
 
@@ -117,7 +132,9 @@ export function createInventoryService(db: Database, organizationId: string) {
       const t = await repo.findTransferById(id)
       if (!t) throw new ServiceError('Transfer not found', 404)
       if (t.status !== 'DRAFT') throw new ServiceError('Only DRAFT transfers can be approved', 400)
-      return repo.updateTransferStatus(id, 'APPROVED', approvedBy)
+      const result = await repo.updateTransferStatus(id, 'APPROVED', approvedBy)
+      await auditRepo.log('transfer', id, 'approve', approvedBy, { previousStatus: 'DRAFT' })
+      return result
     },
 
     async receiveTransfer(id: string, receivedBy: string) {
@@ -145,7 +162,12 @@ export function createInventoryService(db: Database, organizationId: string) {
         await repo.createMovement({ variantId: item.variantId, locationId: t.toLocationId, movementType: 'TRANSFER_IN', quantity: item.quantity, referenceType: 'transfer', referenceId: id })
       }
 
-      return repo.updateTransferStatus(id, 'RECEIVED', receivedBy)
+      const result = await repo.updateTransferStatus(id, 'RECEIVED', receivedBy)
+      await auditRepo.log('transfer', id, 'receive', receivedBy, {
+        previousStatus: t.status,
+        itemCount: items.length,
+      })
+      return result
     },
 
     async cancelTransfer(id: string) {
