@@ -81,3 +81,41 @@ export const purchaseItem = sqliteTable('purchase_item', {
 
 export type PurchaseItem = typeof purchaseItem.$inferSelect
 export type NewPurchaseItem = typeof purchaseItem.$inferInsert
+
+export const purchaseReturn = sqliteTable('purchase_return', {
+  id: text('id').primaryKey(),
+  organizationId: text('organizationId').notNull().references(() => organization.id, { onDelete: 'cascade' }),
+  purchaseOrderId: text('purchaseOrderId').notNull().references(() => purchaseOrder.id, { onDelete: 'restrict' }),
+  returnNumber: text('returnNumber').notNull(),
+  status: text('status', {
+    enum: ['PENDING', 'APPROVED', 'CANCELLED'],
+  }).notNull().default('PENDING'),
+  locationId: text('locationId').notNull().references(() => location.id, { onDelete: 'restrict' }),
+  notes: text('notes'),
+  approvedBy: text('approvedBy'),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull(),
+}, (t) => [
+  uniqueIndex('purchase_return_org_number_idx').on(t.organizationId, t.returnNumber),
+  index('purchase_return_org_idx').on(t.organizationId),
+  index('purchase_return_po_idx').on(t.purchaseOrderId),
+])
+
+export type PurchaseReturn = typeof purchaseReturn.$inferSelect
+export type NewPurchaseReturn = typeof purchaseReturn.$inferInsert
+
+export const purchaseReturnItem = sqliteTable('purchase_return_item', {
+  id: text('id').primaryKey(),
+  purchaseReturnId: text('purchaseReturnId').notNull().references(() => purchaseReturn.id, { onDelete: 'cascade' }),
+  purchaseItemId: text('purchaseItemId').notNull().references(() => purchaseItem.id, { onDelete: 'restrict' }),
+  variantId: text('variantId').notNull().references(() => productVariant.id, { onDelete: 'restrict' }),
+  quantity: integer('quantity').notNull(),
+  unitCost: integer('unitCost').notNull().default(0),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+}, (t) => [
+  index('purchase_return_item_return_idx').on(t.purchaseReturnId),
+  index('purchase_return_item_purchase_item_idx').on(t.purchaseItemId),
+])
+
+export type PurchaseReturnItem = typeof purchaseReturnItem.$inferSelect
+export type NewPurchaseReturnItem = typeof purchaseReturnItem.$inferInsert

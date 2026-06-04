@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 2 complete — Suppliers + Purchases)
+Last Updated: 2026-06-04 (Phase 2 fully complete — Suppliers + Purchases + Purchase Returns + isolation tests)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -16,7 +16,7 @@ Last Updated: 2026-06-04 (Phase 2 complete — Suppliers + Purchases)
 
 Current Phase: Phase 1 — Catalog + Inventory
 
-Overall Progress: 54%
+Overall Progress: 57%
 
 Project Status: 🟨 In Progress
 
@@ -173,8 +173,8 @@ Status: 🟩 Completed
 - [x] Create Purchase UI (/dashboard/purchases/create-purchase — supplier + location + line items + totals)
 - [x] Supplier Payments UI (/dashboard/purchases/supplier-payments — due summary + payment form + history)
 - [x] Audit logs: supplier create/update/archive/payment + purchase_order create/approve/receive/cancel
-- [ ] Purchase Returns (Phase 2 extension — schema not in DATABASE_SCHEMA.md for V1)
-- [ ] Purchases isolation tests
+- [x] Purchase Returns — schema (migration 0007), repository (getTotalReturnedQty for overreturn guard), service (create/approve/cancel — inventory PURCHASE_RETURN movement on approve), API routes (GET/POST /api/v1/purchase-returns, /:id/approve, /:id/cancel), purchases.return permission, UI (/dashboard/purchases/purchase-returns — tabbed list + create dialog + detail panel + approve/cancel workflow)
+- [x] Purchases isolation tests (tests/purchases/isolation.test.ts — 25 tests: supplier repo, supplier_payment repo, purchase_order repo; cross-tenant 404; phone/number uniqueness per-org; getTotalPaid/countByOrg scoping; create/update no-ops across tenant)
 
 ---
 
@@ -302,6 +302,7 @@ Status: ⬜ Not Started
 Tenant Isolation Tests:    🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
 Catalog Isolation Tests:   🟩 20 tests pass  (tests/catalog/isolation.test.ts)
 Inventory Isolation Tests: 🟩 15 tests pass  (tests/inventory/isolation.test.ts)
+Purchases Isolation Tests: 🟩 25 tests pass  (tests/purchases/isolation.test.ts)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started

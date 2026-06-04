@@ -48,6 +48,7 @@ export const ORG_PERMISSIONS = {
   'purchases.update':  ['OWNER', 'ADMIN', 'PURCHASE_MANAGER'] as OrgRole[],
   'purchases.approve': OWNER_ADMIN,
   'purchases.receive': ['OWNER', 'ADMIN', 'PURCHASE_MANAGER', 'INVENTORY_MANAGER'] as OrgRole[],
+  'purchases.return':  ['OWNER', 'ADMIN', 'PURCHASE_MANAGER'] as OrgRole[],
   // Suppliers
   'suppliers.view':    ['OWNER', 'ADMIN', 'MANAGER', 'PURCHASE_MANAGER'] as OrgRole[],
   'suppliers.create':  ['OWNER', 'ADMIN', 'PURCHASE_MANAGER'] as OrgRole[],

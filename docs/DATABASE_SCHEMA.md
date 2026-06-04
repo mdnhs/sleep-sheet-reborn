@@ -797,6 +797,34 @@ id PK
 purchase_order_id FK → purchase_orders.id
 variant_id FK → product_variants.id
 quantity
+received_quantity
+unit_cost
+created_at
+```
+
+## purchase_returns
+
+```text
+id PK
+organization_id FK → organizations.id
+purchase_order_id FK → purchase_orders.id
+return_number UNIQUE        -- per organization
+status                      -- PENDING | APPROVED | CANCELLED
+location_id FK → locations.id
+notes
+approved_by
+created_at
+updated_at
+```
+
+## purchase_return_items
+
+```text
+id PK
+purchase_return_id FK → purchase_returns.id
+purchase_item_id FK → purchase_items.id
+variant_id FK → product_variants.id
+quantity                    -- ≤ (purchase_item.received_quantity − already_returned)
 unit_cost
 created_at
 ```

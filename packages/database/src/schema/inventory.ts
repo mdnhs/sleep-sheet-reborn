@@ -25,7 +25,7 @@ export const inventoryMovement = sqliteTable('inventory_movement', {
   variantId: text('variantId').notNull().references(() => productVariant.id, { onDelete: 'restrict' }),
   locationId: text('locationId').notNull().references(() => location.id, { onDelete: 'restrict' }),
   movementType: text('movementType', {
-    enum: ['PURCHASE', 'POS_SALE', 'ONLINE_SALE', 'RETURN', 'TRANSFER_IN', 'TRANSFER_OUT', 'DAMAGE', 'EXPIRED', 'ADJUSTMENT'],
+    enum: ['PURCHASE', 'PURCHASE_RETURN', 'POS_SALE', 'ONLINE_SALE', 'RETURN', 'TRANSFER_IN', 'TRANSFER_OUT', 'DAMAGE', 'EXPIRED', 'ADJUSTMENT'],
   }).notNull(),
   quantity: integer('quantity').notNull(),
   referenceType: text('referenceType'),

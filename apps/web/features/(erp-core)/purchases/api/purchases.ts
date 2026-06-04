@@ -163,3 +163,123 @@ export function useGetSupplierDue(supplierId: string) {
     enabled: !!supplierId,
   })
 }
+
+// ─── Purchase Returns ─────────────────────────────────────────────────────────
+
+export type PRStatus = 'PENDING' | 'APPROVED' | 'CANCELLED'
+
+export type PurchaseReturnItem = {
+  id: string
+  purchaseReturnId: string
+  purchaseItemId: string
+  variantId: string
+  quantity: number
+  unitCost: number
+  createdAt: string
+}
+
+export type PurchaseReturn = {
+  id: string
+  purchaseOrderId: string
+  returnNumber: string
+  status: PRStatus
+  locationId: string
+  notes: string | null
+  approvedBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type PurchaseReturnWithItems = PurchaseReturn & { items: PurchaseReturnItem[] }
+
+export function useListPurchaseReturns(purchaseOrderId?: string, status?: PRStatus) {
+  return useQuery<PurchaseReturn[]>({
+    queryKey: ["v1", "purchase-returns", purchaseOrderId ?? "all", status ?? "all"],
+    queryFn: async () => {
+      const query: Record<string, string> = {}
+      if (purchaseOrderId) query.purchaseOrderId = purchaseOrderId
+      if (status) query.status = status
+      const res = await fetch(`/api/v1/purchase-returns?${new URLSearchParams(query)}`)
+      if (!res.ok) throw new Error("Failed to fetch purchase returns")
+      return (await res.json() as ApiOk<PurchaseReturn[]>).data
+    },
+  })
+}
+
+export function useGetPurchaseReturn(id: string) {
+  return useQuery<PurchaseReturnWithItems>({
+    queryKey: ["v1", "purchase-returns", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/purchase-returns/${id}`)
+      if (!res.ok) throw new Error("Failed to fetch purchase return")
+      return (await res.json() as ApiOk<PurchaseReturnWithItems>).data
+    },
+    enabled: !!id,
+  })
+}
+
+export function useCreatePurchaseReturn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: {
+      purchaseOrderId: string
+      items: Array<{ purchaseItemId: string; variantId: string; quantity: number }>
+      notes?: string
+    }) => {
+      const res = await fetch('/api/v1/purchase-returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        const e = await res.json() as { message?: string }
+        throw new Error(e.message ?? "Failed to create purchase return")
+      }
+      return (await res.json() as ApiOk<PurchaseReturnWithItems>).data
+    },
+    onSuccess: () => {
+      toast.success("Purchase return created")
+      qc.invalidateQueries({ queryKey: ["v1", "purchase-returns"] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
+
+export function useApprovePurchaseReturn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/v1/purchase-returns/${id}/approve`, { method: 'POST' })
+      if (!res.ok) {
+        const e = await res.json() as { message?: string }
+        throw new Error(e.message ?? "Failed to approve purchase return")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success("Return approved — inventory updated")
+      qc.invalidateQueries({ queryKey: ["v1", "purchase-returns"] })
+      qc.invalidateQueries({ queryKey: ["v1", "inventory"] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
+
+export function useCancelPurchaseReturn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/v1/purchase-returns/${id}/cancel`, { method: 'POST' })
+      if (!res.ok) {
+        const e = await res.json() as { message?: string }
+        throw new Error(e.message ?? "Failed to cancel purchase return")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success("Purchase return cancelled")
+      qc.invalidateQueries({ queryKey: ["v1", "purchase-returns"] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
