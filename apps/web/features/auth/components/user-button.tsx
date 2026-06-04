@@ -66,7 +66,7 @@ export const UserButton = () => {
     );
   }
 
-  if (!session) {
+  if (!session || !session.user) {
     return null;
   }
 

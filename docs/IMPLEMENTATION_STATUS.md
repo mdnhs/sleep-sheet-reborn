@@ -155,7 +155,7 @@ Status: 🟩 Completed
 - [x] Stock Transfer UI (/dashboard/inventory/stock-transfer — create + approve + receive + cancel workflow, status-filtered list, detail panel)
 - [x] Audit logs: inventory adjustments + transfer create/approve/receive (actor ID from session)
 - [x] Inventory isolation tests (tests/inventory/isolation.test.ts — 15 tests: stock, movement, transfer repos; cross-tenant 404; upsert/update no-ops across orgs)
-- [ ] Inventory Reservations schema + repository (depends on orders — Phase 3)
+- [x] Inventory Reservations schema + repository (completed in Phase 3 — inventoryReservation table + createInventoryReservationRepository)
 
 ---
 
@@ -179,13 +179,26 @@ Status: 🟩 Completed
 ---
 
 # Phase 3 — Orders — Priority: CRITICAL
-Status: ⬜ Not Started
-- [ ] Orders (+ source + attribution fields)
-- [ ] Order Items
-- [ ] Order Addresses
-- [ ] Order Timeline
-- [ ] Refunds
-- [ ] Returns (inventory restore)
+Status: ✅ Complete
+- [x] Orders schema (packages/database/src/schema/orders.ts): order, orderItem, orderAddress, orderTimeline, inventoryReservation, orderRefund, orderReturn, orderReturnItem — all org-scoped
+- [x] Migration: packages/database/migrations/0008_phase3_orders.sql
+- [x] Orders repository (apps/worker/repositories/orders.repository.ts): findMany/findById/findByNumber/create/update/addItem/findItems/setAddress/findAddress/addTimeline/findTimeline/countByOrg/countByOrgThisMonth
+- [x] Inventory Reservation repository (apps/worker/repositories/inventory-reservation.repository.ts): createReservation/findByOrder/findActiveByVariantAndLocation/consumeByOrder/releaseByOrder
+- [x] Order Refunds repository (apps/worker/repositories/order-refunds.repository.ts)
+- [x] Order Returns repository (apps/worker/repositories/order-returns.repository.ts) + getTotalReturnedQty for overreturn guard
+- [x] Orders service (apps/worker/services/v1/orders.service.ts): list/get/create (stock check + reservations)/confirm/process/pack/ship/deliver (consume reservations + ONLINE_SALE movements)/cancel (release reservations)
+- [x] Order Refunds service (apps/worker/services/v1/order-refunds.service.ts): list/get/create/approve
+- [x] Order Returns service (apps/worker/services/v1/order-returns.service.ts): list/get/create/cancel/approve (RETURN movement + restock)
+- [x] API routes: GET/POST /api/v1/orders, /:id, /:id/confirm|process|pack|ship|deliver|cancel — permissions: orders.view/create/update/cancel
+- [x] API routes: GET/POST /api/v1/order-refunds, /:id/approve — permission: orders.refund
+- [x] API routes: GET/POST /api/v1/order-returns, /:id/approve|cancel — permissions: orders.refund/cancel
+- [x] All routes registered in apps/worker/routes/v1/index.ts
+- [x] UI hooks (apps/web/features/(erp-core)/orders/api/v1-orders.ts): all order/refund/return hooks using fetch()
+- [x] Orders UI (/dashboard/orders — tabbed by status, inline detail panel, action buttons per status)
+- [x] Create Order UI (/dashboard/orders/create — location + items + address + payment)
+- [x] Refund Requests UI (/dashboard/orders/refund-requests — list + approve)
+- [x] TypeScript: worker compiles clean (npx tsc --noEmit)
+- [x] Tests: 87/87 pass (all pre-existing isolation tests)
 
 ---
 
