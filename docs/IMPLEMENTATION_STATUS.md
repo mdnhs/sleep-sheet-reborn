@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 1 catalog + inventory complete)
+Last Updated: 2026-06-04 (Phase 1 fully complete — images, audit logs, isolation tests)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -16,7 +16,7 @@ Last Updated: 2026-06-04 (Phase 1 catalog + inventory complete)
 
 Current Phase: Phase 1 — Catalog + Inventory
 
-Overall Progress: 38%
+Overall Progress: 43%
 
 Project Status: 🟨 In Progress
 
@@ -24,17 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 1 — Catalog + Inventory (complete)
+Sprint Goal: Phase 1 — Catalog + Inventory (fully complete)
 
 Sprint Delivered:
-- Drizzle schemas: catalog (category, brand, unit, product, product_variant, product_image), locations (branch, location), inventory (inventory, inventory_movement, transfer, transfer_item)
-- Migration 0004_phase1_catalog_inventory.sql
-- Org-scoped repositories (all Phase 1 entities)
-- v1 services: categories, brands, units, products (+ plan limit), product-variants (SKU/barcode uniqueness), locations (+ plan limit), inventory (stock, adjustments, movement ledger, transfers)
-- v1 API routes mounted at /api/v1/ with requirePermission() guards and Zod validation
-- Plan enforcement utility (enforceSubscriptionActive, enforceLimit)
-- Dashboard UI: brands, units, products list + create + edit (with variant management dialog), warehouses/outlets, stock adjustment + movement history
-- React Query v1 hooks for all modules
+- Drizzle schemas: catalog, locations, inventory, audit_log (migrations 0004–0005)
+- Org-scoped repositories for all Phase 1 entities + product-images + audit-log
+- v1 services: categories, brands, units, products (+ plan limit + audit), product-variants (SKU/barcode uniqueness), product-images (Cloudinary upload/delete), locations (+ plan limit), inventory (stock, adjustments, movement ledger, transfers)
+- v1 API routes at /api/v1/ — full CRUD with requirePermission() + Zod validation
+- Plan enforcement (enforceSubscriptionActive, enforceLimit wired to products + locations)
+- Audit log wired to product create/update/archive + image upload/delete
+- Dashboard UI: brands, units, products list + create + edit (Details/Variants/Images tabs), warehouses/outlets, stock adjustment + movement history
+- React Query v1 hooks for all modules including product images (raw fetch for multipart)
+- Catalog isolation tests: 20 tests (category, brand, product, variant repos — per-org uniqueness, cross-tenant 404)
+- Total test suite: 47 tests pass (27 tenancy + 20 catalog)
 
 Sprint Status: 🟩 Complete
 
@@ -109,7 +111,7 @@ Standard module checklist (per sub-module):
 `Schema (+organization_id) · Relations · Validation · Repository (org-scoped) · Service · API · UI · RBAC · Plan/Flag · Audit Logs · Tests (+isolation)`
 
 ## Catalog
-Status: 🟨 In Progress
+Status: 🟩 Completed
 - [x] Categories schema (Drizzle, packages/database/src/schema/catalog.ts — org-scoped, per-org unique slug)
 - [x] Brands schema (same file — org-scoped, per-org unique slug)
 - [x] Units schema (same file — org-scoped)
@@ -121,19 +123,21 @@ Status: 🟨 In Progress
 - [x] Unit repository (apps/worker/repositories/units.repository.ts)
 - [x] Product repository (apps/worker/repositories/products.repository.ts)
 - [x] Product Variant repository (apps/worker/repositories/product-variants.repository.ts)
+- [x] Product Image repository (apps/worker/repositories/product-images.repository.ts — create, delete, reorder)
+- [x] Audit Log schema + repository (packages/database/src/schema/audit.ts, migration 0005 — immutable, org-scoped)
 - [x] Category service + API routes (GET/POST /api/v1/categories, PATCH/DELETE /:id — slug uniqueness per org)
 - [x] Brand service + API routes (GET/POST /api/v1/brands, PATCH/DELETE /:id — slug uniqueness per org)
 - [x] Unit service + API routes (GET/POST /api/v1/units, PATCH/DELETE /:id)
-- [x] Product service + API routes (GET/POST /api/v1/products, PATCH/DELETE /:id — plan enforceLimit, slug uniqueness)
+- [x] Product service + API routes (GET/POST /api/v1/products, PATCH/DELETE /:id — plan enforceLimit, slug uniqueness, audit logged)
 - [x] Product Variant service + API routes (GET/POST /api/v1/products/:id/variants, PATCH/DELETE — SKU + barcode uniqueness)
+- [x] Product Image service + API routes (GET/POST /api/v1/products/:id/images, DELETE .../images/:imageId — Cloudinary upload/destroy, audit logged)
 - [x] Brand UI (/dashboard/products/brands — list + inline create + archive)
 - [x] Unit UI (/dashboard/products/units — list + inline create + delete)
 - [x] Product list UI (/dashboard/products — v1 paginated list, search, status filter, archive)
 - [x] Product create UI (/dashboard/products/create — name, slug, description, category, brand)
-- [x] Product edit UI (/dashboard/products/update/[id] — Details tab: all fields + status; Variants tab: table + add-variant dialog)
-- [ ] Product Image repository + upload UI (Cloudinary integration — deferred)
-- [ ] Audit logs: product create/update/archive
-- [ ] Catalog isolation tests
+- [x] Product edit UI (/dashboard/products/update/[id] — Details tab + Variants tab (add-variant dialog) + Images tab (upload grid + delete))
+- [x] Audit logs: product create/update/archive + image upload/delete (actor ID from session)
+- [x] Catalog isolation tests (tests/catalog/isolation.test.ts — 20 tests: category, brand, product, variant repos; per-org slug/SKU uniqueness; cross-tenant 404)
 
 ## Inventory — Priority: CRITICAL
 Status: 🟨 In Progress
@@ -285,6 +289,8 @@ Status: ⬜ Not Started
 
 ```text
 Tenant Isolation Tests:  🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
+Catalog Isolation Tests: 🟩 20 tests pass  (tests/catalog/isolation.test.ts)
+Inventory Tests:         ⬜ Not Started
 Unit Tests:              ⬜ Not Started
 Integration Tests:       ⬜ Not Started
 E2E Tests:               ⬜ Not Started
@@ -294,16 +300,16 @@ E2E Tests:               ⬜ Not Started
 
 # Technical Debt
 
-- `packages/database/src/client.ts` — custom D1 ORM still used by old storefront routes (products, categories, orders, etc.). Migrate to Drizzle incrementally as modules move to v1.
+- `packages/database/src/client.ts` — custom D1 ORM still used by old storefront routes (products, categories, orders, etc.). Migrate incrementally as modules move to v1.
 - `apps/web/stores/` — Redux Toolkit. Migrate to Zustand (low priority until storefront auth migrated).
 - `apps/web/features/auth/` — storefront auth still uses old JWT hooks; migrate when storefront is scoped.
 - `apps/web/lib/is-authenticated.ts` — dead code (old JWT). Delete once storefront auth is migrated.
 - `apps/web/proxy.ts` — cookie check is shallow (existence only); layout does full server-side validation.
-- `apps/web/components/app-sidebar.tsx` — NavUser now uses authClient.useSession(); remove static user const.
-- `apps/worker/routes/v1/` — old routes at `/api/*` still hit the legacy ORM; existing storefront pages use them. Do not remove until storefront migrated.
-- Product Image upload — `product_image` schema + repo exists; Cloudinary upload UI not yet built.
-- Audit logs — product create/update/archive, inventory adjustments, transfer approve/receive not yet writing audit log entries.
-- Variant deactivate — delete button in variants table wired but deactivate mutation not yet added to hook file.
+- `apps/web/components/app-sidebar.tsx` — NavUser uses authClient.useSession(); remove static user const.
+- Old routes at `/api/*` still hit the legacy ORM; storefront pages use them. Do not remove until storefront migrated.
+- Audit logs — inventory adjustments and transfer approve/receive not yet writing audit log entries (only product + image ops are audited).
+- Variant deactivate — delete button in Variants tab wired to `onConfirm={() => {}}` stub; need `useDeactivateVariant` hook.
+- Inventory isolation tests — not yet written (tests/inventory/ is a placeholder).
 
 ---
 
@@ -322,29 +328,30 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 + Phase 1 complete. Next options (pick one):
+Phase 0 + Phase 1 fully complete (47 tests pass). Next options (pick one):
 
 1. [HIGH] Stock Transfer UI (/dashboard/inventory/stock-transfer)
-   - Create transfer (select from/to location, add variant rows)
-   - Approve + Receive actions (full workflow: DRAFT→APPROVED→RECEIVED)
-   - Movement log per transfer
+   - Create transfer (select from/to location, add variant rows with qty)
+   - Approve + Receive workflow UI; real-time stock + movement log per transfer
 
 2. [HIGH] Phase 2 — Purchases
    - Supplier schema + repo + service + API + UI (CRUD, ledger)
    - Purchase Order schema + workflow (DRAFT→APPROVED→RECEIVED)
-   - Goods Receiving → inventory.incrementStock + movement created
+   - Goods Receiving → inventory.incrementStock + PURCHASE movement created
+   - Audit logged throughout
 
 3. [HIGH] Phase 3 — Orders
    - Order schema (org-scoped, source, status, payment_status, grand_total)
-   - Inventory reservation on order create; consume on delivered; release on cancel
-   - Order list + detail UI
+   - Inventory reservation on create; consume on delivered; release on cancel
+   - Order list + detail + timeline UI
 
-4. [MEDIUM] Catalog audit logs + isolation tests
-   - Write audit log on product create/update/archive, inventory adjust, transfer approve/receive
-   - Tenant isolation test suite for Phase 1 repos
+4. [MEDIUM] Inventory audit logs + isolation tests
+   - Wire audit log into adjustments + transfer approve/receive
+   - tests/inventory/isolation.test.ts — stock, movement, transfer repos
 
-5. [MEDIUM] Variant deactivate mutation (wire up delete button in edit page)
-   - Add useDeactivateVariant hook → PATCH /api/v1/products/:id/variants/:variantId (DELETE)
+5. [LOW] Variant deactivate hook
+   - Add useDeactivateVariant → DELETE /api/v1/products/:id/variants/:variantId
+   - Wire into delete button in Variants tab (currently a stub)
 ```
 
 ---
