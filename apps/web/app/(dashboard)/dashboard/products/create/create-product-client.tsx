@@ -1,461 +1,142 @@
-"use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectTrigger,
-  SelectValue,
-  SelectItem,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Package, Save, Settings } from "lucide-react";
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ProductSchema } from "@/features/(erp-core)/dashboard/schema";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { ChipsInput } from "@/components/chip-input";
-import { FileUpload } from "@/features/(erp-core)/dashboard/components/file-upload";
-import { useCreateProduct } from "@/features/(erp-core)/dashboard/api/use-create-product";
-import { SpecificationFields } from "@/features/(erp-core)/dashboard/components/specifications-fields";
-import { useGetCategories } from "@/features/(erp-core)/categories/api/use-get-categories";
+"use client"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PageShell } from "@/components/page-shell"
+import { PageHeader } from "@/components/page-header"
+import { useCreateProductV1 } from "@/features/(erp-core)/catalog/api/products-v1"
+import { useGetBrands } from "@/features/(erp-core)/catalog/api/brands"
+import { useGetCategories } from "@/features/(erp-core)/categories/api/use-get-categories"
+import { Package, Save } from "lucide-react"
 
-function AddProductClient() {
-  const { mutate } = useCreateProduct();
-  const { data: categories } = useGetCategories();
-
-  const form = useForm<z.infer<typeof ProductSchema>>({
-    resolver: zodResolver(ProductSchema),
-    defaultValues: {
-      productName: "",
-      productDescription: "",
-      productPrice: 0,
-      productStock: 0,
-      lowStockThreshold: 5,
-      productCategory: "",
-      productSKU: "",
-      productVariants: [],
-      productImages: [],
-      productTags: [],
-      productSize: [],
-      specifications: [
-        { key: "Material", value: "" },
-        {
-          key: "Weight",
-          value: "",
-        },
-        {
-          key: "Origin",
-          value: "",
-        },
-      ],
-      productFeatures: [],
-      careInstructions: "",
-      isFeatured: false,
-    },
-  });
-  type ProductFormValues = z.infer<typeof ProductSchema>;
-
-  const onSubmit = async (values: ProductFormValues) => {
-    const formData = new FormData();
-
-    formData.append("productName", values.productName);
-    formData.append("productDescription", values.productDescription);
-    formData.append("productPrice", values.productPrice.toString());
-    formData.append("productStock", values.productStock.toString());
-    formData.append("lowStockThreshold", (values.lowStockThreshold ?? 5).toString());
-    formData.append("productCategory", values.productCategory);
-    formData.append("productSKU", values.productSKU);
-    formData.append("productVariants", JSON.stringify(values.productVariants));
-    formData.append("productTags", JSON.stringify(values.productTags));
-    formData.append("specifications", JSON.stringify(values.specifications));
-    formData.append("productSize", JSON.stringify(values.productSize));
-    formData.append("productFeature", JSON.stringify(values.productFeatures));
-    formData.append("careInstruction", values.careInstructions || "");
-    formData.append("isFeatured", values.isFeatured ? "true" : "false");
-
-    values.productImages.forEach((file) => {
-      if (file instanceof File) {
-        formData.append("productImages", file);
-      } else {
-        formData.append("productImages", file);
-      }
-    });
-    mutate(formData, {
-      onSuccess: () => {
-        form.reset();
-      },
-    });
-  };
-
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Add New Product</h1>
-
-      <Form {...form}>
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-6 lg:flex-row">
-            <Card className="w-full lg:w-2/3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Package size={24} />
-                  Product Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  name="productName"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-sm font-semibold">
-                        Product Name
-                      </label>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Product Name"
-                          required
-                          {...field}
-                          className="w-full mb-4"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="productDescription"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-sm font-semibold">
-                        Product Description
-                      </label>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Product Description"
-                          required
-                          {...field}
-                          className="w-full mb-4"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <FormField
-                    name="productPrice"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
-                          Product Price
-                        </label>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="0.00"
-                            required
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    name="productStock"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
-                          Product Stock
-                        </label>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            required
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    name="lowStockThreshold"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
-                          Low Stock Threshold
-                        </label>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="5"
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  name="productSKU"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="block text-sm font-semibold">
-                        SKU (Stock Keeping Unit)
-                      </label>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter product SKU"
-                          required
-                          {...field}
-                          className="w-full mb-2"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <FormField
-                    name="productVariants"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="block text-sm font-semibold mt-4">
-                          Variants
-                        </label>
-                        <FormControl>
-                          <ChipsInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Add variants (press Enter or comma)"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    name="productTags"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="block text-sm font-semibold ">
-                          Tags
-                        </label>
-                        <FormControl>
-                          <ChipsInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Add tags (press Enter or comma)"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  name="productFeatures"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className=" w-full">
-                      <label className="block text-sm font-semibold ">
-                        Product Features
-                      </label>
-                      <FormControl>
-                        <ChipsInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Add Features (press Enter or comma)"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="careInstructions"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-sm font-semibold mt-4">
-                        Care Instruction (optional)
-                      </label>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          placeholder=" Care Instruction"
-                          required
-                          {...field}
-                          className="w-full mb-4"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="isFeatured"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className="flex items-center gap-2 mt-4">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <label className="text-sm font-semibold inline-block">
-                        Mark as Featured Product (optional)
-                      </label>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Product Settings Card */}
-            <Card className="w-full lg:w-1/3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Settings size={24} />
-                  Product Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  name="productCategory"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="block text-sm font-semibold mb-2">
-                        Category
-                      </label>
-                      <FormControl>
-                        <Select
-                          onValueChange={(value) => field.onChange(value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select categories" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories?.map((category) => (
-                              <SelectItem
-                                key={category.label}
-                                value={category.value}
-                              >
-                                {category.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="productSize"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className=" w-full">
-                      <label className="block text-sm font-semibold mt-4">
-                        Product size (optional)
-                      </label>
-                      <FormControl>
-                        <ChipsInput
-                          value={field.value || []}
-                          onChange={field.onChange}
-                          placeholder="Add Product Size (press Enter or comma)"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <SpecificationFields
-                  control={form.control}
-                  setValue={form.setValue}
-                />
-                <FormField
-                  name="productImages"
-                  control={form.control}
-                  render={() => (
-                    <>
-                      <label className="block text-sm font-semibold my-4">
-                        Upload
-                      </label>
-                      <FileUpload form={form} name="productImages" />
-                    </>
-                  )}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="  flex flex-col lg:flex-row gap-y-4 lg:justify-end mt-6">
-            <Button
-              type="button"
-              size="lg"
-              variant="outline"
-              className="w-full lg:w-[120px] mr-4"
-              onClick={() => form.reset()}
-            >
-              Clear
-            </Button>
-
-            <Button size="lg" className=" w-full lg:w-[120px]">
-              <Save />
-              Save
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
-  );
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 }
 
-export default AddProductClient;
+export default function CreateProductClient() {
+  const router = useRouter()
+  const { mutate: create, isPending } = useCreateProductV1()
+  const { data: categories = [] } = useGetCategories()
+  const { data: brands = [] } = useGetBrands()
+
+  const [name, setName] = useState("")
+  const [slug, setSlug] = useState("")
+  const [description, setDescription] = useState("")
+  const [categoryId, setCategoryId] = useState("")
+  const [brandId, setBrandId] = useState("")
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    create(
+      {
+        name,
+        slug,
+        description: description || undefined,
+        categoryId: categoryId || undefined,
+        brandId: brandId || undefined,
+      },
+      {
+        onSuccess: (product) => {
+          router.push(`/dashboard/products/update/${product.id}`)
+        },
+      }
+    )
+  }
+
+  return (
+    <PageShell>
+      <PageHeader
+        title="Create Product"
+        description="Add a new product to your catalog. Add variants after saving."
+      >
+        <Button type="submit" form="create-product-form" disabled={isPending}>
+          <Save className="w-4 h-4 mr-1" />{isPending ? "Saving…" : "Save Product"}
+        </Button>
+      </PageHeader>
+
+      <form id="create-product-form" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Package className="w-4 h-4" />Basic Info</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Product Name *</label>
+                  <Input
+                    placeholder="e.g. Basmati Rice"
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); setSlug(slugify(e.target.value)) }}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Slug *</label>
+                  <Input
+                    placeholder="basmati-rice"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    pattern="[a-z0-9-]+"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Unique per organization. URL-safe lowercase.</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Description</label>
+                  <Textarea
+                    placeholder="Product description…"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Classification</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Category</label>
+                  <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Brand</label>
+                  <Select value={brandId} onValueChange={(v) => setBrandId(v ?? "")}>
+                    <SelectTrigger><SelectValue placeholder="Select brand" /></SelectTrigger>
+                    <SelectContent>
+                      {brands.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-muted-foreground">
+                  After saving, you can add variants (SKU, price, unit) from the product detail page.
+                  Inventory is tracked per variant per location — not on the product directly.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </form>
+    </PageShell>
+  )
+}

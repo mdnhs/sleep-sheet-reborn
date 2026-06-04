@@ -1,311 +1,135 @@
-/* eslint-disable @next/next/no-img-element */
-"use client";
-import { useEffect, useState } from "react";
-import {
-  ColumnDef,
-  SortingState,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  getPaginationRowModel,
-} from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { ArrowUpDown, MoreVertical, Plus } from "lucide-react";
-import { useGetProducts } from "@/features/(erp-core)/products/api/use-get-products";
-import { useDeleteProduct } from "@/features/(erp-core)/dashboard/api/use-delete-product";
-import { useCurrency } from "@/hooks/use-currency";
-import Link from "next/link";
-import { Pagination, PaginationContent } from "@/components/ui/pagination";
+"use client"
+import { useState } from "react"
+import Link from "next/link"
+import { PageShell } from "@/components/page-shell"
+import { PageHeader } from "@/components/page-header"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DeleteAlertMessage } from "@/components/DeleteAlertMessage"
+import { useGetProductsV1, useArchiveProductV1 } from "@/features/(erp-core)/catalog/api/products-v1"
+import { Plus, Pencil, Trash, Search } from "lucide-react"
 
-export type ProductColumn = {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  isFeatured: boolean;
-  createdAt: string;
-  images: string[];
-};
+const STATUS_OPTIONS = ["", "DRAFT", "ACTIVE", "INACTIVE", "ARCHIVED"]
+const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  ACTIVE: "default",
+  DRAFT: "secondary",
+  INACTIVE: "outline",
+  ARCHIVED: "destructive",
+}
 
 export default function ProductsClientPage() {
-  const { formatAmount } = useCurrency();
-  const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct();
-  const [productToDelete, setProductToDelete] = useState<ProductColumn | null>(null);
+  const [search, setSearch] = useState("")
+  const [status, setStatus] = useState("")
+  const [page, setPage] = useState(1)
+  const limit = 20
 
-  const columns: ColumnDef<ProductColumn>[] = [
-    {
-      accessorKey: "images",
-      header: "Image",
-      cell: ({ row }) => (
-        <img
-          src={row.original.images[0] || "/placeholder.jpg"}
-          alt="Product"
-          className="h-10 w-10 object-cover rounded"
-        />
-      ),
-    },
-    {
-      accessorKey: "name",
-      header: "Name",
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-    },
-    {
-      accessorKey: "price",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => formatAmount(parseFloat(row.getValue("price"))),
-    },
-    {
-      accessorKey: "stock",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Stock
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-    },
-    {
-      accessorKey: "isFeatured",
-      header: "Featured",
-      cell: ({ row }) => (row.getValue("isFeatured") ? "Yes" : "No"),
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Date Added",
-      cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleDateString(),
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const product = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <Link href={`/dashboard/products/update/${product.id}`}>
-                <DropdownMenuItem>Edit</DropdownMenuItem>
-              </Link>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                disabled={isDeleting}
-                onSelect={(e) => e.preventDefault()}
-                onClick={() => setProductToDelete(product)}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 8,
-  });
+  const { data, isLoading } = useGetProductsV1({ search: search || undefined, status: status || undefined, page, limit })
+  const { mutate: archive, isPending: archiving } = useArchiveProductV1()
 
-  const { data: products, isLoading } = useGetProducts({
-    page: (pagination.pageIndex + 1).toString(),
-    search: debouncedSearch,
-    sort: "newest",
-    // sort: sorting[0]?.id
-    //   ? `${sorting[0].id}-${sorting[0].desc ? "desc" : "asc"}`
-    //   : undefined,
-  });
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [searchQuery]);
-
-  const table = useReactTable({
-    data: products?.data || [],
-    columns,
-    pageCount: products?.totalPages || -1,
-    state: {
-      sorting,
-      pagination,
-    },
-    onSortingChange: setSorting,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: true,
-    manualSorting: true,
-  });
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  };
-
-  if (isLoading) return <div className="p-4">Loading products...</div>;
+  const products = data?.data ?? []
+  const totalPages = data?.pagination.totalPages ?? 1
+  const totalItems = data?.pagination.totalItems ?? 0
 
   return (
-    <div className=" container mx-auto space-y-4 py-4 px-4">
-      <h1 className="text-2xl font-bold">Products</h1>
+    <PageShell>
+      <PageHeader title="Products" description={`${totalItems} total products`}>
+        <Link href="/dashboard/products/create" className={buttonVariants()}><Plus className="w-4 h-4 mr-1" />New Product</Link>
+      </PageHeader>
 
-      <div className="flex items-center justify-between py-4 gap-4">
-        <Input
-          placeholder="Search products..."
-          value={searchQuery}
-          onChange={handleSearch}
-          className="max-w-sm"
-        />
-
-        <Button
-          nativeButton={false}
-          render={<Link href="/dashboard/products/create" />}
-        >
-          <Plus />
-          Add New
-        </Button>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder="Search products…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          />
+        </div>
+        <Select value={status} onValueChange={(v) => { setStatus(!v || v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {STATUS_OPTIONS.filter(Boolean).map((s) => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="rounded-md border">
+      {/* Table */}
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Brand</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-24 text-right">Actions</TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  {[...Array(5)].map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
                 </TableRow>
               ))
-            ) : (
+            ) : products.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No products found.
+                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  {search ? "No products match your search." : "No products yet. Create one to get started."}
                 </TableCell>
               </TableRow>
+            ) : (
+              products.map(({ product, category, brand }) => (
+                <TableRow key={product.id}>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{product.slug}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{category?.name ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{brand?.name ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_COLORS[product.status] ?? "secondary"}>{product.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Link href={`/dashboard/products/update/${product.id}`} className={buttonVariants({ size: "icon", variant: "ghost" }) + " h-7 w-7"}><Pencil className="w-3 h-3" /></Link>
+                      <DeleteAlertMessage
+                        description={`Archive "${product.name}"? It will be hidden from sales.`}
+                        loading={archiving}
+                        onConfirm={() => archive(product.id)}
+                      >
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive">
+                          <Trash className="w-3 h-3" />
+                        </Button>
+                      </DeleteAlertMessage>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
       </div>
 
-      <Pagination className=" flex justify-end">
-        <PaginationContent>
-          <Button
-            variant="outline"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <span className="mx-4">
-            Page {pagination.pageIndex + 1} of {table.getPageCount()}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </PaginationContent>
-      </Pagination>
-
-      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{productToDelete?.name}&quot;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
-              onClick={() => {
-                if (productToDelete) {
-                  deleteProduct(productToDelete.id, { onSuccess: () => setProductToDelete(null) });
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+        </div>
+      )}
+    </PageShell>
+  )
 }
