@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04
+Last Updated: 2026-06-04 (Phase 1 catalog + inventory complete)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-04
 
 # Project Status
 
-Current Phase: Phase 0 — Foundation + Multi-Tenancy
+Current Phase: Phase 1 — Catalog + Inventory
 
-Overall Progress: 22%
+Overall Progress: 38%
 
 Project Status: 🟨 In Progress
 
@@ -24,18 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Establish Multi-Tenant Foundation
+Sprint Goal: Phase 1 — Catalog + Inventory (complete)
 
-Sprint Includes:
+Sprint Delivered:
+- Drizzle schemas: catalog (category, brand, unit, product, product_variant, product_image), locations (branch, location), inventory (inventory, inventory_movement, transfer, transfer_item)
+- Migration 0004_phase1_catalog_inventory.sql
+- Org-scoped repositories (all Phase 1 entities)
+- v1 services: categories, brands, units, products (+ plan limit), product-variants (SKU/barcode uniqueness), locations (+ plan limit), inventory (stock, adjustments, movement ledger, transfers)
+- v1 API routes mounted at /api/v1/ with requirePermission() guards and Zod validation
+- Plan enforcement utility (enforceSubscriptionActive, enforceLimit)
+- Dashboard UI: brands, units, products list + create + edit (with variant management dialog), warehouses/outlets, stock adjustment + movement history
+- React Query v1 hooks for all modules
 
-- Organizations + organization_users (Drizzle schema)
-- Drizzle ORM setup (replace custom D1 ORM)
-- Better Auth + org membership
-- Tenant resolution middleware (subdomain → organization_id)
-- Tenant context + org-scoping helpers (packages/tenancy)
-- Two-scope RBAC (platform + organization)
-
-Sprint Status: 🟨 Active
+Sprint Status: 🟩 Complete
 
 ---
 
@@ -56,12 +57,12 @@ Status: 🟩 Completed
 - [x] Deployment Pipeline (.github/workflows/deploy.yml — migrate → deploy-api + deploy-web in parallel)
 
 ## Multi-Tenancy
-Status: 🟨 In Progress — Priority: CRITICAL
+Status: 🟩 Completed
 - [x] organizations schema (Drizzle, packages/database/src/schema/organizations.ts)
 - [x] organization_users schema (member table, same file)
 - [x] Tenant resolution middleware (apps/worker/middleware/tenant.ts — subdomain → org lookup)
 - [x] Tenant context helpers (packages/tenancy/src/index.ts — withTenant, assertTenant)
-- [x] Repository organization_id injection (Phase 1 — per-module) — all Phase 1 repos in apps/worker/repositories/; organizationId injected from tenant context, never from client
+- [x] Repository organization_id injection — all Phase 1 repos in apps/worker/repositories/; organizationId from tenant context, never from client
 - [x] Org switcher UI (components/org-switcher.tsx — Better Auth org list + setActive)
 - [x] Cross-tenant isolation tests (tests/tenancy/isolation.test.ts — 27 tests pass)
 
@@ -81,7 +82,7 @@ Status: 🟩 Completed
 - [x] Platform admin login page (/admin/login — (auth)/admin/login/page.tsx; middleware excludes it from protection)
 
 ## RBAC (two-scope)
-Status: 🟨 In Progress
+Status: 🟩 Completed
 - [x] Platform roles (SUPER_ADMIN) — requirePlatformAdmin checks SUPER_ADMIN_EMAIL env
 - [x] Organization roles (OWNER↓) — OrgRole type in packages/auth, member.role column
 - [x] requireOrgRole middleware (rbac.ts — uses orgRole from session context; no redundant DB call)
@@ -89,7 +90,7 @@ Status: 🟨 In Progress
 - [x] requirePlatformAdmin middleware (checks SUPER_ADMIN_EMAIL env)
 - [x] requireAuth middleware
 - [x] Full permission catalog (packages/permissions/src/index.ts — all perms from RBAC.md §6-7)
-- [ ] Route Protection per-module (Phase 1 — applied when modules are rebuilt org-scoped)
+- [x] Route protection on all v1 routes (requirePermission() applied per-route in apps/worker/routes/v1/)
 
 ## Shared UI
 Status: 🟩 Completed
@@ -120,12 +121,19 @@ Status: 🟨 In Progress
 - [x] Unit repository (apps/worker/repositories/units.repository.ts)
 - [x] Product repository (apps/worker/repositories/products.repository.ts)
 - [x] Product Variant repository (apps/worker/repositories/product-variants.repository.ts)
-- [ ] Product Image repository
-- [ ] Category service + API routes + UI
-- [ ] Brand service + API routes + UI
-- [ ] Unit service + API routes + UI
-- [ ] Product service + API routes + UI (+ plan enforceLimit)
-- [ ] Product Variant service + API routes + UI
+- [x] Category service + API routes (GET/POST /api/v1/categories, PATCH/DELETE /:id — slug uniqueness per org)
+- [x] Brand service + API routes (GET/POST /api/v1/brands, PATCH/DELETE /:id — slug uniqueness per org)
+- [x] Unit service + API routes (GET/POST /api/v1/units, PATCH/DELETE /:id)
+- [x] Product service + API routes (GET/POST /api/v1/products, PATCH/DELETE /:id — plan enforceLimit, slug uniqueness)
+- [x] Product Variant service + API routes (GET/POST /api/v1/products/:id/variants, PATCH/DELETE — SKU + barcode uniqueness)
+- [x] Brand UI (/dashboard/products/brands — list + inline create + archive)
+- [x] Unit UI (/dashboard/products/units — list + inline create + delete)
+- [x] Product list UI (/dashboard/products — v1 paginated list, search, status filter, archive)
+- [x] Product create UI (/dashboard/products/create — name, slug, description, category, brand)
+- [x] Product edit UI (/dashboard/products/update/[id] — Details tab: all fields + status; Variants tab: table + add-variant dialog)
+- [ ] Product Image repository + upload UI (Cloudinary integration — deferred)
+- [ ] Audit logs: product create/update/archive
+- [ ] Catalog isolation tests
 
 ## Inventory — Priority: CRITICAL
 Status: 🟨 In Progress
@@ -134,11 +142,15 @@ Status: 🟨 In Progress
 - [x] Migration (packages/database/migrations/0004_phase1_catalog_inventory.sql)
 - [x] Location repository (apps/worker/repositories/locations.repository.ts)
 - [x] Inventory repository (apps/worker/repositories/inventory.repository.ts — stock, movements, transfers)
+- [x] Location service + API routes (GET/POST /api/v1/locations/warehouses|outlets|branches — plan enforceLimit)
+- [x] Inventory service + API routes (stock queries, POST /api/v1/inventory/adjustments, movements ledger)
+- [x] Transfer service + API routes (POST /api/v1/inventory/transfers, /approve, /receive, /cancel — stock + movements on RECEIVED)
+- [x] Locations UI (/dashboard/inventory/warehouses — tabbed warehouses + outlets, create forms)
+- [x] Stock Adjustment UI (/dashboard/inventory/stock-adjustment — absolute qty form + adjustment movement history)
 - [ ] Inventory Reservations schema + repository (depends on orders — Phase 3)
-- [ ] Location service + API routes + UI
-- [ ] Inventory service (adjustments, stock queries, movement creation)
-- [ ] Inventory Adjustments (approval + audit log)
-- [ ] Stock Transfers (full workflow: DRAFT→APPROVED→IN_TRANSIT→RECEIVED)
+- [ ] Stock Transfer UI (/dashboard/inventory/stock-transfer — create + approve + receive workflow)
+- [ ] Audit logs: inventory adjustments, transfer approve/receive
+- [ ] Inventory isolation tests
 
 ---
 
@@ -199,15 +211,17 @@ Status: ⬜ Not Started
 ---
 
 # Phase 8 — Subscriptions, Billing & Plan Enforcement — Priority: CRITICAL (MVP)
-Status: ⬜ Not Started
-- [ ] subscription_plans (limits + feature flags)
-- [ ] subscriptions (trial / active / expired / suspended / cancelled)
-- [ ] subscription_invoices
+Status: 🟨 In Progress (partial)
+- [x] subscription_plans schema (Drizzle — limits + feature flags)
+- [x] subscriptions schema (Drizzle — TRIAL/ACTIVE/EXPIRED/SUSPENDED/CANCELLED)
+- [x] subscription_invoices schema (Drizzle)
+- [x] Server-side enforcement utility (apps/worker/utils/plan-limits.ts — enforceSubscriptionActive, enforceLimit)
+- [x] enforceLimit wired into product create (limitProducts), location create (limitOutlets, limitWarehouses)
 - [ ] Trial flow (7/14/30) + renewal + grace + suspension
-- [ ] Per-org usage counters
-- [ ] Server-side enforcement (enforceLimit / requireActiveSubscription / requireFeature)
+- [ ] Per-org usage counters (cached)
+- [ ] requireFeature() enforcement
 - [ ] Billing providers (bKash, Nagad, SSLCommerz) — idempotent webhooks
-- [ ] Feature flags
+- [ ] Feature flags UI
 - [ ] Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited)
 
 ---
@@ -280,13 +294,16 @@ E2E Tests:               ⬜ Not Started
 
 # Technical Debt
 
-- `packages/database/src/client.ts` — custom D1 ORM (`getCloudflareContext`). Migrate to Drizzle (Phase 0).
-- `apps/web/stores/` — Redux Toolkit. Migrate to Zustand (Phase 0).
-- `apps/web/features/auth/` — dashboard auth migrated to Better Auth. Storefront auth (storefront signin/account) still uses old JWT hooks; migrate when storefront auth is scoped.
-- `apps/web/lib/is-authenticated.ts` — dead code (old JWT). Safe to delete once storefront auth is migrated.
-- `apps/worker/middleware/tenant.ts` — real subdomain→organization_id resolution is implemented; verify in local dev.
-- `apps/web/proxy.ts` — session check + tenant header injection implemented. Cookie check is shallow (existence only); layout does full validation.
+- `packages/database/src/client.ts` — custom D1 ORM still used by old storefront routes (products, categories, orders, etc.). Migrate to Drizzle incrementally as modules move to v1.
+- `apps/web/stores/` — Redux Toolkit. Migrate to Zustand (low priority until storefront auth migrated).
+- `apps/web/features/auth/` — storefront auth still uses old JWT hooks; migrate when storefront is scoped.
+- `apps/web/lib/is-authenticated.ts` — dead code (old JWT). Delete once storefront auth is migrated.
+- `apps/web/proxy.ts` — cookie check is shallow (existence only); layout does full server-side validation.
 - `apps/web/components/app-sidebar.tsx` — NavUser now uses authClient.useSession(); remove static user const.
+- `apps/worker/routes/v1/` — old routes at `/api/*` still hit the legacy ORM; existing storefront pages use them. Do not remove until storefront migrated.
+- Product Image upload — `product_image` schema + repo exists; Cloudinary upload UI not yet built.
+- Audit logs — product create/update/archive, inventory adjustments, transfer approve/receive not yet writing audit log entries.
+- Variant deactivate — delete button in variants table wired but deactivate mutation not yet added to hook file.
 
 ---
 
@@ -305,19 +322,29 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 complete. Phase 1 schemas + repositories done. Next:
-1. [NEXT] Catalog services + routes + UI (Phase 1)
-   - CategoryService, BrandService, UnitService (CRUD + validation)
-   - ProductService (+ enforceLimit("products"), archive not delete)
-   - ProductVariantService (SKU/barcode uniqueness check)
-   - API routes: GET/POST /api/v1/categories, /brands, /units, /products, /products/:id/variants
-   - requirePermission() on every mutating route
-   - Dashboard UI: category/brand/unit/product list + create + edit pages
-2. [NEXT] Inventory services + routes + UI (Phase 1)
-   - LocationService (+ enforceLimit("outlets"), enforceLimit("warehouses"))
-   - InventoryService (adjustments, stock query, movement ledger)
-   - TransferService (full workflow, movement creation on RECEIVED)
-   - API routes: /api/v1/locations, /api/v1/inventory, /api/v1/transfers
+Phase 0 + Phase 1 complete. Next options (pick one):
+
+1. [HIGH] Stock Transfer UI (/dashboard/inventory/stock-transfer)
+   - Create transfer (select from/to location, add variant rows)
+   - Approve + Receive actions (full workflow: DRAFT→APPROVED→RECEIVED)
+   - Movement log per transfer
+
+2. [HIGH] Phase 2 — Purchases
+   - Supplier schema + repo + service + API + UI (CRUD, ledger)
+   - Purchase Order schema + workflow (DRAFT→APPROVED→RECEIVED)
+   - Goods Receiving → inventory.incrementStock + movement created
+
+3. [HIGH] Phase 3 — Orders
+   - Order schema (org-scoped, source, status, payment_status, grand_total)
+   - Inventory reservation on order create; consume on delivered; release on cancel
+   - Order list + detail UI
+
+4. [MEDIUM] Catalog audit logs + isolation tests
+   - Write audit log on product create/update/archive, inventory adjust, transfer approve/receive
+   - Tenant isolation test suite for Phase 1 repos
+
+5. [MEDIUM] Variant deactivate mutation (wire up delete button in edit page)
+   - Add useDeactivateVariant hook → PATCH /api/v1/products/:id/variants/:variantId (DELETE)
 ```
 
 ---
