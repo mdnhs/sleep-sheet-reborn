@@ -16,7 +16,8 @@
 		{
 			"binding": "DB",
 			"database_name": "sleep-sheet-reborn",
-			"database_id": "8576bc91-1a4c-402c-a198-056eac70b959"
+			"database_id": "8576bc91-1a4c-402c-a198-056eac70b959",
+			"migrations_dir": "../../packages/database/migrations"
 		}
 	],
 	"r2_buckets": [
