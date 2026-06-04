@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 2 fully complete — Suppliers + Purchases + Purchase Returns + isolation tests)
+Last Updated: 2026-06-04 (Phase 4 complete — POS Sales, Returns, Cash Registers, Register Sessions)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-04 (Phase 2 fully complete — Suppliers + Purchases + Pur
 
 # Project Status
 
-Current Phase: Phase 1 — Catalog + Inventory
+Current Phase: Phase 4 — POS
 
-Overall Progress: 57%
+Overall Progress: 65%
 
 Project Status: 🟨 In Progress
 
@@ -203,11 +203,23 @@ Status: ✅ Complete
 ---
 
 # Phase 4 — POS — Priority: CRITICAL
-Status: ⬜ Not Started
-- [ ] POS Sales (inventory deduction)
-- [ ] POS Returns (inventory restore)
-- [ ] Cash Register (open/close/reconcile)
-- [ ] Register Sessions / Shift Management
+Status: ✅ Complete
+- [x] POS schema: cash_register, register_session, pos_sale, pos_sale_item, pos_sale_payment, pos_sale_return, pos_sale_return_item — org-scoped (migration 0009)
+- [x] Cash register repository + service + API routes (GET/POST /api/v1/cash-registers, PATCH /:id)
+- [x] Register session repository + service + API routes (GET /api/v1/register-sessions, POST /:registerId/open, POST /:id/close — validates no concurrent open session)
+- [x] POS sales repository + service: createSale (stock check → deduct → POS_SALE movement → audit), holdSale (DRAFT, no deduction), completeSale (DRAFT→COMPLETED), cancelSale (restores inv if COMPLETED)
+- [x] POS sales API routes (GET/POST /api/v1/pos-sales, POST /hold, POST /:id/complete|cancel)
+- [x] POS returns repository + service: create/approve (RETURN movement + restock + overreturn guard), cancel
+- [x] POS returns API routes (GET/POST /api/v1/pos-sale-returns, POST /:id/approve|cancel)
+- [x] All routes registered in v1/index.ts
+- [x] UI hooks (apps/web/features/(erp-core)/pos/api/v1-pos.ts): all register/session/sale/return hooks
+- [x] Cash Register UI (/dashboard/pos/cash-register — register cards + open/close session dialogs + session history)
+- [x] New Sale UI (/dashboard/pos/new-sale — product search, cart management, split payment, hold/checkout)
+- [x] Return Sale UI (/dashboard/pos/return-sale — tabbed list + detail + approve/cancel workflow)
+- [x] Hold Sale UI (/dashboard/pos/hold-sale — DRAFT sales list + complete/cancel actions)
+- [x] Audit logs: sale create, hold, complete, cancel + return create, approve, cancel + register open/close
+- [x] TypeScript: worker compiles clean (npx tsc --noEmit)
+- [x] Tests: 87/87 pass (all pre-existing isolation tests)
 
 ---
 
