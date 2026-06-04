@@ -61,7 +61,7 @@ Status: 🟨 In Progress — Priority: CRITICAL
 - [x] organization_users schema (member table, same file)
 - [x] Tenant resolution middleware (apps/worker/middleware/tenant.ts — subdomain → org lookup)
 - [x] Tenant context helpers (packages/tenancy/src/index.ts — withTenant, assertTenant)
-- [ ] Repository organization_id injection (Phase 1 — per-module)
+- [x] Repository organization_id injection (Phase 1 — per-module) — all Phase 1 repos in apps/worker/repositories/; organizationId injected from tenant context, never from client
 - [x] Org switcher UI (components/org-switcher.tsx — Better Auth org list + setActive)
 - [x] Cross-tenant isolation tests (tests/tenancy/isolation.test.ts — 27 tests pass)
 
@@ -76,7 +76,7 @@ Status: 🟩 Completed
 - [x] Dashboard Login UI (apps/web/app/(auth)/login/ — email/password via authClient.signIn.email)
 - [x] Logout UI (NavUser uses authClient.signOut, redirects to /login)
 - [x] Session Validation (dashboard layout + page server-side via getCurrentSession)
-- [x] Protected Routes (middleware.ts checks better-auth.session_token cookie; layout does full validation)
+- [x] Protected Routes (proxy.ts checks better-auth.session_token cookie; layout does full validation)
 - [x] Organization Membership on login (login-form.tsx — auto-sets active org; multi-org → /org-select)
 - [x] Platform admin login page (/admin/login — (auth)/admin/login/page.tsx; middleware excludes it from protection)
 
@@ -108,22 +108,37 @@ Standard module checklist (per sub-module):
 `Schema (+organization_id) · Relations · Validation · Repository (org-scoped) · Service · API · UI · RBAC · Plan/Flag · Audit Logs · Tests (+isolation)`
 
 ## Catalog
-Status: ⬜ Not Started
-- [ ] Categories (per-org unique slug)
-- [ ] Brands
-- [ ] Units
-- [ ] Products (per-org unique slug)
-- [ ] Product Variants (per-org unique SKU/barcode)
-- [ ] Product Images (Cloudinary)
+Status: 🟨 In Progress
+- [x] Categories schema (Drizzle, packages/database/src/schema/catalog.ts — org-scoped, per-org unique slug)
+- [x] Brands schema (same file — org-scoped, per-org unique slug)
+- [x] Units schema (same file — org-scoped)
+- [x] Products schema (same file — org-scoped, per-org unique slug)
+- [x] Product Variants schema (same file — org-scoped, per-org unique SKU)
+- [x] Product Images schema (same file — Cloudinary public_id + url)
+- [x] Category repository (apps/worker/repositories/categories.repository.ts)
+- [x] Brand repository (apps/worker/repositories/brands.repository.ts)
+- [x] Unit repository (apps/worker/repositories/units.repository.ts)
+- [x] Product repository (apps/worker/repositories/products.repository.ts)
+- [x] Product Variant repository (apps/worker/repositories/product-variants.repository.ts)
+- [ ] Product Image repository
+- [ ] Category service + API routes + UI
+- [ ] Brand service + API routes + UI
+- [ ] Unit service + API routes + UI
+- [ ] Product service + API routes + UI (+ plan enforceLimit)
+- [ ] Product Variant service + API routes + UI
 
 ## Inventory — Priority: CRITICAL
-Status: ⬜ Not Started
-- [ ] Locations (Warehouses / Outlets)
-- [ ] Inventory (org + variant + location)
-- [ ] Inventory Movements
-- [ ] Inventory Reservations (reserve / release / consume)
-- [ ] Inventory Adjustments (approval + audit)
-- [ ] Stock Transfers (transfer + receive)
+Status: 🟨 In Progress
+- [x] Locations schema (packages/database/src/schema/locations.ts — branches + locations, org-scoped)
+- [x] Inventory schema (packages/database/src/schema/inventory.ts — inventory + movements + transfers)
+- [x] Migration (packages/database/migrations/0004_phase1_catalog_inventory.sql)
+- [x] Location repository (apps/worker/repositories/locations.repository.ts)
+- [x] Inventory repository (apps/worker/repositories/inventory.repository.ts — stock, movements, transfers)
+- [ ] Inventory Reservations schema + repository (depends on orders — Phase 3)
+- [ ] Location service + API routes + UI
+- [ ] Inventory service (adjustments, stock queries, movement creation)
+- [ ] Inventory Adjustments (approval + audit log)
+- [ ] Stock Transfers (full workflow: DRAFT→APPROVED→IN_TRANSIT→RECEIVED)
 
 ---
 
@@ -270,7 +285,7 @@ E2E Tests:               ⬜ Not Started
 - `apps/web/features/auth/` — dashboard auth migrated to Better Auth. Storefront auth (storefront signin/account) still uses old JWT hooks; migrate when storefront auth is scoped.
 - `apps/web/lib/is-authenticated.ts` — dead code (old JWT). Safe to delete once storefront auth is migrated.
 - `apps/worker/middleware/tenant.ts` — real subdomain→organization_id resolution is implemented; verify in local dev.
-- `apps/web/middleware.ts` — session check + tenant header injection implemented. Cookie check is shallow (existence only); layout does full validation.
+- `apps/web/proxy.ts` — session check + tenant header injection implemented. Cookie check is shallow (existence only); layout does full validation.
 - `apps/web/components/app-sidebar.tsx` — NavUser now uses authClient.useSession(); remove static user const.
 
 ---
@@ -290,12 +305,19 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 is complete. Next:
-1. [NEXT] Catalog + Inventory (Phase 1)
-   - Category, Brand, Unit, Product, Variant schemas (+ organization_id)
-   - Inventory locations, movements, reservations
-   - Repository layer with org-scoping injected via withTenant()
-   - requirePermission() applied per-route
+Phase 0 complete. Phase 1 schemas + repositories done. Next:
+1. [NEXT] Catalog services + routes + UI (Phase 1)
+   - CategoryService, BrandService, UnitService (CRUD + validation)
+   - ProductService (+ enforceLimit("products"), archive not delete)
+   - ProductVariantService (SKU/barcode uniqueness check)
+   - API routes: GET/POST /api/v1/categories, /brands, /units, /products, /products/:id/variants
+   - requirePermission() on every mutating route
+   - Dashboard UI: category/brand/unit/product list + create + edit pages
+2. [NEXT] Inventory services + routes + UI (Phase 1)
+   - LocationService (+ enforceLimit("outlets"), enforceLimit("warehouses"))
+   - InventoryService (adjustments, stock query, movement ledger)
+   - TransferService (full workflow, movement creation on RECEIVED)
+   - API routes: /api/v1/locations, /api/v1/inventory, /api/v1/transfers
 ```
 
 ---

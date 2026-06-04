@@ -1,3 +1,6 @@
 export * from './auth'
 export * from './organizations'
 export * from './subscriptions'
+export * from './catalog'
+export * from './locations'
+export * from './inventory'
