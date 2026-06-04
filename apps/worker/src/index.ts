@@ -20,6 +20,7 @@ import analytics from '../routes/analytics'
 import steadfast from '../routes/steadfast'
 import settings from '../routes/settings'
 import inventory from '../routes/inventory'
+import v1 from '../routes/v1/index'
 import type { HonoEnv } from './types'
 
 const app = new Hono<HonoEnv>().basePath('/api')
@@ -69,6 +70,7 @@ const routes = app
   .route('/steadfast', steadfast)
   .route('/settings', settings)
   .route('/inventory', inventory)
+  .route('/v1', v1)
 
 export type AppType = typeof routes
 export default { fetch: app.fetch }

@@ -20,14 +20,14 @@ export function createBrandRepository(db: Database, organizationId: string) {
       return db.select().from(brand).where(and(scope, eq(brand.slug, slug))).then(r => r[0] ?? null)
     },
 
-    async create(data: Omit<NewBrand, 'id' | 'organizationId'>) {
+    async create(data: Omit<NewBrand, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>) {
       const now = new Date()
       const row = { ...data, id: generateId(), organizationId, createdAt: now, updatedAt: now }
       await db.insert(brand).values(row)
       return row
     },
 
-    async update(id: string, data: Partial<Omit<NewBrand, 'id' | 'organizationId'>>) {
+    async update(id: string, data: Partial<Omit<NewBrand, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>>) {
       await db.update(brand)
         .set({ ...data, updatedAt: new Date() })
         .where(and(scope, eq(brand.id, id)))

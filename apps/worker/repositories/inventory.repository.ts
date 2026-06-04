@@ -58,7 +58,7 @@ export function createInventoryRepository(db: Database, organizationId: string) 
 
     // ── Movements (immutable ledger) ─────────────────────────────────────────
 
-    async createMovement(data: Omit<NewInventoryMovement, 'id' | 'organizationId'>) {
+    async createMovement(data: Omit<NewInventoryMovement, 'id' | 'organizationId' | 'createdAt'>) {
       const row: NewInventoryMovement = { ...data, id: generateId(), organizationId, createdAt: new Date() }
       await db.insert(inventoryMovement).values(row)
       return row
@@ -90,14 +90,14 @@ export function createInventoryRepository(db: Database, organizationId: string) 
       return db.select().from(transferItem).where(eq(transferItem.transferId, transferId))
     },
 
-    async createTransfer(data: Omit<NewTransfer, 'id' | 'organizationId'>) {
+    async createTransfer(data: Omit<NewTransfer, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>) {
       const now = new Date()
       const row: NewTransfer = { ...data, id: generateId(), organizationId, createdAt: now, updatedAt: now }
       await db.insert(transfer).values(row)
       return row
     },
 
-    async addTransferItem(data: Omit<NewTransferItem, 'id'>) {
+    async addTransferItem(data: Omit<NewTransferItem, 'id' | 'createdAt'>) {
       const row: NewTransferItem = { ...data, id: generateId(), createdAt: new Date() }
       await db.insert(transferItem).values(row)
       return row

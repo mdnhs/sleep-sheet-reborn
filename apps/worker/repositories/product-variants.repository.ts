@@ -30,14 +30,14 @@ export function createProductVariantRepository(db: Database, organizationId: str
         .where(and(scope, eq(productVariant.productId, productId)))
     },
 
-    async create(data: Omit<NewProductVariant, 'id' | 'organizationId'>) {
+    async create(data: Omit<NewProductVariant, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>) {
       const now = new Date()
       const row = { ...data, id: generateId(), organizationId, createdAt: now, updatedAt: now }
       await db.insert(productVariant).values(row)
       return row
     },
 
-    async update(id: string, data: Partial<Omit<NewProductVariant, 'id' | 'organizationId'>>) {
+    async update(id: string, data: Partial<Omit<NewProductVariant, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>>) {
       await db.update(productVariant)
         .set({ ...data, updatedAt: new Date() })
         .where(and(scope, eq(productVariant.id, id)))

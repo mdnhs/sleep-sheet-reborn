@@ -66,14 +66,14 @@ export function createProductRepository(db: Database, organizationId: string) {
         .orderBy(productImage.sortOrder)
     },
 
-    async create(data: Omit<NewProduct, 'id' | 'organizationId'>) {
+    async create(data: Omit<NewProduct, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>) {
       const now = new Date()
       const row = { ...data, id: generateId(), organizationId, createdAt: now, updatedAt: now }
       await db.insert(product).values(row)
       return row
     },
 
-    async update(id: string, data: Partial<Omit<NewProduct, 'id' | 'organizationId'>>) {
+    async update(id: string, data: Partial<Omit<NewProduct, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>>) {
       await db.update(product)
         .set({ ...data, updatedAt: new Date() })
         .where(and(scope, eq(product.id, id)))
