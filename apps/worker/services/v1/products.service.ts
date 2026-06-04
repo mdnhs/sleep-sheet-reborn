@@ -1,12 +1,14 @@
 import type { Database } from '@repo/database'
 import { createProductRepository, type ListProductsQuery } from '../../repositories/products.repository'
 import { createProductVariantRepository } from '../../repositories/product-variants.repository'
+import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { enforceSubscriptionActive, enforceLimit } from '../../utils/plan-limits'
 import { ServiceError } from '../../utils/service-error'
 
-export function createProductService(db: Database, organizationId: string) {
+export function createProductService(db: Database, organizationId: string, actorId?: string | null) {
   const repo = createProductRepository(db, organizationId)
   const variantRepo = createProductVariantRepository(db, organizationId)
+  const auditRepo = createAuditLogRepository(db, organizationId)
 
   return {
     async list(query: ListProductsQuery = {}) {
@@ -42,7 +44,9 @@ export function createProductService(db: Database, organizationId: string) {
       const existing = await repo.findBySlug(data.slug)
       if (existing) throw new ServiceError('Slug already in use within this organization', 409)
 
-      return repo.create({ ...data, status: 'DRAFT' })
+      const product = await repo.create({ ...data, status: 'DRAFT' })
+      await auditRepo.log('product', product.id, 'create', actorId, { name: data.name, slug: data.slug })
+      return product
     },
 
     async update(id: string, data: {
@@ -61,17 +65,20 @@ export function createProductService(db: Database, organizationId: string) {
         if (conflict) throw new ServiceError('Slug already in use within this organization', 409)
       }
 
-      return repo.update(id, data)
+      const updated = await repo.update(id, data)
+      await auditRepo.log('product', id, 'update', actorId, data)
+      return updated
     },
 
     async archive(id: string) {
       const product = await repo.findById(id)
       if (!product) throw new ServiceError('Product not found', 404)
-      return repo.archive(id)
+      const archived = await repo.archive(id)
+      await auditRepo.log('product', id, 'archive', actorId)
+      return archived
     },
 
     async listVariants(productId: string) {
-      // Verify product belongs to this org
       const product = await repo.findById(productId)
       if (!product) throw new ServiceError('Product not found', 404)
       return variantRepo.findByProduct(productId)

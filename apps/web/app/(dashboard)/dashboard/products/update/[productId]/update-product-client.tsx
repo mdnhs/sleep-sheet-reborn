@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
 import { PageHeader } from "@/components/page-header"
@@ -25,7 +25,8 @@ import {
 import { useGetCategoriesV1 } from "@/features/(erp-core)/catalog/api/categories-v1"
 import { useGetBrands } from "@/features/(erp-core)/catalog/api/brands"
 import { useGetUnits } from "@/features/(erp-core)/catalog/api/units"
-import { ArrowLeft, Package, Plus, Save, Layers, Trash } from "lucide-react"
+import { useGetProductImages, useUploadProductImage, useDeleteProductImage } from "@/features/(erp-core)/catalog/api/product-images"
+import { ArrowLeft, ImageIcon, Package, Plus, Save, Layers, Trash, Upload } from "lucide-react"
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
 
@@ -216,6 +217,75 @@ function VariantsTab({ productId }: { productId: string }) {
   )
 }
 
+// ── Images Tab ────────────────────────────────────────────────────────────────
+
+function ImagesTab({ productId }: { productId: string }) {
+  const { data: images = [], isLoading } = useGetProductImages(productId)
+  const { mutate: upload, isPending: uploading } = useUploadProductImage(productId)
+  const { mutate: remove, isPending: deleting } = useDeleteProductImage(productId)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) upload(file)
+    if (fileRef.current) fileRef.current.value = ""
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <Upload className="w-4 h-4 mr-1" />{uploading ? "Uploading…" : "Upload Image"}
+        </Button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><ImageIcon className="w-4 h-4" />Product Images</CardTitle></CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg" />)}
+            </div>
+          ) : images.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-lg">
+              <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">No images yet.</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => fileRef.current?.click()}>
+                <Upload className="w-3 h-3 mr-1" />Upload First Image
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {images.map((img) => (
+                <div key={img.id} className="group relative aspect-square rounded-lg overflow-hidden border bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <DeleteAlertMessage
+                      title="Delete image?"
+                      description="Image will be removed from Cloudinary and cannot be recovered."
+                      loading={deleting}
+                      onConfirm={() => remove(img.id)}
+                    >
+                      <Button variant="destructive" size="icon" className="h-8 w-8">
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </DeleteAlertMessage>
+                  </div>
+                  <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1 rounded">
+                    #{img.sortOrder + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // ── Details Tab ───────────────────────────────────────────────────────────────
 
 function DetailsTab({ productId }: { productId: string }) {
@@ -371,12 +441,16 @@ export default function UpdateProductClient() {
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="variants">Variants</TabsTrigger>
+          <TabsTrigger value="images">Images</TabsTrigger>
         </TabsList>
         <TabsContent value="details" className="mt-4">
           <DetailsTab productId={productId} />
         </TabsContent>
         <TabsContent value="variants" className="mt-4">
           <VariantsTab productId={productId} />
+        </TabsContent>
+        <TabsContent value="images" className="mt-4">
+          <ImagesTab productId={productId} />
         </TabsContent>
       </Tabs>
     </PageShell>

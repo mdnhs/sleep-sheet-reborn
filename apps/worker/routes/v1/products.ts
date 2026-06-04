@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { requirePermission } from '../../middleware/rbac'
 import { createProductService } from '../../services/v1/products.service'
 import { createProductVariantService } from '../../services/v1/product-variants.service'
+import { createProductImageService } from '../../services/v1/product-images.service'
 import { isServiceError } from '../../utils/service-error'
 import { ok, paginated, err } from '../../utils/response'
 import type { HonoEnv } from '../../src/types'
@@ -42,13 +43,19 @@ const UpdateVariantSchema = CreateVariantSchema.partial().extend({
 function svc(c: any) {
   const tenant = c.get('tenant')
   if (!tenant) return null
-  return createProductService(c.get('db'), tenant.id)
+  return createProductService(c.get('db'), tenant.id, c.get('user')?.id)
 }
 
 function variantSvc(c: any) {
   const tenant = c.get('tenant')
   if (!tenant) return null
   return createProductVariantService(c.get('db'), tenant.id)
+}
+
+function imageSvc(c: any) {
+  const tenant = c.get('tenant')
+  if (!tenant) return null
+  return createProductImageService(c.get('db'), tenant.id, c.get('user')?.id)
 }
 
 const app = new Hono<HonoEnv>()
@@ -120,7 +127,7 @@ const app = new Hono<HonoEnv>()
     }
   })
 
-  // ── Variants (nested under product) ────────────────────────────────────────
+  // ── Variants ────────────────────────────────────────────────────────────────
 
   .get('/:id/variants', requirePermission('products.view'), async (c) => {
     const s = svc(c)
@@ -164,6 +171,45 @@ const app = new Hono<HonoEnv>()
     } catch (e) {
       if (isServiceError(e)) return c.json(err('SERVICE_ERROR', e.message), e.status)
       return c.json(err('INTERNAL_ERROR', 'Failed to deactivate variant'), 500)
+    }
+  })
+
+  // ── Images ──────────────────────────────────────────────────────────────────
+
+  .get('/:id/images', requirePermission('products.view'), async (c) => {
+    const s = imageSvc(c)
+    if (!s) return c.json(err('TENANT_NOT_FOUND', 'Tenant not found'), 404)
+    try {
+      return c.json(ok(await s.list(c.req.param('id'))))
+    } catch (e) {
+      if (isServiceError(e)) return c.json(err('SERVICE_ERROR', e.message), e.status)
+      return c.json(err('INTERNAL_ERROR', 'Failed to list images'), 500)
+    }
+  })
+
+  .post('/:id/images', requirePermission('products.update'), async (c) => {
+    const s = imageSvc(c)
+    if (!s) return c.json(err('TENANT_NOT_FOUND', 'Tenant not found'), 404)
+    try {
+      const form = await c.req.formData()
+      const file = form.get('file')
+      if (!(file instanceof File)) return c.json(err('VALIDATION_ERROR', 'file field required'), 400)
+      return c.json(ok(await s.upload(c.req.param('id'), file)), 201)
+    } catch (e) {
+      if (isServiceError(e)) return c.json(err('SERVICE_ERROR', e.message), e.status)
+      return c.json(err('INTERNAL_ERROR', 'Failed to upload image'), 500)
+    }
+  })
+
+  .delete('/:id/images/:imageId', requirePermission('products.update'), async (c) => {
+    const s = imageSvc(c)
+    if (!s) return c.json(err('TENANT_NOT_FOUND', 'Tenant not found'), 404)
+    try {
+      await s.delete(c.req.param('id'), c.req.param('imageId'))
+      return c.json(ok(null))
+    } catch (e) {
+      if (isServiceError(e)) return c.json(err('SERVICE_ERROR', e.message), e.status)
+      return c.json(err('INTERNAL_ERROR', 'Failed to delete image'), 500)
     }
   })
 
