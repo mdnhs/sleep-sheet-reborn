@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 5 complete — Finance: Accounts, Transactions, Expenses, P&L, Supplier Due)
+Last Updated: 2026-06-05 (Phase 7 complete — Delivery: Partners, Riders, Shipments, Tracking, Courier Sync)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-04 (Phase 5 complete — Finance: Accounts, Transactions, 
 
 # Project Status
 
-Current Phase: Phase 5 — Finance
+Current Phase: Phase 7 — Delivery
 
-Overall Progress: 72%
+Overall Progress: 78%
 
 Project Status: 🟨 In Progress
 
@@ -254,11 +254,24 @@ Status: ⬜ Not Started
 ---
 
 # Phase 7 — Delivery
-Status: ⬜ Not Started
-- [ ] Delivery Partners + Riders
-- [ ] Shipments + Tracking
-- [ ] Delivery Assignment
-- [ ] Courier Status Sync (Pathao/RedX/SteadFast)
+Status: ✅ Complete (MVP scope — zones/charges/COD-settlement deferred, see below)
+- [x] Delivery schema: delivery_partner, rider, shipment, shipment_event — all org-scoped (migration 0011_phase7); tracking_number unique per org
+- [x] Repos: delivery-partners, riders, shipments (+ immutable events), all org-scoped
+- [x] Delivery service: partner/rider CRUD; shipment lifecycle CREATED→ASSIGNED→PICKED_UP→IN_TRANSIT→DELIVERED + FAILED→RETURNED + CANCELLED; one shipment per order; cancelled orders cannot ship; rider busy/available transitions
+- [x] Order integration: shipment deliver calls orders.service.deliver (single source of truth for inventory — consumes reservations + ONLINE_SALE movements); guarded by order SHIPPED workflow
+- [x] Courier status sync endpoint (records immutable COURIER_UPDATE event; real courier HTTP/webhooks deferred)
+- [x] API routes: /api/v1/delivery-partners, /api/v1/riders, /api/v1/shipments (+ /:id, /reports, assign-rider, assign-partner, pickup, transit, deliver, fail, return, cancel, courier-status) — perms delivery.view/create/assign/update/reports
+- [x] Permissions: added delivery.create + delivery.reports to catalog
+- [x] UI hooks (apps/web/features/(erp-core)/delivery/api/v1-delivery.ts) + shipment detail sheet (status-aware actions + tracking timeline)
+- [x] UI pages: delivery-partners, riders, assign-deliveries (create + list + sheet), delivery-tracking (search + sheet), delivery-reports (metrics)
+- [x] Audit logs: shipment create/assign/pickup/transit/deliver/fail/rto/cancel/courier-sync + partner/rider create
+- [x] TypeScript: worker compiles clean (npx tsc --noEmit)
+- [x] Migration applied to local D1; all 4 tables created
+- [x] Delivery tests (tests/delivery/delivery.test.ts — 16 tests: partner/rider/shipment/event isolation, tracking unique per org, lifecycle, one-per-order, cancelled-order guard, deliver order-workflow guard, courier sync)
+- [x] Tests: 103/103 pass (this branch base)
+- [ ] DEFERRED — Delivery zones + charges (settings-driven pricing) — secondary
+- [ ] DEFERRED — COD collection + courier settlement (finance integration) — secondary
+- [ ] DEFERRED — Live courier integration (Pathao/RedX/SteadFast HTTP) — needs credentials; sync endpoint contract in place
 
 ---
 
@@ -340,6 +353,8 @@ Tenant Isolation Tests:    🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
 Catalog Isolation Tests:   🟩 20 tests pass  (tests/catalog/isolation.test.ts)
 Inventory Isolation Tests: 🟩 15 tests pass  (tests/inventory/isolation.test.ts)
 Purchases Isolation Tests: 🟩 25 tests pass  (tests/purchases/isolation.test.ts)
+Delivery Tests:            🟩 16 tests pass  (tests/delivery/delivery.test.ts — isolation + lifecycle + order-workflow guard)
+Total Test Suite:          🟩 103 tests pass  (this branch; excludes Phase 6/8 suites on their branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started

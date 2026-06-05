@@ -20,6 +20,9 @@ import accounts from './accounts'
 import transactions from './transactions'
 import expenses from './expenses'
 import financeReports from './finance-reports'
+import deliveryPartners from './delivery-partners'
+import riders from './riders'
+import shipments from './shipments'
 
 const v1 = new Hono<HonoEnv>()
   .route('/categories', categories)
@@ -42,5 +45,8 @@ const v1 = new Hono<HonoEnv>()
   .route('/transactions', transactions)
   .route('/expenses', expenses)
   .route('/finance', financeReports)
+  .route('/delivery-partners', deliveryPartners)
+  .route('/riders', riders)
+  .route('/shipments', shipments)
 
 export default v1

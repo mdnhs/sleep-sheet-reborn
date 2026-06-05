@@ -71,10 +71,12 @@ export const ORG_PERMISSIONS = {
   'customers.update': OWNER_ADMIN_MANAGER,
   'customers.wallet': OWNER_ADMIN,
   // Delivery
-  'delivery.view':   ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],
-  'delivery.assign': ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],
-  'delivery.track':  ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER', 'DELIVERY_MANAGER'] as OrgRole[],
-  'delivery.update': ['OWNER', 'ADMIN', 'DELIVERY_MANAGER'] as OrgRole[],
+  'delivery.view':    ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],
+  'delivery.create':  ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],
+  'delivery.assign':  ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],
+  'delivery.track':   ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER', 'DELIVERY_MANAGER'] as OrgRole[],
+  'delivery.update':  ['OWNER', 'ADMIN', 'DELIVERY_MANAGER'] as OrgRole[],
+  'delivery.reports': OWNER_ADMIN_MANAGER,
   // Finance
   'finance.view':         OWNER_ADMIN,
   'finance.transactions': OWNER_ADMIN,
