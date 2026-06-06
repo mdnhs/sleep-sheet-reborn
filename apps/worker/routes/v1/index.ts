@@ -29,6 +29,7 @@ import billing from './billing'
 import storefront from './storefront'
 import growth from './growth'
 import marketplace from './marketplace'
+import reports from './reports'
 
 const v1 = new Hono<HonoEnv>()
   .route('/categories', categories)
@@ -60,5 +61,6 @@ const v1 = new Hono<HonoEnv>()
   .route('/storefront', storefront)
   .route('/growth', growth)
   .route('/marketplace', marketplace)
+  .route('/reports', reports)
 
 export default v1

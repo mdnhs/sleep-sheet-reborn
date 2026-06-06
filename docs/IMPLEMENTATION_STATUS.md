@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 12 complete — Platform Admin: organizations, marketplace curation, SaaS analytics MRR/ARR/churn)
+Last Updated: 2026-06-06 (Phase 13 complete — Reports: sales, inventory valuation, outlet, product, purchase aggregations)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-06 (Phase 12 complete — Platform Admin: organizations, m
 
 # Project Status
 
-Current Phase: Phase 12 — Platform Admin + SaaS Analytics
+Current Phase: Phase 13 — Reports
 
-Overall Progress: 97%
+Overall Progress: 98%
 
 Project Status: 🟨 In Progress
 
@@ -24,19 +24,18 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 12 — Platform Admin + SaaS Analytics (orgs admin + marketplace curation + MRR/ARR/churn analytics complete)
+Sprint Goal: Phase 13 — Reports (sales/inventory/outlet/product/purchase aggregations complete; read-only, no migration)
 
 Sprint Delivered:
-- Platform-admin service (UNSCOPED, SUPER_ADMIN): operates across all organizations — no migration (reuses existing tables)
-- Organizations admin: list all orgs (+ subscription status/plan); suspend/reactivate/cancel mirrored to org.status, audited
-- Marketplace curation: global theme catalog (create + publish/deprecate + add version) + funnel_template catalog (create + publish/deprecate)
-- SaaS Analytics (derived live): MRR (active subs, YEARLY→monthly) + ARR, org counts by status, trial-conversion rate, churn rate, platform GMV (orders + completed POS across all orgs)
-- API routes (requirePlatformAdmin): /api/admin/{organizations, organizations/:id/suspend|reactivate|cancel, analytics, marketplace/themes|funnel-templates + status/version}
-- Plans/Subscriptions/Invoices admin already delivered Phase 8 (/api/admin/billing)
-- Audit log wired to org suspend/reactivate/cancel
-- Platform UI: (platform)/admin/organizations, /admin/analytics, /admin/marketplace + React Query hooks (features/(saas)/platform/api/admin-platform.ts)
-- Platform tests: 8 tests (org list, suspend/reactivate + audit, 404 guard, MRR/ARR + YEARLY normalization, status counts + churn + GMV, theme create/dup/status/version, template create/deprecate)
-- Total test suite: 202 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace + 8 platform)
+- Reports service (UNSCOPED per org, read-only): aggregation over existing tables — no migration
+- Sales: summary (online + completed POS, excludes cancelled/draft, AOV), time-series (day/month/year), by-channel (order.source + POS), top-products (order_item + pos_sale_item merged), outlet performance
+- Inventory: valuation (cost + retail + potential margin), low-stock (≤ threshold), movement summary (net qty by type)
+- Purchases: by-status + top suppliers + total spend
+- API routes: /api/v1/reports/{sales/*, inventory/*, purchases/summary} — perms reports.sales/inventory/purchase, from/to/granularity params
+- Reused module-native reports (delivery/finance/growth/customer) + Phase 12 platform analytics
+- Dashboard UI (reports/*): sales-reports, inventory-reports, purchase-reports, product-reports + React Query hooks (features/(erp-core)/reports/api/v1-reports.ts)
+- Reports tests: 9 tests (sales summary exclusions, by-channel, top-products merge, outlet grouping, org isolation, inventory valuation, low-stock, movement net-qty, purchase summary)
+- Total test suite: 211 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace + 8 platform + 9 reports)
 
 Sprint Status: 🟩 Complete
 
@@ -386,11 +385,20 @@ Status: ✅ Complete (platform-scope, SUPER_ADMIN)
 ---
 
 # Phase 13 — Reports
-Status: ⬜ Not Started
-- [ ] Sales (daily/monthly/yearly)
-- [ ] Inventory (stock/movements)
-- [ ] Outlet (sales/profit)
-- [ ] Purchase / Delivery / Finance / Growth
+Status: ✅ Complete (read-only aggregation; no migration)
+- [x] Reports service (apps/worker/services/v1/reports.service.ts — org-scoped, read-only, never mutates)
+- [x] Sales: summary (online + completed POS, cancelled/draft excluded, AOV), time-series (day/month/year strftime buckets), by-channel (order.source + POS), top-products (order_item + pos_sale_item merged by variant), outlet performance (revenue/orders per location)
+- [x] Inventory: valuation (Σ qty·costPrice + retail Σ qty·sellingPrice + potential margin), low-stock (≤ threshold, joined to product + location), movement summary (grouped by movementType with net quantity)
+- [x] Purchases: summary by status + top suppliers + total spend
+- [x] Delivery / Finance / Growth / Customer reports already delivered by their own modules (Phase 7 shipments/reports, Phase 5 finance/summary|pnl|cash-book, Phase 10 growth/analytics, Phase 6 customers/reports); Platform analytics in Phase 12
+- [x] API routes: /api/v1/reports/{sales/summary|time-series|by-channel|top-products|outlets, inventory/valuation|low-stock|movements, purchases/summary} — perms reports.sales/inventory/purchase; from/to/granularity/threshold query params
+- [x] UI hooks (apps/web/features/(erp-core)/reports/api/v1-reports.ts) + dashboard pages: sales-reports (summary + channel + outlet), inventory-reports (valuation + low-stock + movements), purchase-reports (status + suppliers), product-reports (top sellers); previously placeholders
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] No migration — pure aggregation over existing tables
+- [x] Reports tests (tests/reports/reports.test.ts — 9: sales summary exclusions, by-channel, top-products merge, outlet grouping, org isolation, inventory valuation, low-stock threshold, movement net-qty grouping, purchase summary)
+- [x] Tests: 211/211 pass
+- [ ] DEFERRED — Scheduled report exports (CSV/PDF) + email delivery — secondary
+- [ ] DEFERRED — Damage / expiry / tax detail reports (module §14-15) — secondary
 
 ---
 
@@ -418,7 +426,8 @@ Storefront Tests:          🟩 18 tests pass  (tests/storefront/storefront.test
 Growth Tests:              🟩 13 tests pass  (tests/growth/growth.test.ts — campaign/funnel isolation + slug uniqueness + idempotent attribution + analytics)
 Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.test.ts — install/purchase gating + one-active-theme + clone-install + ownership isolation)
 Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
-Total Test Suite:          🟩 202 tests pass  (this branch)
+Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts — sales/inventory/purchase aggregation + isolation)
+Total Test Suite:          🟩 211 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -454,15 +463,13 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–12 complete (202 tests pass). Platform admin + SaaS analytics on this branch. Next options (pick one):
+Phases 0–13 complete (211 tests pass). Reports on this branch. All numbered build phases done. Next options (pick one):
 
-1. [HIGH] Phase 13 — Reports (sales/inventory/outlet/purchase/delivery/finance/growth) — last numbered build phase
+1. [HIGH] Phase 14 — Polish & Optimization (notifications, error handling, perf/latency targets, cache plan/usage counters)
 
-2. [MEDIUM] Phase 14 — Polish & Optimization (notifications, error handling, perf/latency targets, cache plan/usage counters)
+2. [HIGH] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching) — the remaining customer-facing surface
 
-3. [MEDIUM] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching)
-
-4. [LOW] Cross-module wiring + deferred secondaries: auto-attribution, loyalty earn/reverse, wallet refund, demo data import, feature-flags UI, premium payment capture
+3. [MEDIUM] Cross-module wiring + deferred secondaries: auto-attribution, loyalty earn/reverse on sale/return, wallet refund credit, demo data import, feature-flags UI, premium payment capture
 ```
 
 ---
