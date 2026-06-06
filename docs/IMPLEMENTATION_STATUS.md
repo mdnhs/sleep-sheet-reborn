@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Feature-flags admin UI — per-org overrides over plan defaults; Phase 12 leftover closed)
+Last Updated: 2026-06-06 (Tenant onboarding — self-serve shop-owner signup + org creation: /signup → /onboarding/new-org → /dashboard)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 

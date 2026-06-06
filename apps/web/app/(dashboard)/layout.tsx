@@ -34,6 +34,9 @@ async function DashBoardLayout({ children }: DashBoardLayoutProps) {
     })
   }
 
+  // Logged in but no store yet → onboard.
+  if (!activeOrg) redirect('/onboarding/new-org')
+
   return (
     <TenantProvider organization={activeOrg ?? null}>
       <SidebarProvider>

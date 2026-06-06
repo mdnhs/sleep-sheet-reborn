@@ -54,8 +54,12 @@ export default function LoginForm({ redirectTo }: { redirectTo: string }) {
         router.push('/org-select')
         router.refresh()
         return
+      } else {
+        // No organization yet → onboard the shop owner
+        router.push('/onboarding/new-org')
+        router.refresh()
+        return
       }
-      // orgs.length === 0 → continue to dashboard; user will be prompted to create an org
     } catch {
       // org resolution failure is non-fatal; proceed to dashboard
     }
