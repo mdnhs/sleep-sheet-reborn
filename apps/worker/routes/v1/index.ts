@@ -32,6 +32,7 @@ import marketplace from './marketplace'
 import reports from './reports'
 import notifications from './notifications'
 import auditLogs from './audit-logs'
+import demo from './demo'
 
 const v1 = new Hono<HonoEnv>()
   .route('/categories', categories)
@@ -66,5 +67,6 @@ const v1 = new Hono<HonoEnv>()
   .route('/reports', reports)
   .route('/notifications', notifications)
   .route('/audit-logs', auditLogs)
+  .route('/demo', demo)
 
 export default v1
