@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 13 complete — Reports: sales, inventory valuation, outlet, product, purchase aggregations)
+Last Updated: 2026-06-06 (Phase 14 complete — Polish: audit-log viewer, notifications, global error handling)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-06 (Phase 13 complete — Reports: sales, inventory valuat
 
 # Project Status
 
-Current Phase: Phase 13 — Reports
+Current Phase: Phase 14 — Polish & Optimization
 
-Overall Progress: 98%
+Overall Progress: 99%
 
 Project Status: 🟨 In Progress
 
@@ -24,18 +24,15 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 13 — Reports (sales/inventory/outlet/product/purchase aggregations complete; read-only, no migration)
+Sprint Goal: Phase 14 — Polish & Optimization (audit-log viewer + notifications + global error handling complete; perf caching deferred)
 
 Sprint Delivered:
-- Reports service (UNSCOPED per org, read-only): aggregation over existing tables — no migration
-- Sales: summary (online + completed POS, excludes cancelled/draft, AOV), time-series (day/month/year), by-channel (order.source + POS), top-products (order_item + pos_sale_item merged), outlet performance
-- Inventory: valuation (cost + retail + potential margin), low-stock (≤ threshold), movement summary (net qty by type)
-- Purchases: by-status + top suppliers + total spend
-- API routes: /api/v1/reports/{sales/*, inventory/*, purchases/summary} — perms reports.sales/inventory/purchase, from/to/granularity params
-- Reused module-native reports (delivery/finance/growth/customer) + Phase 12 platform analytics
-- Dashboard UI (reports/*): sales-reports, inventory-reports, purchase-reports, product-reports + React Query hooks (features/(erp-core)/reports/api/v1-reports.ts)
-- Reports tests: 9 tests (sales summary exclusions, by-channel, top-products merge, outlet grouping, org isolation, inventory valuation, low-stock, movement net-qty, purchase summary)
-- Total test suite: 211 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace + 8 platform + 9 reports)
+- Notifications: schema (migration 0017 — notification, org-scoped, userId null = org-wide broadcast) + repo + service + API (/api/v1/notifications feed/unread/create/read/read-all) + perms notifications.view (ALL) / notifications.manage (OWNER_ADMIN)
+- Audit-log viewer: read API (/api/v1/audit-logs, filter entityType/entityId/limit) over the immutable audit_log; perm audit.view
+- Global error handling: app.onError (ServiceError → status; else 500) + app.notFound (404) in worker entry → consistent {success:false,error} envelope everywhere
+- Dashboard UI: notifications (feed + mark read/all + unread badges), reports/audit-logs (activity table) + React Query hooks (features/(erp-core)/notifications/api/v1-notifications.ts)
+- Notifications tests: 7 tests (create/feed/unread, title guard, markRead, markAllRead, own+broadcast audience, org isolation, cross-tenant 404)
+- Total test suite: 218 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace + 8 platform + 9 reports + 7 notifications)
 
 Sprint Status: 🟩 Complete
 
@@ -403,12 +400,16 @@ Status: ✅ Complete (read-only aggregation; no migration)
 ---
 
 # Phase 14 — Polish & Optimization
-Status: ⬜ Not Started
-- [ ] Audit Logs / Activity Logs
-- [ ] Notifications
-- [ ] Error Handling
-- [ ] Performance (hit SRS latency targets)
-- [ ] Cache plan/usage counters
+Status: ✅ Complete (core polish — perf caching deferred, see below)
+- [x] Audit Logs / Activity Logs: read API (GET /api/v1/audit-logs — filter entityType/entityId/limit) over the immutable audit_log written throughout; perm audit.view; UI reports/audit-logs (table: when/entity/action/actor/changes)
+- [x] Notifications: schema (migration 0017 — notification, org-scoped, userId null = org-wide broadcast) + repo + service + API (/api/v1/notifications — feed/unread-count/create/:id read/read-all) + perms notifications.view (ALL) / notifications.manage (OWNER_ADMIN) + UI dashboard/notifications (feed + mark read/all, unread badges)
+- [x] Error Handling: global app.onError (ServiceError → its status; else 500) + app.notFound (404) in worker entry, consistent {success:false,error} envelope across all routes
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] Migration 0017 applied to local D1
+- [x] Notifications tests (tests/notifications/notifications.test.ts — 7: create/feed/unread, title guard, markRead, markAllRead, own+broadcast audience, org isolation, cross-tenant 404)
+- [x] Tests: 218/218 pass
+- [ ] DEFERRED — Performance: cache plan/usage counters (KV or cached table + cron invalidation) — currently computed live; hit SRS latency targets under load
+- [ ] DEFERRED — Notification delivery channels (email/SMS/push fan-out) + real-time stream (WebSocket/SSE) — in-app feed in place
 
 ---
 
@@ -427,7 +428,8 @@ Growth Tests:              🟩 13 tests pass  (tests/growth/growth.test.ts — 
 Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.test.ts — install/purchase gating + one-active-theme + clone-install + ownership isolation)
 Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
 Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts — sales/inventory/purchase aggregation + isolation)
-Total Test Suite:          🟩 211 tests pass  (this branch)
+Notifications Tests:       🟩 7 tests pass   (tests/notifications/notifications.test.ts — feed/read/audience/isolation)
+Total Test Suite:          🟩 218 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -463,13 +465,15 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–13 complete (211 tests pass). Reports on this branch. All numbered build phases done. Next options (pick one):
+Phases 0–14 complete (218 tests pass). All 15 numbered phases done. Remaining work is deferred slices — pick one:
 
-1. [HIGH] Phase 14 — Polish & Optimization (notifications, error handling, perf/latency targets, cache plan/usage counters)
+1. [HIGH] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching) — the remaining customer-facing surface
 
-2. [HIGH] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching) — the remaining customer-facing surface
+2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 
-3. [MEDIUM] Cross-module wiring + deferred secondaries: auto-attribution, loyalty earn/reverse on sale/return, wallet refund credit, demo data import, feature-flags UI, premium payment capture
+3. [MEDIUM] Phase 8/12 leftovers: demo data import, feature-flags admin UI, premium payment capture
+
+4. [MEDIUM] Phase 14 perf: cache plan/usage counters (KV/cron), hit SRS latency targets
 ```
 
 ---

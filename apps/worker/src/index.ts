@@ -7,6 +7,8 @@ import { tenantMiddleware } from '../middleware/tenant'
 import { sessionMiddleware } from '../middleware/session'
 import v1 from '../routes/v1/index'
 import admin from '../routes/admin/index'
+import { err } from '../utils/response'
+import { isServiceError } from '../utils/service-error'
 import type { HonoEnv } from './types'
 
 const app = new Hono<HonoEnv>().basePath('/api')
@@ -43,6 +45,14 @@ app.on(['GET', 'POST'], '/auth/*', async (c) => {
 const routes = app
   .route('/v1', v1)
   .route('/admin', admin)
+
+// Consistent error envelope for uncaught errors + unknown routes
+app.onError((e, c) => {
+  if (isServiceError(e)) return c.json(err('SERVICE_ERROR', e.message), e.status)
+  console.error('Unhandled error:', e)
+  return c.json(err('INTERNAL_ERROR', 'An unexpected error occurred'), 500)
+})
+app.notFound((c) => c.json(err('NOT_FOUND', 'Resource not found'), 404))
 
 export type AppType = typeof routes
 export default { fetch: app.fetch }
