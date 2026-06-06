@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 9 complete — Storefront + Theme System: themes, pages, blog, menus, redirects, homepage builder, SEO)
+Last Updated: 2026-06-06 (Phase 10 complete — Growth: Campaigns, Funnels, landing pages, UTM attribution, funnel analytics)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-06 (Phase 9 complete — Storefront + Theme System: themes
 
 # Project Status
 
-Current Phase: Phase 9 — Storefront + Theme System
+Current Phase: Phase 10 — Growth: Campaigns + Funnels
 
-Overall Progress: 90%
+Overall Progress: 93%
 
 Project Status: 🟨 In Progress
 
@@ -24,19 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 9 — Storefront + Theme System (config + admin slice complete; public themed rendering deferred)
+Sprint Goal: Phase 10 — Growth: Campaigns + Funnels (config + tracking + analytics slice complete; public funnel rendering deferred)
 
 Sprint Delivered:
-- Drizzle schema (migration 0014): theme + theme_version (global catalog, seeded Aurora/Market/Volt), organization_theme (one active per org, config JSON), page, blog_post, menu, redirect, homepage_section — tenant tables org-scoped; per-org unique slugs (page/blog), menu location, redirect fromPath
-- Org-scoped repositories: themes (catalog + org theme + deactivateAll), storefront-cms (pages, blog, menus, redirects, homepage sections)
-- Storefront service: theme install (idempotent) + activate (one active per org) + config; page CRUD (slugify + per-org slug uniqueness + SEO fields); blog CRUD (publishedAt stamped on PUBLISH); menu upsert per location; redirect create/delete (path guards); homepage sections add/reorder/enable/delete
-- v1 API routes at /api/v1/storefront/{themes,pages,blog,menus,redirects,homepage-sections} with requirePermission() + Zod validation
-- Permissions: reused storefront.view/manage, themes.install/activate/update, pages/blogs/menus.manage (no new perms)
-- Audit log wired to theme install/activate/configure + page/blog create/update + menu save + redirect create/delete + homepage section create/update/delete
-- Dashboard UI (website/*): themes (install + activate), pages, blog (list + create + publish), menus (per-location JSON editor), homepage-builder (add/reorder/enable/delete), redirect-manager; previously placeholders
-- React Query v1 hooks (features/(storefront)/storefront/api/v1-storefront.ts)
-- Storefront tests: 18 tests (page/blog/redirect/section isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, blog publishedAt, one-active-theme, redirect guards, homepage ordering)
-- Total test suite: 168 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront)
+- Drizzle schema (migration 0015): funnel_template (global, seeded SINGLE/COD/BUNDLE/LEAD), campaign + campaign_product + campaign_visit + campaign_conversion, funnel + funnel_step + funnel_visit + funnel_conversion — tenant tables org-scoped; per-org unique campaign/funnel slugs; unique campaign_product + conversion-per-order
+- Org-scoped repositories: campaigns (campaign + products + visits + conversions + live stats), funnels (template + funnel + steps + visits + conversions + live stats)
+- Growth service: campaign CRUD (slugify + slug uniqueness + status + product attach guard); funnel CRUD (template inherits type) + ordered steps (auto position); UTM visit tracking; attributeOrder (idempotent, revenue = order.grandTotal); analytics overview — decoupled layer, never mutates ERP
+- v1 API routes at /api/v1/growth/{campaigns,funnels,funnel-templates,funnel-steps,campaign-products,track,attribute,analytics} with requirePermission() + Zod
+- Permissions: reused campaigns.view/manage, funnels.view/manage, marketing.analytics (no new perms)
+- Audit log wired to campaign create/update + funnel create/update + funnel step create
+- Dashboard UI (marketing/*): campaigns (list + create + status), funnels (list + create-from-template + detail sheet with steps + stats + status), growth-analytics (overview + performance tables)
+- React Query v1 hooks (features/(growth)/growth/api/v1-growth.ts)
+- Growth tests: 13 tests (campaign/funnel isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, template type inheritance, step ordering, UTM visit stats, idempotent order attribution + cross-tenant guard, analytics aggregation)
+- Total test suite: 181 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth)
 
 Sprint Status: 🟩 Complete
 
@@ -327,12 +327,22 @@ Status: ✅ Complete (config + admin slice — public themed rendering deferred,
 ---
 
 # Phase 10 — Growth: Campaigns + Funnels
-Status: ⬜ Not Started
-- [ ] Campaigns (product/category/seasonal)
-- [ ] Funnels (single/multi/bundle/COD/lead/upsell/downsell)
-- [ ] Landing pages + direct checkout
-- [ ] UTM Attribution
-- [ ] Funnel Analytics
+Status: ✅ Complete (config + tracking + analytics slice — public funnel rendering/direct-checkout deferred, see below)
+- [x] Schema (migration 0015): funnel_template (global catalog, seeded SINGLE/COD/BUNDLE/LEAD), campaign + campaign_product + campaign_visit + campaign_conversion, funnel + funnel_step + funnel_visit + funnel_conversion — tenant tables org-scoped; per-org unique campaign/funnel slugs; unique campaign_product (campaign+variant) and conversion (source+order)
+- [x] Repos: campaigns (campaign + products + visits + conversions + live stats), funnels (template + funnel + steps + visits + conversions + live stats) — all org-scoped
+- [x] Growth service: campaign CRUD (slugify + per-org slug uniqueness, status DRAFT/ACTIVE/PAUSED/ENDED, product attach with dup guard); funnel CRUD (template inherits type, slug uniqueness) + ordered steps (LANDING/UPSELL/DOWNSELL/CHECKOUT/THANKYOU, auto position); UTM visit tracking (campaign + funnel); attributeOrder (reads order.campaignId/funnelId, records conversions idempotently, revenue = grandTotal); analytics overview
+- [x] Growth is a decoupled layer — never mutates ERP/inventory; conversions read order data only (ADR-013)
+- [x] API routes: /api/v1/growth/{campaigns,funnels,funnel-templates,funnel-steps,campaign-products,track,attribute,analytics} — perms campaigns.view/manage, funnels.view/manage, marketing.analytics
+- [x] Audit logs: campaign create/update + funnel create/update + funnel step create
+- [x] UI hooks (apps/web/features/(growth)/growth/api/v1-growth.ts)
+- [x] Dashboard UI: marketing/campaigns (list + create + status), marketing/funnels (list + create-from-template + detail sheet with steps + stats + status), marketing/growth-analytics (overview metrics + campaign/funnel performance tables)
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] Migration 0015 applied to local D1; all 9 tables created + funnel templates seeded
+- [x] Growth tests (tests/growth/growth.test.ts — 13: campaign/funnel isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, template type inheritance, step ordering, UTM visit stats, idempotent order attribution + cross-tenant guard, analytics aggregation)
+- [x] Tests: 181/181 pass
+- [ ] DEFERRED — Public landing-page / funnel rendering + direct checkout (public-facing, pairs with Phase 9 storefront rendering) — data + tracking + attribution contract in place; orders already carry campaignId/funnelId/utm
+- [ ] DEFERRED — Auto-attribution wiring (call attributeOrder from order confirm/deliver) — endpoint in place
+- [ ] DEFERRED — Coupons / flash sales / banners / SMS-email-push marketing (module §28-35) — secondary
 
 ---
 
@@ -383,7 +393,8 @@ Delivery Tests:            🟩 16 tests pass  (tests/delivery/delivery.test.ts 
 Customers Tests:           🟩 21 tests pass  (tests/customers/customers.test.ts — isolation + wallet/loyalty guards + purchase-stats)
 Billing Tests:             🟩 26 tests pass  (tests/billing/billing.test.ts — plan limits, lifecycle, idempotent webhooks, feature gating)
 Storefront Tests:          🟩 18 tests pass  (tests/storefront/storefront.test.ts — isolation + slug uniqueness + one-active-theme + homepage ordering)
-Total Test Suite:          🟩 168 tests pass  (this branch)
+Growth Tests:              🟩 13 tests pass  (tests/growth/growth.test.ts — campaign/funnel isolation + slug uniqueness + idempotent attribution + analytics)
+Total Test Suite:          🟩 181 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -419,15 +430,15 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–9 complete (168 tests pass). Storefront config + admin slice on this branch. Next options (pick one):
+Phases 0–10 complete (181 tests pass). Growth config + tracking + analytics on this branch. Next options (pick one):
 
-1. [HIGH] Phase 9 follow-up — Public themed storefront rendering
-   - ADR-014 separate rendering pipeline; load active theme + config; render homepage sections / pages / blog
-   - Theme bundles from R2; edge caching (Lighthouse 90+ target)
+1. [HIGH] Phase 11 — Marketplace (Themes / Funnels): install/activate/update, R2 bundles, versions, per-org ownership + purchases
 
-2. [HIGH] Phase 10 — Growth: Campaigns + Funnels (single/multi/bundle/COD/upsell/downsell) + landing pages + UTM attribution
+2. [HIGH] Public rendering slice (pairs Phase 9 + 10): themed storefront + funnel landing pages + direct checkout (ADR-014 pipeline, R2 bundles, edge caching)
 
-3. [MEDIUM] Wire Phase 6 auto-integrations (loyalty earn/reverse on sale/return, wallet refund) + Phase 8 leftovers (feature-flags UI, demo import)
+3. [MEDIUM] Phase 12 — Platform Admin + SaaS Analytics (orgs admin, MRR/ARR/churn, trial conversion) — leverages Phase 8 billing
+
+4. [LOW] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit
 ```
 
 ---
