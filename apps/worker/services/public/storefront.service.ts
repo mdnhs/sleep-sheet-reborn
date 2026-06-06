@@ -6,7 +6,9 @@ import { createCategoryRepository } from '../../repositories/categories.reposito
 import { createProductVariantRepository } from '../../repositories/product-variants.repository'
 import { createLocationRepository } from '../../repositories/locations.repository'
 import { createCustomersRepository } from '../../repositories/customers.repository'
+import { createFunnelsRepository } from '../../repositories/funnels.repository'
 import { createOrdersService } from '../v1/orders.service'
+import { createGrowthService } from '../v1/growth.service'
 import { ServiceError } from '../../utils/service-error'
 
 const json = (s: string | null) => { if (!s) return null; try { return JSON.parse(s) } catch { return null } }
@@ -20,6 +22,7 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
   const variants = createProductVariantRepository(db, organizationId)
   const locations = createLocationRepository(db, organizationId)
   const customers = createCustomersRepository(db, organizationId)
+  const funnels = createFunnelsRepository(db, organizationId)
 
   async function productCard(p: { id: string; name: string; slug: string }) {
     const [variants, images] = await Promise.all([products.findVariants(p.id), products.findImages(p.id)])
@@ -108,16 +111,50 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
       }
     },
 
+    /** Active funnel + ordered steps for public landing rendering. */
+    async getFunnel(slug: string) {
+      const f = await funnels.findBySlug(slug)
+      if (!f || f.status !== 'ACTIVE') throw new ServiceError('Funnel not found', 404)
+      const steps = await funnels.findSteps(f.id)
+      const landing = steps.find((s: { type: string }) => s.type === 'LANDING')
+      const landingCfg = json(landing?.config ?? null) as Record<string, unknown> | null
+
+      let product: { slug: string; name: string; price: number; image: string | null; variantId: string | null } | null = null
+      const productSlug = typeof landingCfg?.productSlug === 'string' ? landingCfg.productSlug : null
+      if (productSlug) {
+        const p = await products.findBySlug(productSlug)
+        if (p && p.status === 'ACTIVE') {
+          const [vs, imgs] = await Promise.all([products.findVariants(p.id), products.findImages(p.id)])
+          const prices = vs.map((v: { sellingPrice: number }) => v.sellingPrice).filter((n: number) => n > 0)
+          product = { slug: p.slug, name: p.name, price: prices.length ? Math.min(...prices) : 0, image: imgs[0]?.url ?? null, variantId: vs[0]?.id ?? null }
+        }
+      }
+      return {
+        id: f.id, name: f.name, slug: f.slug, type: f.type, config: json(f.config),
+        steps: steps.map((s: { id: string; type: string; position: number; config: string | null }) => ({ id: s.id, type: s.type, position: s.position, config: json(s.config) })),
+        product,
+      }
+    },
+
+    async trackFunnelVisit(funnelId: string, data: { stepId?: string; visitorId?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
+      return createGrowthService(db, organizationId).trackFunnelVisit(funnelId, data)
+    },
+
     /**
      * Guest/direct checkout. Prices are resolved server-side (never trusted from the
      * client); fulfillment falls to the first active location; customer is matched or
-     * created by phone. Stock + reservations handled by the Orders service.
+     * created by phone. Stock + reservations handled by the Orders service. When a
+     * funnelId is supplied the order is attributed (funnel_conversion).
      */
     async createOrder(data: {
       items: Array<{ variantId: string; quantity: number }>
       customer: { name: string; phone: string; email?: string; address: string; area?: string; city: string }
       paymentMethod?: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ' | 'BANK' | 'WALLET'
       notes?: string
+      funnelId?: string
+      utmSource?: string
+      utmMedium?: string
+      utmCampaign?: string
     }) {
       if (!data.items?.length) throw new ServiceError('Cart is empty', 400)
       const activeLocations = await locations.findLocations()
@@ -141,11 +178,19 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
         items: lineItems,
         address: { name: data.customer.name, phone: data.customer.phone, address: data.customer.address, area: data.customer.area, city: data.customer.city },
         locationId: location.id,
-        source: 'WEBSITE',
+        source: data.funnelId ? 'FUNNEL' : 'WEBSITE',
         paymentMethod: data.paymentMethod ?? 'COD',
         customerId,
         customerNotes: data.notes,
+        funnelId: data.funnelId,
+        utmSource: data.utmSource,
+        utmMedium: data.utmMedium,
+        utmCampaign: data.utmCampaign,
       })
+      // Attribute funnel conversions (best-effort; never blocks checkout).
+      if (data.funnelId) {
+        try { await createGrowthService(db, organizationId).attributeOrder(order.id) } catch { /* non-fatal */ }
+      }
       return { orderId: order.id, orderNumber: order.orderNumber, grandTotal: order.grandTotal, status: order.status }
     },
   }

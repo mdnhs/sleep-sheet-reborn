@@ -15,6 +15,10 @@ const CheckoutSchema = z.object({
   }),
   paymentMethod: z.enum(['COD', 'BKASH', 'NAGAD', 'SSLCOMMERZ', 'BANK', 'WALLET']).optional(),
   notes: z.string().optional(),
+  funnelId: z.string().optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
 })
 
 // Public storefront — no authentication; tenant resolved from subdomain.
@@ -68,6 +72,17 @@ const app = new Hono<HonoEnv>()
   .get('/blog/:slug', async (c) => {
     const s = svc(c); if (!s) return noTenant(c)
     try { return c.json(ok(await s.getPost(c.req.param('slug')))) } catch (e) { return fail(c, e, 'Failed to load post') }
+  })
+  .get('/funnels/:slug', async (c) => {
+    const s = svc(c); if (!s) return noTenant(c)
+    try { return c.json(ok(await s.getFunnel(c.req.param('slug')))) } catch (e) { return fail(c, e, 'Failed to load funnel') }
+  })
+  .post('/funnels/:id/track', zValidator('json', z.object({
+    stepId: z.string().optional(), visitorId: z.string().optional(),
+    utmSource: z.string().optional(), utmMedium: z.string().optional(), utmCampaign: z.string().optional(),
+  })), async (c) => {
+    const s = svc(c); if (!s) return noTenant(c)
+    try { return c.json(ok(await s.trackFunnelVisit(c.req.param('id'), c.req.valid('json'))), 201) } catch (e) { return fail(c, e, 'Failed to track visit') }
   })
   .post('/checkout', zValidator('json', CheckoutSchema), async (c) => {
     const s = svc(c); if (!s) return noTenant(c)
