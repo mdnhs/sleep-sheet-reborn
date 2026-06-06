@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 10 complete — Growth: Campaigns, Funnels, landing pages, UTM attribution, funnel analytics)
+Last Updated: 2026-06-06 (Phase 11 complete — Marketplace: theme + funnel install/activate/update, per-org ownership, plan-gated)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-06 (Phase 10 complete — Growth: Campaigns, Funnels, land
 
 # Project Status
 
-Current Phase: Phase 10 — Growth: Campaigns + Funnels
+Current Phase: Phase 11 — Marketplace (Themes / Funnels)
 
-Overall Progress: 93%
+Overall Progress: 95%
 
 Project Status: 🟨 In Progress
 
@@ -24,19 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 10 — Growth: Campaigns + Funnels (config + tracking + analytics slice complete; public funnel rendering deferred)
+Sprint Goal: Phase 11 — Marketplace (Themes / Funnels) (install/activate/update + per-org ownership + plan gating complete; R2 bundle delivery deferred)
 
 Sprint Delivered:
-- Drizzle schema (migration 0015): funnel_template (global, seeded SINGLE/COD/BUNDLE/LEAD), campaign + campaign_product + campaign_visit + campaign_conversion, funnel + funnel_step + funnel_visit + funnel_conversion — tenant tables org-scoped; per-org unique campaign/funnel slugs; unique campaign_product + conversion-per-order
-- Org-scoped repositories: campaigns (campaign + products + visits + conversions + live stats), funnels (template + funnel + steps + visits + conversions + live stats)
-- Growth service: campaign CRUD (slugify + slug uniqueness + status + product attach guard); funnel CRUD (template inherits type) + ordered steps (auto position); UTM visit tracking; attributeOrder (idempotent, revenue = order.grandTotal); analytics overview — decoupled layer, never mutates ERP
-- v1 API routes at /api/v1/growth/{campaigns,funnels,funnel-templates,funnel-steps,campaign-products,track,attribute,analytics} with requirePermission() + Zod
-- Permissions: reused campaigns.view/manage, funnels.view/manage, marketing.analytics (no new perms)
-- Audit log wired to campaign create/update + funnel create/update + funnel step create
-- Dashboard UI (marketing/*): campaigns (list + create + status), funnels (list + create-from-template + detail sheet with steps + stats + status), growth-analytics (overview + performance tables)
-- React Query v1 hooks (features/(growth)/growth/api/v1-growth.ts)
-- Growth tests: 13 tests (campaign/funnel isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, template type inheritance, step ordering, UTM visit stats, idempotent order attribution + cross-tenant guard, analytics aggregation)
-- Total test suite: 181 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth)
+- Drizzle schema (migration 0016): theme_purchase, funnel_purchase, organization_funnel — org-scoped ownership over the global theme + funnel_template catalogs; unique purchase per (org, asset); unique organization_funnel per funnel
+- Org-scoped marketplace repo: theme/funnel purchases + organization_funnel install records
+- Marketplace service: browse (catalog + owned/installed/active flags); theme purchase + install (free ungated; premium requires theme_marketplace flag + purchase) + activate (one active) + update (latest version); funnel purchase + install = clone template → org funnel + organization_funnel (requireFeature funnels + premium purchase + enforceLimit)
+- Plan gating reused (Phase 8): requireFeature(theme_marketplace|funnels) 403 + enforceLimit(limitThemes|limitFunnels) 422 — server-side
+- v1 API routes at /api/v1/marketplace/{themes,funnels,...purchase/install/activate/update} with requirePermission() (storefront.view, themes.install/activate/update, funnels.view/install)
+- Audit log wired to theme purchase/install/activate/update + funnel purchase/install
+- Dashboard UI: marketplace/themes (browse + buy/install/activate/update), marketplace/funnels (browse + buy/install)
+- React Query v1 hooks (features/(saas)/marketplace/api/v1-marketplace.ts)
+- Marketplace tests: 13 tests (browse flags, free vs premium gating, feature-flag enforcement, idempotent purchase/install, one-active-theme, version update, funnel clone-install + type inheritance, ownership isolation)
+- Total test suite: 194 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace)
 
 Sprint Status: 🟩 Complete
 
@@ -347,10 +347,21 @@ Status: ✅ Complete (config + tracking + analytics slice — public funnel rend
 ---
 
 # Phase 11 — Marketplace (Themes / Funnels)
-Status: ⬜ Not Started
-- [ ] Theme marketplace (install/activate/update, R2, versions)
-- [ ] Funnel marketplace (install/import/clone/update, R2, versions)
-- [ ] Purchases + per-org ownership
+Status: ✅ Complete (catalogs global, ownership org-scoped — R2 bundle delivery deferred, see below)
+- [x] Schema (migration 0016): theme_purchase, funnel_purchase, organization_funnel — org-scoped ownership over the global theme + funnel_template catalogs (Phase 9/10); unique purchase per (org, asset); unique organization_funnel per funnel
+- [x] Marketplace repo: theme/funnel purchases + organization_funnel (install records) — all org-scoped
+- [x] Marketplace service: browse (catalog + owned/installed/active flags); theme purchase (premium → requireFeature theme_marketplace + idempotent ownership), install (free ungated; premium requires flag + purchase; enforceLimit limitThemes; applies latest version), activate (one active per org), update (bump to latest theme_version); funnel purchase (premium → requireFeature funnels), install = clone template → new org funnel + organization_funnel record (requireFeature funnels + enforceLimit limitFunnels + premium purchase check)
+- [x] Plan gating reused (Phase 8): requireFeature(theme_marketplace|funnels) 403, enforceLimit(limitThemes|limitFunnels) 422 — server-side
+- [x] API routes: /api/v1/marketplace/{themes, themes/:id/purchase|install, org-themes/:id/activate|update, funnels, funnels/:id/purchase|install, installed-funnels} — perms storefront.view, themes.install/activate/update, funnels.view/install
+- [x] Audit logs: theme purchase/install/activate/update + funnel purchase/install
+- [x] UI hooks (apps/web/features/(saas)/marketplace/api/v1-marketplace.ts) + dashboard pages: marketplace/themes (browse + buy/install/activate/update), marketplace/funnels (browse + buy/install)
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] Migration 0016 applied to local D1; all 3 tables created
+- [x] Marketplace tests (tests/marketplace/marketplace.test.ts — 13: browse flags, free vs premium gating, feature-flag enforcement, idempotent purchase/install, one-active-theme, version update, funnel clone-install + type inheritance, ownership isolation)
+- [x] Tests: 194/194 pass
+- [ ] DEFERRED — R2 bundle upload/download + signed delivery of theme/funnel binaries (D1 stores r2Key + metadata; bundle pipeline pairs with public rendering, ADR-024)
+- [ ] DEFERRED — Premium payment capture on purchase (records ownership now; wire to billing providers later) + update notifications
+- [ ] DEFERRED — Apps marketplace (apps/app_versions/app_purchases/organization_apps) — future per module §9
 
 ---
 
@@ -394,7 +405,8 @@ Customers Tests:           🟩 21 tests pass  (tests/customers/customers.test.t
 Billing Tests:             🟩 26 tests pass  (tests/billing/billing.test.ts — plan limits, lifecycle, idempotent webhooks, feature gating)
 Storefront Tests:          🟩 18 tests pass  (tests/storefront/storefront.test.ts — isolation + slug uniqueness + one-active-theme + homepage ordering)
 Growth Tests:              🟩 13 tests pass  (tests/growth/growth.test.ts — campaign/funnel isolation + slug uniqueness + idempotent attribution + analytics)
-Total Test Suite:          🟩 181 tests pass  (this branch)
+Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.test.ts — install/purchase gating + one-active-theme + clone-install + ownership isolation)
+Total Test Suite:          🟩 194 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -430,15 +442,15 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–10 complete (181 tests pass). Growth config + tracking + analytics on this branch. Next options (pick one):
+Phases 0–11 complete (194 tests pass). Marketplace ownership + gating on this branch. Next options (pick one):
 
-1. [HIGH] Phase 11 — Marketplace (Themes / Funnels): install/activate/update, R2 bundles, versions, per-org ownership + purchases
+1. [HIGH] Phase 12 — Platform Admin + SaaS Analytics (orgs admin/suspend, plans/subscriptions/invoices admin, marketplace mgmt, MRR/ARR/churn/trial-conversion) — leverages Phase 8 billing + Phase 11 marketplace
 
-2. [HIGH] Public rendering slice (pairs Phase 9 + 10): themed storefront + funnel landing pages + direct checkout (ADR-014 pipeline, R2 bundles, edge caching)
+2. [HIGH] Phase 13 — Reports (sales/inventory/outlet/purchase/delivery/finance/growth)
 
-3. [MEDIUM] Phase 12 — Platform Admin + SaaS Analytics (orgs admin, MRR/ARR/churn, trial conversion) — leverages Phase 8 billing
+3. [MEDIUM] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching)
 
-4. [LOW] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit
+4. [LOW] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, premium payment capture
 ```
 
 ---
