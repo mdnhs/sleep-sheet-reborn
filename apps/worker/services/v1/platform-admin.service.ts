@@ -5,8 +5,13 @@ import {
 } from '@repo/database/schema'
 import type { Database, NewTheme, NewFunnelTemplate } from '@repo/database'
 import { createAuditLogRepository } from '../../repositories/audit-log.repository'
+import { createFeatureFlagsRepository } from '../../repositories/feature-flags.repository'
+import { getEffectiveFlags } from '../../utils/plan-limits'
 import { ServiceError } from '../../utils/service-error'
 import { generateId } from '../../utils/id'
+
+/** Capabilities that can be toggled per organization (plan default + per-org override). */
+export const KNOWN_FEATURE_FLAGS = ['theme_marketplace', 'funnels', 'apps', 'advanced_reports', 'ai_features'] as const
 
 type OrgStatus = 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'SUSPENDED' | 'CANCELLED'
 
@@ -38,6 +43,31 @@ export function createPlatformAdminService(db: Database) {
       await audit.log('organization', organizationId, action, actorId, { from: org.status, to: status })
       return { id: organizationId, status }
     },
+    // ── Feature flags (per-org overrides over the plan defaults) ───────────────────
+    async getOrgFeatureFlags(organizationId: string) {
+      const [org] = await db.select().from(organization).where(eq(organization.id, organizationId)).limit(1)
+      if (!org) throw new ServiceError('Organization not found', 404)
+      const effective = await getEffectiveFlags(db, organizationId)
+      const overrides = await createFeatureFlagsRepository(db, organizationId).findMany()
+      const overrideMap = new Map(overrides.map(o => [o.flag, o.enabled]))
+      return {
+        flags: KNOWN_FEATURE_FLAGS.map(flag => ({
+          flag,
+          enabled: effective[flag] === true,
+          overridden: overrideMap.has(flag),
+        })),
+      }
+    },
+    async setOrgFeatureFlag(organizationId: string, flag: string, enabled: boolean, actorId?: string) {
+      if (!KNOWN_FEATURE_FLAGS.includes(flag as typeof KNOWN_FEATURE_FLAGS[number])) throw new ServiceError('Unknown feature flag', 400)
+      const [org] = await db.select().from(organization).where(eq(organization.id, organizationId)).limit(1)
+      if (!org) throw new ServiceError('Organization not found', 404)
+      await createFeatureFlagsRepository(db, organizationId).upsert(flag, enabled)
+      const audit = createAuditLogRepository(db, organizationId)
+      await audit.log('feature_flag', flag, enabled ? 'enable' : 'disable', actorId, { flag, enabled })
+      return { flag, enabled }
+    },
+
     suspendOrg(id: string, actorId?: string) { return this.setOrgStatus(id, 'SUSPENDED', 'suspend', actorId) },
     reactivateOrg(id: string, actorId?: string) { return this.setOrgStatus(id, 'ACTIVE', 'reactivate', actorId) },
     cancelOrg(id: string, actorId?: string) { return this.setOrgStatus(id, 'CANCELLED', 'cancel', actorId) },
