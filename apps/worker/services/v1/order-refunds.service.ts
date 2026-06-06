@@ -3,6 +3,7 @@ import { createOrderRefundsRepository } from '../../repositories/order-refunds.r
 import { createOrdersRepository } from '../../repositories/orders.repository'
 import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { ServiceError } from '../../utils/service-error'
+import { refundToWallet, reverseLoyalty, notifyOrg } from './integrations'
 
 export function createOrderRefundsService(db: Database, organizationId: string) {
   const repo = createOrderRefundsRepository(db, organizationId)
@@ -77,6 +78,11 @@ export function createOrderRefundsService(db: Database, organizationId: string) 
         amount: refund.amount,
         newPaymentStatus,
       })
+
+      // Refund credited to wallet + earned loyalty reversed; staff notified.
+      await refundToWallet(db, organizationId, o.customerId, refund.amount, { type: 'order_refund', id })
+      await reverseLoyalty(db, organizationId, o.customerId, refund.amount, { type: 'order_refund', id })
+      await notifyOrg(db, organizationId, { title: `Refund approved for order ${o.orderNumber}`, body: `Amount ${refund.amount}`, type: 'WARNING', entityType: 'order_refund', entityId: id })
 
       return updated
     },

@@ -7,6 +7,7 @@ import { createLocationRepository } from '../../repositories/locations.repositor
 import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { ServiceError } from '../../utils/service-error'
 import { enforceSubscriptionActive, enforceLimit } from '../../utils/plan-limits'
+import { awardLoyalty, notifyOrg } from './integrations'
 
 export function createOrdersService(db: Database, organizationId: string) {
   const repo = createOrdersRepository(db, organizationId)
@@ -164,6 +165,8 @@ export function createOrdersService(db: Database, organizationId: string) {
         source: data.source ?? 'MANUAL',
       })
 
+      await notifyOrg(db, organizationId, { title: `New order ${orderNumber}`, body: `${data.items.length} item(s) · ${grandTotal}`, type: 'INFO', entityType: 'order', entityId: o.id })
+
       return this.get(o.id)
     },
 
@@ -232,6 +235,10 @@ export function createOrdersService(db: Database, organizationId: string) {
       await repo.update(id, { status: 'DELIVERED', deliveredAt: new Date() })
       await repo.addTimeline({ orderId: id, event: 'ORDER_DELIVERED', actorId })
       await auditRepo.log('order', id, 'deliver', actorId, { itemCount: items.length })
+
+      // Loyalty is awarded only after a completed (delivered) sale.
+      await awardLoyalty(db, organizationId, o.customerId, o.grandTotal, { source: 'ORDER', type: 'order', id })
+      await notifyOrg(db, organizationId, { title: `Order ${o.orderNumber} delivered`, type: 'SUCCESS', entityType: 'order', entityId: id })
 
       return this.get(id)
     },
