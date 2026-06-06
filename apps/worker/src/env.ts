@@ -13,6 +13,15 @@ const workerEnvSchema = z.object({
   STEADFAST_SECRET_KEY: z.string().optional(),
   EMAIL_PASS: z.string().optional(),
   NEXT_PUBLIC_EMAIL_USER: z.string().email().optional(),
+  // Payment gateways (optional; checkout falls back to sandbox when unset)
+  PAYMENT_WEBHOOK_SECRET: z.string().optional(),
+  PAYMENT_GATEWAY_MODE: z.enum(['sandbox', 'live']).optional(),
+  SSLCOMMERZ_STORE_ID: z.string().optional(),
+  SSLCOMMERZ_STORE_PASSWORD: z.string().optional(),
+  BKASH_APP_KEY: z.string().optional(),
+  BKASH_APP_SECRET: z.string().optional(),
+  BKASH_USERNAME: z.string().optional(),
+  BKASH_PASSWORD: z.string().optional(),
 })
 
 export type ValidatedWorkerEnv = z.infer<typeof workerEnvSchema>

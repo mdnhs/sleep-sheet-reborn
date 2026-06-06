@@ -27,6 +27,15 @@ export type HonoEnv = {
     STEADFAST_SECRET_KEY: string
     EMAIL_PASS: string
     NEXT_PUBLIC_EMAIL_USER: string
+    // Payment gateways (optional; per-environment). When unset, checkout uses the sandbox flow.
+    PAYMENT_WEBHOOK_SECRET?: string
+    PAYMENT_GATEWAY_MODE?: string  // 'sandbox' | 'live'
+    SSLCOMMERZ_STORE_ID?: string
+    SSLCOMMERZ_STORE_PASSWORD?: string
+    BKASH_APP_KEY?: string
+    BKASH_APP_SECRET?: string
+    BKASH_USERNAME?: string
+    BKASH_PASSWORD?: string
   }
   Variables: {
     db: Database

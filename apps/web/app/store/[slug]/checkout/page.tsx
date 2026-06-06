@@ -42,8 +42,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: order.orderId, provider: method }),
       })
-      const init = await initRes.json() as { success: boolean; data?: { paymentId: string }; error?: { message: string } }
+      const init = await initRes.json() as { success: boolean; data?: { paymentId: string; gateway?: boolean; checkoutUrl?: string | null }; error?: { message: string } }
       if (!initRes.ok || !init.success) throw new Error(init.error?.message ?? "Payment init failed")
+      // Configured provider → hosted gateway page; otherwise the sandbox mock page.
+      if (init.data!.gateway && init.data!.checkoutUrl) { window.location.href = init.data!.checkoutUrl; return }
       const q = new URLSearchParams({ provider: method, amount: String(order.grandTotal), order: order.orderNumber })
       router.push(`/store/${slug}/pay/${init.data!.paymentId}?${q.toString()}`)
     } catch (e) { setError((e as Error).message); setBusy(false) }

@@ -3,6 +3,7 @@ import { orderPayment, order } from '@repo/database/schema'
 import type { Database } from '@repo/database'
 import { createOrdersRepository } from '../../repositories/orders.repository'
 import { isValidProvider } from '../v1/billing-providers'
+import { initiateGateway, gatewayConfigured, type GatewayEnv } from './gateways'
 import { ServiceError } from '../../utils/service-error'
 import { generateId } from '../../utils/id'
 
@@ -27,20 +28,35 @@ export function createOrderPaymentService(db: Database, organizationId: string) 
   const orders = createOrdersRepository(db, organizationId)
 
   return {
-    async initiate(orderId: string, provider: string) {
+    async initiate(orderId: string, provider: string, gw?: { env: GatewayEnv; baseUrl: string; tenantSlug: string }) {
       if (!isValidProvider(provider) || provider === 'MANUAL') throw new ServiceError('Invalid payment provider', 400)
       const o = await orders.findById(orderId)
       if (!o) throw new ServiceError('Order not found', 404)
       if (o.paymentStatus === 'PAID') throw new ServiceError('Order already paid', 400)
 
       const now = new Date()
-      const row = {
+      const row: { id: string; organizationId: string; orderId: string; provider: any; amount: number; status: 'PENDING'; providerRef: string | null; idempotencyKey: null; createdAt: Date; updatedAt: Date } = {
         id: generateId(), organizationId, orderId, provider: provider as any, amount: o.grandTotal,
-        status: 'PENDING' as const, providerRef: null, idempotencyKey: null, createdAt: now, updatedAt: now,
+        status: 'PENDING', providerRef: null, idempotencyKey: null, createdAt: now, updatedAt: now,
       }
       await db.insert(orderPayment).values(row)
-      // Real providers return a hosted redirect after server-to-server init; deferred.
-      return { paymentId: row.id, amount: row.amount, provider, checkoutUrl: `/pay/${row.id}` }
+
+      // Real hosted gateway when configured for this provider; otherwise sandbox flow.
+      if (gw && gatewayConfigured(provider, gw.env)) {
+        const base = gw.baseUrl.replace(/\/$/, '')
+        const ret = (status: string) => `${base}/store/${gw.tenantSlug}/pay/return?p=${row.id}&status=${status}`
+        const result = await initiateGateway(provider, gw.env, {
+          amount: o.grandTotal, tranId: row.id, orderNumber: o.orderNumber,
+          successUrl: ret('success'), failUrl: ret('fail'), cancelUrl: ret('cancel'),
+          ipnUrl: `${base}/api/public/payments/${provider}/webhook`,
+        })
+        if (result) {
+          await db.update(orderPayment).set({ providerRef: result.providerRef, updatedAt: new Date() }).where(eq(orderPayment.id, row.id))
+          return { paymentId: row.id, amount: o.grandTotal, provider, gateway: true, checkoutUrl: result.redirectUrl }
+        }
+      }
+      // Sandbox: client routes to the mock gateway page.
+      return { paymentId: row.id, amount: o.grandTotal, provider, gateway: false, checkoutUrl: null }
     },
   }
 }

@@ -91,7 +91,9 @@ const app = new Hono<HonoEnv>()
   .post('/payments/initiate', zValidator('json', z.object({ orderId: z.string().min(1), provider: z.enum(['bKash', 'Nagad', 'SSLCommerz']) })), async (c) => {
     const tenant = c.get('tenant'); if (!tenant) return noTenant(c)
     const body = c.req.valid('json')
-    try { return c.json(ok(await createOrderPaymentService(c.get('db'), tenant.id).initiate(body.orderId, body.provider)), 201) }
+    const env = c.env as any
+    const gw = { env, baseUrl: env.WEB_URL ?? '', tenantSlug: tenant.slug }
+    try { return c.json(ok(await createOrderPaymentService(c.get('db'), tenant.id).initiate(body.orderId, body.provider, gw)), 201) }
     catch (e) { return fail(c, e, 'Failed to initiate payment') }
   })
   // Inbound provider webhook (unscoped — org resolved from the payment). Never trusts client.
