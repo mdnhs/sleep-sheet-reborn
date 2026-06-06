@@ -20,6 +20,7 @@ export function createTestDb(): TestCtx {
     CREATE TABLE product (id TEXT PRIMARY KEY, organizationId TEXT, categoryId TEXT, brandId TEXT, name TEXT, slug TEXT, description TEXT, status TEXT, createdAt INTEGER, updatedAt INTEGER);
     CREATE TABLE product_variant (id TEXT PRIMARY KEY, organizationId TEXT, productId TEXT, unitId TEXT, sku TEXT, barcode TEXT, name TEXT, costPrice INTEGER, sellingPrice INTEGER, status TEXT, createdAt INTEGER, updatedAt INTEGER);
     CREATE TABLE product_image (id TEXT PRIMARY KEY, organizationId TEXT, productId TEXT, cloudinaryPublicId TEXT, url TEXT, sortOrder INTEGER, createdAt INTEGER, updatedAt INTEGER);
+    CREATE TABLE location (id TEXT PRIMARY KEY, organizationId TEXT, branchId TEXT, name TEXT, code TEXT, type TEXT, status TEXT, createdAt INTEGER, updatedAt INTEGER);
   `)
   return { db, sqlite }
 }
@@ -41,5 +42,6 @@ export function seed(sqlite: InstanceType<typeof Database>) {
     product(o: string, slug: string, status: string) { const i = id('prod'); run(`INSERT INTO product (id,organizationId,name,slug,description,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?)`, i, o, slug, slug, 'desc', status, NOW, NOW); return i },
     variant(o: string, productId: string, sellingPrice: number) { run(`INSERT INTO product_variant (id,organizationId,productId,sku,name,costPrice,sellingPrice,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?)`, id('var'), o, productId, id('sku'), 'v', 0, sellingPrice, 'ACTIVE', NOW, NOW) },
     image(o: string, productId: string, url: string, sortOrder: number) { run(`INSERT INTO product_image (id,organizationId,productId,url,sortOrder,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?)`, id('img'), o, productId, url, sortOrder, NOW, NOW) },
+    location(o: string, type = 'OUTLET', status = 'ACTIVE') { const i = id('loc'); run(`INSERT INTO location (id,organizationId,name,code,type,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?)`, i, o, i, i, type, status, NOW, NOW); return i },
   }
 }

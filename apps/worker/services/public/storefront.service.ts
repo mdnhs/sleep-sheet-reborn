@@ -2,6 +2,10 @@ import type { Database } from '@repo/database'
 import { createThemesRepository } from '../../repositories/themes.repository'
 import { createStorefrontCmsRepository } from '../../repositories/storefront-cms.repository'
 import { createProductRepository } from '../../repositories/products.repository'
+import { createProductVariantRepository } from '../../repositories/product-variants.repository'
+import { createLocationRepository } from '../../repositories/locations.repository'
+import { createCustomersRepository } from '../../repositories/customers.repository'
+import { createOrdersService } from '../v1/orders.service'
 import { ServiceError } from '../../utils/service-error'
 
 const json = (s: string | null) => { if (!s) return null; try { return JSON.parse(s) } catch { return null } }
@@ -11,6 +15,9 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
   const themes = createThemesRepository(db, organizationId)
   const cms = createStorefrontCmsRepository(db, organizationId)
   const products = createProductRepository(db, organizationId)
+  const variants = createProductVariantRepository(db, organizationId)
+  const locations = createLocationRepository(db, organizationId)
+  const customers = createCustomersRepository(db, organizationId)
 
   async function productCard(p: { id: string; name: string; slug: string }) {
     const [variants, images] = await Promise.all([products.findVariants(p.id), products.findImages(p.id)])
@@ -76,6 +83,47 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
         title: p.title, slug: p.slug, content: p.content, coverImage: p.coverImage, category: p.category, publishedAt: p.publishedAt,
         seo: { metaTitle: p.metaTitle, metaDescription: p.metaDescription, ogImage: p.ogImage },
       }
+    },
+
+    /**
+     * Guest/direct checkout. Prices are resolved server-side (never trusted from the
+     * client); fulfillment falls to the first active location; customer is matched or
+     * created by phone. Stock + reservations handled by the Orders service.
+     */
+    async createOrder(data: {
+      items: Array<{ variantId: string; quantity: number }>
+      customer: { name: string; phone: string; email?: string; address: string; area?: string; city: string }
+      paymentMethod?: 'COD' | 'BKASH' | 'NAGAD' | 'SSLCOMMERZ' | 'BANK' | 'WALLET'
+      notes?: string
+    }) {
+      if (!data.items?.length) throw new ServiceError('Cart is empty', 400)
+      const activeLocations = await locations.findLocations()
+      const location = activeLocations[0]
+      if (!location) throw new ServiceError('Store is not accepting orders right now', 400)
+
+      const lineItems: Array<{ variantId: string; quantity: number; unitPrice: number }> = []
+      for (const it of data.items) {
+        if (!it.quantity || it.quantity <= 0) throw new ServiceError('Invalid quantity', 400)
+        const v = await variants.findById(it.variantId)
+        if (!v || v.status !== 'ACTIVE') throw new ServiceError('An item in your cart is unavailable', 404)
+        lineItems.push({ variantId: it.variantId, quantity: it.quantity, unitPrice: v.sellingPrice })
+      }
+
+      const existing = await customers.findByPhone(data.customer.phone)
+      const customerId = existing?.id
+        ?? (await customers.create({ name: data.customer.name, phone: data.customer.phone, email: data.customer.email ?? null })).id
+
+      const orders = createOrdersService(db, organizationId)
+      const order = await orders.create({
+        items: lineItems,
+        address: { name: data.customer.name, phone: data.customer.phone, address: data.customer.address, area: data.customer.area, city: data.customer.city },
+        locationId: location.id,
+        source: 'WEBSITE',
+        paymentMethod: data.paymentMethod ?? 'COD',
+        customerId,
+        customerNotes: data.notes,
+      })
+      return { orderNumber: order.orderNumber, grandTotal: order.grandTotal, status: order.status }
     },
   }
 }

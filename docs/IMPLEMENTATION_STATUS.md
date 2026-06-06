@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Public rendering slice — public storefront API + themed homepage renderer at /store/[slug]; all numbered phases 0–14 done)
+Last Updated: 2026-06-06 (Public rendering — storefront API + themed pages: homepage, product detail, cart, COD checkout at /store/[slug]; all numbered phases 0–14 done)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -24,14 +24,16 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Public rendering slice — public storefront API + themed homepage renderer (deferred-slice; not a numbered phase)
+Sprint Goal: Public rendering — storefront API + themed pages (homepage, product detail, cart, COD checkout); deferred-slice, not a numbered phase
 
 Sprint Delivered:
 - Public storefront API (worker, no auth, subdomain-resolved tenant, published-only): /api/public/{storefront (active theme + config + menus + enabled homepage sections), products, products/:slug, pages/:slug, blog, blog/:slug} — new /api/public mount; public service reuses themes/cms/products repos
 - Themed homepage renderer (web): apps/web/app/store/[slug] reads v2 D1 directly via getCloudflareContext + createDb (mirrors dashboard pattern, decoupled — no cross-app import); applies theme config (colors/logo/font) as CSS variables; renders enabled homepage sections in order via a section component library (HERO/BANNER/FEATURED_PRODUCTS/BEST_SELLERS/CUSTOM_HTML/…) + product grid; plain HTML, isolated from the Shadcn dashboard design system (ADR-014)
 - Global error handling already shipped Phase 14 (app.onError + notFound)
-- Public storefront tests: 7 tests (themed shell w/ parsed config + ordered enabled sections + menus, ACTIVE-only products w/ min price + first image, PUBLISHED page/blog gating + 404 on draft, full cross-tenant isolation)
-- Total test suite: 225 tests pass (… + 7 notifications + 7 public-storefront)
+- Public checkout (worker): POST /api/public/checkout — server-resolved prices, first active location, find-or-create customer by phone, delegates to Orders service (stock + reservations); guest COD orders, source WEBSITE
+- Storefront web pages (apps/web/app/store/[slug]): themed layout shell (theme CSS vars + header/footer nav), homepage sections, product detail + add-to-cart, localStorage per-tenant cart, checkout page → COD order + confirmation
+- Public storefront tests: 10 tests (themed shell, ACTIVE-only products w/ min price + first image, PUBLISHED page/blog gating + 404, cross-tenant isolation, checkout guards: empty cart / no active location / unavailable variant)
+- Total test suite: 228 tests pass (… + 7 notifications + 10 public-storefront)
 
 Sprint Status: 🟩 Complete
 
@@ -315,7 +317,7 @@ Status: ✅ Complete (config + admin slice — public themed rendering deferred,
 - [x] Migration 0014 applied to local D1; all 8 tables created + themes seeded
 - [x] Storefront tests (tests/storefront/storefront.test.ts — 18: page/blog/redirect/section isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, blog publishedAt, one-active-theme, redirect guards, homepage ordering)
 - [x] Tests: 168/168 pass
-- [🟨] PARTIAL — Public themed storefront rendering: public read API (worker /api/public/storefront|products|pages|blog — no auth, subdomain-resolved tenant, published-only) + themed homepage renderer (apps/web/app/store/[slug] — reads v2 D1 via getCloudflareContext, applies theme config colors/logo as CSS vars, renders enabled homepage sections + product grid, plain HTML per ADR-014 not Shadcn) + 7 public-storefront tests. STILL DEFERRED: theme bundles from R2, full catalog/product-detail/cart pages, direct checkout, funnel landing rendering
+- [🟨] PARTIAL — Public themed storefront rendering: public read+checkout API (worker /api/public/storefront|products|products/:slug|pages/:slug|blog|checkout — no auth, subdomain-resolved tenant, published-only; checkout resolves price server-side, picks active location, find-or-creates customer by phone, delegates to Orders service for stock/reservations) + themed web pages (apps/web/app/store/[slug]: layout shell w/ theme CSS vars + nav, homepage sections, product detail w/ add-to-cart, localStorage cart, checkout → COD order) — plain HTML per ADR-014; 10 public-storefront tests. STILL DEFERRED: theme bundles from R2, catalog/category browse pages, online payment (COD only), funnel landing rendering
 - [ ] DEFERRED — Media Library (Cloudinary asset browser) — secondary; pages/blog already store media URLs
 - [ ] DEFERRED — Landing pages + theme presets/demo stores + theme marketplace install (overlaps Phase 10 funnels + Phase 11 marketplace)
 
@@ -428,8 +430,8 @@ Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.te
 Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
 Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts — sales/inventory/purchase aggregation + isolation)
 Notifications Tests:       🟩 7 tests pass   (tests/notifications/notifications.test.ts — feed/read/audience/isolation)
-Public Storefront Tests:   🟩 7 tests pass   (tests/public/public-storefront.test.ts — themed shell, published products/pages/blog, isolation)
-Total Test Suite:          🟩 225 tests pass  (this branch)
+Public Storefront Tests:   🟩 10 tests pass  (tests/public/public-storefront.test.ts — themed shell, published products/pages/blog, isolation, checkout guards)
+Total Test Suite:          🟩 228 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -467,7 +469,7 @@ None
 ```text
 Phases 0–14 done (225 tests). Public rendering started: storefront API + themed homepage at /store/[slug]. Next options (pick one):
 
-1. [HIGH] Finish public rendering: product-detail + catalog/category browse pages, cart + direct checkout (create order via API), funnel landing rendering, then theme bundles from R2 (ADR-024)
+1. [HIGH] Finish public rendering: catalog/category browse + search, online payment (bKash/SSLCommerz on checkout), funnel landing rendering, theme bundles from R2 (ADR-024). [Done: homepage, product detail, cart, COD checkout]
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 
