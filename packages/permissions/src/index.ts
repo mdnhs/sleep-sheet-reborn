@@ -66,10 +66,12 @@ export const ORG_PERMISSIONS = {
   'pos.return':        ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER'] as OrgRole[],
   'pos.cash_register': ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER'] as OrgRole[],
   // Customers
-  'customers.view':   ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER'] as OrgRole[],
-  'customers.create': ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER'] as OrgRole[],
-  'customers.update': OWNER_ADMIN_MANAGER,
-  'customers.wallet': OWNER_ADMIN,
+  'customers.view':    ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER'] as OrgRole[],
+  'customers.create':  ['OWNER', 'ADMIN', 'MANAGER', 'CASHIER'] as OrgRole[],
+  'customers.update':  OWNER_ADMIN_MANAGER,
+  'customers.wallet':  OWNER_ADMIN,
+  'customers.loyalty': OWNER_ADMIN_MANAGER,
+  'customers.reports': OWNER_ADMIN_MANAGER,
   // Delivery
   'delivery.view':    ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],
   'delivery.create':  ['OWNER', 'ADMIN', 'MANAGER', 'DELIVERY_MANAGER'] as OrgRole[],

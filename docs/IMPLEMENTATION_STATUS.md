@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-05 (Phase 7 complete — Delivery: Partners, Riders, Shipments, Tracking, Courier Sync)
+Last Updated: 2026-06-06 (Phase 6 complete — Customers: Customers, Groups, Addresses, Wallet, Loyalty, Purchase History, Reports)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-05 (Phase 7 complete — Delivery: Partners, Riders, Shipm
 
 # Project Status
 
-Current Phase: Phase 7 — Delivery
+Current Phase: Phase 6 — Customers
 
-Overall Progress: 78%
+Overall Progress: 82%
 
 Project Status: 🟨 In Progress
 
@@ -24,20 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 1 — Catalog + Inventory (fully complete)
+Sprint Goal: Phase 6 — Customers (fully complete)
 
 Sprint Delivered:
-- Drizzle schemas: catalog, locations, inventory, audit_log (migrations 0004–0005)
-- Org-scoped repositories for all Phase 1 entities + product-images + audit-log
-- v1 services: categories, brands, units, products (+ plan limit + audit), product-variants (SKU/barcode uniqueness), product-images (Cloudinary upload/delete), locations (+ plan limit), inventory (stock, adjustments, movement ledger, transfers)
-- v1 API routes at /api/v1/ — full CRUD with requirePermission() + Zod validation
-- Plan enforcement (enforceSubscriptionActive, enforceLimit wired to products + locations)
-- Audit log wired to product create/update/archive + image upload/delete + inventory adjustments + transfer create/approve/receive
-- Dashboard UI: brands, units, products list + create + edit (Details/Variants/Images tabs), warehouses/outlets, stock adjustment + movement history, stock transfer (create + approve + receive + cancel workflow)
-- React Query v1 hooks for all modules including product images (raw fetch for multipart) + full transfer hooks
-- Catalog isolation tests: 20 tests (category, brand, product, variant repos — per-org uniqueness, cross-tenant 404)
-- Inventory isolation tests: 15 tests (stock, movements, transfers — repo scoping, cross-tenant 404, upsert/update no-ops across tenant)
-- Total test suite: 62 tests pass (27 tenancy + 20 catalog + 15 inventory)
+- Drizzle schema: customer_group, customer, customer_address, customer_wallet_transaction, customer_loyalty_transaction (migration 0012) — all org-scoped; phone unique per org; wallet/loyalty cached balances mutated only alongside an immutable transaction
+- Org-scoped repositories: customer-groups, customers (+ addresses, wallet txns, loyalty txns, purchase-stats aggregation across orders + completed POS sales)
+- Customers service: group CRUD (per-org name uniqueness); customer CRUD with per-org phone uniqueness, never hard-deleted (block/unblock/archive); addresses; wallet credit/debit (no-negative + blocked-customer guard); loyalty earn/redeem/reverse (reverse clamps to balance); purchase history + analytics/CLV
+- v1 API routes at /api/v1/customers + /api/v1/customer-groups — full CRUD + wallet/loyalty/history/reports with requirePermission() + Zod validation
+- Permissions: added customers.loyalty + customers.reports to catalog
+- Audit log wired to customer create/update/block + wallet credit/debit + loyalty earn/redeem/reverse + group create
+- Dashboard UI: all-customers + customer-wallet + loyalty-program (list + create + detail sheet with profile/wallet/loyalty/addresses tabs), customer-groups (cards + create + toggle), customer-reports (CLV metrics + top customers); previously placeholders
+- React Query v1 hooks for groups, customers, wallet, loyalty, reports + shared customer-list-view + customer-detail-sheet
+- Customers tests: 21 tests (customer/group/wallet-txn isolation, cross-tenant 404, per-org phone uniqueness + same-phone-across-orgs, wallet no-negative + blocked guard, loyalty earn/redeem/reverse-clamp, purchase-stats aggregation + cross-tenant exclusion)
+- Total test suite: 124 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers)
 
 Sprint Status: 🟩 Complete
 
@@ -246,10 +245,22 @@ Status: ✅ Complete
 ---
 
 # Phase 6 — Customers
-Status: ⬜ Not Started
-- [ ] Customers + Groups + Purchase History
-- [ ] Wallet (credits, refund integration)
-- [ ] Loyalty (earn / redeem)
+Status: ✅ Complete (MVP scope — due/payment ledger deferred, see below)
+- [x] Customers schema: customer_group, customer, customer_address, customer_wallet_transaction, customer_loyalty_transaction — all org-scoped (migration 0012_phase6); phone unique per org; walletBalance/loyaltyPoints cached, only mutated alongside an immutable transaction
+- [x] Repos: customer-groups, customers (+ addresses, wallet txns, loyalty txns, purchase stats) — all org-scoped
+- [x] Customers service: group CRUD (per-org name uniqueness); customer CRUD (per-org phone uniqueness, never hard-deleted — block/unblock/archive); addresses; wallet credit/debit (no negative balance, blocked customer guard); loyalty earn/redeem/reverse (no negative, reverse clamps to balance); purchase history + analytics/CLV (orders + completed POS sales)
+- [x] API routes: /api/v1/customers (+ /:id, /reports, block/unblock/archive, addresses, wallet credit/debit, loyalty earn/redeem/reverse, history) + /api/v1/customer-groups — perms customers.view/create/update/wallet/loyalty/reports
+- [x] Permissions: added customers.loyalty + customers.reports to catalog
+- [x] Audit logs: customer create/update/block + wallet credit/debit + loyalty earn/redeem/reverse + group create
+- [x] UI hooks (apps/web/features/(erp-core)/customers/api/v1-customers.ts) + customer detail sheet (profile/stats + wallet + loyalty + addresses tabs, status actions) + shared customer-list-view
+- [x] UI pages: all-customers, customer-wallet, loyalty-program (list + create + detail sheet), customer-groups (cards + create + toggle), customer-reports (CLV metrics + top customers)
+- [x] Migration applied to local D1; all 5 tables created
+- [x] Customers tests (tests/customers/customers.test.ts — 21 tests: customer/group/wallet-txn isolation, cross-tenant 404, per-org phone uniqueness + same-phone-across-orgs, wallet credit/debit + no-negative guard, blocked-customer guard, loyalty earn/redeem/reverse-clamp, purchase-stats aggregation + cross-tenant exclusion)
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] Tests: 124/124 pass
+- [ ] DEFERRED — Customer due + payment ledger (Total Purchases − Payments) — secondary; needs deeper orders/POS payment integration
+- [ ] DEFERRED — Communication history (SMS/email/notifications) — secondary, ties to Growth/Notifications
+- [ ] DEFERRED — Auto loyalty-earn on sale completion + auto-reverse on return (wire into orders/POS/returns services) — contract in place via earn/reverse endpoints
 
 ---
 
@@ -354,7 +365,8 @@ Catalog Isolation Tests:   🟩 20 tests pass  (tests/catalog/isolation.test.ts)
 Inventory Isolation Tests: 🟩 15 tests pass  (tests/inventory/isolation.test.ts)
 Purchases Isolation Tests: 🟩 25 tests pass  (tests/purchases/isolation.test.ts)
 Delivery Tests:            🟩 16 tests pass  (tests/delivery/delivery.test.ts — isolation + lifecycle + order-workflow guard)
-Total Test Suite:          🟩 103 tests pass  (this branch; excludes Phase 6/8 suites on their branch)
+Customers Tests:           🟩 21 tests pass  (tests/customers/customers.test.ts — isolation + wallet/loyalty guards + purchase-stats)
+Total Test Suite:          🟩 124 tests pass  (this branch; excludes Phase 8 billing suite on its branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -390,19 +402,19 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 + Phase 1 + Phase 2 complete (62 tests pass). Next options (pick one):
+Phases 0–7 complete (124 tests pass). Phase 6 Customers done this branch. Next options (pick one):
 
-1. [HIGH] Phase 3 — Orders (CRITICAL PATH)
-   - Order schema (org-scoped, source, status, payment_status, grand_total)
-   - Inventory reservation on create; consume on delivered; release on cancel
-   - Order list + detail + timeline UI
+1. [CRITICAL/MVP] Phase 8 — Subscriptions, Billing & Plan Enforcement (finish partial)
+   - Trial flow (7/14/30) + renewal + grace + suspension
+   - Per-org usage counters (cached) + requireFeature() enforcement
+   - Billing providers (bKash/Nagad/SSLCommerz) — idempotent webhooks
 
-2. [MEDIUM] Purchases isolation tests
-   - tests/purchases/isolation.test.ts — supplier, purchase_order repos; cross-tenant 404
+2. [HIGH] Wire Phase 6 auto-integrations
+   - Loyalty auto-earn on order deliver + POS complete (call earnPoints from those services)
+   - Loyalty auto-reverse on order/POS return; wallet refund → creditWallet on refund approve
+   - Customer due + payment ledger (Total Purchases − Payments)
 
-3. [LOW] Variant deactivate hook
-   - Add useDeactivateVariant → DELETE /api/v1/products/:id/variants/:variantId
-   - Wire into delete button in Variants tab (currently a stub)
+3. [MEDIUM] Phase 9 — Storefront + Theme System (CRITICAL path to SaaS launch)
 ```
 
 ---
