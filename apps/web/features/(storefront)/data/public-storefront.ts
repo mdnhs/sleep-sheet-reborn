@@ -1,10 +1,10 @@
 import "server-only"
 import { getCloudflareContext } from "@opennextjs/cloudflare"
 import type { D1Database } from "@cloudflare/workers-types"
-import { and, eq } from "drizzle-orm"
+import { and, eq, like, sql } from "drizzle-orm"
 import {
   createDb, organization, organizationTheme, theme as themeTable,
-  menu as menuTable, homepageSection, product, productVariant, productImage,
+  menu as menuTable, homepageSection, product, productVariant, productImage, category,
 } from "@repo/database"
 
 const parse = (s: string | null) => { if (!s) return null; try { return JSON.parse(s) as Record<string, unknown> } catch { return null } }
@@ -86,6 +86,51 @@ export async function getStorefrontShell(slug: string): Promise<StorefrontShell 
     org, theme,
     menus: menus.map(m => ({ location: m.location, items: (parse(m.items) as unknown as Array<{ label: string; url: string }>) ?? [] })),
   }
+}
+
+type ProductCard = { id: string; name: string; slug: string; price: number; image: string | null }
+export type Catalog = {
+  org: { name: string }
+  items: ProductCard[]
+  total: number; limit: number; offset: number
+  categories: { id: string; name: string; slug: string }[]
+  search: string; category: string
+}
+
+async function cardFor(db: Awaited<ReturnType<typeof getDb>>, orgId: string, p: { id: string; name: string; slug: string }): Promise<ProductCard> {
+  const variants = await db.select({ price: productVariant.sellingPrice }).from(productVariant)
+    .where(and(eq(productVariant.organizationId, orgId), eq(productVariant.productId, p.id)))
+  const img = await db.select({ url: productImage.url }).from(productImage)
+    .where(and(eq(productImage.organizationId, orgId), eq(productImage.productId, p.id)))
+    .orderBy(productImage.sortOrder).then(r => r[0])
+  const prices = variants.map(v => v.price).filter(n => n > 0)
+  return { id: p.id, name: p.name, slug: p.slug, price: prices.length ? Math.min(...prices) : 0, image: img?.url ?? null }
+}
+
+export async function getCatalog(slug: string, opts: { search?: string; category?: string; page?: number } = {}): Promise<Catalog | null> {
+  const db = await getDb()
+  const org = await db.select({ id: organization.id, name: organization.name })
+    .from(organization).where(eq(organization.slug, slug)).then(r => r[0])
+  if (!org) return null
+
+  const limit = 24
+  const offset = Math.max((opts.page ?? 1) - 1, 0) * limit
+  const cats = await db.select({ id: category.id, name: category.name, slug: category.slug })
+    .from(category).where(and(eq(category.organizationId, org.id), eq(category.status, "ACTIVE")))
+
+  const conds = [eq(product.organizationId, org.id), eq(product.status, "ACTIVE")]
+  if (opts.search) conds.push(like(product.name, `%${opts.search}%`))
+  if (opts.category) {
+    const cat = cats.find(c => c.slug === opts.category)
+    if (!cat) return { org: { name: org.name }, items: [], total: 0, limit, offset, categories: cats, search: opts.search ?? "", category: opts.category }
+    conds.push(eq(product.categoryId, cat.id))
+  }
+
+  const [{ total }] = await db.select({ total: sql<number>`COUNT(*)` }).from(product).where(and(...conds))
+  const rows = await db.select({ id: product.id, name: product.name, slug: product.slug })
+    .from(product).where(and(...conds)).limit(limit).offset(offset)
+  const items = await Promise.all(rows.map(r => cardFor(db, org.id, r)))
+  return { org: { name: org.name }, items, total: total ?? 0, limit, offset, categories: cats, search: opts.search ?? "", category: opts.category ?? "" }
 }
 
 export type ProductDetail = {

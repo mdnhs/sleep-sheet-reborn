@@ -78,6 +78,52 @@ describe('Public storefront — pages & blog', () => {
   })
 })
 
+describe('Public catalog — browse & search', () => {
+  it('lists active categories', async () => {
+    s.category(ORG_A, 'shirts')
+    s.category(ORG_A, 'pants', 'INACTIVE')
+    const cats = await svc(ORG_A).listCategories()
+    expect(cats.map(c => c.slug)).toEqual(['shirts'])
+  })
+
+  it('searches products by name', async () => {
+    s.product(ORG_A, 'red-shirt', 'ACTIVE')
+    s.product(ORG_A, 'blue-jeans', 'ACTIVE')
+    const res = await svc(ORG_A).browseProducts({ search: 'shirt' })
+    expect(res.items.map(i => i.slug)).toEqual(['red-shirt'])
+    expect(res.total).toBe(1)
+  })
+
+  it('filters by category slug', async () => {
+    const cat = s.category(ORG_A, 'shirts')
+    s.product(ORG_A, 'shirt-a', 'ACTIVE', cat)
+    s.product(ORG_A, 'jeans-a', 'ACTIVE', null)
+    const res = await svc(ORG_A).browseProducts({ categorySlug: 'shirts' })
+    expect(res.items.map(i => i.slug)).toEqual(['shirt-a'])
+  })
+
+  it('unknown category returns empty', async () => {
+    s.product(ORG_A, 'x', 'ACTIVE')
+    const res = await svc(ORG_A).browseProducts({ categorySlug: 'nope' })
+    expect(res.total).toBe(0)
+  })
+
+  it('paginates with total count', async () => {
+    for (let i = 0; i < 5; i++) s.product(ORG_A, `p-${i}`, 'ACTIVE')
+    const res = await svc(ORG_A).browseProducts({ limit: 2, offset: 0 })
+    expect(res.items).toHaveLength(2)
+    expect(res.total).toBe(5)
+  })
+
+  it('catalog excludes DRAFT and other tenants', async () => {
+    s.product(ORG_A, 'live', 'ACTIVE')
+    s.product(ORG_A, 'draft', 'DRAFT')
+    s.product(ORG_B, 'b', 'ACTIVE')
+    const res = await svc(ORG_A).browseProducts({})
+    expect(res.items.map(i => i.slug)).toEqual(['live'])
+  })
+})
+
 describe('Public checkout — guards', () => {
   const customer = { name: 'Buyer', phone: '0170', address: 'St 1', city: 'Dhaka' }
 
