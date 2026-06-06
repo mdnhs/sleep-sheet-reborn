@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Public rendering COMPLETE — storefront homepage/catalog/product/cart/checkout (COD + real gateways)/funnel landing + R2 theme bundles; all numbered phases 0–14 done)
+Last Updated: 2026-06-06 (Cross-module wiring — loyalty earn/reverse, wallet refund credit, event notifications; all phases + public storefront done)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -24,21 +24,16 @@ Project Status: 🟩 Complete (all phases 0–14 + public storefront shipped; re
 
 # Current Sprint
 
-Sprint Goal: Public rendering COMPLETE — storefront (homepage, catalog, product, cart, COD + online payment + real gateways, funnel landing, R2 theme bundles)
+Sprint Goal: Cross-module wiring — loyalty earn on order-deliver/POS-sale, loyalty reverse + wallet credit on refund, org notifications on order create/deliver/refund
 
 Sprint Delivered:
-- Public storefront API (worker, no auth, subdomain-resolved tenant, published-only): /api/public/{storefront (active theme + config + menus + enabled homepage sections), products, products/:slug, pages/:slug, blog, blog/:slug} — new /api/public mount; public service reuses themes/cms/products repos
-- Themed homepage renderer (web): apps/web/app/store/[slug] reads v2 D1 directly via getCloudflareContext + createDb (mirrors dashboard pattern, decoupled — no cross-app import); applies theme config (colors/logo/font) as CSS variables; renders enabled homepage sections in order via a section component library (HERO/BANNER/FEATURED_PRODUCTS/BEST_SELLERS/CUSTOM_HTML/…) + product grid; plain HTML, isolated from the Shadcn dashboard design system (ADR-014)
-- Global error handling already shipped Phase 14 (app.onError + notFound)
-- Public checkout (worker): POST /api/public/checkout — server-resolved prices, first active location, find-or-create customer by phone, delegates to Orders service (stock + reservations); guest COD orders, source WEBSITE
-- Storefront web pages (apps/web/app/store/[slug]): themed layout shell (theme CSS vars + header/footer nav), homepage sections, product detail + add-to-cart, localStorage per-tenant cart, checkout page → COD order + confirmation
-- Catalog browse (worker + web): /api/public/catalog (search + category filter + pagination) + /api/public/categories; shop page at /store/[slug]/shop with search form, category chips, product grid, pagination
-- Online payment: order_payment schema (migration 0018) + tenant initiate (/api/public/payments/initiate) + UNSCOPED verified-idempotent provider webhook (/api/public/payments/:provider/webhook) marking order_payment + order.paymentStatus PAID/FAILED; checkout payment selector (COD / bKash / Nagad / SSLCommerz) + mock gateway pay page (real provider HTTP deferred; webhook contract live)
-- Funnel landing rendering: public funnel API + themed landing → FunnelCTA → funnel-attributed checkout (order source FUNNEL + funnel_conversion)
-- Real payment gateway adapters: SSLCommerz v4 + bKash tokenized checkout (env-driven, sandbox/live), initiate returns hosted redirect when configured, sandbox mock page fallback otherwise
-- R2 theme bundles (ADR-024): admin upload to R2 + ownership-gated tenant download streaming from R2; D1 keeps r2Key + metadata
-- Tests: 20 public-storefront + 14 order-payment + 7 theme-bundle
-- Total test suite: 259 tests pass
+- Shared integrations helper (apps/worker/services/v1/integrations.ts): pointsFor (1pt/100), awardLoyalty / reverseLoyalty / refundToWallet / notifyOrg — all best-effort (never break the underlying ERP transaction) and customerId-gated
+- Loyalty earn: order deliver (orders.service.deliver) + completed POS sale (pos.service.createSale) award floor(grandTotal/100) points to the customer
+- Refund side effects: order-refund approve credits the refund amount to the customer wallet (source REFUND) + reverses earned loyalty (clamped)
+- Event notifications (org-wide): order created, order delivered, refund approved
+- No new schema (reuses customers loyalty/wallet txns + notifications); decoupled — customers/notifications services don't import ERP services, so no cycles
+- Integration tests: 8 (pointsFor, loyalty earn/no-op, reverse clamp, wallet credit, notification create + never-throws)
+- Total test suite: 267 tests pass
 
 Sprint Status: 🟩 Complete
 
@@ -445,7 +440,8 @@ Notifications Tests:       🟩 7 tests pass   (tests/notifications/notification
 Public Storefront Tests:   🟩 20 tests pass  (tests/public/public-storefront.test.ts — shell, catalog, checkout guards, funnel landing + visit, isolation)
 Order Payment Tests:       🟩 14 tests pass  (tests/payments/payments.test.ts — initiate, idempotent webhook, gateway config/builder + sandbox fallback, isolation)
 Theme Bundle Tests:        🟩 7 tests pass   (tests/bundles/bundles.test.ts — R2 upload/replace + ownership-gated download + version fallback)
-Total Test Suite:          🟩 259 tests pass  (this branch)
+Integration Tests:         🟩 8 tests pass   (tests/integrations/integrations.test.ts — loyalty earn/reverse, wallet refund, event notifications)
+Total Test Suite:          🟩 267 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -486,9 +482,9 @@ Phases 0–14 done (225 tests). Public rendering started: storefront API + theme
 Public storefront rendering COMPLETE. All numbered phases (0–14) + storefront shipped. Remaining work is optional / credential-bound:
 
 1. [MEDIUM] Real provider IPN→confirm parsers (SSLCommerz validator / bKash execute) + Nagad adapter — needs merchant credentials
-2. [MEDIUM] Cross-module wiring: loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
-3. [MEDIUM] Phase 8/12 leftovers: demo data import, feature-flags admin UI
-4. [LOW] Phase 14 perf: cache plan/usage counters (KV/cron)
+2. [MEDIUM] Phase 8/12 leftovers: demo data import, feature-flags admin UI
+3. [LOW] Phase 14 perf: cache plan/usage counters (KV/cron)
+   [Done: cross-module wiring — loyalty earn/reverse, wallet refund credit, event notifications]
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 

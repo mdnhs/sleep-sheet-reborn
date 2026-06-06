@@ -8,6 +8,7 @@ import { createLocationRepository } from '../../repositories/locations.repositor
 import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { ServiceError } from '../../utils/service-error'
 import { enforceSubscriptionActive } from '../../utils/plan-limits'
+import { awardLoyalty } from './integrations'
 
 export function createPosService(db: Database, organizationId: string) {
   const registerRepo = createCashRegistersRepository(db, organizationId)
@@ -236,6 +237,9 @@ export function createPosService(db: Database, organizationId: string) {
         itemCount: data.items.length,
         locationId,
       })
+
+      // Loyalty on completed POS sale
+      await awardLoyalty(db, organizationId, data.customerId, grandTotal, { source: 'POS', type: 'pos_sale', id: sale.id })
 
       return this.getSale(sale.id)
     },
