@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Cross-module wiring — loyalty earn/reverse, wallet refund credit, event notifications; all phases + public storefront done)
+Last Updated: 2026-06-06 (Demo data import — datasets, plan-capped import via services, revertable clear; Phase 8 leftover closed)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -24,16 +24,16 @@ Project Status: 🟩 Complete (all phases 0–14 + public storefront shipped; re
 
 # Current Sprint
 
-Sprint Goal: Cross-module wiring — loyalty earn on order-deliver/POS-sale, loyalty reverse + wallet credit on refund, org notifications on order create/deliver/refund
+Sprint Goal: Demo data import — global datasets, plan-capped tenant import via services, revertable clear, platform catalog mgmt + dashboard UI
 
 Sprint Delivered:
-- Shared integrations helper (apps/worker/services/v1/integrations.ts): pointsFor (1pt/100), awardLoyalty / reverseLoyalty / refundToWallet / notifyOrg — all best-effort (never break the underlying ERP transaction) and customerId-gated
-- Loyalty earn: order deliver (orders.service.deliver) + completed POS sale (pos.service.createSale) award floor(grandTotal/100) points to the customer
-- Refund side effects: order-refund approve credits the refund amount to the customer wallet (source REFUND) + reverses earned loyalty (clamped)
-- Event notifications (org-wide): order created, order delivered, refund approved
-- No new schema (reuses customers loyalty/wallet txns + notifications); decoupled — customers/notifications services don't import ERP services, so no cycles
-- Integration tests: 8 (pointsFor, loyalty earn/no-op, reverse clamp, wallet credit, notification create + never-throws)
-- Total test suite: 267 tests pass
+- Schema (migration 0019): demo_dataset (global catalog, seeded Fashion) + demo_import + demo_import_item (per-record tracking so a clear removes exactly what was created)
+- Tenant demo service: import a dataset via the normal repos (categories → products → default variants), slugs/SKUs suffixed per import (re-import safe), plan-capped (enforceLimit limitProducts), audited; revertable clear hard-deletes the tracked records + marks the import CLEARED
+- Platform demo-admin service: dataset list / create / publish-deprecate
+- API: /api/v1/demo (datasets, imports, import, imports/:id/clear — perm organization.demo_data) + /api/admin/demo-datasets (requirePlatformAdmin)
+- UI: dashboard settings/demo-data (dataset cards + import + imports table w/ clear) + hooks
+- Demo tests: 7 (import counts + linkage, unknown dataset 404, re-import no collision, plan-limit cap, clear removes + CLEARED, second-clear rejected, cross-tenant isolation)
+- Total test suite: 274 tests pass
 
 Sprint Status: 🟩 Complete
 
@@ -300,7 +300,7 @@ Status: ✅ Complete (MVP scope — feature-flags UI + demo import deferred, see
 - [x] Migration 0013 applied to local D1 (idempotency cols + feature_flag + seeded plans)
 - [x] Tests: 150/150 pass
 - [ ] DEFERRED — Feature flags admin UI (per-org overrides) — secondary; feature_flag table + repo + requireFeature enforcement in place
-- [ ] DEFERRED — Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited) — secondary
+- [x] Demo Data Import (migration 0019): demo_dataset (global, seeded Fashion) + demo_import + demo_import_item (per-record tracking ≈ is_demo); tenant import via repos (categories/products/variants, slug-suffixed, plan-capped, audited) + revertable clear; platform dataset CRUD (/api/admin/demo-datasets) + tenant /api/v1/demo (perm organization.demo_data) + settings/demo-data UI; 7 tests
 
 ---
 
@@ -441,7 +441,8 @@ Public Storefront Tests:   🟩 20 tests pass  (tests/public/public-storefront.t
 Order Payment Tests:       🟩 14 tests pass  (tests/payments/payments.test.ts — initiate, idempotent webhook, gateway config/builder + sandbox fallback, isolation)
 Theme Bundle Tests:        🟩 7 tests pass   (tests/bundles/bundles.test.ts — R2 upload/replace + ownership-gated download + version fallback)
 Integration Tests:         🟩 8 tests pass   (tests/integrations/integrations.test.ts — loyalty earn/reverse, wallet refund, event notifications)
-Total Test Suite:          🟩 267 tests pass  (this branch)
+Demo Data Tests:           🟩 7 tests pass   (tests/demo/demo.test.ts — import/clear, plan cap, slug suffix, isolation)
+Total Test Suite:          🟩 274 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -482,9 +483,9 @@ Phases 0–14 done (225 tests). Public rendering started: storefront API + theme
 Public storefront rendering COMPLETE. All numbered phases (0–14) + storefront shipped. Remaining work is optional / credential-bound:
 
 1. [MEDIUM] Real provider IPN→confirm parsers (SSLCommerz validator / bKash execute) + Nagad adapter — needs merchant credentials
-2. [MEDIUM] Phase 8/12 leftovers: demo data import, feature-flags admin UI
+2. [MEDIUM] Feature-flags admin UI (Phase 12 leftover) — feature_flag table + requireFeature already exist
 3. [LOW] Phase 14 perf: cache plan/usage counters (KV/cron)
-   [Done: cross-module wiring — loyalty earn/reverse, wallet refund credit, event notifications]
+   [Done: cross-module wiring; demo data import]
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 
