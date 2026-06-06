@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -65,19 +66,21 @@ export function OrgSwitcher() {
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Organizations</DropdownMenuLabel>
-            {orgs?.map((org) => (
-              <DropdownMenuItem
-                key={org.id}
-                onClick={() => switchOrg(org.id)}
-                className={org.id === activeOrg?.id ? 'bg-accent' : undefined}
-              >
-                <div className="flex aspect-square size-6 items-center justify-center rounded-sm border text-xs font-medium mr-2">
-                  {org.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="truncate">{org.name}</span>
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Organizations</DropdownMenuLabel>
+              {orgs?.map((org) => (
+                <DropdownMenuItem
+                  key={org.id}
+                  onClick={() => switchOrg(org.id)}
+                  className={org.id === activeOrg?.id ? 'bg-accent' : undefined}
+                >
+                  <div className="flex aspect-square size-6 items-center justify-center rounded-sm border text-xs font-medium mr-2">
+                    {org.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="truncate">{org.name}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<a href="/onboarding/new-org" />}>
               <IconPlus className="mr-2 size-4" />
