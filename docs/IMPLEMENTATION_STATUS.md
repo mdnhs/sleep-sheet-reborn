@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 6 complete — Customers: Customers, Groups, Addresses, Wallet, Loyalty, Purchase History, Reports)
+Last Updated: 2026-06-06 (Phase 6 + Phase 8 complete — Customers module + Subscriptions/Billing/Plan Enforcement merged onto this branch)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-06 (Phase 6 complete — Customers: Customers, Groups, Add
 
 # Project Status
 
-Current Phase: Phase 6 — Customers
+Current Phase: Phase 8 — Subscriptions, Billing & Plan Enforcement
 
-Overall Progress: 82%
+Overall Progress: 86%
 
 Project Status: 🟨 In Progress
 
@@ -24,7 +24,7 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 6 — Customers (fully complete)
+Sprint Goal: Phase 6 — Customers + Phase 8 — Subscriptions/Billing/Plan Enforcement (both complete; billing cherry-picked from feat/phase6-8-customers-billing, its older Customers design discarded in favor of this branch's txn-backed wallet)
 
 Sprint Delivered:
 - Drizzle schema: customer_group, customer, customer_address, customer_wallet_transaction, customer_loyalty_transaction (migration 0012) — all org-scoped; phone unique per org; wallet/loyalty cached balances mutated only alongside an immutable transaction
@@ -36,7 +36,8 @@ Sprint Delivered:
 - Dashboard UI: all-customers + customer-wallet + loyalty-program (list + create + detail sheet with profile/wallet/loyalty/addresses tabs), customer-groups (cards + create + toggle), customer-reports (CLV metrics + top customers); previously placeholders
 - React Query v1 hooks for groups, customers, wallet, loyalty, reports + shared customer-list-view + customer-detail-sheet
 - Customers tests: 21 tests (customer/group/wallet-txn isolation, cross-tenant 404, per-org phone uniqueness + same-phone-across-orgs, wallet no-negative + blocked guard, loyalty earn/redeem/reverse-clamp, purchase-stats aggregation + cross-tenant exclusion)
-- Total test suite: 124 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers)
+- Phase 8 billing merged: subscription lifecycle + usage counters + requireFeature + idempotent webhooks (bKash/Nagad/SSLCommerz) + tenant & platform-admin APIs/UI (migration 0013, seeded plan catalog)
+- Total test suite: 150 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing)
 
 Sprint Status: 🟩 Complete
 
@@ -287,18 +288,23 @@ Status: ✅ Complete (MVP scope — zones/charges/COD-settlement deferred, see b
 ---
 
 # Phase 8 — Subscriptions, Billing & Plan Enforcement — Priority: CRITICAL (MVP)
-Status: 🟨 In Progress (partial)
-- [x] subscription_plans schema (Drizzle — limits + feature flags)
+Status: ✅ Complete (MVP scope — feature-flags UI + demo import deferred, see below)
+- [x] subscription_plans schema (Drizzle — limits + feature flags); seeded Free/Starter/Business/Enterprise catalog (migration 0013)
 - [x] subscriptions schema (Drizzle — TRIAL/ACTIVE/EXPIRED/SUSPENDED/CANCELLED)
-- [x] subscription_invoices schema (Drizzle)
-- [x] Server-side enforcement utility (apps/worker/utils/plan-limits.ts — enforceSubscriptionActive, enforceLimit)
-- [x] enforceLimit wired into product create (limitProducts), location create (limitOutlets, limitWarehouses)
-- [ ] Trial flow (7/14/30) + renewal + grace + suspension
-- [ ] Per-org usage counters (cached)
-- [ ] requireFeature() enforcement
-- [ ] Billing providers (bKash, Nagad, SSLCommerz) — idempotent webhooks
-- [ ] Feature flags UI
-- [ ] Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited)
+- [x] subscription_invoices schema + verified-webhook idempotency columns (planId, invoiceNumber, providerRef, idempotencyKey — unique) + feature_flag table (migration 0013)
+- [x] Server-side enforcement utility (apps/worker/utils/plan-limits.ts — enforceSubscriptionActive 402, enforceLimit 422, requireFeature 403)
+- [x] enforceLimit wired into product create (limitProducts), location create (limitOutlets/limitWarehouses), order create (limitOrdersPerMonth) + POS sale (enforceSubscriptionActive); live per-org usage counters (apps/worker/utils/usage.ts)
+- [x] Subscription lifecycle (apps/worker/utils/subscription-lifecycle.ts — lazy TRIAL→EXPIRED→grace→SUSPENDED, activate on paid invoice, mirrored to organization.status)
+- [x] Billing repos: subscription-plans, subscriptions, feature-flags
+- [x] Tenant billing service + API (/api/v1/billing) + platform-admin billing service + API (/api/admin/billing); admin routes mounted in apps/worker/src/index.ts
+- [x] Billing providers (bKash/Nagad/SSLCommerz) — idempotent verified webhooks (apps/worker/services/v1/billing-providers.ts, billing.service.ts)
+- [x] UI: tenant subscription page (/dashboard/system/subscription), admin plans + subscriptions pages ((platform)/admin); hooks v1-billing + admin-billing
+- [x] Billing tests (tests/billing/billing.test.ts — 26: plan limits, subscription lifecycle, idempotent webhooks, feature gating, isolation)
+- [x] TypeScript: worker compiles clean; web billing files compile clean
+- [x] Migration 0013 applied to local D1 (idempotency cols + feature_flag + seeded plans)
+- [x] Tests: 150/150 pass
+- [ ] DEFERRED — Feature flags admin UI (per-org overrides) — secondary; feature_flag table + repo + requireFeature enforcement in place
+- [ ] DEFERRED — Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited) — secondary
 
 ---
 
@@ -366,7 +372,8 @@ Inventory Isolation Tests: 🟩 15 tests pass  (tests/inventory/isolation.test.t
 Purchases Isolation Tests: 🟩 25 tests pass  (tests/purchases/isolation.test.ts)
 Delivery Tests:            🟩 16 tests pass  (tests/delivery/delivery.test.ts — isolation + lifecycle + order-workflow guard)
 Customers Tests:           🟩 21 tests pass  (tests/customers/customers.test.ts — isolation + wallet/loyalty guards + purchase-stats)
-Total Test Suite:          🟩 124 tests pass  (this branch; excludes Phase 8 billing suite on its branch)
+Billing Tests:             🟩 26 tests pass  (tests/billing/billing.test.ts — plan limits, lifecycle, idempotent webhooks, feature gating)
+Total Test Suite:          🟩 150 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -402,19 +409,18 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–7 complete (124 tests pass). Phase 6 Customers done this branch. Next options (pick one):
+Phases 0–8 complete (150 tests pass). Customers + Billing both on this branch. Next options (pick one):
 
-1. [CRITICAL/MVP] Phase 8 — Subscriptions, Billing & Plan Enforcement (finish partial)
-   - Trial flow (7/14/30) + renewal + grace + suspension
-   - Per-org usage counters (cached) + requireFeature() enforcement
-   - Billing providers (bKash/Nagad/SSLCommerz) — idempotent webhooks
+1. [HIGH] Phase 9 — Storefront + Theme System (CRITICAL path to SaaS launch)
+   - Theme model (one active per org) + themed storefront rendering
+   - Homepage builder / pages / blog / menus / SEO
 
 2. [HIGH] Wire Phase 6 auto-integrations
    - Loyalty auto-earn on order deliver + POS complete (call earnPoints from those services)
    - Loyalty auto-reverse on order/POS return; wallet refund → creditWallet on refund approve
    - Customer due + payment ledger (Total Purchases − Payments)
 
-3. [MEDIUM] Phase 9 — Storefront + Theme System (CRITICAL path to SaaS launch)
+3. [MEDIUM] Phase 8 leftovers — feature-flags admin UI + demo data import
 ```
 
 ---
