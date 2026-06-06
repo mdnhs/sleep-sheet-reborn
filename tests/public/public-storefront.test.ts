@@ -78,6 +78,27 @@ describe('Public storefront — pages & blog', () => {
   })
 })
 
+describe('Public checkout — guards', () => {
+  const customer = { name: 'Buyer', phone: '0170', address: 'St 1', city: 'Dhaka' }
+
+  it('rejects an empty cart', async () => {
+    await expect(svc(ORG_A).createOrder({ items: [], customer })).rejects.toThrow(/cart is empty/i)
+  })
+
+  it('rejects when the store has no active location', async () => {
+    const p = s.product(ORG_A, 'shirt', 'ACTIVE'); s.variant(ORG_A, p, 500)
+    // no location seeded
+    await expect(svc(ORG_A).createOrder({ items: [{ variantId: 'whatever', quantity: 1 }], customer }))
+      .rejects.toThrow(/not accepting orders/i)
+  })
+
+  it('rejects an unavailable variant', async () => {
+    s.location(ORG_A)
+    await expect(svc(ORG_A).createOrder({ items: [{ variantId: 'missing', quantity: 1 }], customer }))
+      .rejects.toThrow(/unavailable/i)
+  })
+})
+
 describe('Public storefront — isolation', () => {
   it('never serves another tenant content', async () => {
     s.activate(ORG_B, 'th_aurora', '{}')

@@ -65,3 +65,52 @@ export async function getStorefrontData(slug: string): Promise<StorefrontData | 
     products,
   }
 }
+
+export type StorefrontShell = Pick<StorefrontData, "org" | "theme" | "menus">
+
+/** Lightweight shell (theme + nav) for the storefront layout. */
+export async function getStorefrontShell(slug: string): Promise<StorefrontShell | null> {
+  const db = await getDb()
+  const org = await db.select({ id: organization.id, name: organization.name, slug: organization.slug })
+    .from(organization).where(eq(organization.slug, slug)).then(r => r[0])
+  if (!org) return null
+  const active = await db.select().from(organizationTheme)
+    .where(and(eq(organizationTheme.organizationId, org.id), eq(organizationTheme.isActive, true))).then(r => r[0])
+  let theme: StorefrontData["theme"] = null
+  if (active) {
+    const t = await db.select().from(themeTable).where(eq(themeTable.id, active.themeId)).then(r => r[0])
+    theme = { name: t?.name ?? "Default", slug: t?.slug ?? "default", config: parse(active.config) as ThemeConfig | null }
+  }
+  const menus = await db.select().from(menuTable).where(eq(menuTable.organizationId, org.id))
+  return {
+    org, theme,
+    menus: menus.map(m => ({ location: m.location, items: (parse(m.items) as unknown as Array<{ label: string; url: string }>) ?? [] })),
+  }
+}
+
+export type ProductDetail = {
+  orgName: string
+  id: string; name: string; slug: string; description: string | null
+  images: string[]
+  variants: { id: string; sku: string; name: string; price: number }[]
+}
+
+export async function getProductDetail(slug: string, productSlug: string): Promise<ProductDetail | null> {
+  const db = await getDb()
+  const org = await db.select({ id: organization.id, name: organization.name })
+    .from(organization).where(eq(organization.slug, slug)).then(r => r[0])
+  if (!org) return null
+  const p = await db.select().from(product)
+    .where(and(eq(product.organizationId, org.id), eq(product.slug, productSlug), eq(product.status, "ACTIVE")))
+    .then(r => r[0])
+  if (!p) return null
+  const variants = await db.select({ id: productVariant.id, sku: productVariant.sku, name: productVariant.name, price: productVariant.sellingPrice })
+    .from(productVariant).where(and(eq(productVariant.organizationId, org.id), eq(productVariant.productId, p.id)))
+  const images = await db.select({ url: productImage.url }).from(productImage)
+    .where(and(eq(productImage.organizationId, org.id), eq(productImage.productId, p.id)))
+    .orderBy(productImage.sortOrder)
+  return {
+    orgName: org.name, id: p.id, name: p.name, slug: p.slug, description: p.description,
+    images: images.map(i => i.url), variants,
+  }
+}

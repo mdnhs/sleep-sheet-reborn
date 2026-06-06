@@ -1,8 +1,20 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod'
 import { createPublicStorefrontService } from '../../services/public/storefront.service'
 import { isServiceError } from '../../utils/service-error'
 import { ok, err } from '../../utils/response'
 import type { HonoEnv } from '../../src/types'
+
+const CheckoutSchema = z.object({
+  items: z.array(z.object({ variantId: z.string().min(1), quantity: z.number().int().positive() })).min(1),
+  customer: z.object({
+    name: z.string().min(1), phone: z.string().min(1), email: z.string().email().optional(),
+    address: z.string().min(1), area: z.string().optional(), city: z.string().min(1),
+  }),
+  paymentMethod: z.enum(['COD', 'BKASH', 'NAGAD', 'SSLCOMMERZ', 'BANK', 'WALLET']).optional(),
+  notes: z.string().optional(),
+})
 
 // Public storefront — no authentication; tenant resolved from subdomain.
 function svc(c: any) {
@@ -41,6 +53,10 @@ const app = new Hono<HonoEnv>()
   .get('/blog/:slug', async (c) => {
     const s = svc(c); if (!s) return noTenant(c)
     try { return c.json(ok(await s.getPost(c.req.param('slug')))) } catch (e) { return fail(c, e, 'Failed to load post') }
+  })
+  .post('/checkout', zValidator('json', CheckoutSchema), async (c) => {
+    const s = svc(c); if (!s) return noTenant(c)
+    try { return c.json(ok(await s.createOrder(c.req.valid('json'))), 201) } catch (e) { return fail(c, e, 'Failed to place order') }
   })
 
 export default app

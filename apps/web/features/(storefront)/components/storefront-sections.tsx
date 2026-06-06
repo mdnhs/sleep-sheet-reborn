@@ -5,12 +5,12 @@ type Product = StorefrontData["products"][number]
 const str = (c: Record<string, unknown> | null, k: string, d = "") => (typeof c?.[k] === "string" ? (c[k] as string) : d)
 const taka = (n: number) => `৳${n.toLocaleString()}`
 
-function ProductGrid({ products }: { products: Product[] }) {
+function ProductGrid({ slug, products }: { slug: string; products: Product[] }) {
   if (!products.length) return <p className="sf-muted">No products yet.</p>
   return (
     <div className="sf-grid">
       {products.map(p => (
-        <a key={p.id} href={`#${p.slug}`} className="sf-card">
+        <a key={p.id} href={`/store/${slug}/products/${p.slug}`} className="sf-card">
           <div className="sf-card-img" style={p.image ? { backgroundImage: `url(${p.image})` } : undefined} />
           <div className="sf-card-body">
             <span className="sf-card-name">{p.name}</span>
@@ -22,7 +22,7 @@ function ProductGrid({ products }: { products: Product[] }) {
   )
 }
 
-export function StorefrontSection({ section, products }: { section: Section; products: Product[] }) {
+export function StorefrontSection({ slug, section, products }: { slug: string; section: Section; products: Product[] }) {
   const c = section.config
   switch (section.type) {
     case "HERO":
@@ -43,7 +43,7 @@ export function StorefrontSection({ section, products }: { section: Section; pro
       return (
         <section className="sf-section">
           <h2 className="sf-section-title">{str(c, "title", section.type === "BEST_SELLERS" ? "Best Sellers" : "Featured")}</h2>
-          <ProductGrid products={products} />
+          <ProductGrid slug={slug} products={products} />
         </section>
       )
     case "CATEGORY_GRID":
