@@ -43,6 +43,24 @@ export function useOrgAction(action: "suspend" | "reactivate" | "cancel") {
   })
 }
 
+// ─── Feature flags ────────────────────────────────────────────────────────────────
+export type OrgFeatureFlag = { flag: string; enabled: boolean; overridden: boolean }
+export function useOrgFeatureFlags(orgId: string | null) {
+  return useQuery<{ flags: OrgFeatureFlag[] }>({
+    enabled: !!orgId,
+    queryKey: ["admin", "flags", orgId],
+    queryFn: () => get(`${BASE}/organizations/${orgId}/feature-flags`, "Failed to load flags"),
+  })
+}
+export function useSetOrgFlag(orgId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ flag, enabled }: { flag: string; enabled: boolean }) => send(`${BASE}/organizations/${orgId}/feature-flags`, "POST", { flag, enabled }, "Failed to set flag"),
+    onSuccess: () => { toast.success("Flag updated"); qc.invalidateQueries({ queryKey: ["admin", "flags", orgId] }) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
+
 // ─── Analytics ──────────────────────────────────────────────────────────────────────
 export function useSaasAnalytics() {
   return useQuery<SaasAnalytics>({ queryKey: ["admin", "analytics"], queryFn: () => get(`${BASE}/analytics`, "Failed to load analytics") })

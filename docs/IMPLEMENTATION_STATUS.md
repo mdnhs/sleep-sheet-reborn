@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Demo data import — datasets, plan-capped import via services, revertable clear; Phase 8 leftover closed)
+Last Updated: 2026-06-06 (Feature-flags admin UI — per-org overrides over plan defaults; Phase 12 leftover closed)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -24,16 +24,15 @@ Project Status: 🟩 Complete (all phases 0–14 + public storefront shipped; re
 
 # Current Sprint
 
-Sprint Goal: Demo data import — global datasets, plan-capped tenant import via services, revertable clear, platform catalog mgmt + dashboard UI
+Sprint Goal: Feature-flags admin UI — per-org overrides over plan defaults (platform-admin service + API + page)
 
 Sprint Delivered:
-- Schema (migration 0019): demo_dataset (global catalog, seeded Fashion) + demo_import + demo_import_item (per-record tracking so a clear removes exactly what was created)
-- Tenant demo service: import a dataset via the normal repos (categories → products → default variants), slugs/SKUs suffixed per import (re-import safe), plan-capped (enforceLimit limitProducts), audited; revertable clear hard-deletes the tracked records + marks the import CLEARED
-- Platform demo-admin service: dataset list / create / publish-deprecate
-- API: /api/v1/demo (datasets, imports, import, imports/:id/clear — perm organization.demo_data) + /api/admin/demo-datasets (requirePlatformAdmin)
-- UI: dashboard settings/demo-data (dataset cards + import + imports table w/ clear) + hooks
-- Demo tests: 7 (import counts + linkage, unknown dataset 404, re-import no collision, plan-limit cap, clear removes + CLEARED, second-clear rejected, cross-tenant isolation)
-- Total test suite: 274 tests pass
+- Platform-admin feature flags: getOrgFeatureFlags (effective = plan featureFlags JSON overridden by per-org feature_flag rows; KNOWN_FEATURE_FLAGS = theme_marketplace/funnels/apps/advanced_reports/ai_features) + setOrgFeatureFlag (upsert override + audit); reuses Phase 8 feature_flag table + getEffectiveFlags
+- API: /api/admin/organizations/:id/feature-flags (GET list w/ enabled+overridden; POST {flag,enabled}) — requirePlatformAdmin
+- UI: (platform)/admin/feature-flags page — org picker + per-flag enable/disable, plan-default vs override labelling + hooks
+- Platform tests: +4 (known-flag listing, override flips effective, unknown flag/org guards, org-scoped) → 12 platform tests
+- No migration (feature_flag from Phase 8)
+- Total test suite: 278 tests pass
 
 Sprint Status: 🟩 Complete
 
@@ -384,7 +383,7 @@ Status: ✅ Complete (platform-scope, SUPER_ADMIN)
 - [x] Platform tests (tests/platform/platform.test.ts — 8: org list, suspend/reactivate + audit, 404 guard, MRR/ARR + YEARLY normalization, org-status counts + churn + GMV, theme create/dup-slug/status/version, funnel template create/deprecate)
 - [x] Tests: 202/202 pass
 - [ ] DEFERRED — Demo dataset management (platform.demo_datasets.manage) — pairs with Phase 8 demo import (also deferred)
-- [ ] DEFERRED — Platform feature-flag management UI (per-org overrides) — feature_flag table + requireFeature in place since Phase 8
+- [x] Platform feature-flag management UI: platform-admin getOrgFeatureFlags (plan default + per-org override, KNOWN_FEATURE_FLAGS) + setOrgFeatureFlag (upsert + audit); /api/admin/organizations/:id/feature-flags (GET/POST); (platform)/admin/feature-flags page (org picker + per-flag enable/disable)
 - [ ] DEFERRED — Event-sourced analytics (module §8 prefers events over cached totals); current metrics derived live from tables
 
 ---
@@ -434,7 +433,7 @@ Billing Tests:             🟩 26 tests pass  (tests/billing/billing.test.ts �
 Storefront Tests:          🟩 18 tests pass  (tests/storefront/storefront.test.ts — isolation + slug uniqueness + one-active-theme + homepage ordering)
 Growth Tests:              🟩 13 tests pass  (tests/growth/growth.test.ts — campaign/funnel isolation + slug uniqueness + idempotent attribution + analytics)
 Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.test.ts — install/purchase gating + one-active-theme + clone-install + ownership isolation)
-Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
+Platform Tests:            🟩 12 tests pass  (tests/platform/platform.test.ts — org admin/suspend + MRR/ARR/churn + marketplace curation + feature-flag overrides)
 Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts — sales/inventory/purchase aggregation + isolation)
 Notifications Tests:       🟩 7 tests pass   (tests/notifications/notifications.test.ts — feed/read/audience/isolation)
 Public Storefront Tests:   🟩 20 tests pass  (tests/public/public-storefront.test.ts — shell, catalog, checkout guards, funnel landing + visit, isolation)
@@ -442,7 +441,7 @@ Order Payment Tests:       🟩 14 tests pass  (tests/payments/payments.test.ts 
 Theme Bundle Tests:        🟩 7 tests pass   (tests/bundles/bundles.test.ts — R2 upload/replace + ownership-gated download + version fallback)
 Integration Tests:         🟩 8 tests pass   (tests/integrations/integrations.test.ts — loyalty earn/reverse, wallet refund, event notifications)
 Demo Data Tests:           🟩 7 tests pass   (tests/demo/demo.test.ts — import/clear, plan cap, slug suffix, isolation)
-Total Test Suite:          🟩 274 tests pass  (this branch)
+Total Test Suite:          🟩 278 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -483,9 +482,8 @@ Phases 0–14 done (225 tests). Public rendering started: storefront API + theme
 Public storefront rendering COMPLETE. All numbered phases (0–14) + storefront shipped. Remaining work is optional / credential-bound:
 
 1. [MEDIUM] Real provider IPN→confirm parsers (SSLCommerz validator / bKash execute) + Nagad adapter — needs merchant credentials
-2. [MEDIUM] Feature-flags admin UI (Phase 12 leftover) — feature_flag table + requireFeature already exist
-3. [LOW] Phase 14 perf: cache plan/usage counters (KV/cron)
-   [Done: cross-module wiring; demo data import]
+2. [LOW] Phase 14 perf: cache plan/usage counters (KV/cron)
+   [Done: cross-module wiring; demo data import; feature-flags admin UI]
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 

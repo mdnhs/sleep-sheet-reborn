@@ -54,6 +54,10 @@ export function createTestDb() {
       id TEXT PRIMARY KEY, organizationId TEXT NOT NULL, entityType TEXT NOT NULL, entityId TEXT NOT NULL,
       action TEXT NOT NULL, actorId TEXT, changes TEXT, createdAt INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS feature_flag (
+      id TEXT PRIMARY KEY, organizationId TEXT NOT NULL, flag TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0, updatedAt INTEGER NOT NULL,
+      UNIQUE(organizationId, flag)
+    );
   `)
 
   return db

@@ -49,6 +49,35 @@ describe('Organization administration', () => {
   })
 })
 
+// ─── Feature flags ────────────────────────────────────────────────────────────────
+
+describe('Feature flag overrides', () => {
+  it('lists the known flags (disabled by default on an empty plan)', async () => {
+    const { flags } = await svc().getOrgFeatureFlags('o1')
+    expect(flags.map(f => f.flag)).toContain('funnels')
+    expect(flags.every(f => f.enabled === false && f.overridden === false)).toBe(true)
+  })
+
+  it('enabling an override flips the effective flag', async () => {
+    await svc().setOrgFeatureFlag('o1', 'funnels', true, 'admin')
+    const { flags } = await svc().getOrgFeatureFlags('o1')
+    const funnels = flags.find(f => f.flag === 'funnels')!
+    expect(funnels.enabled).toBe(true)
+    expect(funnels.overridden).toBe(true)
+  })
+
+  it('rejects unknown flag and unknown org', async () => {
+    await expect(svc().setOrgFeatureFlag('o1', 'teleport', true)).rejects.toThrow(/unknown feature flag/i)
+    await expect(svc().setOrgFeatureFlag('nope', 'funnels', true)).rejects.toThrow(/not found/i)
+  })
+
+  it('flag overrides are org-scoped', async () => {
+    await svc().setOrgFeatureFlag('o1', 'apps', true)
+    const { flags } = await svc().getOrgFeatureFlags('o2')
+    expect(flags.find(f => f.flag === 'apps')!.enabled).toBe(false)
+  })
+})
+
 // ─── Analytics ──────────────────────────────────────────────────────────────────────
 
 describe('SaaS analytics', () => {

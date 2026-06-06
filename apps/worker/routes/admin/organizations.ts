@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod'
 import { requirePlatformAdmin } from '../../middleware/rbac'
 import { createPlatformAdminService } from '../../services/v1/platform-admin.service'
 import { isServiceError } from '../../utils/service-error'
@@ -25,6 +27,13 @@ const app = new Hono<HonoEnv>()
   })
   .post('/:id/cancel', async (c) => {
     try { return c.json(ok(await svc(c).cancelOrg(c.req.param('id'), actor(c)))) } catch (e) { return fail(c, e, 'Failed to cancel') }
+  })
+  .get('/:id/feature-flags', async (c) => {
+    try { return c.json(ok(await svc(c).getOrgFeatureFlags(c.req.param('id')))) } catch (e) { return fail(c, e, 'Failed to load flags') }
+  })
+  .post('/:id/feature-flags', zValidator('json', z.object({ flag: z.string().min(1), enabled: z.boolean() })), async (c) => {
+    const b = c.req.valid('json')
+    try { return c.json(ok(await svc(c).setOrgFeatureFlag(c.req.param('id'), b.flag, b.enabled, actor(c)))) } catch (e) { return fail(c, e, 'Failed to set flag') }
   })
 
 export default app
