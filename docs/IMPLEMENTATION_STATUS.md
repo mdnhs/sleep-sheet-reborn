@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 14 complete — Polish: audit-log viewer, notifications, global error handling)
+Last Updated: 2026-06-06 (Public rendering slice — public storefront API + themed homepage renderer at /store/[slug]; all numbered phases 0–14 done)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -24,15 +24,14 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 14 — Polish & Optimization (audit-log viewer + notifications + global error handling complete; perf caching deferred)
+Sprint Goal: Public rendering slice — public storefront API + themed homepage renderer (deferred-slice; not a numbered phase)
 
 Sprint Delivered:
-- Notifications: schema (migration 0017 — notification, org-scoped, userId null = org-wide broadcast) + repo + service + API (/api/v1/notifications feed/unread/create/read/read-all) + perms notifications.view (ALL) / notifications.manage (OWNER_ADMIN)
-- Audit-log viewer: read API (/api/v1/audit-logs, filter entityType/entityId/limit) over the immutable audit_log; perm audit.view
-- Global error handling: app.onError (ServiceError → status; else 500) + app.notFound (404) in worker entry → consistent {success:false,error} envelope everywhere
-- Dashboard UI: notifications (feed + mark read/all + unread badges), reports/audit-logs (activity table) + React Query hooks (features/(erp-core)/notifications/api/v1-notifications.ts)
-- Notifications tests: 7 tests (create/feed/unread, title guard, markRead, markAllRead, own+broadcast audience, org isolation, cross-tenant 404)
-- Total test suite: 218 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace + 8 platform + 9 reports + 7 notifications)
+- Public storefront API (worker, no auth, subdomain-resolved tenant, published-only): /api/public/{storefront (active theme + config + menus + enabled homepage sections), products, products/:slug, pages/:slug, blog, blog/:slug} — new /api/public mount; public service reuses themes/cms/products repos
+- Themed homepage renderer (web): apps/web/app/store/[slug] reads v2 D1 directly via getCloudflareContext + createDb (mirrors dashboard pattern, decoupled — no cross-app import); applies theme config (colors/logo/font) as CSS variables; renders enabled homepage sections in order via a section component library (HERO/BANNER/FEATURED_PRODUCTS/BEST_SELLERS/CUSTOM_HTML/…) + product grid; plain HTML, isolated from the Shadcn dashboard design system (ADR-014)
+- Global error handling already shipped Phase 14 (app.onError + notFound)
+- Public storefront tests: 7 tests (themed shell w/ parsed config + ordered enabled sections + menus, ACTIVE-only products w/ min price + first image, PUBLISHED page/blog gating + 404 on draft, full cross-tenant isolation)
+- Total test suite: 225 tests pass (… + 7 notifications + 7 public-storefront)
 
 Sprint Status: 🟩 Complete
 
@@ -316,7 +315,7 @@ Status: ✅ Complete (config + admin slice — public themed rendering deferred,
 - [x] Migration 0014 applied to local D1; all 8 tables created + themes seeded
 - [x] Storefront tests (tests/storefront/storefront.test.ts — 18: page/blog/redirect/section isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, blog publishedAt, one-active-theme, redirect guards, homepage ordering)
 - [x] Tests: 168/168 pass
-- [ ] DEFERRED — Public themed storefront rendering (ADR-014 separate rendering pipeline + theme bundles loaded from R2) — large, distinct slice; theme contract + active-theme/config resolution in place
+- [🟨] PARTIAL — Public themed storefront rendering: public read API (worker /api/public/storefront|products|pages|blog — no auth, subdomain-resolved tenant, published-only) + themed homepage renderer (apps/web/app/store/[slug] — reads v2 D1 via getCloudflareContext, applies theme config colors/logo as CSS vars, renders enabled homepage sections + product grid, plain HTML per ADR-014 not Shadcn) + 7 public-storefront tests. STILL DEFERRED: theme bundles from R2, full catalog/product-detail/cart pages, direct checkout, funnel landing rendering
 - [ ] DEFERRED — Media Library (Cloudinary asset browser) — secondary; pages/blog already store media URLs
 - [ ] DEFERRED — Landing pages + theme presets/demo stores + theme marketplace install (overlaps Phase 10 funnels + Phase 11 marketplace)
 
@@ -429,7 +428,8 @@ Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.te
 Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
 Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts — sales/inventory/purchase aggregation + isolation)
 Notifications Tests:       🟩 7 tests pass   (tests/notifications/notifications.test.ts — feed/read/audience/isolation)
-Total Test Suite:          🟩 218 tests pass  (this branch)
+Public Storefront Tests:   🟩 7 tests pass   (tests/public/public-storefront.test.ts — themed shell, published products/pages/blog, isolation)
+Total Test Suite:          🟩 225 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -465,9 +465,9 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–14 complete (218 tests pass). All 15 numbered phases done. Remaining work is deferred slices — pick one:
+Phases 0–14 done (225 tests). Public rendering started: storefront API + themed homepage at /store/[slug]. Next options (pick one):
 
-1. [HIGH] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching) — the remaining customer-facing surface
+1. [HIGH] Finish public rendering: product-detail + catalog/category browse pages, cart + direct checkout (create order via API), funnel landing rendering, then theme bundles from R2 (ADR-024)
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 

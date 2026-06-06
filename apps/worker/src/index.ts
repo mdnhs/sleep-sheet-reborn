@@ -7,6 +7,7 @@ import { tenantMiddleware } from '../middleware/tenant'
 import { sessionMiddleware } from '../middleware/session'
 import v1 from '../routes/v1/index'
 import admin from '../routes/admin/index'
+import publicStorefront from '../routes/public/storefront'
 import { err } from '../utils/response'
 import { isServiceError } from '../utils/service-error'
 import type { HonoEnv } from './types'
@@ -45,6 +46,7 @@ app.on(['GET', 'POST'], '/auth/*', async (c) => {
 const routes = app
   .route('/v1', v1)
   .route('/admin', admin)
+  .route('/public', publicStorefront)
 
 // Consistent error envelope for uncaught errors + unknown routes
 app.onError((e, c) => {
