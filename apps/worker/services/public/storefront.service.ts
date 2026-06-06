@@ -2,6 +2,7 @@ import type { Database } from '@repo/database'
 import { createThemesRepository } from '../../repositories/themes.repository'
 import { createStorefrontCmsRepository } from '../../repositories/storefront-cms.repository'
 import { createProductRepository } from '../../repositories/products.repository'
+import { createCategoryRepository } from '../../repositories/categories.repository'
 import { createProductVariantRepository } from '../../repositories/product-variants.repository'
 import { createLocationRepository } from '../../repositories/locations.repository'
 import { createCustomersRepository } from '../../repositories/customers.repository'
@@ -15,6 +16,7 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
   const themes = createThemesRepository(db, organizationId)
   const cms = createStorefrontCmsRepository(db, organizationId)
   const products = createProductRepository(db, organizationId)
+  const categories = createCategoryRepository(db, organizationId)
   const variants = createProductVariantRepository(db, organizationId)
   const locations = createLocationRepository(db, organizationId)
   const customers = createCustomersRepository(db, organizationId)
@@ -47,8 +49,29 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
     },
 
     async listProducts(limit = 24) {
-      const rows = await products.findMany({ status: 'ACTIVE' })
-      return Promise.all(rows.slice(0, limit).map((r: { product: { id: string; name: string; slug: string } }) => productCard(r.product)))
+      const rows = await products.findMany({ status: 'ACTIVE', limit })
+      return Promise.all(rows.map((r: { product: { id: string; name: string; slug: string } }) => productCard(r.product)))
+    },
+
+    async listCategories() {
+      const rows = await categories.findMany()
+      return rows.map((c: { id: string; name: string; slug: string }) => ({ id: c.id, name: c.name, slug: c.slug }))
+    },
+
+    /** Paginated catalog browse with optional text search and category filter. */
+    async browseProducts(opts: { search?: string; categorySlug?: string; limit?: number; offset?: number } = {}) {
+      const limit = Math.min(opts.limit ?? 24, 60)
+      const offset = Math.max(opts.offset ?? 0, 0)
+      let categoryId: string | undefined
+      if (opts.categorySlug) {
+        const cat = await categories.findBySlug(opts.categorySlug)
+        if (!cat) return { items: [], total: 0, limit, offset }
+        categoryId = cat.id
+      }
+      const query = { status: 'ACTIVE' as const, categoryId, search: opts.search, limit, offset }
+      const [rows, total] = await Promise.all([products.findMany(query), products.count(query)])
+      const items = await Promise.all(rows.map((r: { product: { id: string; name: string; slug: string } }) => productCard(r.product)))
+      return { items, total, limit, offset }
     },
 
     async getProduct(slug: string) {

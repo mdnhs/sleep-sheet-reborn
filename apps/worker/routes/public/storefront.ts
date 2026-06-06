@@ -38,6 +38,20 @@ const app = new Hono<HonoEnv>()
     const limit = Math.min(Number(c.req.query('limit') ?? 24) || 24, 100)
     try { return c.json(ok(await s.listProducts(limit))) } catch (e) { return fail(c, e, 'Failed to load products') }
   })
+  .get('/catalog', async (c) => {
+    const s = svc(c); if (!s) return noTenant(c)
+    const limit = Number(c.req.query('limit') ?? 24) || 24
+    const offset = Number(c.req.query('offset') ?? 0) || 0
+    try {
+      return c.json(ok(await s.browseProducts({
+        search: c.req.query('search'), categorySlug: c.req.query('category'), limit, offset,
+      })))
+    } catch (e) { return fail(c, e, 'Failed to load catalog') }
+  })
+  .get('/categories', async (c) => {
+    const s = svc(c); if (!s) return noTenant(c)
+    try { return c.json(ok(await s.listCategories())) } catch (e) { return fail(c, e, 'Failed to load categories') }
+  })
   .get('/products/:slug', async (c) => {
     const s = svc(c); if (!s) return noTenant(c)
     try { return c.json(ok(await s.getProduct(c.req.param('slug')))) } catch (e) { return fail(c, e, 'Failed to load product') }
