@@ -10,7 +10,9 @@
     "cf:build": "opennextjs-cloudflare build && node scripts/patch-open-next-instrumentation.mjs",
     "preview": "pnpm cf:build && opennextjs-cloudflare preview",
     "cf:deploy": "pnpm cf:build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "db:migrate:local": "wrangler d1 migrations apply sleep-sheet-reborn --local",
+    "db:migrate:remote": "wrangler d1 migrations apply sleep-sheet-reborn --remote"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
