@@ -6,6 +6,7 @@ import { validateWorkerEnv } from './env'
 import { tenantMiddleware } from '../middleware/tenant'
 import { sessionMiddleware } from '../middleware/session'
 import v1 from '../routes/v1/index'
+import admin from '../routes/admin/index'
 import type { HonoEnv } from './types'
 
 const app = new Hono<HonoEnv>().basePath('/api')
@@ -41,6 +42,7 @@ app.on(['GET', 'POST'], '/auth/*', async (c) => {
 
 const routes = app
   .route('/v1', v1)
+  .route('/admin', admin)
 
 export type AppType = typeof routes
 export default { fetch: app.fetch }

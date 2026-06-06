@@ -7,6 +7,7 @@ import { createProductVariantRepository } from '../../repositories/product-varia
 import { createLocationRepository } from '../../repositories/locations.repository'
 import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { ServiceError } from '../../utils/service-error'
+import { enforceSubscriptionActive } from '../../utils/plan-limits'
 
 export function createPosService(db: Database, organizationId: string) {
   const registerRepo = createCashRegistersRepository(db, organizationId)
@@ -163,6 +164,7 @@ export function createPosService(db: Database, organizationId: string) {
       customerId?: string
       actorId?: string
     }) {
+      await enforceSubscriptionActive(db, organizationId)
       const session = await assertSession(data.sessionId)
 
       const reg = await registerRepo.findById(session.cashRegisterId)

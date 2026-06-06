@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-04 (Phase 5 complete — Finance: Accounts, Transactions, Expenses, P&L, Supplier Due)
+Last Updated: 2026-06-06 (Phase 9 complete — Storefront + Theme System: themes, pages, blog, menus, redirects, homepage builder, SEO)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-04 (Phase 5 complete — Finance: Accounts, Transactions, 
 
 # Project Status
 
-Current Phase: Phase 5 — Finance
+Current Phase: Phase 9 — Storefront + Theme System
 
-Overall Progress: 72%
+Overall Progress: 90%
 
 Project Status: 🟨 In Progress
 
@@ -24,20 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 1 — Catalog + Inventory (fully complete)
+Sprint Goal: Phase 9 — Storefront + Theme System (config + admin slice complete; public themed rendering deferred)
 
 Sprint Delivered:
-- Drizzle schemas: catalog, locations, inventory, audit_log (migrations 0004–0005)
-- Org-scoped repositories for all Phase 1 entities + product-images + audit-log
-- v1 services: categories, brands, units, products (+ plan limit + audit), product-variants (SKU/barcode uniqueness), product-images (Cloudinary upload/delete), locations (+ plan limit), inventory (stock, adjustments, movement ledger, transfers)
-- v1 API routes at /api/v1/ — full CRUD with requirePermission() + Zod validation
-- Plan enforcement (enforceSubscriptionActive, enforceLimit wired to products + locations)
-- Audit log wired to product create/update/archive + image upload/delete + inventory adjustments + transfer create/approve/receive
-- Dashboard UI: brands, units, products list + create + edit (Details/Variants/Images tabs), warehouses/outlets, stock adjustment + movement history, stock transfer (create + approve + receive + cancel workflow)
-- React Query v1 hooks for all modules including product images (raw fetch for multipart) + full transfer hooks
-- Catalog isolation tests: 20 tests (category, brand, product, variant repos — per-org uniqueness, cross-tenant 404)
-- Inventory isolation tests: 15 tests (stock, movements, transfers — repo scoping, cross-tenant 404, upsert/update no-ops across tenant)
-- Total test suite: 62 tests pass (27 tenancy + 20 catalog + 15 inventory)
+- Drizzle schema (migration 0014): theme + theme_version (global catalog, seeded Aurora/Market/Volt), organization_theme (one active per org, config JSON), page, blog_post, menu, redirect, homepage_section — tenant tables org-scoped; per-org unique slugs (page/blog), menu location, redirect fromPath
+- Org-scoped repositories: themes (catalog + org theme + deactivateAll), storefront-cms (pages, blog, menus, redirects, homepage sections)
+- Storefront service: theme install (idempotent) + activate (one active per org) + config; page CRUD (slugify + per-org slug uniqueness + SEO fields); blog CRUD (publishedAt stamped on PUBLISH); menu upsert per location; redirect create/delete (path guards); homepage sections add/reorder/enable/delete
+- v1 API routes at /api/v1/storefront/{themes,pages,blog,menus,redirects,homepage-sections} with requirePermission() + Zod validation
+- Permissions: reused storefront.view/manage, themes.install/activate/update, pages/blogs/menus.manage (no new perms)
+- Audit log wired to theme install/activate/configure + page/blog create/update + menu save + redirect create/delete + homepage section create/update/delete
+- Dashboard UI (website/*): themes (install + activate), pages, blog (list + create + publish), menus (per-location JSON editor), homepage-builder (add/reorder/enable/delete), redirect-manager; previously placeholders
+- React Query v1 hooks (features/(storefront)/storefront/api/v1-storefront.ts)
+- Storefront tests: 18 tests (page/blog/redirect/section isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, blog publishedAt, one-active-theme, redirect guards, homepage ordering)
+- Total test suite: 168 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront)
 
 Sprint Status: 🟩 Complete
 
@@ -246,44 +245,84 @@ Status: ✅ Complete
 ---
 
 # Phase 6 — Customers
-Status: ⬜ Not Started
-- [ ] Customers + Groups + Purchase History
-- [ ] Wallet (credits, refund integration)
-- [ ] Loyalty (earn / redeem)
+Status: ✅ Complete (MVP scope — due/payment ledger deferred, see below)
+- [x] Customers schema: customer_group, customer, customer_address, customer_wallet_transaction, customer_loyalty_transaction — all org-scoped (migration 0012_phase6); phone unique per org; walletBalance/loyaltyPoints cached, only mutated alongside an immutable transaction
+- [x] Repos: customer-groups, customers (+ addresses, wallet txns, loyalty txns, purchase stats) — all org-scoped
+- [x] Customers service: group CRUD (per-org name uniqueness); customer CRUD (per-org phone uniqueness, never hard-deleted — block/unblock/archive); addresses; wallet credit/debit (no negative balance, blocked customer guard); loyalty earn/redeem/reverse (no negative, reverse clamps to balance); purchase history + analytics/CLV (orders + completed POS sales)
+- [x] API routes: /api/v1/customers (+ /:id, /reports, block/unblock/archive, addresses, wallet credit/debit, loyalty earn/redeem/reverse, history) + /api/v1/customer-groups — perms customers.view/create/update/wallet/loyalty/reports
+- [x] Permissions: added customers.loyalty + customers.reports to catalog
+- [x] Audit logs: customer create/update/block + wallet credit/debit + loyalty earn/redeem/reverse + group create
+- [x] UI hooks (apps/web/features/(erp-core)/customers/api/v1-customers.ts) + customer detail sheet (profile/stats + wallet + loyalty + addresses tabs, status actions) + shared customer-list-view
+- [x] UI pages: all-customers, customer-wallet, loyalty-program (list + create + detail sheet), customer-groups (cards + create + toggle), customer-reports (CLV metrics + top customers)
+- [x] Migration applied to local D1; all 5 tables created
+- [x] Customers tests (tests/customers/customers.test.ts — 21 tests: customer/group/wallet-txn isolation, cross-tenant 404, per-org phone uniqueness + same-phone-across-orgs, wallet credit/debit + no-negative guard, blocked-customer guard, loyalty earn/redeem/reverse-clamp, purchase-stats aggregation + cross-tenant exclusion)
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] Tests: 124/124 pass
+- [ ] DEFERRED — Customer due + payment ledger (Total Purchases − Payments) — secondary; needs deeper orders/POS payment integration
+- [ ] DEFERRED — Communication history (SMS/email/notifications) — secondary, ties to Growth/Notifications
+- [ ] DEFERRED — Auto loyalty-earn on sale completion + auto-reverse on return (wire into orders/POS/returns services) — contract in place via earn/reverse endpoints
 
 ---
 
 # Phase 7 — Delivery
-Status: ⬜ Not Started
-- [ ] Delivery Partners + Riders
-- [ ] Shipments + Tracking
-- [ ] Delivery Assignment
-- [ ] Courier Status Sync (Pathao/RedX/SteadFast)
+Status: ✅ Complete (MVP scope — zones/charges/COD-settlement deferred, see below)
+- [x] Delivery schema: delivery_partner, rider, shipment, shipment_event — all org-scoped (migration 0011_phase7); tracking_number unique per org
+- [x] Repos: delivery-partners, riders, shipments (+ immutable events), all org-scoped
+- [x] Delivery service: partner/rider CRUD; shipment lifecycle CREATED→ASSIGNED→PICKED_UP→IN_TRANSIT→DELIVERED + FAILED→RETURNED + CANCELLED; one shipment per order; cancelled orders cannot ship; rider busy/available transitions
+- [x] Order integration: shipment deliver calls orders.service.deliver (single source of truth for inventory — consumes reservations + ONLINE_SALE movements); guarded by order SHIPPED workflow
+- [x] Courier status sync endpoint (records immutable COURIER_UPDATE event; real courier HTTP/webhooks deferred)
+- [x] API routes: /api/v1/delivery-partners, /api/v1/riders, /api/v1/shipments (+ /:id, /reports, assign-rider, assign-partner, pickup, transit, deliver, fail, return, cancel, courier-status) — perms delivery.view/create/assign/update/reports
+- [x] Permissions: added delivery.create + delivery.reports to catalog
+- [x] UI hooks (apps/web/features/(erp-core)/delivery/api/v1-delivery.ts) + shipment detail sheet (status-aware actions + tracking timeline)
+- [x] UI pages: delivery-partners, riders, assign-deliveries (create + list + sheet), delivery-tracking (search + sheet), delivery-reports (metrics)
+- [x] Audit logs: shipment create/assign/pickup/transit/deliver/fail/rto/cancel/courier-sync + partner/rider create
+- [x] TypeScript: worker compiles clean (npx tsc --noEmit)
+- [x] Migration applied to local D1; all 4 tables created
+- [x] Delivery tests (tests/delivery/delivery.test.ts — 16 tests: partner/rider/shipment/event isolation, tracking unique per org, lifecycle, one-per-order, cancelled-order guard, deliver order-workflow guard, courier sync)
+- [x] Tests: 103/103 pass (this branch base)
+- [ ] DEFERRED — Delivery zones + charges (settings-driven pricing) — secondary
+- [ ] DEFERRED — COD collection + courier settlement (finance integration) — secondary
+- [ ] DEFERRED — Live courier integration (Pathao/RedX/SteadFast HTTP) — needs credentials; sync endpoint contract in place
 
 ---
 
 # Phase 8 — Subscriptions, Billing & Plan Enforcement — Priority: CRITICAL (MVP)
-Status: 🟨 In Progress (partial)
-- [x] subscription_plans schema (Drizzle — limits + feature flags)
+Status: ✅ Complete (MVP scope — feature-flags UI + demo import deferred, see below)
+- [x] subscription_plans schema (Drizzle — limits + feature flags); seeded Free/Starter/Business/Enterprise catalog (migration 0013)
 - [x] subscriptions schema (Drizzle — TRIAL/ACTIVE/EXPIRED/SUSPENDED/CANCELLED)
-- [x] subscription_invoices schema (Drizzle)
-- [x] Server-side enforcement utility (apps/worker/utils/plan-limits.ts — enforceSubscriptionActive, enforceLimit)
-- [x] enforceLimit wired into product create (limitProducts), location create (limitOutlets, limitWarehouses)
-- [ ] Trial flow (7/14/30) + renewal + grace + suspension
-- [ ] Per-org usage counters (cached)
-- [ ] requireFeature() enforcement
-- [ ] Billing providers (bKash, Nagad, SSLCommerz) — idempotent webhooks
-- [ ] Feature flags UI
-- [ ] Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited)
+- [x] subscription_invoices schema + verified-webhook idempotency columns (planId, invoiceNumber, providerRef, idempotencyKey — unique) + feature_flag table (migration 0013)
+- [x] Server-side enforcement utility (apps/worker/utils/plan-limits.ts — enforceSubscriptionActive 402, enforceLimit 422, requireFeature 403)
+- [x] enforceLimit wired into product create (limitProducts), location create (limitOutlets/limitWarehouses), order create (limitOrdersPerMonth) + POS sale (enforceSubscriptionActive); live per-org usage counters (apps/worker/utils/usage.ts)
+- [x] Subscription lifecycle (apps/worker/utils/subscription-lifecycle.ts — lazy TRIAL→EXPIRED→grace→SUSPENDED, activate on paid invoice, mirrored to organization.status)
+- [x] Billing repos: subscription-plans, subscriptions, feature-flags
+- [x] Tenant billing service + API (/api/v1/billing) + platform-admin billing service + API (/api/admin/billing); admin routes mounted in apps/worker/src/index.ts
+- [x] Billing providers (bKash/Nagad/SSLCommerz) — idempotent verified webhooks (apps/worker/services/v1/billing-providers.ts, billing.service.ts)
+- [x] UI: tenant subscription page (/dashboard/system/subscription), admin plans + subscriptions pages ((platform)/admin); hooks v1-billing + admin-billing
+- [x] Billing tests (tests/billing/billing.test.ts — 26: plan limits, subscription lifecycle, idempotent webhooks, feature gating, isolation)
+- [x] TypeScript: worker compiles clean; web billing files compile clean
+- [x] Migration 0013 applied to local D1 (idempotency cols + feature_flag + seeded plans)
+- [x] Tests: 150/150 pass
+- [ ] DEFERRED — Feature flags admin UI (per-org overrides) — secondary; feature_flag table + repo + requireFeature enforcement in place
+- [ ] DEFERRED — Demo Data Import (datasets, demo_imports, is_demo tagging, import-via-services, clear, plan-capped, audited) — secondary
 
 ---
 
 # Phase 9 — Storefront + Theme System
-Status: ⬜ Not Started
-- [ ] Theme model (one active per org)
-- [ ] Themed storefront rendering
-- [ ] Homepage Builder / Pages / Blog / Menus
-- [ ] SEO / Redirects
+Status: ✅ Complete (config + admin slice — public themed rendering deferred, see below)
+- [x] Schema (migration 0014): theme + theme_version (global catalog, seeded Aurora/Market/Volt), organization_theme (one active per org, config JSON), page, blog_post, menu, redirect, homepage_section — all tenant tables org-scoped; per-org unique slugs (page/blog), per-org unique menu location + redirect fromPath
+- [x] Repos: themes (catalog + org theme, deactivateAll for one-active), storefront-cms (pages, blog, menus, redirects, homepage sections) — all org-scoped
+- [x] Storefront service: theme install (idempotent) + activate (one active per org) + config; page CRUD (slugify + per-org slug uniqueness, SEO fields); blog CRUD (publishedAt stamped on PUBLISH); menu upsert per location; redirect create/delete (fromPath must start with /, per-org unique); homepage sections add/reorder/enable/delete (auto position)
+- [x] API routes: /api/v1/storefront/{themes,pages,blog,menus,redirects,homepage-sections} — perms storefront.view/manage, themes.install/activate/update, pages/blogs/menus.manage
+- [x] Audit logs: theme install/activate/configure + page/blog create/update + menu save + redirect create/delete + homepage section create/update/delete
+- [x] UI hooks (apps/web/features/(storefront)/storefront/api/v1-storefront.ts)
+- [x] Dashboard UI: website/themes (install + activate cards), pages (list + create + publish), blog (list + create + publish), menus (per-location JSON editor), homepage-builder (add/reorder/enable/delete sections), redirect-manager (table + create + delete)
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] Migration 0014 applied to local D1; all 8 tables created + themes seeded
+- [x] Storefront tests (tests/storefront/storefront.test.ts — 18: page/blog/redirect/section isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, blog publishedAt, one-active-theme, redirect guards, homepage ordering)
+- [x] Tests: 168/168 pass
+- [ ] DEFERRED — Public themed storefront rendering (ADR-014 separate rendering pipeline + theme bundles loaded from R2) — large, distinct slice; theme contract + active-theme/config resolution in place
+- [ ] DEFERRED — Media Library (Cloudinary asset browser) — secondary; pages/blog already store media URLs
+- [ ] DEFERRED — Landing pages + theme presets/demo stores + theme marketplace install (overlaps Phase 10 funnels + Phase 11 marketplace)
 
 ---
 
@@ -340,6 +379,11 @@ Tenant Isolation Tests:    🟩 27 tests pass  (tests/tenancy/isolation.test.ts)
 Catalog Isolation Tests:   🟩 20 tests pass  (tests/catalog/isolation.test.ts)
 Inventory Isolation Tests: 🟩 15 tests pass  (tests/inventory/isolation.test.ts)
 Purchases Isolation Tests: 🟩 25 tests pass  (tests/purchases/isolation.test.ts)
+Delivery Tests:            🟩 16 tests pass  (tests/delivery/delivery.test.ts — isolation + lifecycle + order-workflow guard)
+Customers Tests:           🟩 21 tests pass  (tests/customers/customers.test.ts — isolation + wallet/loyalty guards + purchase-stats)
+Billing Tests:             🟩 26 tests pass  (tests/billing/billing.test.ts — plan limits, lifecycle, idempotent webhooks, feature gating)
+Storefront Tests:          🟩 18 tests pass  (tests/storefront/storefront.test.ts — isolation + slug uniqueness + one-active-theme + homepage ordering)
+Total Test Suite:          🟩 168 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -375,19 +419,15 @@ None
 # Next Recommended Task
 
 ```text
-Phase 0 + Phase 1 + Phase 2 complete (62 tests pass). Next options (pick one):
+Phases 0–9 complete (168 tests pass). Storefront config + admin slice on this branch. Next options (pick one):
 
-1. [HIGH] Phase 3 — Orders (CRITICAL PATH)
-   - Order schema (org-scoped, source, status, payment_status, grand_total)
-   - Inventory reservation on create; consume on delivered; release on cancel
-   - Order list + detail + timeline UI
+1. [HIGH] Phase 9 follow-up — Public themed storefront rendering
+   - ADR-014 separate rendering pipeline; load active theme + config; render homepage sections / pages / blog
+   - Theme bundles from R2; edge caching (Lighthouse 90+ target)
 
-2. [MEDIUM] Purchases isolation tests
-   - tests/purchases/isolation.test.ts — supplier, purchase_order repos; cross-tenant 404
+2. [HIGH] Phase 10 — Growth: Campaigns + Funnels (single/multi/bundle/COD/upsell/downsell) + landing pages + UTM attribution
 
-3. [LOW] Variant deactivate hook
-   - Add useDeactivateVariant → DELETE /api/v1/products/:id/variants/:variantId
-   - Wire into delete button in Variants tab (currently a stub)
+3. [MEDIUM] Wire Phase 6 auto-integrations (loyalty earn/reverse on sale/return, wallet refund) + Phase 8 leftovers (feature-flags UI, demo import)
 ```
 
 ---

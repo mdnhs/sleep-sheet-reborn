@@ -1,17 +1,5 @@
-import React from "react"
+import { CustomerListView } from "@/features/(erp-core)/customers/components/customer-list-view"
 
-async function ComingSoonPage() {
-
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl bg-muted/50 border border-dashed">
-        <h1 className="text-2xl font-bold">Loyalty Program</h1>
-        <p className="text-muted-foreground text-center">
-          This feature is currently under development.
-        </p>
-      </div>
-    </div>
-  )
+export default function LoyaltyProgramPage() {
+  return <CustomerListView title="Loyalty Program" description="Open a customer to earn or redeem loyalty points." />
 }
-
-export default ComingSoonPage

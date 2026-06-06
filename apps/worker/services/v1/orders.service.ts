@@ -6,6 +6,7 @@ import { createProductVariantRepository } from '../../repositories/product-varia
 import { createLocationRepository } from '../../repositories/locations.repository'
 import { createAuditLogRepository } from '../../repositories/audit-log.repository'
 import { ServiceError } from '../../utils/service-error'
+import { enforceSubscriptionActive, enforceLimit } from '../../utils/plan-limits'
 
 export function createOrdersService(db: Database, organizationId: string) {
   const repo = createOrdersRepository(db, organizationId)
@@ -63,6 +64,10 @@ export function createOrdersService(db: Database, organizationId: string) {
       actorId?: string
     }) {
       if (!data.items.length) throw new ServiceError('Order must have at least one item', 400)
+
+      // Plan enforcement: block writes on inactive subscription; cap orders/month
+      await enforceSubscriptionActive(db, organizationId)
+      await enforceLimit(db, organizationId, 'limitOrdersPerMonth', await repo.countByOrgThisMonth())
 
       await assertLocation(data.locationId)
 
