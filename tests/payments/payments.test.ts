@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { organization, order, orderPayment } from '@repo/database/src/schema'
 import { eq } from 'drizzle-orm'
 import { createOrderPaymentService, handleOrderPaymentWebhook } from '../../apps/worker/services/public/payments.service'
+import { gatewayConfigured, sslcommerzBaseUrl, buildSslcommerzForm } from '../../apps/worker/services/public/gateways'
 import { createTestDb, makeOrg, makeOrder, type TestDb } from './setup'
 
 let db: TestDb
@@ -43,6 +44,39 @@ describe('Order payment — initiate', () => {
 
   it('cross-tenant order is not found', async () => {
     await expect(initSvc(ORG_B).initiate('o1', 'bKash')).rejects.toThrow(/not found/i)
+  })
+})
+
+describe('Payment gateways', () => {
+  it('detects configuration per provider', () => {
+    expect(gatewayConfigured('SSLCommerz', {})).toBe(false)
+    expect(gatewayConfigured('SSLCommerz', { SSLCOMMERZ_STORE_ID: 'x', SSLCOMMERZ_STORE_PASSWORD: 'y' })).toBe(true)
+    expect(gatewayConfigured('bKash', { BKASH_APP_KEY: 'a', BKASH_APP_SECRET: 'b', BKASH_USERNAME: 'u', BKASH_PASSWORD: 'p' })).toBe(true)
+    expect(gatewayConfigured('bKash', { BKASH_APP_KEY: 'a' })).toBe(false)
+    expect(gatewayConfigured('Nagad', { /* anything */ } as any)).toBe(false)
+  })
+
+  it('selects sandbox vs live base URL', () => {
+    expect(sslcommerzBaseUrl({})).toContain('sandbox')
+    expect(sslcommerzBaseUrl({ PAYMENT_GATEWAY_MODE: 'live' })).toContain('securepay')
+  })
+
+  it('builds the SSLCommerz session form', () => {
+    const form = buildSslcommerzForm({ SSLCOMMERZ_STORE_ID: 'store', SSLCOMMERZ_STORE_PASSWORD: 'pw' }, {
+      amount: 1500, tranId: 'pay-1', orderNumber: 'ORD-9',
+      successUrl: 's', failUrl: 'f', cancelUrl: 'c', ipnUrl: 'i',
+    })
+    expect(form.store_id).toBe('store')
+    expect(form.total_amount).toBe('1500')
+    expect(form.tran_id).toBe('pay-1')
+    expect(form.currency).toBe('BDT')
+  })
+
+  it('initiate falls back to sandbox when the provider is unconfigured', async () => {
+    await db.insert(order).values([makeOrder('og', ORG_A, 700)])
+    const r = await initSvc(ORG_A).initiate('og', 'bKash', { env: {}, baseUrl: 'https://x', tenantSlug: 'a' })
+    expect(r.gateway).toBe(false)
+    expect(r.checkoutUrl).toBeNull()
   })
 })
 
