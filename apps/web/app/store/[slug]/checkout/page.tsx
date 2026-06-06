@@ -1,13 +1,19 @@
 "use client"
 import { use, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useCart } from "@/features/(storefront)/components/storefront-cart"
 
 const taka = (n: number) => `৳${n.toLocaleString()}`
+const METHODS = ["COD", "bKash", "Nagad", "SSLCommerz"] as const
+type Method = typeof METHODS[number]
+const ORDER_METHOD: Record<Method, string> = { COD: "COD", bKash: "BKASH", Nagad: "NAGAD", SSLCommerz: "SSLCOMMERZ" }
 
 export default function CheckoutPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
+  const router = useRouter()
   const { items, setQty, clear, total } = useCart(slug)
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", area: "", city: "" })
+  const [method, setMethod] = useState<Method>("COD")
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<{ orderNumber: string; grandTotal: number } | null>(null)
   const [error, setError] = useState("")
@@ -21,14 +27,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
         body: JSON.stringify({
           items: items.map(i => ({ variantId: i.variantId, quantity: i.qty })),
           customer: { name: form.name, phone: form.phone, email: form.email || undefined, address: form.address, area: form.area || undefined, city: form.city },
-          paymentMethod: "COD",
+          paymentMethod: ORDER_METHOD[method],
         }),
       })
-      const body = await res.json() as { success: boolean; data?: { orderNumber: string; grandTotal: number }; error?: { message: string } }
+      const body = await res.json() as { success: boolean; data?: { orderId: string; orderNumber: string; grandTotal: number }; error?: { message: string } }
       if (!res.ok || !body.success) throw new Error(body.error?.message ?? "Order failed")
+      const order = body.data!
       clear()
-      setDone(body.data!)
-    } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+      if (method === "COD") { setDone(order); return }
+      // Online: initiate payment, then go to the (mock) gateway page
+      const initRes = await fetch("/api/public/payments/initiate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.orderId, provider: method }),
+      })
+      const init = await initRes.json() as { success: boolean; data?: { paymentId: string }; error?: { message: string } }
+      if (!initRes.ok || !init.success) throw new Error(init.error?.message ?? "Payment init failed")
+      const q = new URLSearchParams({ provider: method, amount: String(order.grandTotal), order: order.orderNumber })
+      router.push(`/store/${slug}/pay/${init.data!.paymentId}?${q.toString()}`)
+    } catch (e) { setError((e as Error).message); setBusy(false) }
   }
 
   if (done) {
@@ -71,9 +87,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
       <input className="sf-input" placeholder="Area" value={form.area} onChange={e => set("area", e.target.value)} />
       <input className="sf-input" placeholder="City *" value={form.city} onChange={e => set("city", e.target.value)} />
 
+      <h2 className="sf-section-title">Payment</h2>
+      <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+        {METHODS.map(m => (
+          <button key={m} type="button" onClick={() => setMethod(m)}
+            className={`sf-btn ${method === m ? "" : "sf-btn-outline"}`}>
+            {m === "COD" ? "Cash on Delivery" : m}
+          </button>
+        ))}
+      </div>
+
       {error && <p style={{ color: "#dc2626" }}>{error}</p>}
       <button className="sf-btn" disabled={busy || !valid} onClick={placeOrder}>
-        {busy ? "Placing order…" : `Place order — ${taka(total)} (COD)`}
+        {busy ? "Processing…" : method === "COD" ? `Place order — ${taka(total)} (COD)` : `Pay ${taka(total)} with ${method}`}
       </button>
     </div>
   )

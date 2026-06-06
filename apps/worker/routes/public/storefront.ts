@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { createPublicStorefrontService } from '../../services/public/storefront.service'
+import { createOrderPaymentService, handleOrderPaymentWebhook } from '../../services/public/payments.service'
 import { isServiceError } from '../../utils/service-error'
 import { ok, err } from '../../utils/response'
 import type { HonoEnv } from '../../src/types'
@@ -71,6 +72,19 @@ const app = new Hono<HonoEnv>()
   .post('/checkout', zValidator('json', CheckoutSchema), async (c) => {
     const s = svc(c); if (!s) return noTenant(c)
     try { return c.json(ok(await s.createOrder(c.req.valid('json'))), 201) } catch (e) { return fail(c, e, 'Failed to place order') }
+  })
+  .post('/payments/initiate', zValidator('json', z.object({ orderId: z.string().min(1), provider: z.enum(['bKash', 'Nagad', 'SSLCommerz']) })), async (c) => {
+    const tenant = c.get('tenant'); if (!tenant) return noTenant(c)
+    const body = c.req.valid('json')
+    try { return c.json(ok(await createOrderPaymentService(c.get('db'), tenant.id).initiate(body.orderId, body.provider)), 201) }
+    catch (e) { return fail(c, e, 'Failed to initiate payment') }
+  })
+  // Inbound provider webhook (unscoped — org resolved from the payment). Never trusts client.
+  .post('/payments/:provider/webhook', async (c) => {
+    const body = await c.req.json().catch(() => ({}))
+    const secret = (c.env as { PAYMENT_WEBHOOK_SECRET?: string }).PAYMENT_WEBHOOK_SECRET
+    try { return c.json(ok(await handleOrderPaymentWebhook(c.get('db'), c.req.param('provider'), body, secret))) }
+    catch (e) { return fail(c, e, 'Failed to process webhook') }
   })
 
 export default app

@@ -146,7 +146,7 @@ export function createPublicStorefrontService(db: Database, organizationId: stri
         customerId,
         customerNotes: data.notes,
       })
-      return { orderNumber: order.orderNumber, grandTotal: order.grandTotal, status: order.status }
+      return { orderId: order.id, orderNumber: order.orderNumber, grandTotal: order.grandTotal, status: order.status }
     },
   }
 }
