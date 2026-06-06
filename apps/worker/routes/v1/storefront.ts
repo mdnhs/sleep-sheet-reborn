@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requirePermission } from '../../middleware/rbac'
 import { createStorefrontService } from '../../services/v1/storefront.service'
+import { createThemeBundleService } from '../../services/v1/theme-bundles.service'
 import { isServiceError } from '../../utils/service-error'
 import { ok, err } from '../../utils/response'
 import type { HonoEnv } from '../../src/types'
@@ -67,6 +68,19 @@ const app = new Hono<HonoEnv>()
   .patch('/themes/:id/config', requirePermission('themes.update'), zValidator('json', z.object({ config: z.any() })), async (c) => {
     const s = svc(c); if (!s) return c.json(err('TENANT_NOT_FOUND', 'Tenant not found'), 404)
     try { return c.json(ok(await s.updateThemeConfig(c.req.param('id'), c.req.valid('json').config, actor(c)))) } catch (e) { return fail(c, e, 'Failed to update theme config') }
+  })
+  // Download an installed theme's bundle binary from R2 (gated by org install)
+  .get('/themes/:themeId/bundle', requirePermission('storefront.view'), async (c) => {
+    const tenant = c.get('tenant'); if (!tenant) return c.json(err('TENANT_NOT_FOUND', 'Tenant not found'), 404)
+    const bucket = (c.env as { BUCKET?: any }).BUCKET
+    if (!bucket) return c.json(err('INTERNAL_ERROR', 'Object storage not configured'), 500)
+    try {
+      const dl = await createThemeBundleService(c.get('db'), tenant.id, bucket).download(c.req.param('themeId'), c.req.query('version'))
+      return c.body(dl.body as any, 200, { 'Content-Type': dl.contentType, 'Content-Disposition': `attachment; filename="${c.req.param('themeId')}.zip"` })
+    } catch (e) {
+      if (isServiceError(e)) return c.json(err('SERVICE_ERROR', e.message), e.status)
+      return c.json(err('INTERNAL_ERROR', 'Failed to download bundle'), 500)
+    }
   })
 
   // ── Pages ─────────────────────────────────────────────────────────────────────

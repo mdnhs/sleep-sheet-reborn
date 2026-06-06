@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Public rendering — storefront: homepage, catalog, product detail, cart, COD + online payment (real bKash/SSLCommerz gateway adapters), funnel landing; all numbered phases 0–14 done)
+Last Updated: 2026-06-06 (Public rendering COMPLETE — storefront homepage/catalog/product/cart/checkout (COD + real gateways)/funnel landing + R2 theme bundles; all numbered phases 0–14 done)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -16,15 +16,15 @@ Last Updated: 2026-06-06 (Public rendering — storefront: homepage, catalog, pr
 
 Current Phase: Phase 14 — Polish & Optimization
 
-Overall Progress: 99%
+Overall Progress: 100% (all numbered phases + public storefront rendering complete; remaining items are credential-bound provider parsers + optional polish)
 
-Project Status: 🟨 In Progress
+Project Status: 🟩 Complete (all phases 0–14 + public storefront shipped; remaining items credential-bound/optional)
 
 ---
 
 # Current Sprint
 
-Sprint Goal: Public rendering — storefront API + themed pages (homepage, catalog, product detail, cart, COD + online payment); deferred-slice, not a numbered phase
+Sprint Goal: Public rendering COMPLETE — storefront (homepage, catalog, product, cart, COD + online payment + real gateways, funnel landing, R2 theme bundles)
 
 Sprint Delivered:
 - Public storefront API (worker, no auth, subdomain-resolved tenant, published-only): /api/public/{storefront (active theme + config + menus + enabled homepage sections), products, products/:slug, pages/:slug, blog, blog/:slug} — new /api/public mount; public service reuses themes/cms/products repos
@@ -36,8 +36,9 @@ Sprint Delivered:
 - Online payment: order_payment schema (migration 0018) + tenant initiate (/api/public/payments/initiate) + UNSCOPED verified-idempotent provider webhook (/api/public/payments/:provider/webhook) marking order_payment + order.paymentStatus PAID/FAILED; checkout payment selector (COD / bKash / Nagad / SSLCommerz) + mock gateway pay page (real provider HTTP deferred; webhook contract live)
 - Funnel landing rendering: public funnel API + themed landing → FunnelCTA → funnel-attributed checkout (order source FUNNEL + funnel_conversion)
 - Real payment gateway adapters: SSLCommerz v4 + bKash tokenized checkout (env-driven, sandbox/live), initiate returns hosted redirect when configured, sandbox mock page fallback otherwise
-- Public storefront tests: 20 tests; order-payment tests: 14 tests (incl gateway config/builder + sandbox fallback)
-- Total test suite: 252 tests pass (… + 20 public-storefront + 14 order-payment)
+- R2 theme bundles (ADR-024): admin upload to R2 + ownership-gated tenant download streaming from R2; D1 keeps r2Key + metadata
+- Tests: 20 public-storefront + 14 order-payment + 7 theme-bundle
+- Total test suite: 259 tests pass
 
 Sprint Status: 🟩 Complete
 
@@ -321,13 +322,14 @@ Status: ✅ Complete (config + admin slice — public themed rendering deferred,
 - [x] Migration 0014 applied to local D1; all 8 tables created + themes seeded
 - [x] Storefront tests (tests/storefront/storefront.test.ts — 18: page/blog/redirect/section isolation, per-org slug uniqueness + same-slug-across-orgs, slugify, blog publishedAt, one-active-theme, redirect guards, homepage ordering)
 - [x] Tests: 168/168 pass
-- [🟨] PARTIAL — Public themed storefront rendering: public API (worker /api/public/storefront|products|catalog|categories|products/:slug|pages/:slug|blog|checkout|payments/initiate|payments/:provider/webhook — no auth, subdomain-resolved tenant, published-only) + themed web pages (apps/web/app/store/[slug]: layout shell, homepage sections, shop catalog w/ search+category+pagination, product detail w/ add-to-cart, localStorage cart, checkout w/ COD + online payment, mock gateway pay page) — plain HTML per ADR-014
+- [x] Public themed storefront rendering: public API (worker /api/public/storefront|products|catalog|categories|products/:slug|pages/:slug|blog|funnels/:slug|checkout|payments/initiate|payments/:provider/webhook — no auth, subdomain-resolved tenant, published-only) + themed web pages (apps/web/app/store/[slug]: layout shell, homepage sections, shop catalog w/ search+category+pagination, product detail w/ add-to-cart, localStorage cart, checkout w/ COD + online payment, funnel landing) — plain HTML per ADR-014
   - Online payment: order_payment schema (migration 0018), tenant initiate + UNSCOPED verified-idempotent provider webhook (reuses Phase 8 provider contract) marking order_payment + order.paymentStatus PAID/FAILED
   - Real gateway adapters (apps/worker/services/public/gateways.ts): SSLCommerz (v4 session → GatewayPageURL) + bKash tokenized checkout (grant token → create → bkashURL), env-credential-driven, sandbox/live modes; initiate returns the hosted redirect when the provider is configured and falls back to the sandbox mock page otherwise; Nagad deferred (credentials/contract)
   - 14 order-payment tests
   - 16 public-storefront + 10 order-payment tests
   - Funnel landing: public GET /api/public/funnels/:slug (active funnel + ordered steps + resolved LANDING product) + POST /funnels/:id/track (UTM visit); web /store/[slug]/f/[funnelSlug] themed landing (headline/sub/CTA from LANDING step config) → FunnelCTA tracks visit + add-to-cart → checkout?funnel=id; checkout passes funnelId → order tagged FUNNEL source + auto funnel_conversion attribution
-  - STILL DEFERRED: real provider IPN→confirm parsers (SSLCommerz validator API / bKash execute) — generic idempotent webhook + sandbox page cover dev; provider Nagad; theme bundles from R2
+  - Theme bundles in R2 (ADR-024): admin upload (POST /api/admin/marketplace/themes/:id/bundle → R2 put + theme_version.r2Key) + ownership-gated tenant download (GET /api/v1/storefront/themes/:themeId/bundle → streams from R2; latest-version fallback); 7 bundle tests
+  - REMAINING (credentials-bound, not blocking): real provider IPN→confirm parsers (SSLCommerz validator API / bKash execute) + Nagad adapter — generic idempotent webhook + sandbox page cover dev
 - [ ] DEFERRED — Media Library (Cloudinary asset browser) — secondary; pages/blog already store media URLs
 - [ ] DEFERRED — Landing pages + theme presets/demo stores + theme marketplace install (overlaps Phase 10 funnels + Phase 11 marketplace)
 
@@ -442,7 +444,8 @@ Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts �
 Notifications Tests:       🟩 7 tests pass   (tests/notifications/notifications.test.ts — feed/read/audience/isolation)
 Public Storefront Tests:   🟩 20 tests pass  (tests/public/public-storefront.test.ts — shell, catalog, checkout guards, funnel landing + visit, isolation)
 Order Payment Tests:       🟩 14 tests pass  (tests/payments/payments.test.ts — initiate, idempotent webhook, gateway config/builder + sandbox fallback, isolation)
-Total Test Suite:          🟩 252 tests pass  (this branch)
+Theme Bundle Tests:        🟩 7 tests pass   (tests/bundles/bundles.test.ts — R2 upload/replace + ownership-gated download + version fallback)
+Total Test Suite:          🟩 259 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -480,8 +483,12 @@ None
 ```text
 Phases 0–14 done (225 tests). Public rendering started: storefront API + themed homepage at /store/[slug]. Next options (pick one):
 
-1. [HIGH] Finish public rendering: theme bundles from R2 (ADR-024) — last item. [Done: homepage, catalog, product detail, cart, COD + online payment (real bKash/SSLCommerz adapters), funnel landing + attribution]
-2. [MEDIUM] Real provider IPN→confirm parsers (SSLCommerz validator / bKash execute) + Nagad adapter — provider creds required
+Public storefront rendering COMPLETE. All numbered phases (0–14) + storefront shipped. Remaining work is optional / credential-bound:
+
+1. [MEDIUM] Real provider IPN→confirm parsers (SSLCommerz validator / bKash execute) + Nagad adapter — needs merchant credentials
+2. [MEDIUM] Cross-module wiring: loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
+3. [MEDIUM] Phase 8/12 leftovers: demo data import, feature-flags admin UI
+4. [LOW] Phase 14 perf: cache plan/usage counters (KV/cron)
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 

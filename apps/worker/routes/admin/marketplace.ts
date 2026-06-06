@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { requirePlatformAdmin } from '../../middleware/rbac'
 import { createPlatformAdminService } from '../../services/v1/platform-admin.service'
+import { createThemeBundleAdminService } from '../../services/v1/theme-bundles.service'
 import { isServiceError } from '../../utils/service-error'
 import { ok, err } from '../../utils/response'
 import type { HonoEnv } from '../../src/types'
@@ -39,6 +40,19 @@ const app = new Hono<HonoEnv>()
   })
   .post('/themes/:id/versions', zValidator('json', VersionCreate), async (c) => {
     try { return c.json(ok(await svc(c).addThemeVersion(c.req.param('id'), c.req.valid('json'))), 201) } catch (e) { return fail(c, e, 'Failed to add version') }
+  })
+  // Upload a versioned theme bundle binary to R2 (raw body). ?version=1.0.0
+  .post('/themes/:id/bundle', async (c) => {
+    const version = c.req.query('version')
+    if (!version) return c.json(err('SERVICE_ERROR', 'version query param is required'), 400)
+    const bucket = (c.env as { BUCKET?: any }).BUCKET
+    if (!bucket) return c.json(err('INTERNAL_ERROR', 'Object storage not configured'), 500)
+    try {
+      const bytes = await c.req.arrayBuffer()
+      const ct = c.req.header('content-type') ?? 'application/zip'
+      const svc = createThemeBundleAdminService(c.get('db'), bucket)
+      return c.json(ok(await svc.upload(c.req.param('id'), version, bytes, ct, c.req.query('releaseNotes'))), 201)
+    } catch (e) { return fail(c, e, 'Failed to upload bundle') }
   })
 
   // Funnel templates catalog
