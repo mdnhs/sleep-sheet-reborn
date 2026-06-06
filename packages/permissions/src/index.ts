@@ -128,6 +128,8 @@ export const ORG_PERMISSIONS = {
   'roles.update':           ['OWNER'] as OrgRole[],
   'roles.delete':           ['OWNER'] as OrgRole[],
   'audit.view':             OWNER_ADMIN,
+  'notifications.view':     [...ALL],
+  'notifications.manage':   OWNER_ADMIN,
   'settings.view':          OWNER_ADMIN_MANAGER,
   'settings.update':        OWNER_ADMIN,
   'integrations.manage':    OWNER_ADMIN,
