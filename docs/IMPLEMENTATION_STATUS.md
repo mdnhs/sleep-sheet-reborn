@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Phase 11 complete — Marketplace: theme + funnel install/activate/update, per-org ownership, plan-gated)
+Last Updated: 2026-06-06 (Phase 12 complete — Platform Admin: organizations, marketplace curation, SaaS analytics MRR/ARR/churn)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -14,9 +14,9 @@ Last Updated: 2026-06-06 (Phase 11 complete — Marketplace: theme + funnel inst
 
 # Project Status
 
-Current Phase: Phase 11 — Marketplace (Themes / Funnels)
+Current Phase: Phase 12 — Platform Admin + SaaS Analytics
 
-Overall Progress: 95%
+Overall Progress: 97%
 
 Project Status: 🟨 In Progress
 
@@ -24,19 +24,19 @@ Project Status: 🟨 In Progress
 
 # Current Sprint
 
-Sprint Goal: Phase 11 — Marketplace (Themes / Funnels) (install/activate/update + per-org ownership + plan gating complete; R2 bundle delivery deferred)
+Sprint Goal: Phase 12 — Platform Admin + SaaS Analytics (orgs admin + marketplace curation + MRR/ARR/churn analytics complete)
 
 Sprint Delivered:
-- Drizzle schema (migration 0016): theme_purchase, funnel_purchase, organization_funnel — org-scoped ownership over the global theme + funnel_template catalogs; unique purchase per (org, asset); unique organization_funnel per funnel
-- Org-scoped marketplace repo: theme/funnel purchases + organization_funnel install records
-- Marketplace service: browse (catalog + owned/installed/active flags); theme purchase + install (free ungated; premium requires theme_marketplace flag + purchase) + activate (one active) + update (latest version); funnel purchase + install = clone template → org funnel + organization_funnel (requireFeature funnels + premium purchase + enforceLimit)
-- Plan gating reused (Phase 8): requireFeature(theme_marketplace|funnels) 403 + enforceLimit(limitThemes|limitFunnels) 422 — server-side
-- v1 API routes at /api/v1/marketplace/{themes,funnels,...purchase/install/activate/update} with requirePermission() (storefront.view, themes.install/activate/update, funnels.view/install)
-- Audit log wired to theme purchase/install/activate/update + funnel purchase/install
-- Dashboard UI: marketplace/themes (browse + buy/install/activate/update), marketplace/funnels (browse + buy/install)
-- React Query v1 hooks (features/(saas)/marketplace/api/v1-marketplace.ts)
-- Marketplace tests: 13 tests (browse flags, free vs premium gating, feature-flag enforcement, idempotent purchase/install, one-active-theme, version update, funnel clone-install + type inheritance, ownership isolation)
-- Total test suite: 194 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace)
+- Platform-admin service (UNSCOPED, SUPER_ADMIN): operates across all organizations — no migration (reuses existing tables)
+- Organizations admin: list all orgs (+ subscription status/plan); suspend/reactivate/cancel mirrored to org.status, audited
+- Marketplace curation: global theme catalog (create + publish/deprecate + add version) + funnel_template catalog (create + publish/deprecate)
+- SaaS Analytics (derived live): MRR (active subs, YEARLY→monthly) + ARR, org counts by status, trial-conversion rate, churn rate, platform GMV (orders + completed POS across all orgs)
+- API routes (requirePlatformAdmin): /api/admin/{organizations, organizations/:id/suspend|reactivate|cancel, analytics, marketplace/themes|funnel-templates + status/version}
+- Plans/Subscriptions/Invoices admin already delivered Phase 8 (/api/admin/billing)
+- Audit log wired to org suspend/reactivate/cancel
+- Platform UI: (platform)/admin/organizations, /admin/analytics, /admin/marketplace + React Query hooks (features/(saas)/platform/api/admin-platform.ts)
+- Platform tests: 8 tests (org list, suspend/reactivate + audit, 404 guard, MRR/ARR + YEARLY normalization, status counts + churn + GMV, theme create/dup/status/version, template create/deprecate)
+- Total test suite: 202 tests pass (27 tenancy + 20 catalog + 15 inventory + 25 purchases + 16 delivery + 21 customers + 26 billing + 18 storefront + 13 growth + 13 marketplace + 8 platform)
 
 Sprint Status: 🟩 Complete
 
@@ -366,11 +366,22 @@ Status: ✅ Complete (catalogs global, ownership org-scoped — R2 bundle delive
 ---
 
 # Phase 12 — Platform Admin + SaaS Analytics
-Status: ⬜ Not Started
-- [ ] Organizations admin (suspend)
-- [ ] Plans / Subscriptions / Invoices admin
-- [ ] Marketplace management
-- [ ] SaaS Analytics (active orgs, MRR, ARR, trial conversion, churn, sales)
+Status: ✅ Complete (platform-scope, SUPER_ADMIN)
+- [x] Platform-admin service (apps/worker/services/v1/platform-admin.service.ts — UNSCOPED, operates across all orgs)
+- [x] Organizations admin: list all orgs (+ subscription status/plan); suspend → SUSPENDED, reactivate → ACTIVE, cancel → CANCELLED (mirrors org.status, audited)
+- [x] Plans / Subscriptions / Invoices admin (delivered Phase 8 — platform-billing.service + /api/admin/billing: plan CRUD, cross-org subscriptions, manual activate, invoices)
+- [x] Marketplace management: global theme catalog (create + publish/deprecate status + add version) + funnel_template catalog (create + publish/deprecate) — platform-curated
+- [x] SaaS Analytics (derived live): MRR (active subs, YEARLY normalized to monthly) + ARR, org counts by status (active/trial/suspended/cancelled), trial conversion rate, churn rate, platform GMV (orders + completed POS across all orgs)
+- [x] API routes (requirePlatformAdmin / SUPER_ADMIN_EMAIL): /api/admin/{organizations, organizations/:id/suspend|reactivate|cancel, analytics, marketplace/themes, marketplace/themes/:id/status|versions, marketplace/funnel-templates, marketplace/funnel-templates/:id/status}
+- [x] Audit logs: org suspend/reactivate/cancel
+- [x] UI hooks (apps/web/features/(saas)/platform/api/admin-platform.ts) + platform pages: (platform)/admin/organizations (list + suspend/reactivate/cancel), /admin/analytics (MRR/ARR/GMV/conversion/churn metrics), /admin/marketplace (theme + funnel-template catalog publish/deprecate); /admin/plans + /admin/subscriptions from Phase 8
+- [x] TypeScript: worker compiles clean; new web files compile clean
+- [x] No migration — reuses existing tables (organization, subscription, subscription_plan, order, pos_sale, theme, theme_version, funnel_template)
+- [x] Platform tests (tests/platform/platform.test.ts — 8: org list, suspend/reactivate + audit, 404 guard, MRR/ARR + YEARLY normalization, org-status counts + churn + GMV, theme create/dup-slug/status/version, funnel template create/deprecate)
+- [x] Tests: 202/202 pass
+- [ ] DEFERRED — Demo dataset management (platform.demo_datasets.manage) — pairs with Phase 8 demo import (also deferred)
+- [ ] DEFERRED — Platform feature-flag management UI (per-org overrides) — feature_flag table + requireFeature in place since Phase 8
+- [ ] DEFERRED — Event-sourced analytics (module §8 prefers events over cached totals); current metrics derived live from tables
 
 ---
 
@@ -406,7 +417,8 @@ Billing Tests:             🟩 26 tests pass  (tests/billing/billing.test.ts �
 Storefront Tests:          🟩 18 tests pass  (tests/storefront/storefront.test.ts — isolation + slug uniqueness + one-active-theme + homepage ordering)
 Growth Tests:              🟩 13 tests pass  (tests/growth/growth.test.ts — campaign/funnel isolation + slug uniqueness + idempotent attribution + analytics)
 Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.test.ts — install/purchase gating + one-active-theme + clone-install + ownership isolation)
-Total Test Suite:          🟩 194 tests pass  (this branch)
+Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
+Total Test Suite:          🟩 202 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -442,15 +454,15 @@ None
 # Next Recommended Task
 
 ```text
-Phases 0–11 complete (194 tests pass). Marketplace ownership + gating on this branch. Next options (pick one):
+Phases 0–12 complete (202 tests pass). Platform admin + SaaS analytics on this branch. Next options (pick one):
 
-1. [HIGH] Phase 12 — Platform Admin + SaaS Analytics (orgs admin/suspend, plans/subscriptions/invoices admin, marketplace mgmt, MRR/ARR/churn/trial-conversion) — leverages Phase 8 billing + Phase 11 marketplace
+1. [HIGH] Phase 13 — Reports (sales/inventory/outlet/purchase/delivery/finance/growth) — last numbered build phase
 
-2. [HIGH] Phase 13 — Reports (sales/inventory/outlet/purchase/delivery/finance/growth)
+2. [MEDIUM] Phase 14 — Polish & Optimization (notifications, error handling, perf/latency targets, cache plan/usage counters)
 
 3. [MEDIUM] Public rendering slice (pairs Phase 9 + 10 + 11): themed storefront + funnel landing pages + direct checkout + R2 bundle delivery (ADR-014/024 pipeline, edge caching)
 
-4. [LOW] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, premium payment capture
+4. [LOW] Cross-module wiring + deferred secondaries: auto-attribution, loyalty earn/reverse, wallet refund, demo data import, feature-flags UI, premium payment capture
 ```
 
 ---
