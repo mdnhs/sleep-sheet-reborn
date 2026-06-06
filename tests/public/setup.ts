@@ -21,6 +21,9 @@ export function createTestDb(): TestCtx {
     CREATE TABLE product_variant (id TEXT PRIMARY KEY, organizationId TEXT, productId TEXT, unitId TEXT, sku TEXT, barcode TEXT, name TEXT, costPrice INTEGER, sellingPrice INTEGER, status TEXT, createdAt INTEGER, updatedAt INTEGER);
     CREATE TABLE product_image (id TEXT PRIMARY KEY, organizationId TEXT, productId TEXT, cloudinaryPublicId TEXT, url TEXT, sortOrder INTEGER, createdAt INTEGER, updatedAt INTEGER);
     CREATE TABLE location (id TEXT PRIMARY KEY, organizationId TEXT, branchId TEXT, name TEXT, code TEXT, type TEXT, status TEXT, createdAt INTEGER, updatedAt INTEGER);
+    CREATE TABLE funnel (id TEXT PRIMARY KEY, organizationId TEXT, templateId TEXT, name TEXT, slug TEXT, type TEXT, config TEXT, status TEXT, createdAt INTEGER, updatedAt INTEGER);
+    CREATE TABLE funnel_step (id TEXT PRIMARY KEY, organizationId TEXT, funnelId TEXT, type TEXT, position INTEGER, config TEXT, createdAt INTEGER, updatedAt INTEGER);
+    CREATE TABLE funnel_visit (id TEXT PRIMARY KEY, organizationId TEXT, funnelId TEXT, stepId TEXT, visitorId TEXT, utmSource TEXT, utmMedium TEXT, utmCampaign TEXT, createdAt INTEGER);
   `)
   return { db, sqlite }
 }
@@ -44,5 +47,7 @@ export function seed(sqlite: InstanceType<typeof Database>) {
     variant(o: string, productId: string, sellingPrice: number) { run(`INSERT INTO product_variant (id,organizationId,productId,sku,name,costPrice,sellingPrice,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?)`, id('var'), o, productId, id('sku'), 'v', 0, sellingPrice, 'ACTIVE', NOW, NOW) },
     image(o: string, productId: string, url: string, sortOrder: number) { run(`INSERT INTO product_image (id,organizationId,productId,url,sortOrder,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?)`, id('img'), o, productId, url, sortOrder, NOW, NOW) },
     location(o: string, type = 'OUTLET', status = 'ACTIVE') { const i = id('loc'); run(`INSERT INTO location (id,organizationId,name,code,type,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?)`, i, o, i, i, type, status, NOW, NOW); return i },
+    funnel(o: string, slug: string, status = 'ACTIVE', config: string | null = null, type = 'SINGLE') { const i = id('fnl'); run(`INSERT INTO funnel (id,organizationId,name,slug,type,config,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?)`, i, o, slug, slug, type, config, status, NOW, NOW); return i },
+    step(o: string, funnelId: string, type: string, position: number, config: string | null = null) { const i = id('stp'); run(`INSERT INTO funnel_step (id,organizationId,funnelId,type,position,config,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?)`, i, o, funnelId, type, position, config, NOW, NOW); return i },
   }
 }

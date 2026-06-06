@@ -5,6 +5,7 @@ import { and, eq, like, sql } from "drizzle-orm"
 import {
   createDb, organization, organizationTheme, theme as themeTable,
   menu as menuTable, homepageSection, product, productVariant, productImage, category,
+  funnel as funnelTable, funnelStep,
 } from "@repo/database"
 
 const parse = (s: string | null) => { if (!s) return null; try { return JSON.parse(s) as Record<string, unknown> } catch { return null } }
@@ -138,6 +139,41 @@ export type ProductDetail = {
   id: string; name: string; slug: string; description: string | null
   images: string[]
   variants: { id: string; sku: string; name: string; price: number }[]
+}
+
+export type FunnelLanding = {
+  funnelId: string; name: string; type: string
+  landing: Record<string, unknown> | null
+  product: { slug: string; name: string; price: number; image: string | null; variantId: string | null } | null
+}
+
+export async function getFunnelLanding(slug: string, funnelSlug: string): Promise<FunnelLanding | null> {
+  const db = await getDb()
+  const org = await db.select({ id: organization.id }).from(organization).where(eq(organization.slug, slug)).then(r => r[0])
+  if (!org) return null
+  const f = await db.select().from(funnelTable)
+    .where(and(eq(funnelTable.organizationId, org.id), eq(funnelTable.slug, funnelSlug), eq(funnelTable.status, "ACTIVE")))
+    .then(r => r[0])
+  if (!f) return null
+  const steps = await db.select().from(funnelStep)
+    .where(and(eq(funnelStep.organizationId, org.id), eq(funnelStep.funnelId, f.id))).orderBy(funnelStep.position)
+  const landingCfg = parse(steps.find(s => s.type === "LANDING")?.config ?? null)
+
+  let card: FunnelLanding["product"] = null
+  const productSlug = typeof landingCfg?.productSlug === "string" ? landingCfg.productSlug : null
+  if (productSlug) {
+    const p = await db.select().from(product)
+      .where(and(eq(product.organizationId, org.id), eq(product.slug, productSlug), eq(product.status, "ACTIVE"))).then(r => r[0])
+    if (p) {
+      const vs = await db.select({ id: productVariant.id, price: productVariant.sellingPrice }).from(productVariant)
+        .where(and(eq(productVariant.organizationId, org.id), eq(productVariant.productId, p.id)))
+      const img = await db.select({ url: productImage.url }).from(productImage)
+        .where(and(eq(productImage.organizationId, org.id), eq(productImage.productId, p.id))).orderBy(productImage.sortOrder).then(r => r[0])
+      const prices = vs.map(v => v.price).filter(n => n > 0)
+      card = { slug: p.slug, name: p.name, price: prices.length ? Math.min(...prices) : 0, image: img?.url ?? null, variantId: vs[0]?.id ?? null }
+    }
+  }
+  return { funnelId: f.id, name: f.name, type: f.type, landing: landingCfg, product: card }
 }
 
 export async function getProductDetail(slug: string, productSlug: string): Promise<ProductDetail | null> {

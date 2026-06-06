@@ -124,6 +124,38 @@ describe('Public catalog — browse & search', () => {
   })
 })
 
+describe('Public funnel landing', () => {
+  it('returns active funnel with ordered steps + landing product', async () => {
+    const p = s.product(ORG_A, 'offer', 'ACTIVE'); s.variant(ORG_A, p, 990); s.image(ORG_A, p, 'https://img/o.jpg', 0)
+    const f = s.funnel(ORG_A, 'mega-deal', 'ACTIVE', JSON.stringify({ headline: 'Mega Deal' }))
+    s.step(ORG_A, f, 'UPSELL', 1)
+    s.step(ORG_A, f, 'LANDING', 0, JSON.stringify({ productSlug: 'offer', ctaLabel: 'Buy' }))
+    const data = await svc(ORG_A).getFunnel('mega-deal')
+    expect(data.name).toBe('mega-deal')
+    expect(data.steps.map(st => st.type)).toEqual(['LANDING', 'UPSELL'])
+    expect(data.product?.slug).toBe('offer')
+    expect(data.product?.price).toBe(990)
+    expect(data.product?.variantId).toBeTruthy()
+  })
+
+  it('404 for inactive or unknown funnel', async () => {
+    s.funnel(ORG_A, 'draft-funnel', 'DRAFT')
+    await expect(svc(ORG_A).getFunnel('draft-funnel')).rejects.toThrow(/not found/i)
+    await expect(svc(ORG_A).getFunnel('nope')).rejects.toThrow(/not found/i)
+  })
+
+  it('tracks a funnel visit with UTM', async () => {
+    const f = s.funnel(ORG_A, 'lead', 'ACTIVE')
+    const v = await svc(ORG_A).trackFunnelVisit(f, { utmSource: 'fb', utmMedium: 'cpc' })
+    expect(v.funnelId).toBe(f)
+  })
+
+  it('funnel is org-scoped', async () => {
+    s.funnel(ORG_B, 'b-funnel', 'ACTIVE')
+    await expect(svc(ORG_A).getFunnel('b-funnel')).rejects.toThrow(/not found/i)
+  })
+})
+
 describe('Public checkout — guards', () => {
   const customer = { name: 'Buyer', phone: '0170', address: 'St 1', city: 'Dhaka' }
 

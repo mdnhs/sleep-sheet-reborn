@@ -6,7 +6,7 @@ Project Implementation Tracker
 
 Version: 2.0
 
-Last Updated: 2026-06-06 (Public rendering — storefront: homepage, catalog, product detail, cart, COD + online payment at /store/[slug]; all numbered phases 0–14 done)
+Last Updated: 2026-06-06 (Public rendering — storefront: homepage, catalog, product detail, cart, COD + online payment, funnel landing at /store/[slug]; all numbered phases 0–14 done)
 
 > Aligned with `SRS.md` (v2.0), `SAAS_REQUIREMENTS.md` (v1.0), `IMPLEMENTATION_ROADMAP.md` (v2.0).
 
@@ -34,8 +34,9 @@ Sprint Delivered:
 - Storefront web pages (apps/web/app/store/[slug]): themed layout shell (theme CSS vars + header/footer nav), homepage sections, product detail + add-to-cart, localStorage per-tenant cart, checkout page → COD order + confirmation
 - Catalog browse (worker + web): /api/public/catalog (search + category filter + pagination) + /api/public/categories; shop page at /store/[slug]/shop with search form, category chips, product grid, pagination
 - Online payment: order_payment schema (migration 0018) + tenant initiate (/api/public/payments/initiate) + UNSCOPED verified-idempotent provider webhook (/api/public/payments/:provider/webhook) marking order_payment + order.paymentStatus PAID/FAILED; checkout payment selector (COD / bKash / Nagad / SSLCommerz) + mock gateway pay page (real provider HTTP deferred; webhook contract live)
-- Public storefront tests: 16 tests; order-payment tests: 10 tests (initiate guards, success/fail webhook, idempotency, signature, cross-tenant)
-- Total test suite: 244 tests pass (… + 16 public-storefront + 10 order-payment)
+- Funnel landing rendering: public funnel API (/api/public/funnels/:slug + /:id/track) + themed /store/[slug]/f/[funnelSlug] landing → FunnelCTA (visit track + add-to-cart) → funnel-attributed checkout (order source FUNNEL + funnel_conversion)
+- Public storefront tests: 20 tests (incl funnel landing + visit); order-payment tests: 10 tests
+- Total test suite: 248 tests pass (… + 20 public-storefront + 10 order-payment)
 
 Sprint Status: 🟩 Complete
 
@@ -322,7 +323,8 @@ Status: ✅ Complete (config + admin slice — public themed rendering deferred,
 - [🟨] PARTIAL — Public themed storefront rendering: public API (worker /api/public/storefront|products|catalog|categories|products/:slug|pages/:slug|blog|checkout|payments/initiate|payments/:provider/webhook — no auth, subdomain-resolved tenant, published-only) + themed web pages (apps/web/app/store/[slug]: layout shell, homepage sections, shop catalog w/ search+category+pagination, product detail w/ add-to-cart, localStorage cart, checkout w/ COD + online payment, mock gateway pay page) — plain HTML per ADR-014
   - Online payment: order_payment schema (migration 0018), tenant initiate + UNSCOPED verified-idempotent provider webhook (reuses Phase 8 provider contract) marking order_payment + order.paymentStatus PAID/FAILED; bKash/Nagad/SSLCommerz; 10 order-payment tests
   - 16 public-storefront + 10 order-payment tests
-  - STILL DEFERRED: real provider gateway HTTP (mock gateway page stands in; webhook contract live), theme bundles from R2, funnel landing rendering
+  - Funnel landing: public GET /api/public/funnels/:slug (active funnel + ordered steps + resolved LANDING product) + POST /funnels/:id/track (UTM visit); web /store/[slug]/f/[funnelSlug] themed landing (headline/sub/CTA from LANDING step config) → FunnelCTA tracks visit + add-to-cart → checkout?funnel=id; checkout passes funnelId → order tagged FUNNEL source + auto funnel_conversion attribution
+  - STILL DEFERRED: real provider gateway HTTP (mock gateway page stands in; webhook contract live), theme bundles from R2
 - [ ] DEFERRED — Media Library (Cloudinary asset browser) — secondary; pages/blog already store media URLs
 - [ ] DEFERRED — Landing pages + theme presets/demo stores + theme marketplace install (overlaps Phase 10 funnels + Phase 11 marketplace)
 
@@ -435,9 +437,9 @@ Marketplace Tests:         🟩 13 tests pass  (tests/marketplace/marketplace.te
 Platform Tests:            🟩 8 tests pass   (tests/platform/platform.test.ts — org admin + suspend/audit + MRR/ARR/churn + marketplace curation)
 Reports Tests:             🟩 9 tests pass   (tests/reports/reports.test.ts — sales/inventory/purchase aggregation + isolation)
 Notifications Tests:       🟩 7 tests pass   (tests/notifications/notifications.test.ts — feed/read/audience/isolation)
-Public Storefront Tests:   🟩 16 tests pass  (tests/public/public-storefront.test.ts — shell, products/pages/blog, catalog browse/search/pagination, checkout guards, isolation)
+Public Storefront Tests:   🟩 20 tests pass  (tests/public/public-storefront.test.ts — shell, catalog, checkout guards, funnel landing + visit, isolation)
 Order Payment Tests:       🟩 10 tests pass  (tests/payments/payments.test.ts — initiate, idempotent verified webhook, success/fail, signature, isolation)
-Total Test Suite:          🟩 244 tests pass  (this branch)
+Total Test Suite:          🟩 248 tests pass  (this branch)
 Unit Tests:                ⬜ Not Started
 Integration Tests:         ⬜ Not Started
 E2E Tests:                 ⬜ Not Started
@@ -475,7 +477,7 @@ None
 ```text
 Phases 0–14 done (225 tests). Public rendering started: storefront API + themed homepage at /store/[slug]. Next options (pick one):
 
-1. [HIGH] Finish public rendering: real provider gateway HTTP (replace mock pay page), funnel landing rendering, theme bundles from R2 (ADR-024). [Done: homepage, catalog browse/search, product detail, cart, COD + online payment w/ verified webhook]
+1. [HIGH] Finish public rendering: real provider gateway HTTP (replace mock pay page), theme bundles from R2 (ADR-024). [Done: homepage, catalog browse/search, product detail, cart, COD + online payment, funnel landing + attribution]
 
 2. [MEDIUM] Cross-module wiring: auto-attribution (attributeOrder on order confirm), loyalty earn/reverse on sale/return, wallet refund credit, emit notifications from domain events
 

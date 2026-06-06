@@ -1,6 +1,6 @@
 "use client"
 import { use, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCart } from "@/features/(storefront)/components/storefront-cart"
 
 const taka = (n: number) => `৳${n.toLocaleString()}`
@@ -11,6 +11,7 @@ const ORDER_METHOD: Record<Method, string> = { COD: "COD", bKash: "BKASH", Nagad
 export default function CheckoutPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const router = useRouter()
+  const funnelId = useSearchParams().get("funnel") ?? undefined
   const { items, setQty, clear, total } = useCart(slug)
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", area: "", city: "" })
   const [method, setMethod] = useState<Method>("COD")
@@ -28,6 +29,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
           items: items.map(i => ({ variantId: i.variantId, quantity: i.qty })),
           customer: { name: form.name, phone: form.phone, email: form.email || undefined, address: form.address, area: form.area || undefined, city: form.city },
           paymentMethod: ORDER_METHOD[method],
+          funnelId,
         }),
       })
       const body = await res.json() as { success: boolean; data?: { orderId: string; orderNumber: string; grandTotal: number }; error?: { message: string } }
