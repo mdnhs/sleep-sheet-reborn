@@ -1,16 +1,18 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { siteSettings, carts, cartItems, products, orders, orderItems, payments, shippingMethods } from "@/db/schema";
+import { eq, inArray, sql } from "drizzle-orm";
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
-  const setting = await prisma.siteSetting.findUnique({ where: { key } });
+  const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) });
   return setting ? Number(setting.value) : (zone === "outside_dhaka" ? 120 : 60);
 }
 
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
   const key = method === "card" ? "payment_method_card" : "payment_method_cod";
-  const setting = await prisma.siteSetting.findUnique({ where: { key } });
+  const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) });
   return setting ? setting.value !== "false" : true;
 }
 
@@ -36,9 +38,9 @@ const app = new Hono()
   }[] = [];
 
   if (user) {
-    const cart = await prisma.cart.findUnique({
-      where: { userId: user.id },
-      include: { items: { include: { product: true } } },
+    const cart = await db.query.carts.findFirst({
+      where: eq(carts.userId, user.id),
+      with: { items: { with: { product: true } } },
     });
 
     if (!cart || cart.items.length === 0) {
@@ -63,56 +65,56 @@ const app = new Hono()
     const totalAmount = subtotal + shippingCost;
 
     try {
-      const order = await prisma.order.create({
-        data: {
-          orderNumber: `ORD-${Date.now()}`,
+      let createdOrder: any = null;
+      await db.transaction(async (tx) => {
+        const orderNumber = `ORD-${Date.now()}`;
+        const [order] = await tx.insert(orders).values({
+          orderNumber,
           userId: user.id,
           subtotal,
           totalAmount,
           tax: 0,
           shippingCost,
           shippingAddress: shippingInfo.address,
-          shippingCity: null,
-          shippingState: null,
-          shippingPostalCode: null,
-          shippingCountry: null,
           paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
-          items: {
-            create: cartItemsForOrder.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-              size: item.size,
-              color: item.color,
-            })),
-          },
-          ...(paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber && {
-            payment: {
-              create: {
-                amount: totalAmount,
-                method: "CARD",
-                transactionId: paymentInfo.cardNumber,
-                last4Digits: paymentInfo.cardNumber.slice(-4),
-                expirationDate: paymentInfo.expirationDate,
-                status: "COMPLETED",
-              },
-            },
-          }),
-        },
+        }).returning();
+        
+        createdOrder = order;
+
+        await tx.insert(orderItems).values(
+          cartItemsForOrder.map((item) => ({
+            orderId: order.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            size: item.size || null,
+            color: item.color || null,
+          }))
+        );
+
+        if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
+          await tx.insert(payments).values({
+            orderId: order.id,
+            amount: totalAmount,
+            method: "CARD",
+            transactionId: paymentInfo.cardNumber,
+            last4Digits: paymentInfo.cardNumber.slice(-4),
+            expirationDate: paymentInfo.expirationDate,
+            status: "COMPLETED",
+          });
+        }
       });
 
       for (const item of cartItemsForOrder) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
-        });
+        await db.update(products)
+          .set({ stock: sql`${products.stock} - ${item.quantity}` })
+          .where(eq(products.id, item.productId));
       }
 
-      await prisma.cartItem.deleteMany({
-        where: { cart: { userId: user.id } },
-      });
+      await db.delete(cartItems)
+        .where(eq(cartItems.cartId, cart.id));
 
-      return c.json({ message: "Order placed successfully", order });
+      return c.json({ message: "Order placed successfully", order: createdOrder });
     } catch (error) {
       console.error("Error placing order:", error);
       return c.json({ message: "Error placing order" }, 500);
@@ -125,11 +127,11 @@ const app = new Hono()
   }
 
   const productIds: string[] = guestItems.map((i: { productId: string }) => i.productId);
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
+  const productsList = await db.query.products.findMany({
+    where: inArray(products.id, productIds),
   });
 
-  const productMap = new Map(products.map((p) => [p.id, p]));
+  const productMap = new Map(productsList.map((p) => [p.id, p]));
 
   for (const item of guestItems) {
     const product = productMap.get(item.productId);
@@ -151,11 +153,12 @@ const app = new Hono()
   const totalAmount = subtotal + shippingCost;
 
   try {
-    // Create order with scalar fields only — avoids Prisma XOR relation ambiguity for guest (no userId)
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: `ORD-${Date.now()}`,
-        userId: undefined,
+    let guestOrderId = "";
+    await db.transaction(async (tx) => {
+      const orderNumber = `ORD-${Date.now()}`;
+      const [order] = await tx.insert(orders).values({
+        orderNumber,
+        userId: null,
         guestName: shippingInfo.fullName,
         guestPhone: shippingInfo.phone,
         guestEmail: shippingInfo.email || null,
@@ -164,28 +167,24 @@ const app = new Hono()
         tax: 0,
         shippingCost,
         shippingAddress: shippingInfo.address,
-        shippingCity: null,
-        shippingState: null,
-        shippingPostalCode: null,
-        shippingCountry: null,
         paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
-      },
-    });
+      }).returning();
 
-    await prisma.orderItem.createMany({
-      data: cartItemsForOrder.map((item) => ({
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size ?? null,
-        color: item.color ?? null,
-      })),
-    });
+      guestOrderId = order.id;
 
-    if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
-      await prisma.payment.create({
-        data: {
+      await tx.insert(orderItems).values(
+        cartItemsForOrder.map((item) => ({
+          orderId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          size: item.size ?? null,
+          color: item.color ?? null,
+        }))
+      );
+
+      if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
+        await tx.insert(payments).values({
           orderId: order.id,
           amount: totalAmount,
           method: "CARD",
@@ -193,18 +192,17 @@ const app = new Hono()
           last4Digits: paymentInfo.cardNumber.slice(-4),
           expirationDate: paymentInfo.expirationDate,
           status: "COMPLETED",
-        },
-      });
-    }
+        });
+      }
+    });
 
     for (const item of cartItemsForOrder) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } },
-      });
+      await db.update(products)
+        .set({ stock: sql`${products.stock} - ${item.quantity}` })
+        .where(eq(products.id, item.productId));
     }
 
-    return c.json({ message: "Order placed successfully", orderId: order.id });
+    return c.json({ message: "Order placed successfully", orderId: guestOrderId });
   } catch (error) {
     console.error("Error placing guest order:", error);
     return c.json({ message: "Error placing order" }, 500);
@@ -213,12 +211,12 @@ const app = new Hono()
 
 .get("/shipping-methods", async (c) => {
   try {
-    const shippingMethods = await prisma.shippingMethod.findMany({
-      where: { active: true },
-      orderBy: { cost: "asc" },
+    const shippingMethodsList = await db.query.shippingMethods.findMany({
+      where: eq(shippingMethods.active, true),
+      orderBy: (fields, { asc }) => [asc(fields.cost)],
     });
 
-    return c.json({ shippingMethods });
+    return c.json({ shippingMethods: shippingMethodsList });
   } catch (error) {
     console.error("Error fetching shipping methods:", error);
     return c.json({ error: "Failed to fetch shipping methods" }, 500);

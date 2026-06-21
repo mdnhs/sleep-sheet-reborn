@@ -1,5 +1,5 @@
 -- DropForeignKey
-ALTER TABLE "order_items" DROP CONSTRAINT "order_items_productId_fkey";
+ALTER TABLE "order_items" DROP CONSTRAINT IF EXISTS "order_items_productId_fkey";
 
 -- AlterTable
 ALTER TABLE "order_items" ALTER COLUMN "productId" DROP NOT NULL;

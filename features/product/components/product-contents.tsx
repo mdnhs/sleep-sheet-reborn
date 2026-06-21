@@ -76,8 +76,8 @@ function ProductContents() {
         </div>
       </div>
       <div className=" grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {products?.data?.map((product) => (
-          <ProductCard key={product.id} product={product} />
+        {products?.data?.map((product, index) => (
+          <ProductCard key={product.id} product={product} priority={index < 4} />
         ))}
       </div>
       {products?.data.length === 0 && (

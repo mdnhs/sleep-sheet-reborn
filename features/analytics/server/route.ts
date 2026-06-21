@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { orders, orderItems, products, carts, users, wishlistItems } from "@/db/schema";
+import { eq, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
 import { getDateRange, getStartDate } from "@/lib/utils";
 
 const app = new Hono()
@@ -16,25 +18,23 @@ const app = new Hono()
     const { period = "month" } = c.req.query();
     const { startDate, endDate } = getDateRange(period);
 
-    const [totalRevenue, totalOrders, salesTrend] = await Promise.all([
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: { createdAt: { gte: startDate, lte: endDate } },
-      }),
-      prisma.order.count({
-        where: { createdAt: { gte: startDate, lte: endDate } },
-      }),
-      prisma.order.findMany({
-        where: { createdAt: { gte: startDate, lte: endDate } },
-        select: { createdAt: true, totalAmount: true },
-        orderBy: { createdAt: "asc" },
-      }),
+    const [revenueRes, ordersRes, salesTrend] = await Promise.all([
+      db.select({ sum: sum(orders.totalAmount) })
+        .from(orders)
+        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
+      db.select({ count: count() })
+        .from(orders)
+        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
+      db.select({ createdAt: orders.createdAt, totalAmount: orders.totalAmount })
+        .from(orders)
+        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate)))
+        .orderBy(asc(orders.createdAt)),
     ]);
 
     return c.json({
-      totalRevenue: totalRevenue._sum.totalAmount || 0,
-      totalOrders,
-      aov: totalOrders > 0 ? (totalRevenue._sum.totalAmount || 0) / totalOrders : 0,
+      totalRevenue: Number(revenueRes[0]?.sum || 0),
+      totalOrders: Number(ordersRes[0]?.count || 0),
+      aov: Number(ordersRes[0]?.count || 0) > 0 ? Number(revenueRes[0]?.sum || 0) / Number(ordersRes[0]?.count || 0) : 0,
       trendData: salesTrend.map((item) => ({
         date: item.createdAt.toISOString(),
         amount: item.totalAmount,
@@ -54,15 +54,17 @@ const app = new Hono()
   }
   
   try {
-    const result = await prisma.order.groupBy({
-      by: ['userId'],
-      _sum: { totalAmount: true },
-      where: { userId: { not: undefined } }
-    });
+    const result = await db.select({
+      userId: orders.userId,
+      totalAmount: sum(orders.totalAmount),
+    })
+    .from(orders)
+    .where(isNotNull(orders.userId))
+    .groupBy(orders.userId);
 
-    const validResults = result.filter(r => r._sum.totalAmount && r.userId);
+    const validResults = result.filter(r => r.totalAmount !== null && r.userId);
     const averageCLV = validResults.length > 0 
-      ? validResults.reduce((acc, curr) => acc + (curr._sum.totalAmount || 0), 0) / validResults.length
+      ? validResults.reduce((acc, curr) => acc + Number(curr.totalAmount || 0), 0) / validResults.length
       : 0;
 
     return c.json({ averageCLV });
@@ -80,49 +82,25 @@ const app = new Hono()
   }
   
   try {
-    const data = await prisma.order.groupBy({
-      by: ['shippingState'],
-      _sum: { totalAmount: true },
-      _count: { id: true },
-      where: { shippingState: { not: undefined } }
-    });
+    const data = await db.select({
+      shippingState: orders.shippingState,
+      totalAmount: sum(orders.totalAmount),
+      count: count(orders.id),
+    })
+    .from(orders)
+    .where(isNotNull(orders.shippingState))
+    .groupBy(orders.shippingState);
 
     return c.json(data.map(d => ({
       state: d.shippingState,
-      revenue: d._sum.totalAmount || 0,
-      orders: d._count.id
+      revenue: Number(d.totalAmount || 0),
+      orders: Number(d.count || 0)
     })));
   } catch (error) {
     console.error("Distribution error:", error);
     return c.json({ error: "Failed to fetch distribution data" }, 500);
   }
 })
-
-// Category Breakdown
-// .get('/categories', async (c) => {
-//     try {
-//       const data = await prisma.$queryRaw<
-//         { category: string; items_sold: bigint; revenue: number }[]
-//       >`
-//         SELECT c.label as category, 
-//           SUM(oi.quantity) as items_sold,
-//           SUM(oi.price * oi.quantity) as revenue
-//         FROM "order_items" oi  // Changed from OrderItem
-//         JOIN "products" p ON oi."productId" = p.id
-//         JOIN "Category" c ON p."categoryId" = c.id
-//         GROUP BY c.label
-//       `;
-  
-//       return c.json(data.map(d => ({
-//         category: d.category,
-//         itemsSold: Number(d.items_sold),
-//         revenue: Number(d.revenue)
-//       })));
-//     } catch (error) {
-//       console.error("Categories error:", error);
-//       return c.json({ error: "Failed to fetch category data" }, 500);
-//     }
-//   })
 
 // Inventory Turnover
 .get('/inventory-turnover',sessionMiddleware, async (c) => {
@@ -131,34 +109,33 @@ const app = new Hono()
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
-    try {
-      const now = new Date();
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-  
-      const [sales, startingInventory, endingInventory] = await Promise.all([
-        prisma.orderItem.aggregate({
-          _sum: { quantity: true },
-          where: { createdAt: { gte: startOfYear } }
-        }),
-        prisma.product.aggregate({ _sum: { stock: true } }),
-        prisma.product.aggregate({ _sum: { stock: true } })
-      ]);
-  
-      const totalSales = sales._sum.quantity || 0;
-      const avgInventory = ((startingInventory._sum.stock || 0) + (endingInventory._sum.stock || 0)) / 2 || 1;
-  
-      const turnover = totalSales / avgInventory;
-  
-      return c.json({ 
-        turnoverRate: Number(turnover.toFixed(2)),
-        totalSales,
-        avgInventory
-      });
-    } catch (error) {
-      console.error("Inventory turnover error:", error);
-      return c.json({ error: "Failed to calculate inventory turnover" }, 500);
-    }
-  })
+  try {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const [salesRes, startingRes, endingRes] = await Promise.all([
+      db.select({ sum: sum(orderItems.quantity) })
+        .from(orderItems)
+        .where(gte(orderItems.createdAt, startOfYear)),
+      db.select({ sum: sum(products.stock) }).from(products),
+      db.select({ sum: sum(products.stock) }).from(products)
+    ]);
+
+    const totalSales = Number(salesRes[0]?.sum || 0);
+    const avgInventory = ((Number(startingRes[0]?.sum || 0)) + (Number(endingRes[0]?.sum || 0))) / 2 || 1;
+
+    const turnover = totalSales / avgInventory;
+
+    return c.json({ 
+      turnoverRate: Number(turnover.toFixed(2)),
+      totalSales,
+      avgInventory
+    });
+  } catch (error) {
+    console.error("Inventory turnover error:", error);
+    return c.json({ error: "Failed to calculate inventory turnover" }, 500);
+  }
+})
   
 
 // Cart Abandonment Rate
@@ -169,21 +146,24 @@ const app = new Hono()
   }
   
   try {
-    const [totalCarts, convertedCarts] = await Promise.all([
-      prisma.cart.count(),
-      prisma.cart.count({
-        where: { user: { Order: { some: {} } } }
-      })
+    const [totalCartsRes, convertedCartsRes] = await Promise.all([
+      db.select({ count: count() }).from(carts),
+      db.select({ count: count() })
+        .from(carts)
+        .where(sql`exists (select 1 from ${orders} where ${orders.userId} = ${carts.userId})`)
     ]);
 
-    const abandonmentRate = totalCarts > 0 
-      ? ((totalCarts - convertedCarts) / totalCarts) * 100 
+    const total = Number(totalCartsRes[0]?.count || 0);
+    const converted = Number(convertedCartsRes[0]?.count || 0);
+
+    const abandonmentRate = total > 0 
+      ? ((total - converted) / total) * 100 
       : 0;
 
     return c.json({ 
       abandonmentRate: Number(abandonmentRate.toFixed(2)),
-      totalCarts,
-      convertedCarts
+      totalCarts: total,
+      convertedCarts: converted
     });
   } catch (error) {
     console.error("Abandonment rate error:", error);
@@ -199,9 +179,7 @@ const app = new Hono()
   }
   
   try {
-    const cohorts = await prisma.$queryRaw<
-      { cohort_month: Date; total_users: bigint; retained_users: bigint }[]
-    >`
+    const cohortsRows = (await db.execute(sql`
       SELECT 
         DATE_TRUNC('month', u."createdAt") as cohort_month,
         COUNT(DISTINCT u.id) as total_users,
@@ -212,45 +190,26 @@ const app = new Hono()
         AND o."createdAt" BETWEEN u."createdAt" AND u."createdAt" + INTERVAL '30 days'
       GROUP BY cohort_month
       ORDER BY cohort_month
-    `;
+    `)) as unknown as Array<{ cohort_month: string; total_users: string | number; retained_users: string | number }>;
 
-    return c.json(cohorts.map(c => ({
-      cohortMonth: c.cohort_month.toISOString(),
-      totalUsers: Number(c.total_users),
-      retainedUsers: Number(c.retained_users),
-      retentionRate: Number(c.total_users) > 0 
-        ? (Number(c.retained_users) / Number(c.total_users)) * 100
-        : 0
-    })));
+    return c.json(cohortsRows.map(c => {
+      const totalUsers = Number(c.total_users);
+      const retainedUsers = Number(c.retained_users);
+      return {
+        cohortMonth: new Date(c.cohort_month).toISOString(),
+        totalUsers,
+        retainedUsers,
+        retentionRate: totalUsers > 0 
+          ? (retainedUsers / totalUsers) * 100
+          : 0
+      };
+    }));
   } catch (error) {
     console.error("Cohort error:", error);
     return c.json({ error: "Failed to fetch cohort data" }, 500);
   }
 })
 
-// Delivery Times
-// .get('/delivery-times', async (c) => {
-//     try {
-//       const data = await prisma.$queryRaw<
-//         { status: string; avg_hours: number }[]
-//       >`
-//         SELECT 
-//           ote.status,
-//           AVG(EXTRACT(EPOCH FROM (ote."createdAt" - o."createdAt")) / 3600) as avg_hours
-//         FROM "order_timeline_events" ote  // Changed from OrderTimelineEvent
-//         JOIN "orders" o ON ote."orderId" = o.id
-//         GROUP BY ote.status
-//       `;
-  
-//       return c.json(data.map(d => ({
-//         status: d.status,
-//         avgHours: Number(Number(d.avg_hours).toFixed(1))
-//       })));
-//     } catch (error) {
-//       console.error("Delivery times error:", error);
-//       return c.json({ error: "Failed to fetch delivery times" }, 500);
-//     }
-//   })
 // Spending Clusters
 .get('/spending-clusters',sessionMiddleware, async (c) => {
   const user =c.get("user");
@@ -259,9 +218,7 @@ const app = new Hono()
   }
   
   try {
-    const segments = await prisma.$queryRaw<
-      { segment: string; customers: bigint }[]
-    >`
+    const segmentsRows = (await db.execute(sql`
       SELECT 
         CASE
           WHEN total_spent < 100 THEN 'Low'
@@ -276,9 +233,9 @@ const app = new Hono()
         GROUP BY u.id
       ) as spending
       GROUP BY segment
-    `;
+    `)) as unknown as Array<{ segment: string; customers: string | number }>;
 
-    return c.json(segments.map(s => ({
+    return c.json(segmentsRows.map(s => ({
       segment: s.segment,
       customers: Number(s.customers)
     })));
@@ -294,20 +251,21 @@ const app = new Hono()
     const { period = 'month' } = c.req.query();
     const startDate = getStartDate(period);
 
-    const users = await prisma.$queryRaw<
-      { period: Date; count: bigint }[]
-    >`
+    const allowedPeriods = ['day', 'week', 'month', 'year'];
+    const selectedPeriod = allowedPeriods.includes(period) ? period : 'month';
+
+    const usersRows = (await db.execute(sql.raw(`
       SELECT 
-        DATE_TRUNC(${period}, "createdAt") as period,
+        DATE_TRUNC('${selectedPeriod}', "createdAt") as period,
         COUNT(*) as count
       FROM "User"
-      WHERE "createdAt" >= ${startDate}
+      WHERE "createdAt" >= '${startDate.toISOString()}'
       GROUP BY period
       ORDER BY period ASC
-    `;
+    `))) as unknown as Array<{ period: string; count: string | number }>;
 
-    return c.json(users.map(u => ({
-      date: u.period.toISOString(),
+    return c.json(usersRows.map(u => ({
+      date: new Date(u.period).toISOString(),
       count: Number(u.count)
     })));
   } catch (error) {
@@ -321,75 +279,61 @@ const app = new Hono()
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
-    try {
-      const data = await prisma.$queryRaw<
-        Array<{
-          productId: string;
-          productName: string;
-          productImages: string[];
-          totalSold: bigint;
-        }>
-      >`
-        SELECT 
-          p.id as "productId",
-          p."productName",
-          p."productImages",
-          SUM(oi.quantity) as "totalSold"
-        FROM "order_items" oi
-        JOIN "products" p ON oi."productId" = p.id
-        GROUP BY p.id
-        ORDER BY "totalSold" DESC
-        LIMIT 5
-      `;
-  
-      return c.json(data.map(item => ({
-        ...item,
-        totalSold: Number(item.totalSold),
-        productImages: item.productImages || []
-      })));
-    } catch (error) {
-      console.error("Most purchased error:", error);
-      return c.json({ error: "Failed to fetch most purchased products" }, 500);
-    }
-  })
+  try {
+    const data = await db.select({
+      productId: products.id,
+      productName: products.name,
+      productImages: products.images,
+      totalSold: sum(orderItems.quantity),
+    })
+    .from(orderItems)
+    .innerJoin(products, eq(orderItems.productId, products.id))
+    .groupBy(products.id, products.name, products.images)
+    .orderBy(desc(sum(orderItems.quantity)))
+    .limit(5);
 
-  .get('/most-wishlisted',sessionMiddleware, async (c) => {
-    const user =c.get("user");
-    if(!user || user.role !== "ADMIN"){
-      return c.json({ success: false, error: 'Unauthorized' }, 403);
-    }
-    
-    try {
-      const data = await prisma.$queryRaw<
-        Array<{
-          productId: string;
-          productName: string;
-          productImages: string[];
-          wishlistCount: bigint;
-        }>
-      >`
-        SELECT 
-          p.id as "productId",
-          p."productName",
-          p."productImages",
-          COUNT(wi."productId") as "wishlistCount"
-        FROM "wishlist_items" wi
-        JOIN "products" p ON wi."productId" = p.id
-        GROUP BY p.id
-        ORDER BY "wishlistCount" DESC
-        LIMIT 5
-      `;
+    return c.json(data.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      productImages: item.productImages || [],
+      totalSold: Number(item.totalSold || 0),
+    })));
+  } catch (error) {
+    console.error("Most purchased error:", error);
+    return c.json({ error: "Failed to fetch most purchased products" }, 500);
+  }
+})
+
+.get('/most-wishlisted',sessionMiddleware, async (c) => {
+  const user =c.get("user");
+  if(!user || user.role !== "ADMIN"){
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
   
-      return c.json(data.map(item => ({
-        ...item,
-        wishlistCount: Number(item.wishlistCount),
-        productImages: item.productImages || []
-      })));
-    } catch (error) {
-      console.error("Most wishlisted error:", error);
-      return c.json({ error: "Failed to fetch most wishlisted products" }, 500);
-    }
-  })
+  try {
+    const data = await db.select({
+      productId: products.id,
+      productName: products.name,
+      productImages: products.images,
+      wishlistCount: count(wishlistItems.productId),
+    })
+    .from(wishlistItems)
+    .innerJoin(products, eq(wishlistItems.productId, products.id))
+    .groupBy(products.id, products.name, products.images)
+    .orderBy(desc(count(wishlistItems.productId)))
+    .limit(5);
+
+    return c.json(data.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      productImages: item.productImages || [],
+      wishlistCount: Number(item.wishlistCount || 0),
+    })));
+  } catch (error) {
+    console.error("Most wishlisted error:", error);
+    return c.json({ error: "Failed to fetch most wishlisted products" }, 500);
+  }
+})
   
 
 export default app;

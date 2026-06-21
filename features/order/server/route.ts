@@ -1,5 +1,7 @@
 import { Hono } from "hono";
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { orders, orderItems, payments, orderTimelineEvents, users } from "@/db/schema";
+import { eq, and, or, ilike, inArray, desc, asc } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -10,28 +12,40 @@ const app = new Hono()
   const { search } = c.req.query();
   
   try {
-    const orders = await prisma.order.findMany({
-      where: search ? {
-        OR: [
-          { orderNumber: { contains: search, mode: "insensitive" } },
-          { user: { 
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } }
-            ]
-          } }
-        ]
-      } : {},
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true } },
-        items: { include: { product: true } },
-        shippingMethod: true,
-        payment: true
-      },
-      orderBy: { createdAt: "desc" }
-    });
+    let matchingOrderIds: string[] = [];
+    let hasSearched = false;
 
-    return c.json({ orders });
+    if (search) {
+      hasSearched = true;
+      const matching = await db.select({ id: orders.id })
+        .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id))
+        .where(or(
+          ilike(orders.orderNumber, `%${search}%`),
+          ilike(users.name, `%${search}%`),
+          ilike(users.email, `%${search}%`)
+        ));
+      matchingOrderIds = matching.map(o => o.id);
+    }
+
+    const ordersList = (!hasSearched || matchingOrderIds.length > 0)
+      ? await db.query.orders.findMany({
+          where: hasSearched ? inArray(orders.id, matchingOrderIds) : undefined,
+          with: {
+            user: {
+              columns: { id: true, name: true, email: true, phone: true }
+            },
+            items: {
+              with: { product: true }
+            },
+            shippingMethod: true,
+            payment: true
+          },
+          orderBy: (fields, { desc }) => [desc(fields.createdAt)]
+        })
+      : [];
+
+    return c.json({ orders: ordersList });
   } catch (error) {
     console.error("Failed to fetch orders:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);
@@ -54,20 +68,25 @@ const app = new Hono()
   };
 
   try {
-    const [updatedOrder] = await prisma.$transaction([
-      prisma.order.update({
-        where: { id },
-        data: { status, paymentStatus },
-        include: { user: true, items: true }
-      }),
-      prisma.orderTimelineEvent.create({
-        data: {
-          orderId: id,
-          status,
-          message: `${statusMessages[status] || `Status changed to ${status}`}, payment status is now ${paymentStatus.toLowerCase()}.`
-        }
-      })
-    ]);
+    await db.transaction(async (tx) => {
+      await tx.update(orders)
+        .set({ status, paymentStatus })
+        .where(eq(orders.id, id));
+
+      await tx.insert(orderTimelineEvents).values({
+        orderId: id,
+        status,
+        message: `${statusMessages[status] || `Status changed to ${status}`}, payment status is now ${paymentStatus.toLowerCase()}.`
+      });
+    });
+
+    const updatedOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: {
+        user: true,
+        items: true
+      }
+    });
 
     return c.json(updatedOrder);
   } catch (error) {
@@ -80,11 +99,11 @@ const app = new Hono()
   const id = c.req.param("id");
 
   try {
-    await prisma.$transaction([
-      prisma.orderItem.deleteMany({ where: { orderId: id } }),
-      prisma.payment.deleteMany({ where: { orderId: id } }),
-      prisma.order.delete({ where: { id } })
-    ]);
+    await db.transaction(async (tx) => {
+      await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+      await tx.delete(payments).where(eq(payments.orderId, id));
+      await tx.delete(orders).where(eq(orders.id, id));
+    });
 
     return c.json({ success: true });
   } catch (error) {
@@ -92,20 +111,23 @@ const app = new Hono()
     return c.json({ error: "Failed to delete order" }, 500);
   }
 })
-.get("/order",sessionMiddleware, async(c)=>{
+
+.get("/order", sessionMiddleware, async(c)=>{
   const user = c.get("user");
   if (!user) return c.json({ error: "Unauthorized" }, 401);
 
   try{
-   const order = await prisma.order.findMany({
-      where: { userId: user.id },
-      include:{
-        items:{include:{
-          product:true
-        }}
+    const order = await db.query.orders.findMany({
+      where: eq(orders.userId, user.id),
+      with: {
+        items: {
+          with: {
+            product: true
+          }
+        }
       }
-    })
-    return c.json({order},200);
+    });
+    return c.json({order}, 200);
   }
   catch(error){
     console.error("Failed to Fetch Order",error)
@@ -121,15 +143,19 @@ const app = new Hono()
   }
 
   try {
-    const orders = await prisma.order.findMany({
-      where: { guestPhone: phone },
-      include: {
-        items: { include: { product: true } },
+    const ordersList = await db.query.orders.findMany({
+      where: eq(orders.guestPhone, phone),
+      with: {
+        items: {
+          with: {
+            product: true
+          }
+        },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: (fields, { desc }) => [desc(fields.createdAt)],
     });
 
-    return c.json({ orders });
+    return c.json({ orders: ordersList });
   } catch (error) {
     console.error("Failed to fetch orders by phone:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);
@@ -140,15 +166,19 @@ const app = new Hono()
   const id = c.req.param("id");
 
   try {
-    const order = await prisma.order.findUnique({
-      where: { id },
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true } },
-        items: { include: { product: true } },
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: {
+        user: {
+          columns: { id: true, name: true, email: true, phone: true }
+        },
+        items: {
+          with: { product: true }
+        },
         shippingMethod: true,
         payment: true,
         OrderTimelineEvent: {
-          orderBy: { createdAt: "asc" },
+          orderBy: (fields, { asc }) => [asc(fields.createdAt)]
         },
       },
     });
@@ -163,6 +193,5 @@ const app = new Hono()
     return c.json({ error: "Failed to fetch order" }, 500);
   }
 });
-
 
 export default app;

@@ -2,12 +2,13 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { siteSettings } from "@/db/schema";
 
 const app = new Hono()
 
   .get("/", async (c) => {
-    const settings = await prisma.siteSetting.findMany();
+    const settings = await db.select().from(siteSettings);
     const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
     return c.json(map);
   })
@@ -36,11 +37,12 @@ const app = new Hono()
 
       await Promise.all(
         updates.map(([key, value]) =>
-          prisma.siteSetting.upsert({
-            where: { key },
-            update: { value: String(value) },
-            create: { key, value: String(value) },
-          })
+          db.insert(siteSettings)
+            .values({ key, value: String(value) })
+            .onConflictDoUpdate({
+              target: siteSettings.key,
+              set: { value: String(value), updatedAt: new Date() },
+            })
         )
       );
 

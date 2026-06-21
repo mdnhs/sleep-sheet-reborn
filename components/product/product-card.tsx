@@ -15,9 +15,10 @@ interface ProductCardProps {
     category: string;
     price: number;
   };
+  priority?: boolean;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const { handleWishlistToggle, isAdding, isRemoving, isInWishlist } =
     useWishlistToggle({
       productId: product.id,
@@ -31,6 +32,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
           src={product.images[0]}
           alt={product.name}
           fill
+          sizes="(max-width: 1024px) 50vw, 25vw"
+          priority={priority}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors">

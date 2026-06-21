@@ -1,15 +1,17 @@
 
 import { createMiddleware } from 'hono/factory'
-import { getCookie } from 'hono/cookie'
+import { getCookie, deleteCookie } from 'hono/cookie'
 
 import jwt from 'jsonwebtoken'
-import prisma from '@/lib/prisma'
+import { db } from '@/db'
+import { users } from '@/db/schema'
+import { eq } from 'drizzle-orm'
 import { AUTH_COOKIE } from '@/features/auth/constants'
 
 
 type CustomContext = {
   Variables: {
-    prisma: typeof prisma
+    db: typeof db
     user: {
       id: string
       email: string
@@ -24,7 +26,7 @@ type CustomContext = {
 export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next) => {
   const token = getCookie(c, AUTH_COOKIE)
 
-  c.set('prisma', prisma)
+  c.set('db', db)
 
   if (!token) {
     c.set('user', null)
@@ -37,12 +39,13 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       email: string
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, decoded.id),
     })
 
     if (!user) {
       c.set('user', null)
+      deleteCookie(c, AUTH_COOKIE, { path: "/" })
       return await next()
     }
 
@@ -50,6 +53,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
   } catch (err) {
     console.error('Invalid token', err)
     c.set('user', null)
+    deleteCookie(c, AUTH_COOKIE, { path: "/" })
   }
 
   await next()

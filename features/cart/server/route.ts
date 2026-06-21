@@ -1,9 +1,9 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { z } from "zod";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { carts, cartItems, products } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { CartResponse } from "../type";
 
 const addToCartSchema = z.object({
@@ -14,7 +14,6 @@ const addToCartSchema = z.object({
 });
 
 const app = new Hono()
-
 
   .post("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
@@ -28,16 +27,20 @@ const app = new Hono()
     }
 
     try {
-      let cart = await prisma.cart.findUnique({
-        where: { userId: user.id },
-        include: { items: true },
+      let cart = await db.query.carts.findFirst({
+        where: eq(carts.userId, user.id),
+        with: { items: true },
       });
 
       if (!cart) {
-        cart = await prisma.cart.create({
-          data: { userId: user.id },
-          include: { items: true },
-        });
+        const [newCart] = await db.insert(carts).values({
+          userId: user.id,
+        }).returning();
+        
+        cart = {
+          ...newCart,
+          items: [],
+        };
       }
 
       const existingItem = cart.items.find(item =>
@@ -47,19 +50,16 @@ const app = new Hono()
       );
 
       if (existingItem) {
-        await prisma.cartItem.update({
-          where: { id: existingItem.id },
-          data: { quantity: existingItem.quantity + parsed.data.quantity },
-        });
+        await db.update(cartItems)
+          .set({ quantity: existingItem.quantity + parsed.data.quantity })
+          .where(eq(cartItems.id, existingItem.id));
       } else {
-        await prisma.cartItem.create({
-          data: {
-            cartId: cart.id,
-            productId: parsed.data.productId,
-            quantity: parsed.data.quantity,
-            size: parsed.data.size,
-            color: parsed.data.color,
-          },
+        await db.insert(cartItems).values({
+          cartId: cart.id,
+          productId: parsed.data.productId,
+          quantity: parsed.data.quantity,
+          size: parsed.data.size ?? null,
+          color: parsed.data.color ?? null,
         });
       }
 
@@ -85,34 +85,30 @@ const app = new Hono()
   }
 
   try {
-    const cart = await prisma.cart.findFirst({
-      where: { userId: user.id },
-      select: { id: true }
+    const cart = await db.query.carts.findFirst({
+      where: eq(carts.userId, user.id),
+      columns: { id: true }
     });
 
     if (!cart) {
       return c.json({ error: "Cart not found" }, 404);
     }
 
-    const item = await prisma.cartItem.update({
-      where: { 
-        id: parsed.data.cartItemId,
-        cartId: cart.id 
-      },
-      data: { quantity: parsed.data.quantity },
-    });
+    const [item] = await db.update(cartItems)
+      .set({ quantity: parsed.data.quantity })
+      .where(and(
+        eq(cartItems.id, parsed.data.cartItemId),
+        eq(cartItems.cartId, cart.id)
+      ))
+      .returning();
+
+    if (!item) {
+      return c.json({ error: "Cart item not found" }, 404);
+    }
 
     return c.json({ success: true, item });
   } catch (error) {
     console.error("Update cart error:", error);
-    
-    if (error instanceof PrismaClientKnownRequestError) {
-      if (error.code === "P2025") {
-        return c.json({ error: "Cart item not found" }, 404);
-      }
-    }
-    
-    
     return c.json({ error: "Failed to update cart item" }, 500);
   }
 })
@@ -129,12 +125,26 @@ const app = new Hono()
     }
 
     try {
-      await prisma.cartItem.delete({
-        where: { 
-          id: parsed.data.cartItemId,
-          cart: { userId: user.id }
-        },
+      const cart = await db.query.carts.findFirst({
+        where: eq(carts.userId, user.id),
+        columns: { id: true }
       });
+
+      if (!cart) {
+        return c.json({ error: "Cart not found" }, 404);
+      }
+
+      const result = await db.delete(cartItems)
+        .where(and(
+          eq(cartItems.id, parsed.data.cartItemId),
+          eq(cartItems.cartId, cart.id)
+        ))
+        .returning();
+
+      if (result.length === 0) {
+        return c.json({ error: "Cart item not found" }, 404);
+      }
+
       return c.json({ success: true });
     } catch (error) {
       console.error("Delete cart error:", error);
@@ -147,12 +157,12 @@ const app = new Hono()
     if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     try {
-      const cart = await prisma.cart.findUnique({
-        where: { userId: user.id },
-        include: {
+      const cart = await db.query.carts.findFirst({
+        where: eq(carts.userId, user.id),
+        with: {
           items: {
-            include: { product: true },
-            orderBy: { createdAt: "desc" }
+            with: { product: true },
+            orderBy: (fields, { desc }) => [desc(fields.createdAt)]
           },
         },
       });
@@ -168,7 +178,7 @@ const app = new Hono()
             id: item.product.id,
             name: item.product.name,
             price: item.product.price,
-            image: item.product.images[0],
+            image: item.product.images[0] || "",
             description: item.product.description
           }
         })) || []

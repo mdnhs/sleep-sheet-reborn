@@ -62,8 +62,8 @@ const FeaturedProduct = () => {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {products?.data.slice(0, 4).map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {products?.data.slice(0, 4).map((product, index) => (
+            <ProductCard key={product.id} product={product} priority={index < 2} />
           ))}
         </div>
       </div>

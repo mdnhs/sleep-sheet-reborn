@@ -1,9 +1,7 @@
 import "dotenv/config";
-import { PrismaClient } from "../generated/prisma";
-import { PrismaNeon } from "@prisma/adapter-neon";
-
-const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+import { db } from "../db";
+import { products, categories, specifications } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 type ProductSeed = {
   sku: string;
@@ -22,7 +20,7 @@ type ProductSeed = {
   specifications: { key: string; value: string }[];
 };
 
-const products: ProductSeed[] = [
+const productsData: ProductSeed[] = [
   {
     sku: "WATCH-CLASSIC-001",
     name: "Classic Leather Watch",
@@ -257,32 +255,52 @@ const products: ProductSeed[] = [
 ];
 
 async function main() {
-  for (const p of products) {
-    const category = await prisma.category.findUnique({
-      where: { value: p.categoryValue },
+  console.log("🌱 Seeding products...");
+  for (const p of productsData) {
+    const category = await db.query.categories.findFirst({
+      where: eq(categories.value, p.categoryValue),
     });
     if (!category) {
       console.warn(`Skipping ${p.sku} — category "${p.categoryValue}" missing`);
       continue;
     }
 
-    await prisma.product.upsert({
-      where: { sku: p.sku },
-      update: {
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        stock: p.stock,
-        variants: p.variants,
-        tags: p.tags,
-        images: p.images,
-        sizes: p.sizes,
-        features: p.features,
-        careInstruction: p.careInstruction,
-        isFeatured: p.isFeatured ?? false,
-        categoryId: category.id,
-      },
-      create: {
+    const existingProduct = await db.query.products.findFirst({
+      where: eq(products.sku, p.sku)
+    });
+
+    if (existingProduct) {
+      await db.update(products)
+        .set({
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          stock: p.stock,
+          variants: p.variants,
+          tags: p.tags,
+          images: p.images,
+          sizes: p.sizes,
+          features: p.features,
+          careInstruction: p.careInstruction || null,
+          isFeatured: p.isFeatured ?? false,
+          categoryId: category.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, existingProduct.id));
+
+      await db.delete(specifications).where(eq(specifications.productId, existingProduct.id));
+      if (p.specifications.length > 0) {
+        await db.insert(specifications).values(
+          p.specifications.map(s => ({
+            key: s.key,
+            value: s.value,
+            productId: existingProduct.id
+          }))
+        );
+      }
+      console.log(`Updated product: ${p.name}`);
+    } else {
+      const [newProduct] = await db.insert(products).values({
         sku: p.sku,
         name: p.name,
         description: p.description,
@@ -293,24 +311,29 @@ async function main() {
         images: p.images,
         sizes: p.sizes,
         features: p.features,
-        careInstruction: p.careInstruction,
+        careInstruction: p.careInstruction || null,
         isFeatured: p.isFeatured ?? false,
         categoryId: category.id,
-        specifications: {
-          create: p.specifications,
-        },
-      },
-    });
+      }).returning();
+
+      if (p.specifications.length > 0) {
+        await db.insert(specifications).values(
+          p.specifications.map(s => ({
+            key: s.key,
+            value: s.value,
+            productId: newProduct.id
+          }))
+        );
+      }
+      console.log(`Inserted product: ${p.name}`);
+    }
   }
 
-  console.log(`Seeded ${products.length} products.`);
+  console.log(`✅ Seeded ${productsData.length} products.`);
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Error seeding products:", e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

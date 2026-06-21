@@ -76,6 +76,7 @@ function Hero() {
               src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1200"
               alt="Premium linen bedroom"
               fill
+              sizes="50vw"
               className="object-cover"
               priority
             />

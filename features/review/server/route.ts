@@ -1,7 +1,9 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { reviewSchema, updateReviewSchema } from "../schema";
-import prisma from '@/lib/prisma';
+import { db } from "@/db";
+import { reviews, products } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 
 const app = new Hono()
@@ -27,8 +29,8 @@ const app = new Hono()
 
       const { productId, rating, comment } = validation.data;
 
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
+      const product = await db.query.products.findFirst({
+        where: eq(products.id, productId),
       });
 
       if (!product) {
@@ -38,20 +40,18 @@ const app = new Hono()
         );
       }
 
-      const newReview = await prisma.review.create({
-        data: {
-          comment,
-          rating,
-          userId: user.id,
-          productId,
-        },
-        select: {
-          id: true,
-          comment: true,
-          rating: true,
-          createdAt: true,
+      const [newReview] = await db.insert(reviews).values({
+        comment,
+        rating,
+        userId: user.id,
+        productId,
+      }).returning();
+
+      const selectedReview = await db.query.reviews.findFirst({
+        where: eq(reviews.id, newReview.id),
+        with: {
           user: {
-            select: {
+            columns: {
               id: true,
               name: true,
             },
@@ -60,7 +60,7 @@ const app = new Hono()
       });
 
       return c.json(
-        { success: true, data: newReview },
+        { success: true, data: selectedReview },
         201
       );
 
@@ -72,8 +72,7 @@ const app = new Hono()
       );
     }
   })
-// app/api/reviews/route.ts
-.put("/:reviewId",  zValidator('json', updateReviewSchema), sessionMiddleware, async (c) => {
+.put("/:reviewId", zValidator('json', updateReviewSchema), sessionMiddleware, async (c) => {
   try {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -81,7 +80,6 @@ const app = new Hono()
     const reviewId = c.req.param("reviewId");
     const { rating, comment } = await c.req.json();
     
-    // Add validation
     const validation = updateReviewSchema.safeParse({ rating, comment });
     if (!validation.success) {
       return c.json({ 
@@ -90,8 +88,8 @@ const app = new Hono()
       }, 400);
     }
 
-    const existingReview = await prisma.review.findUnique({
-      where: { id: reviewId },
+    const existingReview = await db.query.reviews.findFirst({
+      where: eq(reviews.id, reviewId),
     });
 
     if (!existingReview) {
@@ -102,13 +100,13 @@ const app = new Hono()
       return c.json({ success: false, error: "Forbidden" }, 403);
     }
 
-    const updatedReview = await prisma.review.update({
-      where: { id: reviewId },
-      data: {
+    const [updatedReview] = await db.update(reviews)
+      .set({
         rating: validation.data.rating,
         comment: validation.data.comment,
-      },
-    });
+      })
+      .where(eq(reviews.id, reviewId))
+      .returning();
 
     return c.json({ success: true, data: updatedReview });
   } catch (error) {
@@ -123,8 +121,8 @@ const app = new Hono()
   
       const reviewId = c.req.param("reviewId");
   
-      const existingReview = await prisma.review.findUnique({
-        where: { id: reviewId },
+      const existingReview = await db.query.reviews.findFirst({
+        where: eq(reviews.id, reviewId),
       });
   
       if (!existingReview) {
@@ -135,7 +133,7 @@ const app = new Hono()
         return c.json({ error: "Forbidden" }, 403);
       }
   
-      await prisma.review.delete({ where: { id: reviewId } });
+      await db.delete(reviews).where(eq(reviews.id, reviewId));
   
       return c.json({ success: true });
     } catch (error) {

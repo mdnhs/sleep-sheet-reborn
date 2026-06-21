@@ -1,29 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Hono } from 'hono'
-import prisma from '@/lib/prisma'
+import { db } from '@/db'
+import { products } from '@/db/schema'
 
 const app = new Hono()
 
 .get('/', async (c) => {
-  const products = await prisma.product.findMany({
-    where: {
-      tags: {
-        isEmpty: false,
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      tags: true,
-      images: true,
-      categoryId: true,
+  const productsList = await db.query.products.findMany({
+    with: {
       reviews: {
-        select: {
+        columns: {
           rating: true,
         },
       },
       category: {
-        select: {
+        columns: {
           label: true,
           value: true,
         }
@@ -31,10 +22,12 @@ const app = new Hono()
     },
   });
 
+  const validProducts = productsList.filter(p => p.tags && p.tags.length > 0);
+
   const tagCategoryMap: Record<string, Set<string>> = {};
   const tagProductMap: Record<string, { image: string; avgRating: number, category: string }[]> = {};
 
-  for (const product of products) {
+  for (const product of validProducts) {
     const avgRating =
       product.reviews.length > 0
         ? product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length
@@ -54,7 +47,7 @@ const app = new Hono()
       tagProductMap[lowercasedTag].push({
         image: product.images?.[0] || '',
         avgRating,
-        category: product.category.label,
+        category: product.category?.label || '',
       });
     }
   }
@@ -67,8 +60,8 @@ const app = new Hono()
       return {
         label: tag,
         value: tag.toLowerCase().replace(/\s+/g, '-'),
-        image: topProduct.image || null,
-        category: topProduct.category,
+        image: topProduct?.image || null,
+        category: topProduct?.category || '',
       };
     })
     .filter((collection) => collection.image)

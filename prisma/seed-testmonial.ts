@@ -1,13 +1,11 @@
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma';
-import { PrismaNeon } from '@prisma/adapter-neon';
-
-const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+import { db } from '../db';
+import { testimonials } from '../db/schema';
 
 async function main() {
+  console.log("🌱 Seeding testimonials...");
   // Create testimonials with optional images
-  const testimonials = [
+  const testimonialsData = [
     {
       name: 'John Doe',
       message: 'I love the products from LUXSTORE! The quality is amazing, and customer service is top-notch.',
@@ -24,7 +22,7 @@ async function main() {
       name: 'Mike Johnson',
       message: 'The shopping experience was easy and smooth. I found exactly what I was looking for!',
       rating: 5,
-      image: null, // No image
+      image: null,
     },
     {
       name: 'Emily Davis',
@@ -36,24 +34,24 @@ async function main() {
       name: 'Chris Lee',
       message: 'Excellent quality and customer support. Highly recommend!',
       rating: 5,
-      image: null, // No image
+      image: null,
     },
-  ]
+  ];
 
-  // Insert testimonials into the database
-  for (const testimonial of testimonials) {
-    await prisma.testimonial.create({
-      data: testimonial,
-    })
+  for (const item of testimonialsData) {
+    await db.insert(testimonials).values({
+      name: item.name,
+      message: item.message,
+      rating: item.rating,
+      image: item.image,
+    });
   }
 
-  console.log('Testimonial data created successfully.')
+  console.log('✅ Testimonial data created successfully.')
 }
 
 main()
   .catch((e) => {
-    throw e
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+    console.error("❌ Error seeding testimonials:", e);
+    process.exit(1);
+  });

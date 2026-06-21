@@ -5,12 +5,13 @@ import Jwt from "jsonwebtoken";
 import { deleteCookie, setCookie } from "hono/cookie";
 
 import bcrypt from "bcryptjs"; 
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { users, otpVerifications, OTPType } from "@/db/schema";
+import { eq, and, gt } from "drizzle-orm";
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { randomBytes } from "crypto";
 import { addMinutes } from "date-fns";
-import { OTPType } from "@/generated/prisma";
 import { sendEmail } from "@/lib/email";
 import { z } from "zod";
 
@@ -31,8 +32,8 @@ const app = new Hono()
     const { name, email, password } = c.req.valid("json");
 
     try {
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.email, email),
       });
 
       if (existingUser) {
@@ -41,15 +42,12 @@ const app = new Hono()
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await prisma.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-        },
-      });
+      const [user] = await db.insert(users).values({
+        name,
+        email,
+        password: hashedPassword,
+      }).returning();
 
-    
       return c.json(user, 201);
     } catch (error) {
       console.error("Error during registration", error);
@@ -60,7 +58,7 @@ const app = new Hono()
     const { email, password } = c.req.valid("json");
   
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await db.query.users.findFirst({ where: eq(users.email, email) });
   
       if (!user || !user.password) {
         return c.json({ error: "Invalid credentials" }, 401);
@@ -128,8 +126,8 @@ const app = new Hono()
 
       const shouldCheckUser = [OTPType.LOGIN_OTP, OTPType.PASSWORD_RESET].includes(type as any);
       if (shouldCheckUser) {
-        user = await prisma.user.findUnique({
-          where: { email },
+        user = await db.query.users.findFirst({
+          where: eq(users.email, email),
         });
 
         if (!user) {
@@ -137,18 +135,14 @@ const app = new Hono()
         }
       }
 
-      const existingOtp = await prisma.oTPVerification.findFirst({
-        where: {
-          email,
-          type,
-          verified: false,
-          expiresAt: {
-            gt: new Date(),
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+      const existingOtp = await db.query.otpVerifications.findFirst({
+        where: and(
+          eq(otpVerifications.email, email),
+          eq(otpVerifications.type, type),
+          eq(otpVerifications.verified, false),
+          gt(otpVerifications.expiresAt, new Date())
+        ),
+        orderBy: (fields, { desc }) => [desc(fields.createdAt)],
       });
 
       if (existingOtp) {
@@ -165,14 +159,12 @@ const app = new Hono()
       const otpCode = generateOtpCode();
       const expiresAt = addMinutes(new Date(), 5);
 
-      await prisma.oTPVerification.create({
-        data: {
-          userId: shouldCheckUser ? user?.id : null,
-          email,
-          code: otpCode,
-          type,
-          expiresAt,
-        },
+      await db.insert(otpVerifications).values({
+        userId: shouldCheckUser ? user?.id : null,
+        email,
+        code: otpCode,
+        type,
+        expiresAt,
       });
 
       await sendEmail({
@@ -201,12 +193,12 @@ const app = new Hono()
     const { email, otpCode } = c.req.valid('json');
 
     try {
-      const otpVerification = await prisma.oTPVerification.findFirst({
-        where: {
-          email,
-          code: otpCode,
-          verified: false,
-        },
+      const otpVerification = await db.query.otpVerifications.findFirst({
+        where: and(
+          eq(otpVerifications.email, email),
+          eq(otpVerifications.code, otpCode),
+          eq(otpVerifications.verified, false)
+        ),
       });
 
       if (!otpVerification) {
@@ -218,10 +210,9 @@ const app = new Hono()
       }
 
   
-      await prisma.oTPVerification.update({
-        where: { id: otpVerification.id },
-        data: { verified: true },
-      });
+      await db.update(otpVerifications)
+        .set({ verified: true })
+        .where(eq(otpVerifications.id, otpVerification.id));
 
       return c.json({ message: 'OTP verified successfully' }, 200);
     } catch (error) {
@@ -237,16 +228,14 @@ const app = new Hono()
     const { email, otpCode, newPassword } = c.req.valid("json");
 
     try {
-      const otpVerification = await prisma.oTPVerification.findFirst({
-        where: {
-          email,
-          code: otpCode,
-          type: OTPType.PASSWORD_RESET,
-          verified: true,
-          expiresAt: {
-            gt: new Date(),
-          },
-        },
+      const otpVerification = await db.query.otpVerifications.findFirst({
+        where: and(
+          eq(otpVerifications.email, email),
+          eq(otpVerifications.code, otpCode),
+          eq(otpVerifications.type, OTPType.PASSWORD_RESET),
+          eq(otpVerifications.verified, true),
+          gt(otpVerifications.expiresAt, new Date())
+        ),
       });
 
       if (!otpVerification) {
@@ -255,10 +244,10 @@ const app = new Hono()
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      const user = await prisma.user.update({
-        where: { email },
-        data: { password: hashedPassword },
-      });
+      const [user] = await db.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.email, email))
+        .returning();
 
       return c.json({ message: "Password reset successfully", userId: user.id });
     } catch (error) {
@@ -290,7 +279,7 @@ const app = new Hono()
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const body = c.req.valid("json");
 
-    const updateData: Record<string, string> = {};
+    const updateData: Record<string, any> = {};
     if (body.name) updateData.name = body.name;
     if (body.phone !== undefined) updateData.phone = body.phone;
     if (body.address !== undefined) updateData.address = body.address;
@@ -299,18 +288,24 @@ const app = new Hono()
       if (!body.currentPassword) {
         return c.json({ error: "Current password required" }, 400);
       }
-      const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+      const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.id) });
       if (!dbUser) return c.json({ error: "User not found" }, 404);
       const valid = await bcrypt.compare(body.currentPassword, dbUser.password);
       if (!valid) return c.json({ error: "Current password is incorrect" }, 400);
       updateData.password = await bcrypt.hash(body.newPassword, 10);
     }
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: updateData,
-      select: { id: true, name: true, email: true, phone: true, address: true, role: true },
-    });
+    const [updated] = await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, user.id))
+      .returning({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        address: users.address,
+        role: users.role,
+      });
 
     return c.json({ data: updated });
   }

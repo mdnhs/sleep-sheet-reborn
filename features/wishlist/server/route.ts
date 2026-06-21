@@ -1,105 +1,109 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { Hono } from "hono";
 import { z } from "zod";
-import prisma from '@/lib/prisma';
-
-
+import { db } from "@/db";
+import { wishlists, wishlistItems } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 const WishlistSchema = z.object({
-    productId: z.string().min(1),
-  });
-  
+  productId: z.string().min(1),
+});
+
 const app = new Hono()
-.post("/",sessionMiddleware,async(c)=>{
+  .post("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) {
-        return c.json(
-          { success: false, error: "UnAuthorized" }, 
-          403
-        );
-      }
+      return c.json(
+        { success: false, error: "UnAuthorized" }, 
+        403
+      );
+    }
 
-      const body = await c.req.json();
+    const body = await c.req.json();
+    const parsed = WishlistSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ success: false, error: "invalid Input" }, 400);
+    }
 
-    
-      const parsed = WishlistSchema.safeParse(body);
-      if(!parsed.success){
-        return c.json({success:false, error:"invalid Input"},400)
-      }
+    const { productId } = parsed.data;
 
-      const {productId}= parsed.data;
-
-      let wishlist = await prisma?.wishlist.findUnique({
-        where:{userId:user.id}
+    try {
+      let wishlist = await db.query.wishlists.findFirst({
+        where: eq(wishlists.userId, user.id),
       });
 
       if (!wishlist) {
-        wishlist = await prisma?.wishlist.create({
-          data: { userId: user.id },
-        });
+        const [newWishlist] = await db.insert(wishlists).values({
+          userId: user.id,
+        }).returning();
+        wishlist = newWishlist;
       }
 
-      const existingItem = await prisma?.wishlistItem.findUnique({
-        where: {
-          wishlistId_productId: {
-            wishlistId: wishlist?.id as string,
-            productId,
-          },
-        },
+      const existingItem = await db.query.wishlistItems.findFirst({
+        where: and(
+          eq(wishlistItems.wishlistId, wishlist.id),
+          eq(wishlistItems.productId, productId)
+        ),
       });
 
       if (existingItem) {
         return c.json({ success: false, message: "Product already in wishlist" });
       }
 
-      await prisma?.wishlistItem.create({
-        data: {
-          wishlistId: wishlist?.id as string,
-          productId,
-        },
+      await db.insert(wishlistItems).values({
+        wishlistId: wishlist.id,
+        productId,
       });
 
       return c.json({ success: true, message: "Product added to wishlist" });
-})
+    } catch (error) {
+      console.error("Wishlist add error:", error);
+      return c.json({ success: false, error: "Failed to add item to wishlist" }, 500);
+    }
+  })
 
-.get("/", sessionMiddleware, async (c) => {
+  .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
   
-    const wishlist = await prisma.wishlist.findUnique({
-      where: { userId: user.id },
-      include: {
-        items: {
-          select: {
-            id: true,
-            product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                images: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    try {
+      const wishlist = await db.query.wishlists.findFirst({
+        where: eq(wishlists.userId, user.id),
+        with: {
+          items: {
+            with: {
+              product: {
+                columns: {
+                  id: true,
+                  name: true,
+                  price: true,
+                  images: true,
+                }
+              }
+            }
+          }
+        }
+      });
 
-    const response = wishlist ? {
-      success: true,
-      data: {
-        wishlistId: wishlist.id,
-        items: wishlist.items.map((item) => ({
-          id: item.id,
-          product: item.product,
-        })),
-      }
-    } : { success: false, error: "No wishlist found" };
-  
-    return c.json(response);
+      const response = wishlist ? {
+        success: true,
+        data: {
+          wishlistId: wishlist.id,
+          items: wishlist.items.map((item) => ({
+            id: item.id,
+            product: item.product,
+          })),
+        }
+      } : { success: false, error: "No wishlist found" };
+    
+      return c.json(response);
+    } catch (error) {
+      console.error("Fetch wishlist error:", error);
+      return c.json({ success: false, error: "Failed to fetch wishlist" }, 500);
+    }
   })
   
-   .delete("/", sessionMiddleware, async (c) => {
+  .delete("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
   
@@ -109,30 +113,26 @@ const app = new Hono()
   
     const { productId } = parsed.data;
   
-    const wishlist = await prisma.wishlist.findUnique({
-      where: { userId: user.id },
-    });
-  
-    if (!wishlist) {
-      return c.json({ success: false, error: "Wishlist not found" }, 404);
+    try {
+      const wishlist = await db.query.wishlists.findFirst({
+        where: eq(wishlists.userId, user.id),
+      });
+    
+      if (!wishlist) {
+        return c.json({ success: false, error: "Wishlist not found" }, 404);
+      }
+    
+      await db.delete(wishlistItems)
+        .where(and(
+          eq(wishlistItems.wishlistId, wishlist.id),
+          eq(wishlistItems.productId, productId)
+        ));
+    
+      return c.json({ success: true, message: "Product removed from wishlist" });
+    } catch (error) {
+      console.error("Remove from wishlist error:", error);
+      return c.json({ success: false, error: "Failed to remove item from wishlist" }, 500);
     }
-  
-    await prisma.wishlistItem.deleteMany({
-      where: {
-        wishlistId: wishlist.id,
-        productId,
-      },
-    });
-  
-    return c.json({ success: true, message: "Product removed from wishlist" });
   });
   
-  export default app;
-
-  
-  
-  
-  
-  
-  
-  
+export default app;

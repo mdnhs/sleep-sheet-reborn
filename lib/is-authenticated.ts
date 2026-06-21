@@ -1,7 +1,9 @@
 // lib/auth.ts
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { AUTH_COOKIE } from "@/features/auth/constants";
 
 export async function getCurrentUser() {
@@ -17,8 +19,8 @@ export async function getCurrentUser() {
       role:string;
     };
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, decoded.id),
     });
 
     if (!user) return null;
