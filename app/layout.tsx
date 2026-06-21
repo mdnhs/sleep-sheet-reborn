@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/provider/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const spaceGroteskHeading = Space_Grotesk({
   subsets: ["latin"],
@@ -57,7 +58,9 @@ export default function RootLayout({
         >
           <TooltipProvider>
             <Toaster />
-            <QueryProvider>{children}</QueryProvider>
+            <QueryProvider>
+              <NuqsAdapter>{children}</NuqsAdapter>
+            </QueryProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>

@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useGetCategories } from "@/features/categories/api/use-get-categories";
 import { useCurrency } from "@/hooks/use-currency";
 import { ChevronDown, ChevronUp, Funnel } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useQueryState } from "nuqs";
 
 const PRICE_RANGES = [
   { value: "under-50", min: 0, max: 49, threshold: 50 },
@@ -16,47 +16,30 @@ const PRICE_RANGES = [
 
 function ProductSidebar() {
   const { symbol } = useCurrency();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const categoryParam = searchParams.get("category");
+  const [category, setCategory] = useQueryState("category", { defaultValue: "", shallow: false });
+  const [price, setPrice] = useQueryState("price", { defaultValue: "", shallow: false });
   const [showFilter, setShowFilter] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
   const { data: categories = [], isLoading: isCategoryListLoading } =
     useGetCategories();
   const categoryList = [{ label: "All" }, ...categories];
 
-  useEffect(() => {
-    if (categoryParam && categories.some((c) => c.label === categoryParam)) {
-      setActiveCategory(categoryParam);
-    } else {
-      setActiveCategory("All");
-    }
-  }, [categoryParam, categories]);
+  const activeCategory = category || "All";
+  const selectedPrice = price || null;
 
-  const handleCategoryClick = (category: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-
-    if (category === "All") {
-      params.delete("category");
+  const handleCategoryClick = (cat: string) => {
+    if (cat === "All") {
+      setCategory(null);
     } else {
-      params.set("category", category);
+      setCategory(cat);
     }
-    router.push(`/products?${params.toString()}`);
   };
 
   const handlePriceChange = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-
     if (selectedPrice === value) {
-      setSelectedPrice(null);
-      params.delete("price");
+      setPrice(null);
     } else {
-      setSelectedPrice(value);
-      params.set("price", value);
+      setPrice(value);
     }
-
-    router.push(`/products?${params.toString()}`);
   };
 
   return (

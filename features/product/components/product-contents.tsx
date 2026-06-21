@@ -7,40 +7,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQueryParams } from "@/hooks/use-query-parms";
 import { sortOptions } from "@/lib/utils";
-import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
 import { useGetProducts } from "../api/use-get-products";
 import ProductCard from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
+import { useQueryState } from "nuqs";
 
 function ProductContents() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const currentSort = searchParams.get("sort");
-  const currentPage = parseInt(searchParams.get("page") || "1");
+  const [category] = useQueryState("category", { defaultValue: "" });
+  const [price] = useQueryState("price", { defaultValue: "" });
+  const [search] = useQueryState("search", { defaultValue: "" });
+  const [sort, setSort] = useQueryState("sort", { defaultValue: "", shallow: false });
+  const [page, setPage] = useQueryState("page", { defaultValue: "1", shallow: false });
+
+  const currentPage = parseInt(page);
 
   const handleSortChange = (value: string | null) => {
-    if (!value) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("sort", value);
-    router.push(`/products?${params.toString()}`);
+    setSort(value || null);
+    setPage("1");
   };
 
   const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", newPage.toString());
-    router.push(`/products?${params.toString()}`);
+    setPage(newPage.toString());
   };
 
-  const { getAllParams } = useQueryParams();
-  const { category, sort, price } = getAllParams();
   const { data: products, isLoading } = useGetProducts({
     category: category,
     sort: sort,
     price: price,
-    page: currentPage.toString(),
+    search: search,
+    page: page,
   });
 
   useEffect(() => {
@@ -61,7 +58,7 @@ function ProductContents() {
 
         <div className="flex flex-row items-center gap-4">
           <label className="text-sm">Sort by:</label>
-          <Select value={currentSort || ""} onValueChange={handleSortChange}>
+          <Select value={sort || ""} onValueChange={handleSortChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select sort" />
             </SelectTrigger>

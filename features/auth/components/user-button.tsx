@@ -55,7 +55,7 @@ export const UserButton = () => {
           <Button
             variant="outline"
             size="icon"
-            className="group size-10 rounded-full border-border/70 bg-background/80 p-0 shadow-sm backdrop-blur-sm transition-all hover:border-border hover:bg-background hover:shadow-md data-[popup-open]:border-border data-[popup-open]:shadow-md"
+            className="group size-10 rounded-full border-none bg-background/80 p-0 shadow-sm backdrop-blur-sm transition-all hover:bg-background hover:shadow-md data-[popup-open]:shadow-md"
           />
         }
         aria-label="Open user menu"

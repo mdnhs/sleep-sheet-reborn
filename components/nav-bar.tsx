@@ -12,8 +12,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { selectTotalItems } from "@/features/cart/state/cart-slice";
 import Link from "next/link";
 import React, { useState, useSyncExternalStore } from "react";
-import { Menu, ShoppingBag, User } from "lucide-react";
+import { Menu, ShoppingCart, User, Leaf, BadgePercent, Search, Sun, Moon } from "lucide-react";
 import { useSelector } from "react-redux";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQueryState } from "nuqs";
+import { useTheme } from "next-themes";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const subscribe = () => () => {};
 const useHasMounted = () =>
@@ -28,23 +32,98 @@ import { Button } from "./ui/button";
 
 const NAV_LINKS = [
   { id: 1, name: "Home", path: "/" },
-  { id: 2, name: "Shop", path: "/products?sort=newest" },
-  // { id: 3, name: "Collection", path: "/collection" },
-  { id: 4, name: "About", path: "/about" },
-  { id: 6, name: "Contact", path: "/contact" },
+  { id: 2, name: "Blog", path: "/blog" },
+  { id: 3, name: "Combos", path: "/products?category=combos" },
+  { id: 4, name: "Offers", path: "/products?sort=discount", hasBadge: true, icon: BadgePercent },
 ];
 
 function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
-  return NAV_LINKS.map((link) => (
-    <Link
-      key={link.name}
-      href={link.path}
-      className="text-sm font-medium transition-colors hover:text-primary/80"
-      onClick={onNavigate}
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const sortParam = searchParams.get("sort");
+
+  return NAV_LINKS.map((link) => {
+    // Determine active state based on path and query parameters
+    let isActive = false;
+    if (link.path === "/") {
+      isActive = pathname === "/";
+    } else if (link.path.includes("category=combos")) {
+      isActive = pathname === "/products" && categoryParam === "combos";
+    } else if (link.path.includes("sort=discount")) {
+      isActive = pathname === "/products" && sortParam === "discount";
+    } else {
+      isActive = pathname === link.path;
+    }
+
+    const Icon = link.icon;
+    return (
+      <Link
+        key={link.name}
+        href={link.path}
+        className={`flex items-center gap-1.5 text-[15px] font-medium transition-colors hover:text-primary ${
+          isActive ? "text-primary font-semibold" : "text-slate-600"
+        }`}
+        onClick={onNavigate}
+      >
+        {Icon && <Icon className="h-4.5 w-4.5" />}
+        <span>{link.name}</span>
+        {link.hasBadge && (
+          <span className="ml-1 rounded-[4px] bg-red-100 text-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+            NEW
+          </span>
+        )}
+      </Link>
+    );
+  });
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const hasMounted = useHasMounted();
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            onClick={toggleTheme}
+            className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+            aria-label="Toggle theme"
+          />
+        }
+      >
+        {hasMounted && theme === "dark" ? (
+          <Sun className="h-5 w-5 transition-transform duration-500 group-hover:rotate-45" />
+        ) : (
+          <Moon className="h-5 w-5 transition-transform duration-500 group-hover:-rotate-12" />
+        )}
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Toggle theme</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function MobileThemeToggle({ hasMounted }: { hasMounted: boolean }) {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="flex h-9 w-9 items-center justify-center rounded-full text-foreground bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      aria-label="Toggle theme"
     >
-      {link.name}
-    </Link>
-  ));
+      {hasMounted && theme === "dark" ? (
+        <Sun className="h-4.5 w-4.5" />
+      ) : (
+        <Moon className="h-4.5 w-4.5" />
+      )}
+    </button>
+  );
 }
 
 function NavbarActions({
@@ -58,34 +137,53 @@ function NavbarActions({
   const totalItems = useSelector(selectTotalItems);
 
   return (
-    <div className="flex items-center space-x-4">
-      {!user ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Account"
-          nativeButton={false}
-          render={<Link href="/signin" />}
+    <div className="flex items-center gap-4">
+      {/* Theme Toggle */}
+      <ThemeToggle />
+
+      {/* Cart Button */}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              onClick={onCartOpen}
+              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+              aria-label="View Cart"
+            />
+          }
         >
-          <User className="h-5 w-5" />
-        </Button>
+          <ShoppingCart className="h-5 w-5 transition-transform duration-300 group-hover:rotate-3" />
+          {hasMounted && totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
+              {totalItems}
+            </span>
+          )}
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Cart</TooltipContent>
+      </Tooltip>
+
+      {/* Profile/Sign In Button */}
+      {!user ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Link
+                href="/signin"
+                className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+                aria-label="Sign In"
+              />
+            }
+          >
+            <User className="h-5 w-5" />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Sign In</TooltipContent>
+        </Tooltip>
       ) : (
-        <UserButton />
+        <Tooltip>
+          <TooltipTrigger render={<UserButton />} />
+          <TooltipContent side="bottom">Account</TooltipContent>
+        </Tooltip>
       )}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onCartOpen}
-        aria-label="Cart"
-        className="relative"
-      >
-        <ShoppingBag className="h-5 w-5" />
-        {hasMounted && totalItems > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-            {totalItems}
-          </span>
-        )}
-      </Button>
     </div>
   );
 }
@@ -101,7 +199,14 @@ function MobileNavbarMenu({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="flex w-full max-w-xs flex-col">
         <SheetHeader className="border-b pb-4">
-          <SheetTitle>LUXESTORE</SheetTitle>
+          <SheetTitle className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary bg-background text-primary">
+              <Leaf className="h-4.5 w-4.5 fill-current" />
+            </div>
+            <span className="text-base font-bold text-foreground">
+              Falaq <span className="text-primary">Food</span>
+            </span>
+          </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-6 p-6">
           <div className="flex flex-col gap-4">
@@ -124,31 +229,26 @@ function MobileNavbarAccount({
   const totalItems = useSelector(selectTotalItems);
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
+    <div className="flex items-center gap-3">
+      <MobileThemeToggle hasMounted={hasMounted} />
+      <button
         onClick={onCartOpen}
-        aria-label="Cart"
-        className="relative"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
       >
-        <ShoppingBag className="h-5 w-5" />
+        <ShoppingCart className="h-4.5 w-4.5" />
         {hasMounted && totalItems > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+          <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
             {totalItems}
           </span>
         )}
-      </Button>
+      </button>
       {!user ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Account"
-          nativeButton={false}
-          render={<Link href="/signin" />}
+        <Link
+          href="/signin"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-foreground bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          <User className="h-5 w-5" />
-        </Button>
+          <User className="h-4.5 w-4.5" />
+        </Link>
       ) : (
         <UserButton />
       )}
@@ -162,38 +262,112 @@ function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hasMounted = useHasMounted();
 
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useQueryState("search", {
+    defaultValue: "",
+    shallow: false,
+  });
+  const [inputVal, setInputVal] = useState(searchQuery);
+
+  // Sync local input value if url changes (e.g. from page transition or clear)
+  React.useEffect(() => {
+    setInputVal(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const isProductsPage = window.location.pathname === "/products";
+    if (isProductsPage) {
+      setSearchQuery(inputVal.trim() || null);
+    } else {
+      if (inputVal.trim()) {
+        router.push(`/products?search=${encodeURIComponent(inputVal.trim())}`);
+      } else {
+        router.push(`/products`);
+      }
+    }
+  };
+
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
+    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-md">
       <div className="container mx-auto px-4">
         {isMobile ? (
-          <div className="relative flex h-16 items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMenuOpen(true)}
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <Link
-              href="/"
-              className="absolute left-1/2 -translate-x-1/2 text-xl font-bold"
-            >
-              LUXESTORE
-            </Link>
-            <MobileNavbarAccount
-              hasMounted={hasMounted}
-              onCartOpen={() => setIsCartOpen(true)}
-            />
+          <div className="flex flex-col py-2 gap-2">
+            <div className="flex h-14 items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMenuOpen(true)}
+                aria-label="Open menu"
+                className="hover:bg-transparent"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <Link href="/" className="flex items-center gap-2 select-none">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-primary bg-background text-primary">
+                  <Leaf className="h-4 w-4 fill-current" />
+                </div>
+                <span className="text-base font-bold text-foreground">
+                  Falaq <span className="text-primary">Food</span>
+                </span>
+              </Link>
+              <MobileNavbarAccount
+                hasMounted={hasMounted}
+                onCartOpen={() => setIsCartOpen(true)}
+              />
+            </div>
+            {/* Search Input for Mobile Viewports */}
+            <form onSubmit={handleSearch} className="relative w-full pb-2">
+              <input
+                type="text"
+                placeholder="Search Mustard"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                className="w-full rounded-full border border-primary bg-background py-1.5 pl-4 pr-10 text-xs outline-none transition-all focus:ring-1 focus:ring-primary"
+              />
+              <button
+                type="submit"
+                className="absolute right-3 top-[35%] -translate-y-1/2 text-muted-foreground hover:text-primary"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </form>
           </div>
         ) : (
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="text-xl font-bold">
-              LUXESTORE
+          <div className="flex h-16 items-center justify-between gap-4">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 select-none shrink-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-primary bg-background text-primary">
+                <Leaf className="h-5 w-5 fill-current" />
+              </div>
+              <span className="text-lg font-bold text-foreground tracking-tight">
+                Falaq <span className="text-primary">Food</span>
+              </span>
             </Link>
-            <div className="hidden md:flex space-x-8">
+
+            {/* Links */}
+            <div className="hidden md:flex items-center gap-8">
               <NavbarLinks />
             </div>
+
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="relative flex-1 max-w-md mx-6">
+              <input
+                type="text"
+                placeholder="Search Mustard"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                className="w-full rounded-full border border-primary bg-white py-2 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/25"
+              />
+              <button
+                type="submit"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+              >
+                <Search className="h-[18px] w-[18px]" />
+              </button>
+            </form>
+
+            {/* Actions */}
             <NavbarActions
               hasMounted={hasMounted}
               onCartOpen={() => setIsCartOpen(true)}
@@ -210,10 +384,9 @@ function Navbar() {
       )}
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-
-      {/* <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} /> */}
     </nav>
   );
 }
 
 export default Navbar;
+
