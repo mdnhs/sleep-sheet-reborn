@@ -55,6 +55,12 @@ const data = {
       items: [],
     },
     {
+      title: "Testimonials",
+      url: "/dashboard/testimonials",
+      icon: <IconBed />, // Using IconBed temporarily, can be changed
+      items: [],
+    },
+    {
       title: "Settings",
       url: "/dashboard/settings",
       icon: <IconSettings />,

@@ -5,6 +5,13 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import ProductCard from "../product/product-card";
 import { useGetProducts } from "@/features/product/api/use-get-products";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const FeaturedProduct = () => {
   const { data: products, isLoading } = useGetProducts({
@@ -13,13 +20,13 @@ const FeaturedProduct = () => {
 
   if (isLoading) {
     return (
-      <section className="py-20 md:py-28">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="py-6 md:py-10">
+        <div className="container mx-auto px-4 ">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-3/4 bg-secondary animate-pulse rounded-sm"
+                className="aspect-[3/4] bg-secondary/50 animate-pulse rounded-xl"
               />
             ))}
           </div>
@@ -28,44 +35,50 @@ const FeaturedProduct = () => {
     );
   }
 
-  if (!products) {
+  if (!products || products.data.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-20 md:py-28 bg-secondary/20">
-      <div className="container mx-auto px-4">
-        {/* Section header */}
-        <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12 gap-4">
+    <section className="py-6 md:py-10 bg-background border-t border-slate-100 relative overflow-hidden">
+      <div className="container mx-auto px-4 relative">
+        {/* Minimal Section header */}
+        <div className="flex flex-row items-end justify-between mb-6">
           <div>
-            <span className="text-xs font-medium uppercase tracking-[0.25em] text-primary">
-              Handpicked
-            </span>
-            <h2 className="font-heading text-3xl md:text-4xl font-light text-foreground mt-2">
+            <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
               Featured Products
             </h2>
           </div>
-          <Button
-            variant="ghost"
-            nativeButton={false}
-            className="rounded-none px-0 text-sm font-medium gap-2 hover:bg-transparent hover:text-primary transition-colors group"
-            render={
-              <Link
-                href="/products?sort=featured"
-                className="flex items-center gap-2"
-              />
-            }
+          <Link
+            href="/products?sort=featured"
+            className="group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
           >
-            View All Products
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Button>
+            <span className="hidden sm:inline">View All</span>
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+          </Link>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {products?.data.slice(0, 4).map((product, index) => (
-            <ProductCard key={product.id} product={product} priority={index < 2} />
-          ))}
-        </div>
+        <Carousel
+          opts={{
+            align: "start",
+            dragFree: true,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-4 md:-ml-6">
+            {products?.data.map((product, index) => (
+              <CarouselItem key={product.id} className="pl-4 md:pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <div className="h-full">
+                  <ProductCard product={product} priority={index < 2} />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <div className="hidden md:flex items-center justify-end gap-2 mt-6">
+            <CarouselPrevious className="relative inset-0 translate-y-0 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm hover:bg-white hover:text-primary transition-all shadow-sm" />
+            <CarouselNext className="relative inset-0 translate-y-0 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm hover:bg-white hover:text-primary transition-all shadow-sm" />
+          </div>
+        </Carousel>
       </div>
     </section>
   );

@@ -13,7 +13,7 @@ import { selectTotalItems } from "@/features/cart/state/cart-slice";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useSyncExternalStore } from "react";
-import { Menu, ShoppingCart, User, Bed, BadgePercent, Search, Sun, Moon } from "lucide-react";
+import { Menu, ShoppingCart, User, Bed, BadgePercent, Search, Sun, Moon, Heart, Home, ShoppingBag } from "lucide-react";
 import { useSelector } from "react-redux";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryState } from "nuqs";
@@ -127,6 +127,8 @@ function MobileThemeToggle({ hasMounted }: { hasMounted: boolean }) {
   );
 }
 
+import { useWishlist } from "@/features/wishlist/api/use-wishlist";
+
 function NavbarActions({
   hasMounted,
   onCartOpen,
@@ -136,11 +138,34 @@ function NavbarActions({
 }) {
   const { data: user } = useCurrent();
   const totalItems = useSelector(selectTotalItems);
+  const { data: wishlist } = useWishlist();
+  const wishlistItemsCount = wishlist?.items?.length || 0;
 
   return (
     <div className="flex items-center gap-4">
       {/* Theme Toggle */}
       <ThemeToggle />
+
+      {/* Wishlist Button */}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Link
+              href="/account"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+              aria-label="View Wishlist"
+            />
+          }
+        >
+          <Heart className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+          {hasMounted && wishlistItemsCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
+              {wishlistItemsCount}
+            </span>
+          )}
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Wishlist</TooltipContent>
+      </Tooltip>
 
       {/* Cart Button */}
       <Tooltip>
@@ -214,39 +239,63 @@ function MobileNavbarMenu({
   );
 }
 
-function MobileNavbarAccount({
+function MobileBottomNav({
   hasMounted,
   onCartOpen,
 }: {
   hasMounted: boolean;
   onCartOpen: () => void;
 }) {
+  const pathname = usePathname();
   const { data: user } = useCurrent();
   const totalItems = useSelector(selectTotalItems);
+  const { data: wishlist } = useWishlist();
+  const wishlistItemsCount = wishlist?.items?.length || 0;
 
   return (
-    <div className="flex items-center gap-3">
-      <MobileThemeToggle hasMounted={hasMounted} />
-      <button
-        onClick={onCartOpen}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-      >
-        <ShoppingCart className="h-4.5 w-4.5" />
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-background border-t shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-between px-6 h-16 pb-safe">
+      {/* Home */}
+      <Link href="/" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}>
+        <Home className="h-5 w-5" />
+      </Link>
+
+      {/* Wishlist */}
+      <Link href="/account" className={`relative flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/account' ? 'text-primary' : 'text-muted-foreground'}`}>
+        <Heart className="h-5 w-5" />
+        {hasMounted && wishlistItemsCount > 0 && (
+          <span className="absolute top-2 right-2 flex h-[14px] w-[14px] items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white">
+            {wishlistItemsCount}
+          </span>
+        )}
+      </Link>
+
+      {/* Center Shop Icon */}
+      <div className="relative -top-5 flex items-center justify-center">
+        <div className="absolute inset-0 bg-background rounded-full scale-110 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"></div>
+        <Link href="/products" className="relative flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform z-10">
+          <ShoppingBag className="h-6 w-6" />
+        </Link>
+      </div>
+
+      {/* Cart */}
+      <button onClick={onCartOpen} className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full text-muted-foreground hover:text-primary">
+        <ShoppingCart className="h-5 w-5" />
         {hasMounted && totalItems > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
+          <span className="absolute top-2 right-2 flex h-[14px] w-[14px] items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white">
             {totalItems}
           </span>
         )}
       </button>
+
+      {/* Profile */}
       {!user ? (
-        <Link
-          href="/signin"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-foreground bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        >
-          <User className="h-4.5 w-4.5" />
+        <Link href="/signin" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/signin' ? 'text-primary' : 'text-muted-foreground'}`}>
+          <User className="h-5 w-5" />
         </Link>
       ) : (
-        <UserButton />
+        <Link href="/account" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/account' ? 'text-primary' : 'text-muted-foreground'}`}>
+          <User className="h-5 w-5" />
+        </Link>
       )}
     </div>
   );
@@ -285,92 +334,97 @@ function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-md">
-      <div className="container mx-auto px-4">
-        {isMobile ? (
-          <div className="flex flex-col py-2 gap-2">
-            <div className="flex h-14 items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMenuOpen(true)}
-                aria-label="Open menu"
-                className="hover:bg-transparent"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <Link href="/" className="flex items-center gap-2 select-none">
-                <img src="/logo.png" alt="SleepSheet Logo" className="h-9 w-auto object-contain" />
+    <>
+      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-md">
+        <div className="container mx-auto px-4">
+          {isMobile ? (
+            <div className="flex flex-col py-2 gap-2">
+              <div className="flex h-14 items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMenuOpen(true)}
+                  aria-label="Open menu"
+                  className="hover:bg-transparent"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <Link href="/" className="flex items-center gap-2 select-none">
+                  <img src="/logo.png" alt="SleepSheet Logo" className="h-9 w-auto object-contain" />
+                </Link>
+                <div className="flex items-center gap-2">
+                  <MobileThemeToggle hasMounted={hasMounted} />
+                </div>
+              </div>
+              {/* Search Input for Mobile Viewports */}
+              <form onSubmit={handleSearch} className="relative w-full pb-2">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-4 top-[40%] -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="flex h-16 items-center justify-between gap-4">
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-2 select-none shrink-0">
+                <img src="/logo.png" alt="SleepSheet Logo" className="h-12 w-auto object-contain" />
               </Link>
-              <MobileNavbarAccount
+
+              {/* Links */}
+              <div className="hidden md:flex items-center gap-8">
+                <NavbarLinks />
+              </div>
+
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="relative flex-1 max-w-md mx-6">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                >
+                  <Search className="h-[18px] w-[18px]" />
+                </button>
+              </form>
+
+              {/* Actions */}
+              <NavbarActions
                 hasMounted={hasMounted}
                 onCartOpen={() => setIsCartOpen(true)}
               />
             </div>
-            {/* Search Input for Mobile Viewports */}
-            <form onSubmit={handleSearch} className="relative w-full pb-2">
-              <input
-                type="text"
-                placeholder="Search Mustard"
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                className="w-full rounded-full border border-primary bg-background py-1.5 pl-4 pr-10 text-xs outline-none transition-all focus:ring-1 focus:ring-primary"
-              />
-              <button
-                type="submit"
-                className="absolute right-3 top-[35%] -translate-y-1/2 text-muted-foreground hover:text-primary"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </form>
-          </div>
-        ) : (
-          <div className="flex h-16 items-center justify-between gap-4">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 select-none shrink-0">
-              <img src="/logo.png" alt="SleepSheet Logo" className="h-12 w-auto object-contain" />
-            </Link>
+          )}
+        </div>
 
-            {/* Links */}
-            <div className="hidden md:flex items-center gap-8">
-              <NavbarLinks />
-            </div>
-
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="relative flex-1 max-w-md mx-6">
-              <input
-                type="text"
-                placeholder="Search Mustard"
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                className="w-full rounded-full border border-primary bg-white py-2 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/25"
-              />
-              <button
-                type="submit"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
-              >
-                <Search className="h-[18px] w-[18px]" />
-              </button>
-            </form>
-
-            {/* Actions */}
-            <NavbarActions
-              hasMounted={hasMounted}
-              onCartOpen={() => setIsCartOpen(true)}
-            />
-          </div>
+        {isMobile && (
+          <MobileNavbarMenu
+            isOpen={isMenuOpen}
+            onOpenChange={setIsMenuOpen}
+          />
         )}
-      </div>
+
+        <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      </nav>
 
       {isMobile && (
-        <MobileNavbarMenu
-          isOpen={isMenuOpen}
-          onOpenChange={setIsMenuOpen}
-        />
+        <MobileBottomNav hasMounted={hasMounted} onCartOpen={() => setIsCartOpen(true)} />
       )}
-
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-    </nav>
+    </>
   );
 }
 

@@ -4,34 +4,26 @@ import { ArrowRight } from "lucide-react";
 
 const NarrowBanner = () => {
   return (
-    <section className="py-2 bg-white">
+    <section className="py-6 bg-white">
       <div className="container mx-auto px-4">
-        <Link href="/products?category=combos" className="block relative overflow-hidden rounded-2xl bg-[#fff5f0] group">
-          {/* Faint background text matching the "50%" in the image */}
-          <div className="absolute right-[30%] top-1/2 -translate-y-1/2 text-[#ffe4d6] font-black text-9xl leading-none select-none pointer-events-none -rotate-12 opacity-70">
-            50%
-          </div>
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between py-4 px-6 md:px-8 lg:pr-64 min-h-[80px] gap-4">
-            <div className="max-w-2xl">
-              <h2 className="text-[#e25c27] text-lg md:text-xl font-bold mb-1 tracking-tight">
-                In store or online your comfort & sleep is our top priority
+        <Link
+          href="/products?category=combos"
+          className="block relative overflow-hidden rounded-xl border border-orange-100 bg-orange-50/50 hover:bg-orange-50 transition-colors group"
+        >
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 px-4 md:px-6 min-h-[50px] gap-2 sm:gap-4">
+            <div className="flex items-start sm:items-center gap-2.5 sm:gap-3">
+              <span className="shrink-0 mt-0.5 sm:mt-0 flex items-center justify-center h-5 sm:h-6 px-1.5 sm:px-2 bg-orange-600 text-white text-[9px] sm:text-[10px] uppercase font-bold tracking-widest rounded-sm">
+                Offer
+              </span>
+              <h2 className="text-orange-900 text-xs sm:text-sm md:text-[15px] font-medium tracking-tight leading-snug">
+                Get <span className="font-bold">50% off</span> on all combo purchases this week.
               </h2>
-              <p className="text-slate-500 text-xs md:text-sm leading-relaxed">
-                The only bedding brand that makes your life easier, helps you sleep better and wake up refreshed every single day.
-              </p>
             </div>
-            
-            {/* Optional call to action arrow */}
-            <div className="shrink-0 hidden md:flex items-center justify-center h-12 w-12 rounded-full bg-white text-[#e25c27] shadow-sm group-hover:scale-110 transition-transform">
-              <ArrowRight className="h-5 w-5" />
+
+            <div className="shrink-0 flex items-center gap-1.5 text-orange-600 text-[10px] sm:text-xs font-semibold uppercase tracking-wider group-hover:text-orange-700 transition-colors self-end sm:self-auto">
+              <span className="inline">Shop Combos</span>
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transform group-hover:translate-x-1 transition-transform" />
             </div>
-          </div>
-          
-          {/* Decorative shapes to simulate the illustrations on the right */}
-          <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none hidden lg:block">
-            <div className="absolute -right-8 -top-8 w-40 h-40 bg-[#ffddc2] rounded-full mix-blend-multiply opacity-70 blur-2xl"></div>
-            <div className="absolute right-12 -bottom-12 w-48 h-48 bg-[#ffc4a3] rounded-full mix-blend-multiply opacity-50 blur-2xl"></div>
           </div>
         </Link>
       </div>

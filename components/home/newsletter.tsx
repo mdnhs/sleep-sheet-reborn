@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ArrowRight, Mail } from "lucide-react";
 
 const Newsletter = () => {
   const [email, setEmail] = useState("");
@@ -11,43 +12,50 @@ const Newsletter = () => {
   };
 
   return (
-    <section className="bg-foreground text-background py-20 md:py-28">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <span className="text-xs font-medium uppercase tracking-[0.25em] text-background/40">
-            Newsletter
-          </span>
-          <h2 className="font-heading text-4xl md:text-5xl font-light mt-4 mb-4 text-background">
-            Stay in the know.
+    <section className="bg-foreground text-background py-10 md:py-16 relative overflow-hidden">
+      {/* Subtle decorative background elements */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full opacity-10 pointer-events-none">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-48 h-48 bg-white rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-2xl mx-auto text-center flex flex-col items-center">
+          <div className="mb-4 inline-flex items-center justify-center p-3 bg-white/5 rounded-full ring-1 ring-white/10">
+            <Mail className="h-5 w-5 text-white/80" />
+          </div>
+          
+          <h2 className="font-heading text-2xl md:text-4xl font-light tracking-tight text-white mb-3">
+            Join the inner circle
           </h2>
-          <p className="text-background/50 mb-10 text-sm leading-relaxed max-w-sm mx-auto">
-            New arrivals, exclusive offers, and styling inspiration — delivered
-            to your inbox.
+          
+          <p className="text-white/60 text-sm md:text-base leading-relaxed mb-8 max-w-md mx-auto">
+            Subscribe for early access to new collections, exclusive styling tips, and members-only offers.
           </p>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col sm:flex-row w-full max-w-md mx-auto border border-background/20"
+            className="w-full max-w-md mx-auto relative group flex items-center"
           >
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
+              placeholder="Enter your email address"
               required
-              className="flex-1 px-5 py-4 bg-transparent text-background placeholder:text-background/30 text-sm outline-none border-b sm:border-b-0 sm:border-r border-background/20"
+              className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-white/5 border border-white/10 rounded-full text-white placeholder:text-white/40 text-sm outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300 pr-28 sm:pr-32"
             />
             <button
               type="submit"
               disabled={isLoading}
-              className="px-7 py-4 bg-primary text-primary-foreground text-xs font-medium uppercase tracking-[0.2em] hover:bg-primary/90 transition-colors disabled:opacity-60 whitespace-nowrap"
+              className="absolute right-1.5 top-1.5 bottom-1.5 px-4 sm:px-6 bg-white text-foreground rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider hover:bg-white/90 hover:scale-105 transition-all duration-300 disabled:opacity-60 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]"
             >
-              {isLoading ? "Subscribing…" : "Subscribe"}
+              {isLoading ? "Wait…" : "Subscribe"}
             </button>
           </form>
-
-          <p className="text-xs text-background/25 mt-6">
-            No spam. Unsubscribe anytime.
+          
+          <p className="text-[10px] text-white/30 mt-6 uppercase tracking-widest">
+            Unsubscribe at any time.
           </p>
         </div>
       </div>

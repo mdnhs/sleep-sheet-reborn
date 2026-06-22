@@ -3,74 +3,103 @@
 import { useGetTestimonials } from "@/features/testimonials/api/use-get-testimonials";
 import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const Testimonials = () => {
   const { data } = useGetTestimonials();
 
   return (
-    <section className="py-20 md:py-28 bg-background">
+    <section className="py-6 md:py-10 bg-background border-t border-slate-100">
       <div className="container mx-auto px-4">
-        {/* Section header */}
-        <div className="flex items-end gap-8 mb-14">
-          <div className="shrink-0">
-            <span className="text-xs font-medium uppercase tracking-[0.25em] text-primary">
-              Reviews
-            </span>
-            <h2 className="font-heading text-3xl md:text-4xl font-light text-foreground mt-2">
-              What Our Customers Say
-            </h2>
-          </div>
-          <div className="flex-1 h-px bg-border mb-2 hidden md:block" />
+        {/* Minimal Section header */}
+        <div className="flex flex-row items-end justify-between mb-6">
+          <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
+            Customer Reviews
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {data?.testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className="bg-secondary/30 p-8 flex flex-col gap-5 border-l-2 border-primary/30 hover:border-primary transition-colors duration-300"
-            >
-              {/* Large decorative quote */}
-              <span className="font-heading text-6xl leading-none text-primary/20 select-none -mb-2">
-                &ldquo;
-              </span>
-
-              <p className="text-sm text-muted-foreground leading-relaxed grow">
-                {testimonial.message}
-              </p>
-
-              <div className="pt-4 border-t border-border flex items-center gap-3">
-                <Avatar className="h-9 w-9 shrink-0">
-                  {testimonial.image && (
-                    <AvatarImage
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="object-cover"
-                    />
+        {data?.testimonials && data.testimonials.length > 0 ? (
+          <Carousel
+            opts={{
+              align: "start",
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-4">
+              {data.testimonials.map((testimonial: any, index: number) => (
+                <CarouselItem key={index} className="pl-4 basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                  {testimonial.screenshot ? (
+                    <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden border border-border/50 group cursor-grab active:cursor-grabbing bg-muted shadow-sm hover:shadow-md transition-shadow">
+                      <Image
+                        src={testimonial.screenshot}
+                        alt={`Review from ${testimonial.name}`}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-4 left-4 right-4 text-white">
+                          <p className="font-medium text-sm truncate">{testimonial.name}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            {Array.from({ length: testimonial.rating }).map((_, i) => (
+                              <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            ))}
+                          </div>
+                          {testimonial.message && (
+                            <p className="text-xs mt-2 line-clamp-2 text-white/80">
+                              {testimonial.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-secondary/30 p-6 flex flex-col h-full rounded-2xl border border-border/50 aspect-[9/16]">
+                      <div className="flex-1">
+                        <span className="font-heading text-5xl leading-none text-primary/20 select-none">
+                          &ldquo;
+                        </span>
+                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-[8] mt-2">
+                          {testimonial.message}
+                        </p>
+                      </div>
+                      <div className="pt-4 mt-4 border-t border-border flex items-center gap-3">
+                        <Avatar className="h-8 w-8 shrink-0">
+                          {testimonial.image && <AvatarImage src={testimonial.image} />}
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {testimonial.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold truncate">{testimonial.name}</h4>
+                          <div className="flex items-center gap-0.5 mt-0.5">
+                            {Array.from({ length: testimonial.rating }).map((_, i) => (
+                              <Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                  <AvatarFallback className="text-xs">
-                    {testimonial.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold truncate">
-                    {testimonial.name}
-                  </h4>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {testimonial.role}
-                  </p>
-                </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-3 w-3 fill-primary text-primary"
-                    />
-                  ))}
-                </div>
-              </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="hidden md:flex items-center justify-end gap-2 mt-6">
+              <CarouselPrevious className="relative inset-0 translate-y-0 h-8 w-8 bg-background border-border hover:bg-secondary hover:text-foreground" />
+              <CarouselNext className="relative inset-0 translate-y-0 h-8 w-8 bg-background border-border hover:bg-secondary hover:text-foreground" />
             </div>
-          ))}
-        </div>
+          </Carousel>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            No reviews yet.
+          </div>
+        )}
       </div>
     </section>
   );

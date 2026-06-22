@@ -27,7 +27,7 @@ const routes =app
 .route("/checkout",checkout)
 .route("/orders",orders)
 .route("/collection",collection)
-.route("testimonials",testimonials)
+.route("/testimonials",testimonials)
 .route("/wishlist",wishlist)
 .route("/analytics",analytics)
 .route("/steadfast",steadfast)

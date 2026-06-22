@@ -322,6 +322,7 @@ export const testimonials = pgTable("Testimonial", {
   message: text("message").notNull(),
   rating: integer("rating").notNull(),
   image: text("image"),
+  screenshot: text("screenshot"),
   role: testimonialUserRoleEnum("role").default("CUSTOMER").notNull(),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),

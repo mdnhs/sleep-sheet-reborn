@@ -172,15 +172,15 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         
         {/* Title */}
         <Link href={`/products/${product.id}`} className="flex-1" onClick={(e) => { if (isDrawerOpen) e.preventDefault(); }}>
-          <h3 className="font-medium text-[15px] text-slate-800 leading-snug line-clamp-2 mb-3">
+          <h3 className="font-medium text-sm sm:text-[15px] text-slate-800 leading-snug line-clamp-2 mb-2 sm:mb-3">
             {product.name}
           </h3>
         </Link>
         
         {/* Price and Rating Row */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
-            <p className="font-bold text-[20px] text-slate-800">
+            <p className="font-bold text-lg sm:text-[20px] text-slate-800">
               {formatAmount(product.price)}
             </p>
           </div>
@@ -196,24 +196,24 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         </div>
 
         {/* Quantity & Cart Row */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           {/* Quantity Selector */}
-          <div className="flex-1 flex items-center justify-between bg-[#f4f4f5] rounded-xl px-2 h-12" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-            <button onClick={(e) => updateQuantity(e, -1)} className="p-2 text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50" disabled={quantity <= 1}>
-              <Minus className="h-4 w-4" />
+          <div className="flex-1 flex items-center justify-between bg-[#f4f4f5] rounded-xl px-2 h-10 sm:h-12" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+            <button onClick={(e) => updateQuantity(e, -1)} className="p-1 sm:p-2 text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50" disabled={quantity <= 1}>
+              <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
-            <span className="text-base font-bold text-slate-800">{quantity}</span>
-            <button onClick={(e) => updateQuantity(e, 1)} className="p-2 text-slate-500 hover:text-slate-800 transition-colors">
-              <Plus className="h-4 w-4" />
+            <span className="text-sm sm:text-base font-bold text-slate-800">{quantity}</span>
+            <button onClick={(e) => updateQuantity(e, 1)} className="p-1 sm:p-2 text-slate-500 hover:text-slate-800 transition-colors">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
 
           {/* Quick Add to Cart Button */}
           <button 
             onClick={handleQuickAdd}
-            className="shrink-0 w-12 h-12 bg-[#2d2d2d] hover:bg-[#1a1a1a] rounded-xl flex items-center justify-center text-white transition-colors active:scale-95"
+            className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-[#2d2d2d] hover:bg-[#1a1a1a] rounded-xl flex items-center justify-center text-white transition-colors active:scale-95"
           >
-            <ShoppingCart className="h-5 w-5" />
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
       </div>
@@ -285,14 +285,14 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
           <div className="flex gap-2 w-full">
             <button
               onClick={handleAddToCartVariant}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#f8f9fa] hover:bg-slate-200 text-slate-800 border border-slate-200 py-3.5 px-3 rounded-[14px] font-bold text-sm transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#f8f9fa] hover:bg-slate-200 text-slate-800 border border-slate-200 py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98]"
             >
-              <ShoppingCart className="h-4 w-4" />
+              <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Cart
             </button>
             <button
               onClick={handleBuyNowVariant}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3.5 px-3 rounded-[14px] font-bold text-sm transition-all shadow-md active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98]"
             >
               Buy Now
             </button>
@@ -300,13 +300,13 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         ) : (
           <button
             onClick={handleActionClick}
-            className="w-full flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3.5 px-5 rounded-[14px] font-medium text-[14px] transition-all active:scale-[0.98]"
+            className="w-full flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98]"
           >
             <span>{hasVariants ? "Select Option" : "Buy Now"}</span>
             {hasVariants ? (
-              <ChevronUp className="h-5 w-5 opacity-80" />
+              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 opacity-80" />
             ) : (
-              <ArrowUpCircle className="h-5 w-5 opacity-80 rotate-90" />
+              <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5 opacity-80 rotate-90" />
             )}
           </button>
         )}
