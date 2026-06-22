@@ -168,20 +168,25 @@ const app = new Hono()
       });
 
       const response: CartResponse = {
-        items: cart?.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          size: item.size || undefined,
-          color: item.color || undefined,
-          product: {
-            id: item.product.id,
-            name: item.product.name,
-            price: item.product.price,
-            image: item.product.images[0] || "",
-            description: item.product.description
-          }
-        })) || []
+        items: cart?.items.map(item => {
+          const variant = (item.product.variants as { name: string; price: number | null }[] | null)?.find(v => v.name === item.color);
+          const displayPrice = variant?.price ?? item.product.price;
+
+          return {
+            id: item.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            size: item.size || undefined,
+            color: item.color || undefined,
+            product: {
+              id: item.product.id,
+              name: item.product.name,
+              price: displayPrice,
+              image: item.product.images[0] || "",
+              description: item.product.description
+            }
+          };
+        }) || []
       };
 
       return c.json(response);

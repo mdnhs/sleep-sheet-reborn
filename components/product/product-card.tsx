@@ -28,7 +28,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
-  const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || "");
+  const [selectedColor, setSelectedColor] = useState(product.colors?.[0]?.name || "");
   const [quantity, setQuantity] = useState(1);
 
   const hasColors = product.colors && product.colors.length > 0;
@@ -260,17 +260,17 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             <div className="flex flex-col gap-1">
               <span className="text-xs font-semibold text-slate-500 uppercase">Color</span>
               <div className="flex flex-wrap gap-2">
-                {product.colors.map((color) => (
+                {product.colors?.map((color) => (
                   <button
-                    key={color}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(color); }}
+                    key={color.name}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(color.name); }}
                     className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                      selectedColor === color 
+                      selectedColor === color.name 
                         ? 'border-primary bg-primary/10 text-primary shadow-sm' 
                         : 'border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    {color}
+                    {color.name}
                   </button>
                 ))}
               </div>

@@ -21,7 +21,7 @@ export interface Review {
     description: string;
     features: string[];
     images: string[];
-    colors: string[];
+    colors: { name: string; price: number | null }[];
     sizes: string[];
     tags: string[];
     stock: number;

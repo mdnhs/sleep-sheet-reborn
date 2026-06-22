@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { ChipsInput } from "@/components/chip-input";
 import { FileUpload } from "@/features/dashboard/components/file-upload";
 import { SpecificationFields } from "@/features/dashboard/components/specifications-fields";
+import { VariantFields } from "@/features/dashboard/components/variant-fields";
 import { useGetCategories } from "@/features/categories/api/use-get-categories";
 import { useGetProduct } from "@/features/product/api/use-get-product";
 import { useUpdateProduct } from "@/features/dashboard/api/use-update-product";
@@ -74,7 +75,7 @@ function UpdateProductClient() {
         productStock: product.stock,
         productCategory: product.category,
         productSKU: product.sku,
-        productVariants: product.colors,
+        productVariants: product.colors || [],
         productImages: product.images,
         productTags: product.tags,
         productSize: product.sizes,
@@ -97,11 +98,11 @@ function UpdateProductClient() {
     formData.append("productStock", values.productStock.toString());
     formData.append("productCategory", values.productCategory);
     formData.append("productSKU", values.productSKU);
-    formData.append("productVariants", JSON.stringify(values.productVariants));
-    formData.append("productTags", JSON.stringify(values.productTags));
-    formData.append("specifications", JSON.stringify(values.specifications));
-    formData.append("productSize", JSON.stringify(values.productSize));
-    formData.append("productFeature", JSON.stringify(values.productFeatures));
+    formData.append("productVariants", JSON.stringify(values.productVariants || []));
+    formData.append("productTags", JSON.stringify(values.productTags || []));
+    formData.append("specifications", JSON.stringify(values.specifications || []));
+    formData.append("productSize", JSON.stringify(values.productSize || []));
+    formData.append("productFeature", JSON.stringify(values.productFeatures || []));
     formData.append("careInstruction", values.careInstructions || "");
     formData.append("isFeatured", values.isFeatured ? "true" : "false");
 
@@ -129,7 +130,7 @@ function UpdateProductClient() {
       <h1 className="text-3xl font-bold mb-6">Update Product</h1>
 
       <Form {...form}>
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit, (errors) => console.error("Validation Errors:", errors))}>
           <div className="flex flex-col gap-6 lg:flex-row">
             <Card className="w-full lg:w-2/3">
               <CardHeader>
@@ -252,25 +253,9 @@ function UpdateProductClient() {
                 />
 
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <FormField
-                    name="productVariants"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem className=" w-full">
-                        <label className="block text-sm font-semibold mt-4">
-                          Variants
-                        </label>
-                        <FormControl>
-                          <ChipsInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Add variants (press Enter or comma)"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="w-full">
+                    <VariantFields control={form.control} setValue={form.setValue} />
+                  </div>
 
                   <FormField
                     name="productTags"
@@ -449,7 +434,7 @@ function UpdateProductClient() {
               Clear
             </Button>
 
-            <Button size="lg" className=" w-full lg:w-[120px]">
+            <Button type="submit" size="lg" className=" w-full lg:w-[120px]">
               <Save />
               Update
             </Button>

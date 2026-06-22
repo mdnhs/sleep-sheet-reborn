@@ -68,17 +68,15 @@ const app = new Hono()
   };
 
   try {
-    await db.transaction(async (tx) => {
-      await tx.update(orders)
+      await db.update(orders)
         .set({ status, paymentStatus })
         .where(eq(orders.id, id));
 
-      await tx.insert(orderTimelineEvents).values({
+      await db.insert(orderTimelineEvents).values({
         orderId: id,
         status,
         message: `${statusMessages[status] || `Status changed to ${status}`}, payment status is now ${paymentStatus.toLowerCase()}.`
       });
-    });
 
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -99,11 +97,9 @@ const app = new Hono()
   const id = c.req.param("id");
 
   try {
-    await db.transaction(async (tx) => {
-      await tx.delete(orderItems).where(eq(orderItems.orderId, id));
-      await tx.delete(payments).where(eq(payments.orderId, id));
-      await tx.delete(orders).where(eq(orders.id, id));
-    });
+      await db.delete(orderItems).where(eq(orderItems.orderId, id));
+      await db.delete(payments).where(eq(payments.orderId, id));
+      await db.delete(orders).where(eq(orders.id, id));
 
     return c.json({ success: true });
   } catch (error) {

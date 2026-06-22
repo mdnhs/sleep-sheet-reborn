@@ -45,8 +45,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       return c.json({ success: false, error: 'Category not found' }, 400);
     }
 
-    const product = await db.transaction(async (tx) => {
-      const [newProduct] = await tx.insert(products).values({
+      const [newProduct] = await db.insert(products).values({
         name: formData.get('productName') as string,
         description: formData.get('productDescription') as string,
         price: Number(formData.get('productPrice')),
@@ -70,15 +69,14 @@ app.post('/upload',sessionMiddleware, async (c) => {
 
       let insertedSpecs: any[] = [];
       if (specsToInsert.length > 0) {
-        insertedSpecs = await tx.insert(specifications).values(specsToInsert).returning();
+        insertedSpecs = await db.insert(specifications).values(specsToInsert).returning();
       }
 
-      return {
+      const product = {
         ...newProduct,
         category,
         specifications: insertedSpecs,
       };
-    });
 
     return c.json({
       success: true,
@@ -156,8 +154,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       return c.json({ success: false, error: "Category not found" }, 400);
     }
 
-    const updatedProduct = await db.transaction(async (tx) => {
-      const [newProduct] = await tx.update(products)
+      const [newProduct] = await db.update(products)
         .set({
           name: formData.get("productName") as string,
           description: formData.get("productDescription") as string,
@@ -177,12 +174,12 @@ app.post('/upload',sessionMiddleware, async (c) => {
         .where(eq(products.id, productId))
         .returning();
 
-      await tx.delete(specifications).where(eq(specifications.productId, productId));
+      await db.delete(specifications).where(eq(specifications.productId, productId));
 
       const specList = JSON.parse(formData.get("specifications") as string) as { key: string; value: string }[];
       let insertedSpecs: any[] = [];
       if (specList.length > 0) {
-        insertedSpecs = await tx.insert(specifications).values(
+        insertedSpecs = await db.insert(specifications).values(
           specList.map((spec) => ({
             key: spec.key,
             value: spec.value,
@@ -191,12 +188,11 @@ app.post('/upload',sessionMiddleware, async (c) => {
         ).returning();
       }
 
-      return {
+      const updatedProduct = {
         ...newProduct,
         category,
         specifications: insertedSpecs,
       };
-    });
 
     return c.json({ success: true, product: updatedProduct }, 200);
   } catch (error) {
@@ -226,16 +222,14 @@ app.delete('/:id', sessionMiddleware, async (c) => {
       await deleteImageFromStorage(img);
     }
 
-    await db.transaction(async (tx) => {
-      await tx.delete(wishlistItems).where(eq(wishlistItems.productId, productId));
-      await tx.delete(cartItems).where(eq(cartItems.productId, productId));
-      await tx.delete(reviews).where(eq(reviews.productId, productId));
-      await tx.delete(specifications).where(eq(specifications.productId, productId));
-      await tx.update(orderItems)
+      await db.delete(wishlistItems).where(eq(wishlistItems.productId, productId));
+      await db.delete(cartItems).where(eq(cartItems.productId, productId));
+      await db.delete(reviews).where(eq(reviews.productId, productId));
+      await db.delete(specifications).where(eq(specifications.productId, productId));
+      await db.update(orderItems)
         .set({ productId: null })
         .where(eq(orderItems.productId, productId));
-      await tx.delete(products).where(eq(products.id, productId));
-    });
+      await db.delete(products).where(eq(products.id, productId));
 
     return c.json({ success: true });
   } catch (error) {
