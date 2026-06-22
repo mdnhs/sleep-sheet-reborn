@@ -66,44 +66,42 @@ const app = new Hono()
 
     try {
       let createdOrder: any = null;
-      await db.transaction(async (tx) => {
-        const orderNumber = `ORD-${Date.now()}`;
-        const [order] = await tx.insert(orders).values({
-          orderNumber,
-          userId: user.id,
-          subtotal,
-          totalAmount,
-          tax: 0,
-          shippingCost,
-          shippingAddress: shippingInfo.address,
-          paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
-        }).returning();
-        
-        createdOrder = order;
+      const orderNumber = `ORD-${Date.now()}`;
+      const [order] = await db.insert(orders).values({
+        orderNumber,
+        userId: user.id,
+        subtotal,
+        totalAmount,
+        tax: 0,
+        shippingCost,
+        shippingAddress: shippingInfo.address,
+        paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+      }).returning();
+      
+      createdOrder = order;
 
-        await tx.insert(orderItems).values(
-          cartItemsForOrder.map((item) => ({
-            orderId: order.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-            size: item.size || null,
-            color: item.color || null,
-          }))
-        );
+      await db.insert(orderItems).values(
+        cartItemsForOrder.map((item) => ({
+          orderId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          size: item.size || null,
+          color: item.color || null,
+        }))
+      );
 
-        if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
-          await tx.insert(payments).values({
-            orderId: order.id,
-            amount: totalAmount,
-            method: "CARD",
-            transactionId: paymentInfo.cardNumber,
-            last4Digits: paymentInfo.cardNumber.slice(-4),
-            expirationDate: paymentInfo.expirationDate,
-            status: "COMPLETED",
-          });
-        }
-      });
+      if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
+        await db.insert(payments).values({
+          orderId: order.id,
+          amount: totalAmount,
+          method: "CARD",
+          transactionId: paymentInfo.cardNumber,
+          last4Digits: paymentInfo.cardNumber.slice(-4),
+          expirationDate: paymentInfo.expirationDate,
+          status: "COMPLETED",
+        });
+      }
 
       for (const item of cartItemsForOrder) {
         await db.update(products)
@@ -154,47 +152,45 @@ const app = new Hono()
 
   try {
     let guestOrderId = "";
-    await db.transaction(async (tx) => {
-      const orderNumber = `ORD-${Date.now()}`;
-      const [order] = await tx.insert(orders).values({
-        orderNumber,
-        userId: null,
-        guestName: shippingInfo.fullName,
-        guestPhone: shippingInfo.phone,
-        guestEmail: shippingInfo.email || null,
-        subtotal,
-        totalAmount,
-        tax: 0,
-        shippingCost,
-        shippingAddress: shippingInfo.address,
-        paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
-      }).returning();
+    const orderNumber = `ORD-${Date.now()}`;
+    const [order] = await db.insert(orders).values({
+      orderNumber,
+      userId: null,
+      guestName: shippingInfo.fullName,
+      guestPhone: shippingInfo.phone,
+      guestEmail: shippingInfo.email || null,
+      subtotal,
+      totalAmount,
+      tax: 0,
+      shippingCost,
+      shippingAddress: shippingInfo.address,
+      paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+    }).returning();
 
-      guestOrderId = order.id;
+    guestOrderId = order.id;
 
-      await tx.insert(orderItems).values(
-        cartItemsForOrder.map((item) => ({
-          orderId: order.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          size: item.size ?? null,
-          color: item.color ?? null,
-        }))
-      );
+    await db.insert(orderItems).values(
+      cartItemsForOrder.map((item) => ({
+        orderId: order.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        size: item.size ?? null,
+        color: item.color ?? null,
+      }))
+    );
 
-      if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
-        await tx.insert(payments).values({
-          orderId: order.id,
-          amount: totalAmount,
-          method: "CARD",
-          transactionId: paymentInfo.cardNumber,
-          last4Digits: paymentInfo.cardNumber.slice(-4),
-          expirationDate: paymentInfo.expirationDate,
-          status: "COMPLETED",
-        });
-      }
-    });
+    if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
+      await db.insert(payments).values({
+        orderId: order.id,
+        amount: totalAmount,
+        method: "CARD",
+        transactionId: paymentInfo.cardNumber,
+        last4Digits: paymentInfo.cardNumber.slice(-4),
+        expirationDate: paymentInfo.expirationDate,
+        status: "COMPLETED",
+      });
+    }
 
     for (const item of cartItemsForOrder) {
       await db.update(products)

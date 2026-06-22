@@ -11,11 +11,29 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Categories = () => {
-  const { data } = useGetCategory();
+  const { data, isLoading } = useGetCategory();
 
   const displayedCategories = data?.categories || [];
+
+  if (isLoading) {
+    return (
+      <section className="py-10 bg-white relative overflow-hidden">
+        <div className="container mx-auto px-4 relative">
+          <div className="flex gap-4 md:gap-8 overflow-hidden">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-4 w-[110px] sm:w-[130px] shrink-0 p-2">
+                <Skeleton className="w-24 h-24 sm:w-28 sm:h-28 rounded-full" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-10 bg-white relative overflow-hidden">

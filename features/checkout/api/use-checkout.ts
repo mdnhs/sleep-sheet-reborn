@@ -28,8 +28,11 @@ export const UseCheckout = () => {
       const payload = {
         shippingInfo,
         paymentInfo: {
-          ...paymentInfo,
           paymentMethod,
+          cardNumber: paymentInfo?.cardNumber,
+          expirationDate: paymentInfo?.expirationDate,
+          cvv: paymentInfo?.cvv,
+          nameOnCard: paymentInfo?.nameOnCard,
         },
         guestItems: guestItems.length > 0 ? guestItems : undefined,
       };

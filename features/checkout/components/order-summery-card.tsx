@@ -26,59 +26,58 @@ function OrderSummeryCard() {
   if (!hasMounted) return null;
 
   return (
-    <Card className="w-full lg:w-[35%] min-h-[300px] h-auto">
-      <CardHeader>
-        <CardTitle>
-          <p className=" text-2xl">Order Summery</p>
+    <Card className="w-full lg:w-[40%] min-h-[300px] h-auto lg:sticky lg:top-24 bg-background border border-border/40 ring-0 py-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] overflow-hidden">
+      <CardHeader className="bg-transparent pt-8 pb-6 px-8 border-b border-border/40">
+        <CardTitle className="flex items-center gap-2">
+          <p className="text-2xl font-bold tracking-tight">Order Summary</p>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 px-8 pb-8 pt-8">
         {hasMounted &&
           cartItems?.map((cartItem) => (
-            <div key={cartItem.id} className="flex flex-row gap-2">
-              <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md">
+            <div key={cartItem.id} className="flex flex-row gap-5 group items-center">
+              <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted/20 relative">
                 <Image
                   src={cartItem?.image}
                   alt={cartItem?.name}
-                  width={96}
-                  height={96}
-                  className="object-cover"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
 
-              <div className="flex flex-col justify-between w-full">
-                <div className="flex flex-row justify-between gap-4">
-                  <h1 className="text-sm">{cartItem.name}</h1>
-                  <label>{symbol}{cartItem.price}</label>
+              <div className="flex flex-col justify-center w-full">
+                <div className="flex flex-row justify-between gap-4 items-start mb-1">
+                  <h1 className="text-sm font-semibold leading-tight pr-4">{cartItem.name}</h1>
+                  <label className="font-bold text-sm whitespace-nowrap">{symbol}{cartItem.price}</label>
                 </div>
-                <label className="text-xs text-muted-foreground">
-                  Qty: {cartItem.quantity}
-                </label>
-                <label className="text-xs text-muted-foreground">
-                  Color: {cartItem.color}
-                </label>
-                {cartItem.size && (
-                  <label className="text-xs text-muted-foreground">
-                    Size: {cartItem.size}
-                  </label>
-                )}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <span>Qty: {cartItem.quantity}</span>
+                  <span className="w-1 h-1 rounded-full bg-border"></span>
+                  <span>Color: {cartItem.color}</span>
+                  {cartItem.size && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-border"></span>
+                      <span>Size: {cartItem.size}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ))}
 
-        <div className="border-t pt-4 space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatAmount(subtotal)}</span>
+        <div className="border-t border-border/40 pt-6 space-y-4">
+          <div className="space-y-4">
+            <div className="flex justify-between text-sm font-medium">
+              <span className="text-muted-foreground/80">Subtotal</span>
+              <span className="font-semibold text-foreground">{formatAmount(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Shipping</span>
-              <span>{shipping > 0 ? formatAmount(shipping) : "Select delivery zone"}</span>
+            <div className="flex justify-between text-sm font-medium">
+              <span className="text-muted-foreground/80">Shipping</span>
+              <span className="font-semibold text-foreground">{shipping > 0 ? formatAmount(shipping) : "Calculated next"}</span>
             </div>
-            <div className="flex justify-between font-medium pt-2">
-              <span>Total</span>
-              <span>{formatAmount(total)}</span>
+            <div className="flex justify-between items-end pt-5 border-t border-border/40 mt-6">
+              <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Total</span>
+              <span className="text-3xl font-black text-foreground tracking-tight">{formatAmount(total)}</span>
             </div>
           </div>
         </div>

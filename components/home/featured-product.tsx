@@ -12,6 +12,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const FeaturedProduct = () => {
   const { data: products, isLoading } = useGetProducts({
@@ -20,14 +21,28 @@ const FeaturedProduct = () => {
 
   if (isLoading) {
     return (
-      <section className="py-6 md:py-10">
-        <div className="container mx-auto px-4 ">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="aspect-[3/4] bg-secondary/50 animate-pulse rounded-xl"
-              />
+      <section className="py-6 md:py-10 bg-background border-t border-slate-100 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative">
+          <div className="flex flex-row items-end justify-between mb-6">
+            <div>
+              <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
+                Featured Products
+              </h2>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="hidden sm:inline">View All</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex flex-col gap-3">
+                <Skeleton className="aspect-[3/4] w-full rounded-[2rem]" />
+                <Skeleton className="h-5 w-3/4 mt-2 rounded-xl" />
+                <Skeleton className="h-5 w-1/4 rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-full mt-2" />
+              </div>
             ))}
           </div>
         </div>
