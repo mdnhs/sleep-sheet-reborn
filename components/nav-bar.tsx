@@ -10,9 +10,10 @@ import { UserButton } from "@/features/auth/components/user-button";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { selectTotalItems } from "@/features/cart/state/cart-slice";
+import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useSyncExternalStore } from "react";
-import { Menu, ShoppingCart, User, Leaf, BadgePercent, Search, Sun, Moon } from "lucide-react";
+import { Menu, ShoppingCart, User, Bed, BadgePercent, Search, Sun, Moon } from "lucide-react";
 import { useSelector } from "react-redux";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryState } from "nuqs";
@@ -200,12 +201,7 @@ function MobileNavbarMenu({
       <SheetContent side="left" className="flex w-full max-w-xs flex-col">
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary bg-background text-primary">
-              <Leaf className="h-4.5 w-4.5 fill-current" />
-            </div>
-            <span className="text-base font-bold text-foreground">
-              Falaq <span className="text-primary">Food</span>
-            </span>
+            <img src="/logo.png" alt="SleepSheet Logo" className="h-10 w-auto object-contain" />
           </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-6 p-6">
@@ -304,12 +300,7 @@ function Navbar() {
                 <Menu className="h-5 w-5" />
               </Button>
               <Link href="/" className="flex items-center gap-2 select-none">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-primary bg-background text-primary">
-                  <Leaf className="h-4 w-4 fill-current" />
-                </div>
-                <span className="text-base font-bold text-foreground">
-                  Falaq <span className="text-primary">Food</span>
-                </span>
+                <img src="/logo.png" alt="SleepSheet Logo" className="h-9 w-auto object-contain" />
               </Link>
               <MobileNavbarAccount
                 hasMounted={hasMounted}
@@ -337,12 +328,7 @@ function Navbar() {
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 select-none shrink-0">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-primary bg-background text-primary">
-                <Leaf className="h-5 w-5 fill-current" />
-              </div>
-              <span className="text-lg font-bold text-foreground tracking-tight">
-                Falaq <span className="text-primary">Food</span>
-              </span>
+              <img src="/logo.png" alt="SleepSheet Logo" className="h-12 w-auto object-contain" />
             </Link>
 
             {/* Links */}

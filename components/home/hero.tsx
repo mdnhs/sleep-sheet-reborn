@@ -49,18 +49,17 @@ function Hero() {
   }, [nextSlide]);
 
   return (
-    <section className="w-full bg-background py-6">
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[460px] xl:h-[520px]">
+    <section className="w-full bg-background py-3">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 h-auto lg:h-[320px] xl:h-[380px]">
           {/* Left: Main Slider (Carousel) */}
           <div className="lg:col-span-2 relative w-full h-[320px] sm:h-[400px] lg:h-full rounded-[1.5rem] overflow-hidden shadow-sm group">
             {/* Slides */}
             {SLIDES.map((slide, index) => (
               <div
                 key={slide.id}
-                className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-                  index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
-                }`}
+                className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
+                  }`}
               >
                 <Image
                   src={slide.image}
@@ -121,9 +120,8 @@ function Hero() {
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
-                  className={`h-2.5 rounded-full transition-all duration-300 ${
-                    currentSlide === index ? "w-8 bg-primary" : "w-2.5 bg-white/60 hover:bg-white"
-                  }`}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${currentSlide === index ? "w-8 bg-primary" : "w-2.5 bg-white/60 hover:bg-white"
+                    }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}
@@ -131,7 +129,7 @@ function Hero() {
           </div>
 
           {/* Right: Stacked Banners */}
-          <div className="lg:col-span-1 flex flex-col gap-6 h-full w-full">
+          <div className="lg:col-span-1 flex flex-col gap-3 h-full w-full">
             {/* Top Right Card */}
             <div className="relative flex-1 h-[180px] lg:h-1/2 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group">
               <Image
