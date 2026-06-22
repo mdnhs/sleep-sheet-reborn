@@ -8,27 +8,27 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 const SLIDES = [
   {
     id: 1,
-    image: "/hero-slider-1.png",
-    title: "টক, ঝাল, মিষ্টি",
-    subtitle: "স্বাদের পরিপূর্ণতায়",
-    heading: "প্রিমিয়াম আচার কম্বো",
-    link: "/products?category=Pickles",
+    image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1600&auto=format&fit=crop",
+    title: "Premium Comfort",
+    subtitle: "Sleep like never before",
+    heading: "Luxury Comforters",
+    link: "/products?category=Comforters",
   },
   {
     id: 2,
-    image: "/hero-banner-1.png",
-    title: "সবসময় সব আয়োজনে",
-    subtitle: "খাঁটি স্বাদের নিশ্চয়তা",
-    heading: "পরিবারের সাথে",
-    link: "/products?category=Pickles",
+    image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1600&auto=format&fit=crop",
+    title: "Soft & Breathable",
+    subtitle: "100% Egyptian Cotton",
+    heading: "Bedsheet Collection",
+    link: "/products?category=Bedsheets",
   },
   {
     id: 3,
-    image: "/hero-banner-2.png",
-    title: "স্বাদে ভরা ঘ্রাণে কড়া",
-    subtitle: "খাঁটি সরিষার তেল",
-    heading: "ঝাঁঝে অনন্য",
-    link: "/products?category=Oil",
+    image: "https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=1600&auto=format&fit=crop",
+    title: "Cozy Nights",
+    subtitle: "Transform your bedroom",
+    heading: "Winter Blankets",
+    link: "/products?category=Blankets",
   },
 ];
 
@@ -133,32 +133,32 @@ function Hero() {
             {/* Top Right Card */}
             <div className="relative flex-1 h-[180px] lg:h-1/2 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group">
               <Image
-                src="/hero-banner-1.png"
-                alt="Pickles set"
+                src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop"
+                alt="Comforters"
                 fill
                 className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent p-6 flex flex-col justify-between">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent p-6 flex flex-col justify-between">
                 <div className="max-w-[180px]">
                   <p
-                    className="text-xs uppercase tracking-wider text-amber-900 font-bold"
-                    style={{ textShadow: "0 1px 2px rgba(255, 255, 255, 0.8)" }}
+                    className="text-xs uppercase tracking-wider text-white font-bold"
+                    style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.8)" }}
                   >
-                    সবসময়
+                    BEST SELLER
                   </p>
                   <h3
-                    className="text-lg sm:text-xl font-extrabold text-[#b45309] leading-tight mt-1"
-                    style={{ textShadow: "0 1.5px 3px rgba(255, 255, 255, 0.9)" }}
+                    className="text-lg sm:text-xl font-extrabold text-white leading-tight mt-1"
+                    style={{ textShadow: "0 1.5px 3px rgba(0, 0, 0, 0.9)" }}
                   >
-                    সব আয়োজনে পরিবারের সাথে
+                    All-Season Comforters
                   </h3>
                 </div>
                 <Link
-                  href="/products?category=Pickles"
-                  className="w-fit text-xs font-semibold text-primary hover:underline"
-                  style={{ textShadow: "0 1px 2px rgba(255, 255, 255, 0.8)" }}
+                  href="/products?category=Comforters"
+                  className="w-fit text-xs font-bold text-white hover:underline"
+                  style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.8)" }}
                 >
-                  View Details →
+                  View Collection →
                 </Link>
               </div>
             </div>
@@ -166,32 +166,32 @@ function Hero() {
             {/* Bottom Right Card */}
             <div className="relative flex-1 h-[180px] lg:h-1/2 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group">
               <Image
-                src="/hero-banner-2.png"
-                alt="Mustard Oil"
+                src="https://images.unsplash.com/photo-1616627547584-bf28cee262db?q=80&w=800&auto=format&fit=crop"
+                alt="Bedsheets"
                 fill
                 className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent p-6 flex flex-col justify-between">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent p-6 flex flex-col justify-between">
                 <div className="max-w-[180px]">
                   <p
-                    className="text-xs uppercase tracking-wider text-amber-900 font-bold"
-                    style={{ textShadow: "0 1px 2px rgba(255, 255, 255, 0.8)" }}
+                    className="text-xs uppercase tracking-wider text-white font-bold"
+                    style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.8)" }}
                   >
-                    স্বাদে ভরা
+                    NEW ARRIVALS
                   </p>
                   <h3
-                    className="text-lg sm:text-xl font-extrabold text-[#b45309] leading-tight mt-1"
-                    style={{ textShadow: "0 1.5px 3px rgba(255, 255, 255, 0.9)" }}
+                    className="text-lg sm:text-xl font-extrabold text-white leading-tight mt-1"
+                    style={{ textShadow: "0 1.5px 3px rgba(0, 0, 0, 0.9)" }}
                   >
-                    ঝাঁঝে অনন্য খাঁটি তেল
+                    Luxury Hotel Bedsheets
                   </h3>
                 </div>
                 <Link
-                  href="/products?category=Oil"
-                  className="w-fit text-xs font-semibold text-primary hover:underline"
-                  style={{ textShadow: "0 1px 2px rgba(255, 255, 255, 0.8)" }}
+                  href="/products?category=Bedsheets"
+                  className="w-fit text-xs font-bold text-white hover:underline"
+                  style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.8)" }}
                 >
-                  View Details →
+                  Shop Now →
                 </Link>
               </div>
             </div>

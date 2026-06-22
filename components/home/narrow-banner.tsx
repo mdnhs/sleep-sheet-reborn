@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 const NarrowBanner = () => {
   return (
-    <section className="py-6 bg-white">
+    <section className="py-2 bg-white">
       <div className="container mx-auto px-4">
         <Link href="/products?category=combos" className="block relative overflow-hidden rounded-2xl bg-[#fff5f0] group">
           {/* Faint background text matching the "50%" in the image */}
@@ -12,12 +12,12 @@ const NarrowBanner = () => {
             50%
           </div>
 
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-8 md:px-12 lg:pr-64 min-h-[120px] gap-6">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between py-4 px-6 md:px-8 lg:pr-64 min-h-[80px] gap-4">
             <div className="max-w-2xl">
-              <h2 className="text-[#e25c27] text-xl md:text-2xl font-bold mb-2 tracking-tight">
+              <h2 className="text-[#e25c27] text-lg md:text-xl font-bold mb-1 tracking-tight">
                 In store or online your comfort & sleep is our top priority
               </h2>
-              <p className="text-slate-500 text-sm md:text-base leading-relaxed">
+              <p className="text-slate-500 text-xs md:text-sm leading-relaxed">
                 The only bedding brand that makes your life easier, helps you sleep better and wake up refreshed every single day.
               </p>
             </div>
