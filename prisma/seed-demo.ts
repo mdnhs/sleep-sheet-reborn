@@ -32,11 +32,10 @@ const adminEmail = process.env.DEMO_ADMIN_EMAIL || "admin@demo.com";
 const adminPassword = process.env.DEMO_ADMIN_PASSWORD || "Admin123!";
 
 const categoriesData = [
-  { id: "demo-category-electronics", value: "electronics", label: "Electronics" },
-  { id: "demo-category-clothing", value: "clothing", label: "Clothing" },
-  { id: "demo-category-home", value: "home-appliances", label: "Home Appliances" },
-  { id: "demo-category-books", value: "books", label: "Books" },
-  { id: "demo-category-footwear", value: "footwear", label: "Footwear" },
+  { id: "demo-category-comforters", value: "comforters", label: "Comforters" },
+  { id: "demo-category-bedsheets", value: "bedsheets", label: "Bedsheets" },
+  { id: "demo-category-blankets", value: "blankets", label: "Blankets" },
+  { id: "demo-category-pillow-covers", value: "pillow-covers", label: "Pillow Covers" },
 ];
 
 type DemoProduct = {
@@ -58,142 +57,71 @@ type DemoProduct = {
 
 const productsData: DemoProduct[] = [
   {
-    sku: "DEMO-HEADPHONE-001",
-    name: "Wireless Noise-Cancelling Headphones",
-    description: "Comfortable over-ear headphones with rich sound and 40-hour battery life.",
-    price: 8490,
-    stock: 42,
-    variants: ["Matte Black", "Silver"],
-    tags: ["audio", "wireless", "featured"],
-    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1200"],
-    sizes: [],
-    features: ["Active noise cancellation", "40-hour battery", "Bluetooth 5.3"],
-    categoryValue: "electronics",
-    isFeatured: true,
-    specifications: [
-      { key: "Driver", value: "40mm" },
-      { key: "Charging", value: "USB-C" },
-    ],
-  },
-  {
-    sku: "DEMO-WATCH-001",
-    name: "Active Smart Watch",
-    description: "A lightweight smart watch for fitness, calls, and everyday notifications.",
-    price: 5990,
-    stock: 36,
-    variants: ["Midnight", "Sand"],
-    tags: ["wearable", "fitness", "smart-watch"],
-    images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200"],
-    sizes: ["40mm", "44mm"],
-    features: ["AMOLED display", "Heart-rate tracking", "5-day battery"],
-    categoryValue: "electronics",
-    isFeatured: true,
-    specifications: [
-      { key: "Water resistance", value: "5 ATM" },
-      { key: "Connectivity", value: "Bluetooth 5.2" },
-    ],
-  },
-  {
-    sku: "DEMO-TEE-001",
-    name: "Premium Cotton T-Shirt",
-    description: "Soft, breathable cotton t-shirt with a relaxed everyday fit.",
-    price: 1290,
+    sku: "DEMO-COMF-001",
+    name: "Premium All-Season Comforter",
+    description: "Ultra-soft microfibre comforter designed to keep you cozy in winter and cool in summer.",
+    price: 3490,
     stock: 120,
-    variants: ["Black", "White", "Navy"],
-    tags: ["cotton", "casual", "unisex"],
-    images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1200"],
-    sizes: ["S", "M", "L", "XL"],
-    features: ["100% cotton", "Pre-shrunk", "Regular fit"],
-    careInstruction: "Machine wash cold with similar colors.",
-    categoryValue: "clothing",
-    isFeatured: true,
-    specifications: [{ key: "Material", value: "100% Cotton" }],
-  },
-  {
-    sku: "DEMO-HOODIE-001",
-    name: "Essential Zip Hoodie",
-    description: "Midweight fleece hoodie with a clean silhouette and durable metal zip.",
-    price: 2790,
-    stock: 64,
-    variants: ["Charcoal", "Olive"],
-    tags: ["hoodie", "fleece", "casual"],
-    images: ["https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1200"],
-    sizes: ["S", "M", "L", "XL"],
-    features: ["Brushed fleece", "Metal zip", "Kangaroo pockets"],
-    careInstruction: "Wash inside out. Do not bleach.",
-    categoryValue: "clothing",
-    isFeatured: false,
-    specifications: [{ key: "Fabric", value: "Cotton blend" }],
-  },
-  {
-    sku: "DEMO-SHOE-001",
-    name: "Performance Running Shoes",
-    description: "Responsive running shoes with a breathable upper and cushioned midsole.",
-    price: 4490,
-    stock: 75,
-    variants: ["Black/White", "Blue/Lime"],
-    tags: ["running", "sports", "shoes"],
-    images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200"],
-    sizes: ["39", "40", "41", "42", "43"],
-    features: ["Breathable knit", "Foam cushioning", "Rubber outsole"],
-    careInstruction: "Spot clean and air dry.",
-    categoryValue: "footwear",
+    variants: ["White", "Grey", "Navy"],
+    tags: ["comforter", "all-season", "featured"],
+    images: ["https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1200"],
+    sizes: ["Queen", "King"],
+    features: ["Hypoallergenic filling", "Box-stitch construction", "Machine washable"],
+    categoryValue: "comforters",
     isFeatured: true,
     specifications: [
-      { key: "Weight", value: "265g" },
-      { key: "Drop", value: "8mm" },
+      { key: "Material", value: "100% Microfibre" },
+      { key: "Weight", value: "300 GSM" },
     ],
   },
   {
-    sku: "DEMO-BLENDER-001",
-    name: "High-Speed Kitchen Blender",
-    description: "Powerful countertop blender for smoothies, sauces, and crushed ice.",
-    price: 6990,
-    stock: 24,
-    variants: ["Black", "Silver"],
-    tags: ["kitchen", "appliance", "blender"],
-    images: ["https://images.unsplash.com/photo-1570222094114-d054a817e56b?q=80&w=1200"],
-    sizes: [],
-    features: ["1500W motor", "10 speeds", "BPA-free pitcher"],
-    careInstruction: "Pitcher is dishwasher safe. Wipe the base clean.",
-    categoryValue: "home-appliances",
+    sku: "DEMO-BED-001",
+    name: "Luxury Egyptian Cotton Bedsheet",
+    description: "Experience hotel-like luxury with our 400 thread count Egyptian cotton bedsheet set.",
+    price: 2290,
+    stock: 85,
+    variants: ["Ivory", "Sage", "Slate"],
+    tags: ["bedsheet", "cotton", "luxury"],
+    images: ["https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1200"],
+    sizes: ["Twin", "Queen", "King"],
+    features: ["400 Thread Count", "Deep pockets up to 16\"", "Fade resistant"],
+    careInstruction: "Machine wash cold. Tumble dry low.",
+    categoryValue: "bedsheets",
+    isFeatured: true,
+    specifications: [{ key: "Material", value: "100% Egyptian Cotton" }],
+  },
+  {
+    sku: "DEMO-BLANKET-001",
+    name: "Plush Winter Blanket",
+    description: "Thick and incredibly warm fleece blanket for those chilly winter nights.",
+    price: 1890,
+    stock: 200,
+    variants: ["Charcoal", "Maroon"],
+    tags: ["blanket", "winter", "fleece"],
+    images: ["https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=1200"],
+    sizes: ["Single", "Double"],
+    features: ["Double-sided fleece", "Anti-pilling", "Heavyweight warmth"],
+    careInstruction: "Wash on delicate cycle. Do not iron.",
+    categoryValue: "blankets",
+    isFeatured: false,
+    specifications: [{ key: "Fabric", value: "Polyester Fleece" }],
+  },
+  {
+    sku: "DEMO-PILLOW-001",
+    name: "Mulberry Silk Pillow Cover",
+    description: "Protect your hair and skin with our 100% pure mulberry silk pillow covers.",
+    price: 1490,
+    stock: 45,
+    variants: ["Pearl", "Champagne"],
+    tags: ["pillow", "silk", "beauty"],
+    images: ["https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200"],
+    sizes: ["Standard", "King"],
+    features: ["22 Momme Silk", "Hidden zipper closure", "Hypoallergenic"],
+    careInstruction: "Hand wash cold with silk detergent. Air dry.",
+    categoryValue: "pillow-covers",
     isFeatured: true,
     specifications: [
-      { key: "Power", value: "1500W" },
-      { key: "Capacity", value: "1.8L" },
-    ],
-  },
-  {
-    sku: "DEMO-LAMP-001",
-    name: "Minimal Desk Lamp",
-    description: "Adjustable LED desk lamp with warm and cool light modes.",
-    price: 2190,
-    stock: 51,
-    variants: ["Black", "White"],
-    tags: ["lighting", "desk", "home"],
-    images: ["https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1200"],
-    sizes: [],
-    features: ["Dimmable LED", "Three color modes", "USB-C powered"],
-    categoryValue: "home-appliances",
-    isFeatured: false,
-    specifications: [{ key: "Power", value: "12W" }],
-  },
-  {
-    sku: "DEMO-BOOK-001",
-    name: "The Design of Everyday Things",
-    description: "A practical introduction to human-centered product and interaction design.",
-    price: 990,
-    stock: 90,
-    variants: ["Paperback"],
-    tags: ["design", "ux", "book"],
-    images: ["https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1200"],
-    sizes: [],
-    features: ["Revised edition", "Paperback", "Illustrated"],
-    categoryValue: "books",
-    isFeatured: false,
-    specifications: [
-      { key: "Author", value: "Don Norman" },
-      { key: "Language", value: "English" },
+      { key: "Material", value: "100% Mulberry Silk" },
     ],
   },
 ];
@@ -356,7 +284,7 @@ async function seedCustomerData() {
     }
   }
 
-  const cartProducts = ["DEMO-TEE-001", "DEMO-BOOK-001"].map((sku) => productBySku.get(sku)!);
+  const cartProducts = ["DEMO-BED-001", "DEMO-PILLOW-001"].map((sku) => productBySku.get(sku)!);
   let cartObj = await db.query.carts.findFirst({ where: eq(carts.userId, customer.id) });
   if (!cartObj) {
     const [newCart] = await db.insert(carts).values({ userId: customer.id }).returning();
@@ -364,11 +292,11 @@ async function seedCustomerData() {
   }
   await db.delete(cartItems).where(eq(cartItems.cartId, cartObj.id));
   await db.insert(cartItems).values([
-    { cartId: cartObj.id, productId: cartProducts[0].id, quantity: 2, size: "M", color: "Black" },
-    { cartId: cartObj.id, productId: cartProducts[1].id, quantity: 1 },
+    { cartId: cartObj.id, productId: cartProducts[0].id, quantity: 2, size: "King", color: "Sage" },
+    { cartId: cartObj.id, productId: cartProducts[1].id, quantity: 1, size: "Standard", color: "Pearl" },
   ]);
 
-  const wishlistProducts = ["DEMO-HEADPHONE-001", "DEMO-SHOE-001"].map((sku) => productBySku.get(sku)!);
+  const wishlistProducts = ["DEMO-COMF-001", "DEMO-BLANKET-001"].map((sku) => productBySku.get(sku)!);
   let wishlistObj = await db.query.wishlists.findFirst({ where: eq(wishlists.userId, customer.id) });
   if (!wishlistObj) {
     const [newWishlist] = await db.insert(wishlists).values({ userId: customer.id }).returning();
@@ -395,12 +323,12 @@ type DemoOrder = {
 };
 
 const demoOrders: DemoOrder[] = [
-  { orderNumber: "DEMO-1001", daysOld: 0, status: OrderStatus.PENDING, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.PENDING, shippingMethodId: "demo-shipping-dhaka", items: [{ sku: "DEMO-TEE-001", quantity: 2, size: "M", color: "Black" }], timeline: [OrderStatus.PENDING] },
-  { orderNumber: "DEMO-1002", daysOld: 1, status: OrderStatus.PROCESSING, paymentMethod: PaymentMethod.CARD, paymentStatus: PaymentStatus.COMPLETED, shippingMethodId: "demo-shipping-express", items: [{ sku: "DEMO-WATCH-001", quantity: 1, size: "44mm", color: "Midnight" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
-  { orderNumber: "DEMO-1003", daysOld: 3, status: OrderStatus.SHIPPED, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.PENDING, shippingMethodId: "demo-shipping-outside", guest: { name: "Nadia Rahman", phone: "01800000001", email: "nadia@example.com" }, items: [{ sku: "DEMO-SHOE-001", quantity: 1, size: "41", color: "Black/White" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED], trackingNumber: "DEMO-TRK-1003" },
-  { orderNumber: "DEMO-1004", daysOld: 7, status: OrderStatus.DELIVERED, paymentMethod: PaymentMethod.CARD, paymentStatus: PaymentStatus.COMPLETED, shippingMethodId: "demo-shipping-dhaka", items: [{ sku: "DEMO-HEADPHONE-001", quantity: 1, color: "Matte Black" }, { sku: "DEMO-BOOK-001", quantity: 1 }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED], trackingNumber: "DEMO-TRK-1004" },
-  { orderNumber: "DEMO-1005", daysOld: 12, status: OrderStatus.CANCELLED, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.FAILED, shippingMethodId: "demo-shipping-outside", guest: { name: "Tanvir Hasan", phone: "01800000002", email: "tanvir@example.com" }, items: [{ sku: "DEMO-BLENDER-001", quantity: 1 }], timeline: [OrderStatus.PENDING, OrderStatus.CANCELLED], cancellationReason: "Customer changed their mind." },
-  { orderNumber: "DEMO-1006", daysOld: 20, status: OrderStatus.DELIVERED, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.COMPLETED, shippingMethodId: "demo-shipping-outside", guest: { name: "Samira Khan", phone: "01800000003", email: "samira@example.com" }, items: [{ sku: "DEMO-LAMP-001", quantity: 2, color: "White" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED], trackingNumber: "DEMO-TRK-1006" },
+  { orderNumber: "DEMO-1001", daysOld: 0, status: OrderStatus.PENDING, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.PENDING, shippingMethodId: "demo-shipping-dhaka", items: [{ sku: "DEMO-BED-001", quantity: 2, size: "King", color: "Ivory" }], timeline: [OrderStatus.PENDING] },
+  { orderNumber: "DEMO-1002", daysOld: 1, status: OrderStatus.PROCESSING, paymentMethod: PaymentMethod.CARD, paymentStatus: PaymentStatus.COMPLETED, shippingMethodId: "demo-shipping-express", items: [{ sku: "DEMO-COMF-001", quantity: 1, size: "Queen", color: "Navy" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
+  { orderNumber: "DEMO-1003", daysOld: 3, status: OrderStatus.SHIPPED, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.PENDING, shippingMethodId: "demo-shipping-outside", guest: { name: "Nadia Rahman", phone: "01800000001", email: "nadia@example.com" }, items: [{ sku: "DEMO-BLANKET-001", quantity: 1, size: "Single", color: "Maroon" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED], trackingNumber: "DEMO-TRK-1003" },
+  { orderNumber: "DEMO-1004", daysOld: 7, status: OrderStatus.DELIVERED, paymentMethod: PaymentMethod.CARD, paymentStatus: PaymentStatus.COMPLETED, shippingMethodId: "demo-shipping-dhaka", items: [{ sku: "DEMO-PILLOW-001", quantity: 2, size: "Standard", color: "Pearl" }, { sku: "DEMO-BED-001", quantity: 1, size: "King", color: "Sage" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED], trackingNumber: "DEMO-TRK-1004" },
+  { orderNumber: "DEMO-1005", daysOld: 12, status: OrderStatus.CANCELLED, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.FAILED, shippingMethodId: "demo-shipping-outside", guest: { name: "Tanvir Hasan", phone: "01800000002", email: "tanvir@example.com" }, items: [{ sku: "DEMO-COMF-001", quantity: 1, size: "Queen", color: "Grey" }], timeline: [OrderStatus.PENDING, OrderStatus.CANCELLED], cancellationReason: "Customer changed their mind." },
+  { orderNumber: "DEMO-1006", daysOld: 20, status: OrderStatus.DELIVERED, paymentMethod: PaymentMethod.COD, paymentStatus: PaymentStatus.COMPLETED, shippingMethodId: "demo-shipping-outside", guest: { name: "Samira Khan", phone: "01800000003", email: "samira@example.com" }, items: [{ sku: "DEMO-PILLOW-001", quantity: 4, size: "Standard", color: "Champagne" }], timeline: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED], trackingNumber: "DEMO-TRK-1006" },
 ];
 
 async function seedOrders() {
@@ -490,19 +418,19 @@ async function seedOrders() {
 }
 
 async function seedMarketingData() {
-  const headphone = await db.query.products.findFirst({ where: eq(products.sku, "DEMO-HEADPHONE-001") });
-  const shoe = await db.query.products.findFirst({ where: eq(products.sku, "DEMO-SHOE-001") });
-  if (!headphone || !shoe) throw new Error("Demo headphone or shoe not found");
+  const comforter = await db.query.products.findFirst({ where: eq(products.sku, "DEMO-COMF-001") });
+  const bedsheet = await db.query.products.findFirst({ where: eq(products.sku, "DEMO-BED-001") });
+  if (!comforter || !bedsheet) throw new Error("Demo comforter or bedsheet not found");
 
-  const existingCamp1 = await db.query.campaigns.findFirst({ where: eq(campaigns.slug, "demo-headphone-launch") });
+  const existingCamp1 = await db.query.campaigns.findFirst({ where: eq(campaigns.slug, "demo-comforter-launch") });
   const camp1Values = {
-    title: "Sound Without Distractions",
-    slug: "demo-headphone-launch",
-    headline: "Focus on every detail",
-    subheadline: "Premium wireless audio for work and travel.",
-    badgeLabel: "Demo Campaign",
+    title: "Sleep Like Royalty",
+    slug: "demo-comforter-launch",
+    headline: "Experience premium comfort",
+    subheadline: "Luxury all-season comforters for perfect sleep.",
+    badgeLabel: "Winter Sale",
     status: CampaignStatus.ACTIVE,
-    productId: headphone.id,
+    productId: comforter.id,
     updatedAt: new Date(),
   };
   if (existingCamp1) {
@@ -511,13 +439,13 @@ async function seedMarketingData() {
     await db.insert(campaigns).values(camp1Values);
   }
 
-  const existingCamp2 = await db.query.campaigns.findFirst({ where: eq(campaigns.slug, "demo-running-season") });
+  const existingCamp2 = await db.query.campaigns.findFirst({ where: eq(campaigns.slug, "demo-cotton-season") });
   const camp2Values = {
-    title: "Run Your Best",
-    slug: "demo-running-season",
-    headline: "Built for the next kilometer",
+    title: "Breathe Easy",
+    slug: "demo-cotton-season",
+    headline: "100% Egyptian Cotton",
     status: CampaignStatus.DRAFT,
-    productId: shoe.id,
+    productId: bedsheet.id,
     updatedAt: new Date(),
   };
   if (existingCamp2) {
