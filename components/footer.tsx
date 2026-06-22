@@ -12,11 +12,11 @@ const Footer = () => {
     <footer className="bg-foreground text-background pt-10 md:pt-16 pb-24 md:pb-8 border-t border-white/5 relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-2 lg:grid-cols-12 gap-y-10 gap-x-8 md:gap-12 lg:gap-8">
-          
+
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-4 space-y-5 md:space-y-6 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="flex items-center gap-2 mb-1 md:mb-2">
-              <img src="/logo.png" alt="SleepSheet Logo" className="h-9 md:h-10 w-auto object-contain brightness-0 invert opacity-90" />
+              <img src="/logo.png" alt="SleepSheet Logo" className="h-9 md:h-10 w-auto object-contain" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto md:mx-0">
               Elevating your rest with premium, ethically crafted bedding for the modern sanctuary.
@@ -160,7 +160,7 @@ const Footer = () => {
                   <p className="text-sm text-white font-medium">support@sleepsheet.com</p>
                 </div>
               </a>
-              
+
               <a href="tel:+8801700000000" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer w-full md:w-fit md:pr-6">
                 <div className="flex shrink-0 items-center justify-center h-8 w-8 rounded-full bg-white/10 text-white group-hover:bg-white group-hover:text-foreground transition-colors">
                   <Phone className="h-4 w-4" />
@@ -179,7 +179,7 @@ const Footer = () => {
           <p className="text-center text-xs text-white/40 md:text-left">
             © {new Date().getFullYear()} SLEEP SHEET. All rights reserved.
           </p>
-          
+
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 md:justify-end">
             <Link
               href="/privacy-policy"

@@ -22,50 +22,32 @@ function SwitchImage({ product }: SwitchImageProps) {
     );
   };
   return (
-    <div className="space-y-4">
-      <div className="relative overflow-hidden rounded-lg bg-secondary aspect-square">
-        <Image
-          src={product.images[selectedImage]}
-          alt="Product Image"
-          width={500}
-          height={500}
-          priority={true}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 flex items-center justify-between p-4">
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={prevImage}
-            className="rounded-full opacity-80 hover:opacity-100"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={nextImage}
-            className="rounded-full opacity-80 hover:opacity-100"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        {product.images.map((image, index) => (
+    <div className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] bg-secondary/20 overflow-hidden shadow-sm h-[280px] sm:h-[400px] lg:h-[550px]">
+      <Image
+        src={product.images[selectedImage]}
+        alt="Product Image"
+        fill
+        priority={true}
+        className="object-cover transition-transform duration-700"
+      />
+      
+      {/* Thumbnails Overlay */}
+      <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-2 sm:gap-3 px-4 z-10">
+        {product.images.slice(0, 3).map((image, index) => (
           <button
             key={index}
             onClick={() => setSelectedImage(index)}
-            className={`aspect-square rounded-md overflow-hidden border-2 ${
-              selectedImage === index ? "border-primary" : "border-transparent"
+            className={`relative aspect-[4/5] w-16 sm:w-24 md:w-28 rounded-lg sm:rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ${
+              selectedImage === index 
+                ? "ring-2 ring-white scale-100 opacity-100" 
+                : "opacity-80 hover:opacity-100 hover:scale-[1.02] border-2 border-transparent"
             }`}
           >
             <Image
               src={image}
-              width={100}
-              height={100}
+              fill
               alt={`${product.name} view ${index + 1}`}
-              className="w-full h-full object-cover"
+              className="object-cover"
             />
           </button>
         ))}

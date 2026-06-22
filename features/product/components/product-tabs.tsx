@@ -36,37 +36,47 @@ function ProductTab({ product }: ProductTabProps) {
   return (
     <div className="mt-16">
       <Tabs defaultValue="details">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="specifications">Specifications</TabsTrigger>
-          <TabsTrigger value="reviews">
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-secondary/30 rounded-xl p-1">
+          <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">Details</TabsTrigger>
+          <TabsTrigger value="specifications" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">Specifications</TabsTrigger>
+          <TabsTrigger value="reviews" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm py-2.5">
             Reviews ({product.reviewCount})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details" className="space-y-4">
-          <h3 className="text-lg font-semibold">Product Features</h3>
-          <ul className="list-disc pl-6 space-y-2">
-            {product.features.map((feature, index) => (
-              <li key={index} className="text-muted-foreground">
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <h3 className="text-lg font-semibold pt-4">Care Instructions</h3>
-          <p className="text-muted-foreground">{product.care}</p>
+        <TabsContent value="details" className="space-y-6 bg-secondary/10 p-6 md:p-8 rounded-2xl border border-border/50">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+              Product Features
+            </h3>
+            <ul className="list-disc pl-6 space-y-2">
+              {product.features.map((feature, index) => (
+                <li key={index} className="text-muted-foreground leading-relaxed">
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="pt-4 border-t border-border/50">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+              Care Instructions
+            </h3>
+            <p className="text-muted-foreground leading-relaxed">{product.care}</p>
+          </div>
         </TabsContent>
 
-        <TabsContent value="specifications">
+        <TabsContent value="specifications" className="bg-secondary/10 p-6 md:p-8 rounded-2xl border border-border/50">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <tbody className="divide-y divide-border">
+            <table className="min-w-full divide-y divide-border/50">
+              <tbody className="divide-y divide-border/50">
                 {product.specifications.map((specification, index) => (
-                  <tr key={index}>
-                    <td className="py-4 px-6 font-medium">
+                  <tr key={index} className="hover:bg-secondary/20 transition-colors">
+                    <td className="py-4 px-4 md:px-6 font-medium text-foreground w-1/3">
                       {specification.key}
                     </td>
-                    <td className="py-4 px-6 text-muted-foreground">
+                    <td className="py-4 px-4 md:px-6 text-muted-foreground">
                       {specification.value}
                     </td>
                   </tr>
