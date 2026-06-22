@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteAlertMessage } from "@/components/DeleteAlertMessage";
-import FileUpload from "@/features/dashboard/components/file-upload";
+import { FileUpload } from "@/features/dashboard/components/file-upload";
 
 function TestimonialsClientPage() {
   const { data, isLoading } = useGetTestimonials();
@@ -21,18 +21,27 @@ function TestimonialsClientPage() {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [rating, setRating] = useState("5");
-  const [screenshot, setScreenshot] = useState("");
+  const [screenshot, setScreenshot] = useState<File | string>("");
 
   const testimonials = data?.testimonials || [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let finalScreenshot = screenshot as string;
+    if (screenshot instanceof File) {
+      const reader = new FileReader();
+      reader.readAsDataURL(screenshot);
+      await new Promise((resolve) => (reader.onload = resolve));
+      finalScreenshot = reader.result as string;
+    }
+
     createTestimonial(
       {
         name,
         message,
         rating: parseInt(rating, 10),
-        screenshot,
+        screenshot: finalScreenshot,
       },
       {
         onSuccess: () => {

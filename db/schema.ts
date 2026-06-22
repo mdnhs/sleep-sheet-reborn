@@ -112,6 +112,23 @@ export const users = pgTable("User", {
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 
+export const posts = pgTable("posts", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  title: text("title").notNull(),
+  slug: text("slug").unique().notNull(),
+  summary: text("summary"),
+  content: text("content").notNull(),
+  coverImage: text("coverImage"),
+  authorId: text("authorId")
+    .notNull()
+    .references(() => users.id),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
+});
+
 export const products = pgTable("products", {
   id: text("id")
     .primaryKey()
@@ -388,6 +405,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   carts: many(carts),
   wishlists: many(wishlists),
   otpVerifications: many(otpVerifications),
+  posts: many(posts),
+}));
+
+export const postsRelations = relations(posts, ({ one }) => ({
+  author: one(users, {
+    fields: [posts.authorId],
+    references: [users.id],
+  }),
 }));
 
 export const productsRelations = relations(products, ({ one, many }) => ({

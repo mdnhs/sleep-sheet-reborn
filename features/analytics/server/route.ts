@@ -190,9 +190,9 @@ const app = new Hono()
         AND o."createdAt" BETWEEN u."createdAt" AND u."createdAt" + INTERVAL '30 days'
       GROUP BY cohort_month
       ORDER BY cohort_month
-    `)) as unknown as Array<{ cohort_month: string; total_users: string | number; retained_users: string | number }>;
+    `)) as unknown as { rows: Array<{ cohort_month: string; total_users: string | number; retained_users: string | number }> };
 
-    return c.json(cohortsRows.map(c => {
+    return c.json(cohortsRows.rows.map(c => {
       const totalUsers = Number(c.total_users);
       const retainedUsers = Number(c.retained_users);
       return {
@@ -233,9 +233,9 @@ const app = new Hono()
         GROUP BY u.id
       ) as spending
       GROUP BY segment
-    `)) as unknown as Array<{ segment: string; customers: string | number }>;
+    `)) as unknown as { rows: Array<{ segment: string; customers: string | number }> };
 
-    return c.json(segmentsRows.map(s => ({
+    return c.json(segmentsRows.rows.map(s => ({
       segment: s.segment,
       customers: Number(s.customers)
     })));
@@ -262,9 +262,9 @@ const app = new Hono()
       WHERE "createdAt" >= '${startDate.toISOString()}'
       GROUP BY period
       ORDER BY period ASC
-    `))) as unknown as Array<{ period: string; count: string | number }>;
+    `))) as unknown as { rows: Array<{ period: string; count: string | number }> };
 
-    return c.json(usersRows.map(u => ({
+    return c.json(usersRows.rows.map(u => ({
       date: new Date(u.period).toISOString(),
       count: Number(u.count)
     })));

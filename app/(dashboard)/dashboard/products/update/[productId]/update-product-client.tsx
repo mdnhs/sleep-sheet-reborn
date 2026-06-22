@@ -15,7 +15,7 @@ import {
   SelectValue,
   SelectItem,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { TiptapEditor } from "@/components/tiptap-editor";
 import { Package, Save, Settings } from "lucide-react";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -169,11 +169,9 @@ function UpdateProductClient() {
                         Product Description
                       </label>
                       <FormControl>
-                        <Textarea
-                          placeholder="Product Description"
-                          required
-                          {...field}
-                          className="w-full mb-4"
+                        <TiptapEditor
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />

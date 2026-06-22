@@ -41,6 +41,11 @@ const SideBarItems = [
     icon: <Tags size={21} />,
   },
   {
+    name: "Blog Manager",
+    href: "/dashboard/blog",
+    icon: <ClipboardList size={21} />,
+  },
+  {
     name: "Settings",
     href: "/dashboard/settings",
     icon: <Settings size={21} />,

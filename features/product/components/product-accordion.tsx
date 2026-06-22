@@ -72,10 +72,10 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
 
         <AccordionItem value="description" className="border border-border rounded-xl px-4 bg-background">
         <AccordionTrigger className="text-sm font-semibold hover:no-underline">Description & Fit</AccordionTrigger>
-        <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-4">
-          {product.description}
+        <AccordionContent className="pt-4 text-muted-foreground leading-relaxed">
+          <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: product.description || '' }} />
           {product.features && product.features.length > 0 && (
-            <ul className="list-disc pl-4 mt-2 space-y-1">
+            <ul className="list-disc pl-4 mt-4 space-y-1">
               {product.features.map((feature, i) => (
                 <li key={i}>{feature}</li>
               ))}

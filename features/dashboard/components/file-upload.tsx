@@ -11,26 +11,34 @@ import {
 } from "react-hook-form";
 
 interface FileUploadProps<T extends FieldValues> {
-  form: UseFormReturn<T>;
-  name: Path<T>;
+  form?: UseFormReturn<T>;
+  name?: Path<T>;
+  value?: (File | string)[];
+  onChange?: (files: (File | string)[]) => void;
+  endpoint?: string;
 }
 
 export function FileUpload<T extends FieldValues>({
   form,
   name,
+  value,
+  onChange,
 }: FileUploadProps<T>) {
   const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-  const files = form.watch(name) as Array<File | string>;
+  const files = (form && name ? form.watch(name) : value) as Array<File | string> || [];
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      form.setValue(name, [...files, ...acceptedFiles] as FieldPathValue<
-        T,
-        Path<T>
-      >);
+      const newFiles = [...files, ...acceptedFiles];
+      if (form && name) {
+        form.setValue(name, newFiles as any);
+      }
+      if (onChange) {
+        onChange(newFiles);
+      }
     },
-    [form, name, files]
+    [form, name, files, onChange]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

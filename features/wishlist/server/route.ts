@@ -64,7 +64,15 @@ const app = new Hono()
 
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user) return c.json({ success: false, error: "Unauthorized" }, 403);
+    if (!user) {
+      return c.json({
+        success: true,
+        data: {
+          wishlistId: "",
+          items: [],
+        }
+      });
+    }
   
     try {
       const wishlist = await db.query.wishlists.findFirst({

@@ -21,6 +21,7 @@ import {
   IconSettings,
   IconLayoutDashboard,
   IconBed,
+  IconArticle,
 } from "@tabler/icons-react"
 
 const data = {
@@ -58,6 +59,12 @@ const data = {
       title: "Testimonials",
       url: "/dashboard/testimonials",
       icon: <IconBed />, // Using IconBed temporarily, can be changed
+      items: [],
+    },
+    {
+      title: "Blog",
+      url: "/dashboard/blog",
+      icon: <IconArticle />,
       items: [],
     },
     {

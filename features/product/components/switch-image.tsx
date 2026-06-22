@@ -32,15 +32,15 @@ function SwitchImage({ product }: SwitchImageProps) {
       />
       
       {/* Thumbnails Overlay */}
-      <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-2 sm:gap-3 px-4 z-10">
+      <div className="absolute top-0 bottom-0 left-4 sm:left-6 flex flex-col justify-center gap-2 sm:gap-3 py-4 z-10">
         {product.images.slice(0, 3).map((image, index) => (
           <button
             key={index}
             onClick={() => setSelectedImage(index)}
-            className={`relative aspect-[4/5] w-16 sm:w-24 md:w-28 rounded-lg sm:rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ${
+            className={`relative aspect-[4/5] w-14 sm:w-20 md:w-24 rounded-lg sm:rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ${
               selectedImage === index 
-                ? "ring-2 ring-white scale-100 opacity-100" 
-                : "opacity-80 hover:opacity-100 hover:scale-[1.02] border-2 border-transparent"
+                ? "ring-2 ring-white scale-100 opacity-100 shadow-md" 
+                : "opacity-70 hover:opacity-100 hover:scale-[1.02] border-2 border-transparent"
             }`}
           >
             <Image
