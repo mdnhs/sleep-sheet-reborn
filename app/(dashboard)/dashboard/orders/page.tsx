@@ -42,6 +42,7 @@ import {
   Trash,
   Truck,
   Wallet,
+  FilterX,
 } from "lucide-react";
 import type { Order } from "@/features/order/types";
 
@@ -446,7 +447,9 @@ export default function OrdersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setStatusFilter("ALL")}
+                className="gap-1.5"
               >
+                <FilterX className="h-3.5 w-3.5" />
                 Clear filter
               </Button>
             )}
@@ -482,8 +485,9 @@ export default function OrdersPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setStatusFilter("ALL")}
-                  className="shrink-0"
+                  className="shrink-0 gap-1.5"
                 >
+                  <FilterX className="h-3.5 w-3.5" />
                   Clear filter
                 </Button>
               )}

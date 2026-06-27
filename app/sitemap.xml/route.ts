@@ -1,4 +1,4 @@
-import { generateMainSitemap } from "@/lib/seo"
+import { generateMainSitemap } from "@/lib/seo/sitemap"
 
 export const dynamic = "force-dynamic"
 

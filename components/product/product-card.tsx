@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Heart, Star, ChevronUp, ShoppingCart, X, Minus, Plus, Tag, ArrowUpCircle } from "lucide-react";
+import { Heart, Star, ChevronUp, ShoppingCart, X, Minus, Plus, Tag, ArrowUpCircle, Zap } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useAppDispatch } from "@/store/hooks";
 import { addToCart } from "@/features/cart/state/cart-slice";
@@ -304,6 +304,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
               onClick={handleBuyNowVariant}
               className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98]"
             >
+              <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
               Buy Now
             </button>
           </div>
@@ -312,7 +313,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             onClick={handleActionClick}
             className="w-full flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98]"
           >
-            <span>{hasVariants ? "Select Option" : "Buy Now"}</span>
+            <span className="flex items-center gap-1.5">{hasVariants ? "Select Option" : <><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" /> Buy Now</>}</span>
             {hasVariants ? (
               <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 opacity-80" />
             ) : (

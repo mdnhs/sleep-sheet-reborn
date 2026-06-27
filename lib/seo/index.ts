@@ -19,5 +19,4 @@ export {
   productGroupSchema,
   structuredDataScript,
 } from "./json-ld"
-export { generateMainSitemap, generatePagesSitemap, generateProductsSitemap, generateCategoriesSitemap, generateBlogsSitemap, generateImagesSitemap } from "./sitemap"
 export { generateRobotsTxt, defaultRobotsTxt } from "./robots"

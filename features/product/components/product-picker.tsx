@@ -5,7 +5,7 @@ import { addToCart } from "@/features/cart/state/cart-slice";
 import { useWishlistToggle } from "@/lib/helpers";
 import { Product } from "@/lib/types";
 import { useAppDispatch } from "@/store/hooks";
-import { Heart, ShoppingBag, Phone, MessageCircle } from "lucide-react";
+import { Heart, ShoppingBag, Phone, MessageCircle, ShoppingCart, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -237,6 +237,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             disabled={!isInStock}
             onClick={handleAddToCart}
           >
+            <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
             {isInStock ? "Add to Cart" : "Out of Stock"}
           </Button>
 
@@ -245,6 +246,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             disabled={!isInStock}
             onClick={handleBuyNow}
           >
+            <Zap className="h-4 w-4 mr-2" fill="currentColor" />
             Buy Now
           </Button>
         </div>
@@ -254,7 +256,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             href="tel:+8801700000000"
             className="flex items-center justify-center h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 transition-colors text-sm"
           >
-            <Phone className="mr-2 h-4 w-4" />
+            <Phone className="mr-2 h-4 w-4" fill="currentColor" />
             Phone Call Order
           </a>
           <a 
@@ -263,7 +265,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             rel="noopener noreferrer"
             className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 text-green-600 hover:bg-green-50 transition-colors text-sm"
           >
-            <MessageCircle className="mr-2 h-4 w-4" />
+            <MessageCircle className="mr-2 h-4 w-4" fill="currentColor" />
             WhatsApp Order
           </a>
         </div>
@@ -288,6 +290,7 @@ function ProductPicker({ product }: ProductPickerProps) {
               disabled={!isInStock}
               onClick={handleAddToCart}
             >
+              <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
               Add to Cart
             </Button>
 
@@ -296,6 +299,7 @@ function ProductPicker({ product }: ProductPickerProps) {
               disabled={!isInStock}
               onClick={handleBuyNow}
             >
+              <Zap className="h-4 w-4 mr-2" fill="currentColor" />
               Buy Now
             </Button>
           </div>

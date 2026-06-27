@@ -113,9 +113,11 @@ function ProductDetailPage() {
   if (isLoading) return <ProductSkeleton />;
   if (!product) return <div>Product not found</div>;
 
+  const categoryLabel = product.categoryLabel || product.category || "Products"
+  const categorySlug = product.category || "products"
   const productBreadcrumbs = [
     { name: "Home", url: "/" },
-    { name: "Products", url: "/products" },
+    { name: categoryLabel, url: `/products?category=${encodeURIComponent(categoryLabel)}` },
     { name: product.name, url: `/products/${id}` },
   ]
 
@@ -138,13 +140,13 @@ function ProductDetailPage() {
       }))}
       {structuredDataScript("breadcrumbs", breadcrumbSchema(productBreadcrumbs))}
       <div className="container mx-auto px-4 py-2 lg:py-8">
-        <div className="hidden lg:block mb-8">
-          <Link href="/" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6" /></svg>
-            Home
-            <span className="mx-2 text-border">•</span>
-            <span className="text-foreground">Product details</span>
-          </Link>
+        <div className="hidden lg:flex items-center gap-0 mb-8 text-xs text-muted-foreground font-medium">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6" /></svg>
+          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+          <span className="mx-2 text-border">•</span>
+          <Link href={`/products?category=${encodeURIComponent(categoryLabel)}`} className="hover:text-foreground transition-colors">{categoryLabel}</Link>
+          <span className="mx-2 text-border">•</span>
+          <span className="text-foreground">{product.name}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16">
