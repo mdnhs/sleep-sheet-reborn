@@ -2,31 +2,10 @@ import { Hono } from 'hono';
 import { db } from '@/db';
 import { products, categories, reviews, specifications, users } from '@/db/schema';
 import { eq, and, or, lte, gte, ilike, sql, desc, asc } from 'drizzle-orm';
-import fs from 'fs/promises';
-import path from 'path';
 import { Product } from '@/lib/types';
 
-const IMAGE_DIR = path.join(process.cwd(), 'images');
 const app = new Hono()
 
-.get('/images/:filename', async (c) => {
-  const { filename } = c.req.param();
-  const filePath = path.join(IMAGE_DIR, filename);
-
-  try {
-    const file = await fs.readFile(filePath);
-    const extension = path.extname(filename).substring(1);
-
-    return new Response(file, {
-      headers: {
-        'Content-Type': `image/${extension}`,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
-  } catch {
-    return c.text('Image not found', 404);
-  }
-})
 .get("/:id", async (c) => {
   const id = c.req.param("id");
 

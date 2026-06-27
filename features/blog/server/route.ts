@@ -1,16 +1,39 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { posts, users } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, ilike, or, sql, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
+import { uploadImage } from '@/lib/cloudinary';
 
 const app = new Hono()
 
 // Get all posts (Client & Admin)
 .get('/', async (c) => {
   try {
+    const page = parseInt(c.req.query('page') || '1', 10)
+    const limit = Math.min(parseInt(c.req.query('limit') || '100', 10), 100)
+    const search = c.req.query('search')
+
+    const filterConditions: any[] = []
+
+    if (search) {
+      filterConditions.push(
+        or(
+          ilike(posts.title, `%${search}%`),
+          ilike(posts.summary, `%${search}%`),
+        )
+      )
+    }
+
+    const [countResult] = await db.select({
+      count: sql<number>`count(*)`,
+    }).from(posts)
+      .where(filterConditions.length > 0 ? and(...filterConditions) : undefined)
+
+    const totalCount = Number(countResult?.count || 0)
+
     const list = await db.select({
       id: posts.id,
       title: posts.title,
@@ -27,9 +50,17 @@ const app = new Hono()
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .orderBy(desc(posts.createdAt));
+    .where(filterConditions.length > 0 ? and(...filterConditions) : undefined)
+    .orderBy(desc(posts.createdAt))
+    .limit(limit)
+    .offset((page - 1) * limit)
 
-    return c.json({ success: true, posts: list });
+    return c.json({
+      data: list,
+      total: totalCount,
+      hasNextPage: page * limit < totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    })
   } catch (error) {
     console.error("Fetch posts error:", error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -109,6 +140,28 @@ const app = new Hono()
   }
 )
 
+// Upload image
+.post('/upload-image', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || user.role !== "ADMIN") {
+    return c.json({ success: false, error: "Unauthorized" }, 403);
+  }
+
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get("image")
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "No image file provided" }, 400)
+    }
+
+    const url = await uploadImage(file, "blog")
+    return c.json({ url })
+  } catch (error) {
+    console.error("Failed to upload image", error)
+    return c.json({ error: "Failed to upload image" }, 500)
+  }
+})
+
 // Update post
 .put(
   '/:id',
@@ -151,6 +204,31 @@ const app = new Hono()
     }
   }
 )
+
+// Bulk delete posts
+.post('/bulk-delete', sessionMiddleware, zValidator('json', z.object({ ids: z.array(z.string()) })), async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user || user.role !== "ADMIN") {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    const { ids } = c.req.valid('json')
+
+    if (ids.length === 0) {
+      return c.json({ error: 'No IDs provided' }, 400)
+    }
+
+    const result = await db.delete(posts)
+      .where(inArray(posts.id, ids))
+      .returning({ id: posts.id })
+
+    return c.json({ deleted: result.length })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({ error: errorMessage }, 500)
+  }
+})
 
 // Delete post
 .delete(

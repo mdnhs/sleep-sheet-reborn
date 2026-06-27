@@ -8,22 +8,24 @@ import { useUpdatePost } from '@/features/blog/api/use-update-post';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TiptapEditor } from '@/components/tiptap-editor';
+import { toast } from 'sonner';
 
 export default function UpdateBlogClient({ id }: { id: string }) {
   const router = useRouter();
-  const { data: posts, isLoading } = useGetPosts();
+  const { data: postsData, isLoading } = useGetPosts();
   const { mutate: updatePost, isPending } = useUpdatePost(id);
-  
+
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState<string | undefined>('');
   const [coverImage, setCoverImage] = useState<File | string>('');
+  const [isUploading, setIsUploading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
 
   useEffect(() => {
-    if (posts) {
-      const post = posts.find((p: any) => p.id === id);
+    if (postsData?.data) {
+      const post = postsData.data.find((p: any) => p.id === id);
       if (post) {
         setTitle(post.title || '');
         setSlug(post.slug || '');
@@ -33,17 +35,29 @@ export default function UpdateBlogClient({ id }: { id: string }) {
         setIsPublished(post.isPublished || false);
       }
     }
-  }, [posts, id]);
+  }, [postsData, id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let finalImage = coverImage as string;
     if (coverImage instanceof File) {
-      const reader = new FileReader();
-      reader.readAsDataURL(coverImage);
-      await new Promise((resolve) => (reader.onload = resolve));
-      finalImage = reader.result as string;
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('image', coverImage);
+      const res = await fetch('/api/blog/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to upload image');
+        setIsUploading(false);
+        return;
+      }
+      const { url } = await res.json();
+      finalImage = url;
+      setIsUploading(false);
     }
 
     updatePost({
@@ -100,7 +114,9 @@ export default function UpdateBlogClient({ id }: { id: string }) {
             </div>
             <div className="flex justify-end gap-4 mt-6">
               <Button type="button" variant="outline" onClick={() => router.push('/dashboard/blog')}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Update Post'}</Button>
+              <Button type="submit" disabled={isPending || isUploading}>
+                {isUploading ? 'Uploading...' : isPending ? 'Saving...' : 'Update Post'}
+              </Button>
             </div>
           </form>
         </CardContent>

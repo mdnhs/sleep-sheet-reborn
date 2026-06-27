@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/provider/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { PixelTrackingProvider } from "@/provider/pixel-tracking-provider";
 
 const spaceGroteskHeading = Space_Grotesk({
   subsets: ["latin"],
@@ -59,7 +60,11 @@ export default function RootLayout({
           <TooltipProvider>
             <Toaster />
             <QueryProvider>
-              <NuqsAdapter>{children}</NuqsAdapter>
+              <NuqsAdapter>
+                <PixelTrackingProvider>
+                  {children}
+                </PixelTrackingProvider>
+              </NuqsAdapter>
             </QueryProvider>
           </TooltipProvider>
         </ThemeProvider>

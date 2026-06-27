@@ -10,6 +10,25 @@ async function getShippingCost(zone: string): Promise<number> {
   return setting ? Number(setting.value) : (zone === "outside_dhaka" ? 120 : 60);
 }
 
+async function generateOrderNumber(): Promise<string> {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yy = String(now.getFullYear()).slice(-2);
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 86400000);
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(orders)
+    .where(
+      sql`${orders.createdAt} >= ${todayStart.toISOString()} AND ${orders.createdAt} < ${todayEnd.toISOString()}`
+    );
+
+  return `ORD-${dd}${mm}${yy}${Number(count) + 1}`;
+}
+
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
   const key = method === "card" ? "payment_method_card" : "payment_method_cod";
   const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) });
@@ -68,7 +87,7 @@ const app = new Hono()
 
     try {
       let createdOrder: any = null;
-      const orderNumber = `ORD-${Date.now()}`;
+      const orderNumber = await generateOrderNumber();
       const [order] = await db.insert(orders).values({
         orderNumber,
         userId: user.id,
@@ -156,7 +175,7 @@ const app = new Hono()
 
   try {
     let guestOrderId = "";
-    const orderNumber = `ORD-${Date.now()}`;
+    const orderNumber = await generateOrderNumber();
     const [order] = await db.insert(orders).values({
       orderNumber,
       userId: null,

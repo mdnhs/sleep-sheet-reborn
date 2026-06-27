@@ -25,6 +25,10 @@ export function useUpdateSettings() {
       currency?: string;
       payment_method_card?: "true" | "false";
       payment_method_cod?: "true" | "false";
+      meta_pixel_enabled?: "true" | "false";
+      meta_pixel_default_id?: string;
+      meta_pixel_debug?: "true" | "false";
+      meta_pixel_mappings?: string;
     }) => {
       const res = await client.api.settings.$patch({ json: data });
       if (!res.ok) throw new Error("Failed to save settings");

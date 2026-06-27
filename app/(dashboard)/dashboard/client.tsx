@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCurrency } from "@/hooks/use-currency";
 import {
   useSalesOverview,
   useCustomerLifetimeValue,
@@ -49,6 +50,7 @@ interface SpendingSegment {
 }
 
 export default function DashBoardClientPage() {
+  const { symbol: currencySymbol } = useCurrency();
   const [period, setPeriod] = useState<"month" | "year">("month");
 
   const { data: overview, isLoading: loadingOverview } =
@@ -100,6 +102,7 @@ export default function DashBoardClientPage() {
           title="Total Revenue"
           value={overview?.totalRevenue}
           format="currency"
+          currencySymbol={currencySymbol}
           loading={loadingOverview}
         />
         <MetricCard
@@ -111,6 +114,7 @@ export default function DashBoardClientPage() {
           title="Average Order Value"
           value={overview?.aov}
           format="currency"
+          currencySymbol={currencySymbol}
           loading={loadingOverview}
         />
       </div>
@@ -332,6 +336,7 @@ export default function DashBoardClientPage() {
           title="Customer Lifetime Value"
           value={clv?.averageCLV}
           format="currency"
+          currencySymbol={currencySymbol}
           loading={loadingCLV}
         />
         <MetricCard
@@ -355,6 +360,7 @@ interface MetricCardProps {
   title: string;
   value?: number;
   format?: "currency" | "percentage" | "number";
+  currencySymbol?: string;
   loading?: boolean;
 }
 
@@ -362,13 +368,14 @@ function MetricCard({
   title,
   value,
   format = "number",
+  currencySymbol = "$",
   loading,
 }: MetricCardProps) {
   const formattedValue = () => {
     if (typeof value === "undefined") return "-";
     switch (format) {
       case "currency":
-        return `$${value.toLocaleString(undefined, {
+        return `${currencySymbol}${value.toLocaleString(undefined, {
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
         })}`;

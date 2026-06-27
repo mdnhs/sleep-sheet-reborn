@@ -24,6 +24,10 @@ const app = new Hono()
         currency: z.string().min(1).max(10).optional(),
         payment_method_card: z.enum(["true", "false"]).optional(),
         payment_method_cod: z.enum(["true", "false"]).optional(),
+        meta_pixel_enabled: z.enum(["true", "false"]).optional(),
+        meta_pixel_default_id: z.string().optional(),
+        meta_pixel_debug: z.enum(["true", "false"]).optional(),
+        meta_pixel_mappings: z.string().optional(),
       })
     ),
     async (c) => {

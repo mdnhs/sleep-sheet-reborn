@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
-import { products, categories, specifications, wishlistItems, cartItems, reviews, orderItems } from '@/db/schema';
+import { products, categories, specifications, wishlistItems, cartItems, reviews, orderItems, campaigns } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { imageStorage } from '@/lib/imageStorage';
 import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
+import { invalidateFeed } from '@/lib/meta-catalog/cache';
 
 const app = new Hono();
 
@@ -73,6 +74,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
       if (specsToInsert.length > 0) {
         insertedSpecs = await db.insert(specifications).values(specsToInsert).returning();
       }
+
+      invalidateFeed();
 
       const product = {
         ...newProduct,
@@ -194,6 +197,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
         ).returning();
       }
 
+      invalidateFeed();
+
       const updatedProduct = {
         ...newProduct,
         category,
@@ -207,6 +212,47 @@ app.post('/upload',sessionMiddleware, async (c) => {
       success: false,
       error: error instanceof Error ? error.message : "Update failed",
     }, 400);
+  }
+})
+
+app.post('/bulk-delete', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  try {
+    const { ids } = await c.req.json<{ ids: string[] }>();
+    if (!ids || ids.length === 0) {
+      return c.json({ error: "No product IDs provided" }, 400);
+    }
+
+    for (const productId of ids) {
+      const product = await db.query.products.findFirst({
+        where: eq(products.id, productId),
+      });
+      if (!product) continue;
+
+      for (const img of product.images) {
+        await deleteImageFromStorage(img);
+      }
+
+      await db.delete(campaigns).where(eq(campaigns.productId, productId));
+      await db.delete(wishlistItems).where(eq(wishlistItems.productId, productId));
+      await db.delete(cartItems).where(eq(cartItems.productId, productId));
+      await db.delete(reviews).where(eq(reviews.productId, productId));
+      await db.delete(specifications).where(eq(specifications.productId, productId));
+      await db.update(orderItems)
+        .set({ productId: null })
+        .where(eq(orderItems.productId, productId));
+      await db.delete(products).where(eq(products.id, productId));
+    }
+
+    invalidateFeed();
+    return c.json({ success: true, deleted: ids.length });
+  } catch (error) {
+    console.error("Error bulk deleting products:", error);
+    return c.json({ error: "Failed to delete products" }, 500);
   }
 })
 
@@ -228,6 +274,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
       await deleteImageFromStorage(img);
     }
 
+      await db.delete(campaigns).where(eq(campaigns.productId, productId));
       await db.delete(wishlistItems).where(eq(wishlistItems.productId, productId));
       await db.delete(cartItems).where(eq(cartItems.productId, productId));
       await db.delete(reviews).where(eq(reviews.productId, productId));
@@ -236,6 +283,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
         .set({ productId: null })
         .where(eq(orderItems.productId, productId));
       await db.delete(products).where(eq(products.id, productId));
+      invalidateFeed();
 
     return c.json({ success: true });
   } catch (error) {

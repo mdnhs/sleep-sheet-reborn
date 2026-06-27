@@ -7,6 +7,7 @@ import { useCreatePost } from '@/features/blog/api/use-create-post';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TiptapEditor } from '@/components/tiptap-editor';
+import { toast } from 'sonner';
 
 export default function CreateBlogClient() {
   const router = useRouter();
@@ -16,17 +17,30 @@ export default function CreateBlogClient() {
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState<string | undefined>('');
   const [coverImage, setCoverImage] = useState<File | string>('');
+  const [isUploading, setIsUploading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let finalImage = coverImage as string;
     if (coverImage instanceof File) {
-      const reader = new FileReader();
-      reader.readAsDataURL(coverImage);
-      await new Promise((resolve) => (reader.onload = resolve));
-      finalImage = reader.result as string;
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('image', coverImage);
+      const res = await fetch('/api/blog/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to upload image');
+        setIsUploading(false);
+        return;
+      }
+      const { url } = await res.json();
+      finalImage = url;
+      setIsUploading(false);
     }
 
     createPost({
@@ -81,7 +95,9 @@ export default function CreateBlogClient() {
             </div>
             <div className="flex justify-end gap-4 mt-6">
               <Button type="button" variant="outline" onClick={() => router.push('/dashboard/blog')}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Save Post'}</Button>
+              <Button type="submit" disabled={isPending || isUploading}>
+                {isUploading ? 'Uploading...' : isPending ? 'Saving...' : 'Save Post'}
+              </Button>
             </div>
           </form>
         </CardContent>

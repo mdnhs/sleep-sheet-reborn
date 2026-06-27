@@ -22,6 +22,9 @@ import {
   IconLayoutDashboard,
   IconBed,
   IconArticle,
+  IconDollarSign,
+  IconCreditCard,
+  IconTruck,
 } from "@tabler/icons-react"
 
 const data = {
@@ -71,7 +74,13 @@ const data = {
       title: "Settings",
       url: "/dashboard/settings",
       icon: <IconSettings />,
-      items: [],
+      items: [
+        { title: "Currency", url: "/dashboard/settings/currency" },
+        { title: "Payments", url: "/dashboard/settings/payments" },
+        { title: "Shipping", url: "/dashboard/settings/shipping" },
+        { title: "Meta Pixel", url: "/dashboard/settings/pixel" },
+        { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
+      ],
     },
   ],
 }

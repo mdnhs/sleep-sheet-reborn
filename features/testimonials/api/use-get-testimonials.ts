@@ -1,12 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 
+interface TestimonialQueryParams {
+  page?: string;
+  search?: string;
+  limit?: string;
+}
 
-export const useGetTestimonials = () => {
+export const useGetTestimonials = (params?: TestimonialQueryParams) => {
   return useQuery({
-    queryKey: ["testimonials"],
+    queryKey: ["testimonials", params],
     queryFn: async () => {
-      const response = await client.api.testimonials.$get();
+      const response = await client.api.testimonials.$get({
+        query: params,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch testimonials");
@@ -14,5 +21,6 @@ export const useGetTestimonials = () => {
 
       return response.json();
     },
+    placeholderData: keepPreviousData,
   });
 };

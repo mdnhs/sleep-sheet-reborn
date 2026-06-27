@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 
 export default function BlogClientPage() {
-  const { data: posts, isLoading } = useGetPosts();
+  const { data: postsData, isLoading } = useGetPosts();
 
-  const publishedPosts = posts?.filter((p: any) => p.isPublished) || [];
+  const publishedPosts = postsData?.data?.filter((p: any) => p.isPublished) || [];
 
   return (
     <div className="container mx-auto py-12 px-4 min-h-[80vh]">

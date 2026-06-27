@@ -278,7 +278,7 @@ function ProductPicker({ product }: ProductPickerProps) {
         <div className="container mx-auto px-4 flex items-center justify-between gap-4">
           <div className="hidden sm:block flex-1 min-w-0 pr-4">
             <p className="font-semibold truncate text-sm text-foreground">{product.name}</p>
-            <p className="text-xs text-muted-foreground font-medium">${displayPrice.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground font-medium">{formatAmount(displayPrice)}</p>
           </div>
           
           <div className="flex items-center gap-3 w-full sm:w-auto">

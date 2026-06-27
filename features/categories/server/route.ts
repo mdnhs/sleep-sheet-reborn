@@ -6,6 +6,7 @@ import { sessionMiddleware } from '@/lib/session-middleware';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import cuid from 'cuid';
+import { uploadImage, deleteImage } from '@/lib/cloudinary';
 
 const app = new Hono()
 .get("/", async(c)=>{
@@ -15,6 +16,7 @@ const app = new Hono()
         label: categories.label,
         value: categories.value,
         parentId: categories.parentId,
+        image: categories.image,
       }).from(categories);
 
       return c.json(categoriesList);
@@ -28,11 +30,12 @@ const app = new Hono()
       label:z.string().min(2).max(50),
       value:z.string().min(2).max(50),
       parentId: z.string().optional().nullable(),
+      image: z.string().url().optional().nullable(),
    })
 ), async(c)=>{
    try{
       const user = c.get("user");
-      const {label,value,parentId}=c.req.valid("json");
+      const {label,value,parentId,image}=c.req.valid("json");
 
       if(!user || user.role !== "ADMIN"){
          return c.json({ success: false, error: 'Unauthorized' }, 403);
@@ -57,17 +60,121 @@ const app = new Hono()
          label,
          value,
          parentId: parentId ?? null,
+         image: image ?? null,
        });
 
        return c.json({
          label,
          value,
          parentId: parentId ?? null,
+         image: image ?? null,
        }, 201);
       } catch (error) {
          console.error("Failed to create category", error);
          return c.json({ error: "Failed to create category" }, 500);
        }
+})
+.patch("/:value", sessionMiddleware, zValidator('json',
+   z.object({
+      label: z.string().min(2).max(50).optional(),
+      value: z.string().min(2).max(50).optional(),
+      parentId: z.string().optional().nullable(),
+      image: z.string().url().optional().nullable(),
+   })
+), async (c) => {
+   const user = c.get("user");
+   if (!user || user.role !== "ADMIN") {
+     return c.json({ success: false, error: "Unauthorized" }, 403);
+   }
+
+   const currentValue = c.req.param("value");
+   const body = c.req.valid("json");
+
+   try {
+     const existing = await db.query.categories.findFirst({
+       where: eq(categories.value, currentValue),
+     });
+     if (!existing) return c.json({ error: "Category not found" }, 404);
+
+     if (body.parentId) {
+       const parentExists = await db.query.categories.findFirst({ where: eq(categories.id, body.parentId) });
+       if (!parentExists) return c.json({ error: "Parent category not found" }, 404);
+       if (parentExists.parentId) return c.json({ error: "Only one level of nesting allowed" }, 400);
+       if (body.parentId === existing.id) return c.json({ error: "Cannot set self as parent" }, 400);
+     }
+
+     if (body.value && body.value !== currentValue) {
+       const slugExists = await db.query.categories.findFirst({ where: eq(categories.value, body.value) });
+       if (slugExists) return c.json({ error: "Category value already exists" }, 409);
+     }
+
+     const updates: Record<string, unknown> = {}
+     if (body.label !== undefined) updates.label = body.label
+     if (body.value !== undefined) updates.value = body.value
+     if (body.parentId !== undefined) updates.parentId = body.parentId
+     if (body.image !== undefined) {
+       if (existing.image) {
+         await deleteImage(existing.image).catch(() => {})
+       }
+       updates.image = body.image
+     }
+
+     await db.update(categories).set(updates).where(eq(categories.value, currentValue))
+
+     return c.json({ success: true })
+   } catch (error) {
+     console.error("Failed to update category", error)
+     return c.json({ error: "Failed to update category" }, 500)
+   }
+})
+.post("/upload-image", sessionMiddleware, async (c) => {
+   const user = c.get("user");
+   if (!user || user.role !== "ADMIN") {
+     return c.json({ success: false, error: "Unauthorized" }, 403);
+   }
+
+   try {
+     const formData = await c.req.formData()
+     const file = formData.get("image")
+     if (!file || !(file instanceof File)) {
+       return c.json({ error: "No image file provided" }, 400)
+     }
+
+     const url = await uploadImage(file, "categories")
+     return c.json({ url })
+   } catch (error) {
+     console.error("Failed to upload image", error)
+     return c.json({ error: "Failed to upload image" }, 500)
+   }
+})
+.post("/bulk-delete", sessionMiddleware, async (c) => {
+   const user = c.get("user");
+   if (!user || user.role !== "ADMIN") {
+     return c.json({ success: false, error: "Unauthorized" }, 403);
+   }
+
+   try {
+     const { values } = await c.req.json<{ values: string[] }>();
+     if (!values || values.length === 0) {
+       return c.json({ error: "No category values provided" }, 400);
+     }
+
+     for (const value of values) {
+       const category = await db.query.categories.findFirst({
+         where: eq(categories.value, value),
+         with: { children: { columns: { id: true } } },
+       });
+       if (!category) continue;
+       if (category.children.length > 0) continue;
+
+       await db.delete(categories).where(eq(categories.value, value));
+     }
+
+     return c.json({ success: true });
+   } catch (error) {
+     console.error("Failed to bulk delete categories", error);
+     return c.json({ error: "Failed to delete categories" }, 500);
+   }
 })
 .delete("/delete/:value", sessionMiddleware, async (c) => {
    const user = c.get("user");
@@ -93,9 +200,12 @@ const app = new Hono()
        return c.json({ success: false, error: "Cannot delete category with subcategories. Delete subcategories first." }, 409);
      }
 
-     await db.delete(categories).where(eq(categories.value, value));
+      if (category.image) {
+        await deleteImage(category.image).catch(() => {})
+      }
+      await db.delete(categories).where(eq(categories.value, value));
 
-     return c.json({ success: true, message: "Category deleted" }, 200);
+      return c.json({ success: true, message: "Category deleted" }, 200);
    } catch (error) {
      console.error("Failed to delete category", error);
      return c.json({ success: false, error: "Failed to delete category" }, 500);

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useMemo, useRef } from "react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -34,6 +35,16 @@ export function NavMain({
   }[]
 }) {
   const pathname = usePathname()
+  const initialPathname = useRef(pathname).current
+  const defaultOpen = useMemo(() => {
+    const map: Record<string, boolean> = {}
+    for (const item of items) {
+      if (item.items?.length) {
+        map[item.title] = item.isActive || initialPathname.startsWith(item.url)
+      }
+    }
+    return map
+  }, [])
 
   return (
     <SidebarGroup>
@@ -43,7 +54,7 @@ export function NavMain({
           item.items && item.items.length > 0 ? (
             <Collapsible
               key={item.title}
-              defaultOpen={item.isActive || pathname.startsWith(item.url)}
+              defaultOpen={defaultOpen[item.title]}
               className="group/collapsible"
               render={<SidebarMenuItem />}
             >

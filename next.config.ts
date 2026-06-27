@@ -1,8 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   serverExternalPackages: ["@prisma/client"],
+  async rewrites() {
+    return [
+      { source: "/facebook-feed.xml", destination: "/facebook-feed?format=xml" },
+      { source: "/facebook-feed.csv", destination: "/facebook-feed?format=csv" },
+      { source: "/facebook-feed.json", destination: "/facebook-feed?format=json" },
+    ]
+  },
   images: {
     remotePatterns: [
       {

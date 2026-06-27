@@ -7,7 +7,9 @@ import {
   getCoreRowModel,
   useReactTable,
   getPaginationRowModel,
+  PaginationState,
   VisibilityState,
+  Updater,
 } from "@tanstack/react-table"
 
 import {
@@ -18,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,29 +33,50 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   searchSlot?: React.ReactNode
-  rowSelection?: any
-  onRowSelectionChange?: any
+  rowSelection?: Record<string, boolean>
+  onRowSelectionChange?: (updater: Updater<Record<string, boolean>>) => void
+  manualPagination?: boolean
+  pageCount?: number
+  pagination?: PaginationState
+  onPaginationChange?: (updater: Updater<PaginationState>) => void
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   searchSlot,
-  rowSelection = {},
+  rowSelection,
   onRowSelectionChange,
+  manualPagination = false,
+  pageCount,
+  pagination: externalPagination,
+  onPaginationChange,
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [internalPagination, setInternalPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+
+  const pagination = manualPagination ? (externalPagination ?? internalPagination) : internalPagination
+  const setPagination = manualPagination
+    ? (onPaginationChange ?? setInternalPagination)
+    : setInternalPagination
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(manualPagination
+      ? { pageCount: pageCount ?? -1, manualPagination: true as const }
+      : { getPaginationRowModel: getPaginationRowModel() }),
     onRowSelectionChange: onRowSelectionChange,
     onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
     state: {
-      rowSelection,
+      rowSelection: rowSelection ?? {},
       columnVisibility,
+      pagination,
     },
   })
 
@@ -64,10 +87,8 @@ export function DataTable<TData, TValue>({
           {searchSlot}
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl gap-1 shrink-0">
-              Columns <ChevronDown className="h-4 w-4" />
-            </Button>
+          <DropdownMenuTrigger className={buttonVariants({ variant: "outline", className: "rounded-xl gap-1 shrink-0" })}>
+            Columns <ChevronDown className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl">
             {table

@@ -6,17 +6,19 @@ interface useCreateCategoriesProps{
     value:string,
     label:string;
     parentId?: string | null;
+    image?: string | null;
 }
 export const useCreateCategories = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({value,label,parentId}:useCreateCategoriesProps) => {
+    mutationFn: async ({value,label,parentId,image}:useCreateCategoriesProps) => {
       const response = await client.api.categories.create.$post({
         json: {
           value,
           label,
           parentId: parentId ?? null,
+          image: image ?? null,
         }
       });
       if (!response.ok) {
