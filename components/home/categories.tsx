@@ -20,7 +20,7 @@ const Categories = () => {
 
   if (isLoading) {
     return (
-      <section className="py-10 bg-white relative overflow-hidden">
+      <section className="py-10 bg-white dark:bg-slate-900 relative overflow-hidden">
         <div className="container mx-auto px-4 relative">
           <div className="flex gap-4 md:gap-8 overflow-hidden">
             {[...Array(8)].map((_, i) => (
@@ -36,7 +36,7 @@ const Categories = () => {
   }
 
   return (
-    <section className="py-10 bg-white relative overflow-hidden">
+    <section className="py-10 bg-white dark:bg-slate-900 relative overflow-hidden">
       <div className="container mx-auto px-4 relative">
         <Carousel
           opts={{
@@ -73,8 +73,8 @@ const Categories = () => {
             ))}
           </CarouselContent>
           <div className="hidden md:block">
-            <CarouselPrevious className="-left-4 lg:-left-12 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm hover:bg-white hover:text-primary transition-all shadow-sm" />
-            <CarouselNext className="-right-4 lg:-right-12 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm hover:bg-white hover:text-primary transition-all shadow-sm" />
+            <CarouselPrevious className="-left-4 lg:-left-12 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:hover:bg-slate-700 hover:bg-white hover:text-primary transition-all shadow-sm" />
+            <CarouselNext className="-right-4 lg:-right-12 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:hover:bg-slate-700 hover:bg-white hover:text-primary transition-all shadow-sm" />
           </div>
         </Carousel>
       </div>

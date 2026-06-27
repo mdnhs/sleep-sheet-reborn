@@ -7,7 +7,7 @@ export function StarRating({ rating }: { rating: number }) {
           className={`h-5 w-5 ${
             i < Math.round(rating)
               ? "text-yellow-400 fill-current"
-              : "text-gray-300 fill-current"
+              : "text-gray-300 dark:text-slate-600 fill-current"
           }`}
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"

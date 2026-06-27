@@ -77,7 +77,7 @@ function Hero() {
                     </h1>
                     <Link
                       href={slide.link}
-                      className="group/btn relative overflow-hidden rounded-full bg-white px-8 py-3.5 text-foreground text-xs uppercase tracking-[0.2em] font-bold shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center gap-2"
+                      className="group/btn relative overflow-hidden rounded-full bg-white dark:bg-slate-800 px-8 py-3.5 text-foreground dark:text-slate-100 text-xs uppercase tracking-[0.2em] font-bold shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center gap-2"
                     >
                       <span className="relative z-10">Shop Now</span>
                       <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-1 relative z-10" />
@@ -121,7 +121,7 @@ function Hero() {
           {/* Right: Stacked Banners */}
           <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
             {/* Top Right Card */}
-            <Link href="/products?category=Comforters" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100">
+            <Link href="/products?category=Comforters" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
               <Image
                 src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop"
                 alt="Comforters"
@@ -145,7 +145,7 @@ function Hero() {
             </Link>
 
             {/* Bottom Right Card */}
-            <Link href="/products?category=Bedsheets" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100">
+            <Link href="/products?category=Bedsheets" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
               <Image
                 src="https://images.unsplash.com/photo-1616627547584-bf28cee262db?q=80&w=800&auto=format&fit=crop"
                 alt="Bedsheets"

@@ -12,7 +12,7 @@ const Newsletter = () => {
   };
 
   return (
-    <section className="bg-foreground text-background py-10 md:py-16 relative overflow-hidden">
+    <section className="bg-foreground dark:bg-slate-950 text-background dark:text-slate-100 py-10 md:py-16 relative overflow-hidden">
       {/* Subtle decorative background elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full opacity-10 pointer-events-none">
         <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
@@ -48,7 +48,7 @@ const Newsletter = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="absolute right-1.5 top-1.5 bottom-1.5 px-4 sm:px-6 bg-white text-foreground rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider hover:bg-white/90 hover:scale-105 transition-all duration-300 disabled:opacity-60 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+              className="absolute right-1.5 top-1.5 bottom-1.5 px-4 sm:px-6 bg-white dark:bg-slate-200 text-foreground dark:text-slate-900 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider hover:bg-white/90 dark:hover:bg-slate-300 hover:scale-105 transition-all duration-300 disabled:opacity-60 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]"
             >
               {isLoading ? "Wait…" : "Subscribe"}
             </button>

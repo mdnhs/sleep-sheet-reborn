@@ -98,7 +98,7 @@ function SignInCard() {
               <label className=" flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  className="h-4 w-4 text-primary border-gray-300 dark:border-slate-600 rounded focus:ring-primary"
                 />
                 <span className="text-sm text-muted-foreground">
                   Remember me

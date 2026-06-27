@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 const NarrowBanner = () => {
   return (
-    <section className="py-6 bg-white">
+    <section className="py-6 bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4">
         <Link
           href="/products?category=combos"

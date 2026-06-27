@@ -34,7 +34,7 @@ const features = [
 
 const Features = () => {
   return (
-    <section className="py-4 bg-white border-b border-slate-100">
+    <section className="py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="grid grid-cols-4 gap-2 md:gap-6">
           {features.map((feature, index) => {
@@ -47,10 +47,10 @@ const Features = () => {
                   <Icon className="h-4 w-4 md:h-5 md:w-5" />
                 </div>
                 <div className="flex flex-col gap-0.5 mt-1 items-center md:items-start w-full px-0.5">
-                  <h3 className="font-semibold text-slate-900 text-[11px] sm:text-xs md:text-sm tracking-tight leading-tight w-full break-words line-clamp-3 text-center md:text-left">
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[11px] sm:text-xs md:text-sm tracking-tight leading-tight w-full break-words line-clamp-3 text-center md:text-left">
                     {feature.title}
                   </h3>
-                  <p className="text-xs text-slate-500 leading-tight hidden md:block">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight hidden md:block">
                     {feature.description}
                   </p>
                 </div>

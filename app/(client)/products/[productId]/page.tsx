@@ -18,7 +18,7 @@ import { seoConfig, productSchema, breadcrumbSchema, structuredDataScript } from
 
 function ProductSkeleton() {
   return (
-    <div className="bg-[#fcfcfc] min-h-screen">
+    <div className="bg-[#fcfcfc] dark:bg-slate-950 min-h-screen">
       <div className="container mx-auto px-4 py-2 lg:py-8">
         <div className="hidden lg:block mb-8">
           <Skeleton className="h-4 w-32" />
@@ -116,7 +116,7 @@ function ProductSkeleton() {
         </div>
       </div>
 
-      <div className="mt-20 pt-16 bg-white border-t border-border/50">
+      <div className="mt-20 pt-16 bg-white dark:bg-slate-900 border-t border-border/50">
         <div className="container mx-auto px-4 mb-8">
           <Skeleton className="h-8 w-64 mx-auto" />
         </div>
@@ -149,7 +149,7 @@ function ProductDetailPage() {
   ]
 
   return (
-    <div className="bg-[#fcfcfc] min-h-screen">
+    <div className="bg-[#fcfcfc] dark:bg-slate-950 min-h-screen">
       {structuredDataScript("product", productSchema({
         id,
         name: product.name,
@@ -262,7 +262,7 @@ function ProductDetailPage() {
         <ProductReviews product={product} />
       </div>
 
-      <div className="mt-20 pt-16 bg-white border-t border-border/50">
+      <div className="mt-20 pt-16 bg-white dark:bg-slate-900 border-t border-border/50">
         <div className="container mx-auto px-4 mb-8">
           <h2 className="text-3xl md:text-4xl font-semibold text-center text-foreground tracking-tight">You might also like</h2>
         </div>

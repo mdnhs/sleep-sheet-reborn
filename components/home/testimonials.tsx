@@ -16,7 +16,7 @@ const Testimonials = () => {
   const { data } = useGetTestimonials();
 
   return (
-    <section className="py-6 md:py-10 bg-background border-t border-slate-100">
+    <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800">
       <div className="container mx-auto px-4">
         {/* Minimal Section header */}
         <div className="flex flex-row items-end justify-between mb-6">

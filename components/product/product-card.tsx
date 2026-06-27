@@ -133,10 +133,10 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   };
 
   return (
-    <div className="group relative w-full h-full flex flex-col rounded-3xl bg-white p-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+    <div className="group relative w-full h-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 p-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       
       {/* Product Image */}
-      <Link href={`/products/${product.id}`} className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] mb-4 shrink-0 z-0" onClick={(e) => {
+      <Link href={`/products/${product.id}`} className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0" onClick={(e) => {
         if (isDrawerOpen) e.preventDefault();
       }}>
         <Image
@@ -164,20 +164,20 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
               e.stopPropagation();
               handleWishlistToggle(e);
             }}
-            className="p-2 bg-white/80 backdrop-blur-md rounded-full shadow-sm hover:bg-white hover:scale-110 transition-all duration-300 active:scale-95"
+            className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full shadow-sm hover:bg-white dark:hover:bg-slate-700 hover:scale-110 transition-all duration-300 active:scale-95"
             aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
           >
-            <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-slate-600 hover:text-red-500'}`} />
+            <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-slate-600 dark:text-slate-400 hover:text-red-500'}`} />
           </button>
         </div>
       </Link>
 
       {/* Content */}
-      <div className="flex flex-col px-1 flex-1 relative z-10 bg-white">
+      <div className="flex flex-col px-1 flex-1 relative z-10 bg-white dark:bg-slate-900">
         
         {/* Title */}
         <Link href={`/products/${product.id}`} className="flex-1" onClick={(e) => { if (isDrawerOpen) e.preventDefault(); }}>
-          <h3 className="font-medium text-sm sm:text-[15px] text-slate-800 leading-snug line-clamp-2 mb-2 sm:mb-3">
+          <h3 className="font-medium text-sm sm:text-[15px] text-slate-800 dark:text-slate-200 leading-snug line-clamp-2 mb-2 sm:mb-3">
             {product.name}
           </h3>
         </Link>
@@ -186,17 +186,17 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         <div className="flex justify-between items-center mb-3 sm:mb-4">
           <div className="flex items-baseline gap-2 flex-wrap">
             {product.discount > 0 && (
-              <span className="text-sm line-through text-slate-400 font-medium">
+              <span className="text-sm line-through text-slate-400 dark:text-slate-500 font-medium">
                 {formatAmount(displayPrice / (1 - product.discount / 100))}
               </span>
             )}
-            <p className="font-bold text-lg sm:text-[20px] text-slate-800">
+            <p className="font-bold text-lg sm:text-[20px] text-slate-800 dark:text-slate-200">
               {formatAmount(displayPrice)}
             </p>
           </div>
           
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[14px] text-slate-600 font-medium">
+            <span className="text-[14px] text-slate-600 dark:text-slate-400 font-medium">
               {product.rating || "4.4"}
             </span>
             <div className="bg-[#f59e0b] p-1 rounded-md">
@@ -208,12 +208,12 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         {/* Quantity & Cart Row */}
         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           {/* Quantity Selector */}
-          <div className="flex-1 flex items-center justify-between bg-[#f4f4f5] rounded-xl px-2 h-10 sm:h-12" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-            <button onClick={(e) => updateQuantity(e, -1)} className="p-1 sm:p-2 text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50" disabled={quantity <= 1}>
+          <div className="flex-1 flex items-center justify-between bg-[#f4f4f5] dark:bg-slate-800 rounded-xl px-2 h-10 sm:h-12" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+            <button onClick={(e) => updateQuantity(e, -1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50" disabled={quantity <= 1}>
               <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
-            <span className="text-sm sm:text-base font-bold text-slate-800">{quantity}</span>
-            <button onClick={(e) => updateQuantity(e, 1)} className="p-1 sm:p-2 text-slate-500 hover:text-slate-800 transition-colors">
+            <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">{quantity}</span>
+            <button onClick={(e) => updateQuantity(e, 1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
               <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
@@ -230,15 +230,15 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
 
       {/* Slide-up Drawer Overlay */}
       <div 
-        className={`absolute left-0 right-0 bottom-[60px] bg-white rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.15)] p-4 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] z-30 flex flex-col gap-3 border-t border-slate-100 ${
+        className={`absolute left-0 right-0 bottom-[60px] bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_24px_rgba(0,0,0,0.4)] p-4 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] z-30 flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 ${
           isDrawerOpen ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0 pointer-events-none'
         }`}
       >
         <div className="flex justify-between items-center mb-2">
-          <span className="font-bold text-sm text-slate-800">Select Options</span>
+          <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Select Options</span>
           <button 
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsDrawerOpen(false); }}
-            className="p-1 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+            className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -247,7 +247,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         <div className="flex flex-col gap-4 max-h-[180px] overflow-y-auto pr-1">
           {hasSizes && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Size</span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Size</span>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size) => (
                   <button
@@ -256,7 +256,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
                     className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
                       selectedSize === size 
                         ? 'border-primary bg-primary text-white shadow-sm' 
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                   >
                     {size}
@@ -268,7 +268,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
 
           {hasColors && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Variant</span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variant</span>
               <div className="flex flex-wrap gap-2">
                 {product.colors?.map((color) => (
                   <button
@@ -277,7 +277,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
                     className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
                       selectedColor === color.name 
                         ? 'border-primary bg-primary/10 text-primary shadow-sm' 
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                   >
                     {color.name}
@@ -290,12 +290,12 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       </div>
 
       {/* Action Button */}
-      <div className="relative z-40 px-1 shrink-0 bg-white">
+      <div className="relative z-40 px-1 shrink-0 bg-white dark:bg-slate-900">
         {isDrawerOpen ? (
           <div className="flex gap-2 w-full">
             <button
               onClick={handleAddToCartVariant}
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#f8f9fa] hover:bg-slate-200 text-slate-800 border border-slate-200 py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#f8f9fa] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98]"
             >
               <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Cart

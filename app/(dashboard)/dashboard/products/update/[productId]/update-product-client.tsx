@@ -384,7 +384,7 @@ function UpdateProductClient() {
                           value={field.value || ""}
                         >
                           <FormControl>
-                            <SelectTrigger className="w-full h-10 border border-input rounded-xl px-3 bg-white">
+                            <SelectTrigger className="w-full h-10 border border-input rounded-xl px-3 bg-white dark:bg-slate-900">
                               <SelectValue placeholder="Select default variant" />
                             </SelectTrigger>
                           </FormControl>

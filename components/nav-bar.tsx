@@ -63,14 +63,14 @@ function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
         key={link.name}
         href={link.path}
         className={`flex items-center gap-1.5 text-[15px] font-medium transition-colors hover:text-primary ${
-          isActive ? "text-primary font-semibold" : "text-slate-600"
+          isActive ? "text-primary font-semibold" : "text-slate-600 dark:text-slate-400"
         }`}
         onClick={onNavigate}
       >
         {Icon && <Icon className="h-4.5 w-4.5" />}
         <span>{link.name}</span>
         {link.hasBadge && (
-          <span className="ml-1 rounded-[4px] bg-red-100 text-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+            <span className="ml-1 rounded-[4px] bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
             NEW
           </span>
         )}
@@ -363,11 +363,11 @@ function Navbar() {
                   placeholder="Search products..."
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
-                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
+                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
                 />
                 <button
                   type="submit"
-                  className="absolute right-4 top-[40%] -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                  className="absolute right-4 top-[40%] -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -392,11 +392,11 @@ function Navbar() {
                   placeholder="Search products..."
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
-                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
+                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
                 />
                 <button
                   type="submit"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
                 >
                   <Search className="h-[18px] w-[18px]" />
                 </button>

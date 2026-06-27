@@ -21,7 +21,7 @@ const FeaturedProduct = () => {
 
   if (isLoading) {
     return (
-      <section className="py-6 md:py-10 bg-background border-t border-slate-100 relative overflow-hidden">
+      <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
         <div className="container mx-auto px-4 relative">
           <div className="flex flex-row items-end justify-between mb-6">
             <div>
@@ -55,7 +55,7 @@ const FeaturedProduct = () => {
   }
 
   return (
-    <section className="py-6 md:py-10 bg-background border-t border-slate-100 relative overflow-hidden">
+    <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
       <div className="container mx-auto px-4 relative">
         {/* Minimal Section header */}
         <div className="flex flex-row items-end justify-between mb-6">
@@ -90,8 +90,8 @@ const FeaturedProduct = () => {
             ))}
           </CarouselContent>
           <div className="hidden md:flex items-center justify-end gap-2 mt-6">
-            <CarouselPrevious className="relative inset-0 translate-y-0 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm hover:bg-white hover:text-primary transition-all shadow-sm" />
-            <CarouselNext className="relative inset-0 translate-y-0 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm hover:bg-white hover:text-primary transition-all shadow-sm" />
+            <CarouselPrevious className="relative inset-0 translate-y-0 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:hover:bg-slate-700 hover:bg-white hover:text-primary transition-all shadow-sm" />
+            <CarouselNext className="relative inset-0 translate-y-0 h-10 w-10 border-border/50 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:hover:bg-slate-700 hover:bg-white hover:text-primary transition-all shadow-sm" />
           </div>
         </Carousel>
       </div>

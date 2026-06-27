@@ -116,7 +116,7 @@ const ReviewForm = ({ productId, existingReview }: ReviewFormProps) => {
                             className={`h-6 w-6 ${
                               star <= (hoveredRating || field.value)
                                 ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
+                                : "text-gray-300 dark:text-slate-600"
                             } cursor-pointer`}
                           />
                         </button>

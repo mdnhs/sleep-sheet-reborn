@@ -62,7 +62,7 @@ export function FileUpload<T extends FieldValues>({
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer 
-          ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
+          ${isDragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10" : "border-gray-300 dark:border-slate-700"}`}
       >
         <input {...getInputProps()} />
         <div className="space-y-2">
@@ -74,8 +74,8 @@ export function FileUpload<T extends FieldValues>({
               ? "Drop images here"
               : "Upload a file or drag and drop"}
           </p>
-          <p className="text-xs text-gray-500">PNG, JPG, WEBP up to 5MB</p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-slate-400">PNG, JPG, WEBP up to 5MB</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
             {files?.length > 0
               ? `${files.length} file(s) selected`
               : "No files chosen"}
