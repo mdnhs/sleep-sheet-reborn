@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/select";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Package, Save, Settings } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { useGetProduct } from "@/features/product/api/use-get-product";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ProductSchema } from "@/features/dashboard/schema";
@@ -34,6 +36,9 @@ import { useGetCategories } from "@/features/categories/api/use-get-categories";
 function AddProductClient() {
   const { mutate } = useCreateProduct();
   const { data: categories } = useGetCategories();
+  const searchParams = useSearchParams()
+  const duplicateId = searchParams.get("duplicate")
+  const { data: duplicateProduct } = useGetProduct({ id: duplicateId ?? "" })
 
   const form = useForm<z.infer<typeof ProductSchema>>({
     resolver: zodResolver(ProductSchema),
@@ -66,6 +71,29 @@ function AddProductClient() {
       defaultVariantName: "",
     },
   });
+
+  useEffect(() => {
+    if (duplicateProduct) {
+      form.reset({
+        productName: duplicateProduct.name,
+        productDescription: duplicateProduct.description,
+        productPrice: duplicateProduct.price,
+        productStock: duplicateProduct.stock,
+        productCategory: duplicateProduct.category,
+        productSKU: duplicateProduct.sku,
+        productImages: duplicateProduct.images,
+        productTags: duplicateProduct.tags,
+        productSize: duplicateProduct.sizes,
+        specifications: duplicateProduct.specifications,
+        productFeatures: duplicateProduct.features,
+        careInstructions: duplicateProduct.care,
+        isFeatured: duplicateProduct.isFeatured,
+        discount: duplicateProduct.discount,
+        productVariants: duplicateProduct.colors,
+        defaultVariantName: duplicateProduct.defaultVariantName ?? "",
+      })
+    }
+  }, [duplicateProduct])
   type ProductFormValues = z.infer<typeof ProductSchema>;
 
   const onSubmit = async (values: ProductFormValues) => {

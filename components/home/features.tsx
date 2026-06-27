@@ -1,48 +1,31 @@
+"use client";
+
 import { CreditCard, Tag, ShieldCheck, Truck } from "lucide-react";
 import React from "react";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
-const features = [
-  {
-    title: "Payment only online",
-    description: "Secure & simple checkout",
-    icon: CreditCard,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-100",
-  },
-  {
-    title: "New stocks and sales",
-    description: "Daily updates & offers",
-    icon: Tag,
-    color: "text-purple-600",
-    bgColor: "bg-purple-100",
-  },
-  {
-    title: "Quality assurance",
-    description: "100% genuine products",
-    icon: ShieldCheck,
-    color: "text-green-600",
-    bgColor: "bg-green-100",
-  },
-  {
-    title: "Delivery from 1 hour",
-    description: "Fast & reliable shipping",
-    icon: Truck,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
+const ICONS = [CreditCard, Tag, ShieldCheck, Truck];
+const COLORS = [
+  { color: "text-yellow-600", bgColor: "bg-yellow-100" },
+  { color: "text-purple-600", bgColor: "bg-purple-100" },
+  { color: "text-green-600", bgColor: "bg-green-100" },
+  { color: "text-primary", bgColor: "bg-primary/10" },
 ];
 
 const Features = () => {
+  const { features } = useWebsiteSettings();
+
   return (
     <section className="py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="grid grid-cols-4 gap-2 md:gap-6">
           {features.map((feature, index) => {
-            const Icon = feature.icon;
+            const Icon = ICONS[index];
+            const { color, bgColor } = COLORS[index];
             return (
               <div key={index} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-2 md:gap-3">
                 <div
-                  className={`flex-shrink-0 h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl flex items-center justify-center ${feature.bgColor} ${feature.color}`}
+                  className={`flex-shrink-0 h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl flex items-center justify-center ${bgColor} ${color}`}
                 >
                   <Icon className="h-4 w-4 md:h-5 md:w-5" />
                 </div>

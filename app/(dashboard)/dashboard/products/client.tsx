@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { MoreVertical, Plus, Search, Trash2, Loader2 } from "lucide-react"
+import { Copy, MoreVertical, Plus, Search, Trash2, Loader2 } from "lucide-react"
 import { useGetProducts } from "@/features/product/api/use-get-products"
 import { useDeleteProduct } from "@/features/dashboard/api/use-delete-product"
 import { useBulkDeleteProducts } from "@/features/dashboard/api/use-bulk-delete-products"
@@ -163,6 +163,12 @@ export default function ProductsClientPage() {
               <DropdownMenuContent align="end">
                 <Link href={`/dashboard/products/update/${product.id}`}>
                   <DropdownMenuItem>Edit</DropdownMenuItem>
+                </Link>
+                <Link href={`/dashboard/products/create?duplicate=${product.id}`}>
+                  <DropdownMenuItem>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicate
+                  </DropdownMenuItem>
                 </Link>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"

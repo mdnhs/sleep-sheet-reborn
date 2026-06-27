@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Mail, ArrowRight } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Mail, Globe, ArrowRight } from "lucide-react";
 
 const sections = [
   {
@@ -47,6 +47,12 @@ const sections = [
     description: "Manage Gmail SMTP credentials for transactional emails",
     href: "/dashboard/settings/smtp",
     icon: Mail,
+  },
+  {
+    title: "Website",
+    description: "Configure homepage hero, features, newsletter, footer, and site-wide content",
+    href: "/dashboard/settings/website",
+    icon: Globe,
   },
 ];
 

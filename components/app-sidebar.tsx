@@ -15,19 +15,14 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import {
-  IconShoppingCart,
-  IconPackage,
-  IconCategory,
-  IconSettings,
-  IconLayoutDashboard,
-  IconBed,
   IconArticle,
-  IconDollarSign,
-  IconCreditCard,
-  IconTruck,
+  IconBed,
   IconCashRegister,
-  IconPhoto,
-  IconMail,
+  IconCategory,
+  IconLayoutDashboard,
+  IconPackage,
+  IconSettings,
+  IconShoppingCart
 } from "@tabler/icons-react"
 
 const data = {
@@ -92,6 +87,7 @@ const data = {
         { title: "SEO", url: "/dashboard/settings/seo" },
         { title: "CDN", url: "/dashboard/settings/cdn" },
         { title: "SMTP", url: "/dashboard/settings/smtp" },
+        { title: "Website", url: "/dashboard/settings/website" },
       ],
     },
   ],

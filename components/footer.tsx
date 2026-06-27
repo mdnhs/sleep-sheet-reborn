@@ -1,3 +1,5 @@
+"use client";
+
 import {
   IconBrandFacebook,
   IconBrandInstagram,
@@ -6,8 +8,20 @@ import {
 } from "@tabler/icons-react";
 import { Mail, Phone, ShieldCheck, Truck, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
 const Footer = () => {
+  const {
+    footerBrandDesc,
+    footerEmail,
+    footerPhone,
+    socialFacebook,
+    socialInstagram,
+    socialTwitter,
+    socialYoutube,
+    footerCopyright,
+  } = useWebsiteSettings();
+
   return (
     <footer className="bg-foreground dark:bg-slate-950 text-background dark:text-slate-100 pt-10 md:pt-16 pb-24 md:pb-8 border-t border-white/5 dark:border-white/5 relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
@@ -19,37 +33,45 @@ const Footer = () => {
               <img src="/logo.png" alt="SleepSheet Logo" className="h-9 md:h-10 w-auto object-contain" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto md:mx-0">
-              Elevating your rest with premium, ethically crafted bedding for the modern sanctuary.
+              {footerBrandDesc}
             </p>
             <div className="flex space-x-3 pt-2">
-              <a
-                href="#"
-                aria-label="Instagram"
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
-              >
-                <IconBrandInstagram className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                aria-label="Facebook"
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
-              >
-                <IconBrandFacebook className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                aria-label="Twitter"
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
-              >
-                <IconBrandTwitter className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                aria-label="YouTube"
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
-              >
-                <IconBrandYoutube className="h-5 w-5" />
-              </a>
+              {(socialInstagram || true) && (
+                <a
+                  href={socialInstagram || "#"}
+                  aria-label="Instagram"
+                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                >
+                  <IconBrandInstagram className="h-5 w-5" />
+                </a>
+              )}
+              {(socialFacebook || true) && (
+                <a
+                  href={socialFacebook || "#"}
+                  aria-label="Facebook"
+                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                >
+                  <IconBrandFacebook className="h-5 w-5" />
+                </a>
+              )}
+              {(socialTwitter || true) && (
+                <a
+                  href={socialTwitter || "#"}
+                  aria-label="Twitter"
+                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                >
+                  <IconBrandTwitter className="h-5 w-5" />
+                </a>
+              )}
+              {(socialYoutube || true) && (
+                <a
+                  href={socialYoutube || "#"}
+                  aria-label="YouTube"
+                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                >
+                  <IconBrandYoutube className="h-5 w-5" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -151,23 +173,23 @@ const Footer = () => {
           <div className="col-span-2 lg:col-span-4 space-y-4 md:space-y-5">
             <h4 className="font-semibold tracking-widest uppercase text-xs text-white/40">Here to Help</h4>
             <div className="space-y-4 flex flex-col md:block">
-              <a href="mailto:support@sleepsheet.com" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer w-full md:w-fit md:pr-6">
+              <a href={`mailto:${footerEmail}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer w-full md:w-fit md:pr-6">
                 <div className="flex shrink-0 items-center justify-center h-8 w-8 rounded-full bg-white/10 text-white group-hover:bg-white group-hover:text-foreground transition-colors">
                   <Mail className="h-4 w-4" />
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-white/50 mb-0.5">Email Us</p>
-                  <p className="text-sm text-white font-medium">support@sleepsheet.com</p>
+                  <p className="text-sm text-white font-medium">{footerEmail}</p>
                 </div>
               </a>
 
-              <a href="tel:+8801700000000" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer w-full md:w-fit md:pr-6">
+              <a href={`tel:${footerPhone.replace(/[^0-9+]/g, "")}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer w-full md:w-fit md:pr-6">
                 <div className="flex shrink-0 items-center justify-center h-8 w-8 rounded-full bg-white/10 text-white group-hover:bg-white group-hover:text-foreground transition-colors">
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-white/50 mb-0.5">Call Us</p>
-                  <p className="text-sm text-white font-medium">+880 1700-000000</p>
+                  <p className="text-sm text-white font-medium">{footerPhone}</p>
                 </div>
               </a>
             </div>
@@ -177,7 +199,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 md:mt-16 flex flex-col gap-6 border-t border-white/10 pt-8 md:flex-row md:items-center md:justify-between">
           <p className="text-center text-xs text-white/40 md:text-left">
-            © {new Date().getFullYear()} SLEEP SHEET. All rights reserved.
+            {footerCopyright}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 md:justify-end">

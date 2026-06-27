@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
 const SLIDES = [
   {
@@ -30,6 +31,7 @@ const SLIDES = [
 ];
 
 function Hero() {
+  const { heroTitle, heroSubtitle, heroCtaText, heroCtaLink } = useWebsiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const nextSlide = useCallback(() => {
@@ -45,6 +47,18 @@ function Hero() {
     return () => clearInterval(timer);
   }, [nextSlide]);
 
+  const slideData = SLIDES.map((slide, index) => {
+    if (index === 0) {
+      return {
+        ...slide,
+        title: heroTitle || slide.title,
+        heading: heroSubtitle || slide.heading,
+        link: heroCtaLink || slide.link,
+      }
+    }
+    return slide
+  })
+
   return (
     <section className="w-full bg-background py-4 relative overflow-hidden">
       <div className="container mx-auto px-4">
@@ -52,7 +66,7 @@ function Hero() {
           {/* Left: Main Slider (Carousel) */}
           <div className="lg:col-span-2 relative w-full h-[320px] sm:h-[400px] lg:h-full rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group">
             {/* Slides */}
-            {SLIDES.map((slide, index) => (
+            {slideData.map((slide, index) => (
               <div
                 key={slide.id}
                 className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
@@ -79,7 +93,7 @@ function Hero() {
                       href={slide.link}
                       className="group/btn relative overflow-hidden rounded-full bg-white dark:bg-slate-800 px-8 py-3.5 text-foreground dark:text-slate-100 text-xs uppercase tracking-[0.2em] font-bold shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center gap-2"
                     >
-                      <span className="relative z-10">Shop Now</span>
+                      <span className="relative z-10">{heroCtaText}</span>
                       <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-1 relative z-10" />
                     </Link>
                   </div>

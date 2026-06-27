@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import { ArrowRight, Mail } from "lucide-react";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
 const Newsletter = () => {
+  const { newsletterTitle, newsletterSubtitle } = useWebsiteSettings();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,11 +28,11 @@ const Newsletter = () => {
           </div>
           
           <h2 className="font-heading text-2xl md:text-4xl font-light tracking-tight text-white mb-3">
-            Join the inner circle
+            {newsletterTitle}
           </h2>
           
           <p className="text-white/60 text-sm md:text-base leading-relaxed mb-8 max-w-md mx-auto">
-            Subscribe for early access to new collections, exclusive styling tips, and members-only offers.
+            {newsletterSubtitle}
           </p>
 
           <form

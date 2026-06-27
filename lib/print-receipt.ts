@@ -32,85 +32,91 @@ type PrintReceiptOptions = {
       <head>
         <title>Order Receipt - LUXSTORE</title>
         <style>
+          @page {
+            size: 6in 4in;
+            margin: 0.15in;
+          }
+
           :root {
             --primary: #2c3e50;
             --accent: #e74c3c;
             --text: #333;
           }
 
-          body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            padding: 2rem;
-            color: var(--text);
-            position: relative;
-            overflow: hidden;
-            background: #f8f9fa;
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
           }
 
-          body::after {
-            content: "LUXSTORE";
-            position: fixed;
-            opacity: 0.1;
-            font-size: 8rem;
-            transform: rotate(-45deg);
-            top: 30%;
-            left: 10%;
-            z-index: -1;
-            font-weight: 900;
-            color: var(--primary);
+          body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 0.15in;
+            color: var(--text);
+            background: white;
+            font-size: 9px;
+            line-height: 1.3;
           }
 
           .header {
             text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 4px solid var(--primary);
+            margin-bottom: 0.15in;
+            padding-bottom: 0.1in;
+            border-bottom: 2px solid var(--primary);
           }
 
           .header h1 {
-            font-size: 2.5rem;
-            margin: 0;
+            font-size: 16px;
             color: var(--primary);
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
             font-weight: 800;
           }
 
+          .header p {
+            font-size: 7px;
+            opacity: 0.7;
+          }
+
           .order-meta {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
-            padding: 1.5rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            grid-template-columns: 1fr 1fr;
+            gap: 0.08in;
+            margin: 0.12in 0;
+            padding: 0.1in;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 8px;
           }
 
           .order-meta p {
-            margin: 0.3rem 0;
-            font-size: 0.95rem;
+            margin: 0;
+            line-height: 1.4;
           }
 
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 2rem 0;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin: 0.12in 0;
+            font-size: 8px;
           }
 
           th {
             background: var(--primary);
             color: white;
-            padding: 1rem;
+            padding: 0.06in 0.08in;
             font-weight: 600;
+            text-align: left;
+            font-size: 8px;
+          }
+
+          th:last-child,
+          td:last-child {
+            text-align: right;
           }
 
           td {
-            padding: 1rem;
+            padding: 0.05in 0.08in;
             border-bottom: 1px solid #eee;
           }
 
@@ -118,46 +124,48 @@ type PrintReceiptOptions = {
             border-bottom: none;
           }
 
-          tr:hover td {
-            background: #f8f9fa;
-          }
-
           .totals {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 2rem;
-            float: right;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: 0.12in;
+            margin-left: auto;
+            width: fit-content;
+            padding: 0.1in;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 8px;
           }
 
           .totals div {
             display: grid;
-            grid-template-columns: 120px 150px;
-            gap: 1rem;
-            margin-bottom: 0.8rem;
+            grid-template-columns: 0.8in 0.9in;
+            gap: 0.08in;
+            margin-bottom: 0.04in;
+          }
+
+          .totals div:last-child {
+            margin-bottom: 0;
           }
 
           .total-amount {
             color: var(--accent);
             font-weight: 800;
-            font-size: 1.2rem;
+            font-size: 10px;
           }
 
           .thank-you {
             text-align: center;
-            margin-top: 3rem;
+            margin-top: 0.15in;
             color: var(--primary);
             font-weight: 500;
+            font-size: 8px;
             opacity: 0.8;
           }
 
           @media print {
             body {
-              padding: 0;
+              padding: 0.15in;
               background: white;
             }
-            .order-meta, table, .totals {
+            .order-meta, .totals {
               box-shadow: none;
             }
           }
@@ -237,8 +245,8 @@ type PrintReceiptOptions = {
       receiptWindow.document.write(receiptContent);
       receiptWindow.document.close();
       receiptWindow.focus();
+      receiptWindow.onafterprint = () => receiptWindow.close();
       receiptWindow.print();
-      receiptWindow.close();
     } else {
       console.error("Unable to open print window. Check popup blocker settings.");
     }

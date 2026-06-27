@@ -128,6 +128,7 @@ function MobileThemeToggle({ hasMounted }: { hasMounted: boolean }) {
 }
 
 import { useWishlist } from "@/features/wishlist/api/use-wishlist";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
 function NavbarActions({
   hasMounted,
@@ -217,16 +218,20 @@ function NavbarActions({
 function MobileNavbarMenu({
   isOpen,
   onOpenChange,
+  logoUrl,
+  siteName,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  logoUrl: string;
+  siteName: string;
 }) {
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="flex w-full max-w-xs flex-col">
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex items-center gap-2">
-            <img src="/logo.png" alt="SleepSheet Logo" className="h-10 w-auto object-contain" />
+            <img src={logoUrl} alt={siteName} className="h-10 w-auto object-contain" />
           </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-6 p-6">
@@ -302,6 +307,7 @@ function MobileBottomNav({
 }
 
 function Navbar() {
+  const { siteName, logoUrl } = useWebsiteSettings();
   const isMobile = useIsMobile();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -350,7 +356,7 @@ function Navbar() {
                   <Menu className="h-5 w-5" />
                 </Button>
                 <Link href="/" className="flex items-center gap-2 select-none">
-                  <img src="/logo.png" alt="SleepSheet Logo" className="h-9 w-auto object-contain" />
+                  <img src={logoUrl} alt={siteName} className="h-9 w-auto object-contain" />
                 </Link>
                 <div className="flex items-center gap-2">
                   <MobileThemeToggle hasMounted={hasMounted} />
@@ -377,7 +383,7 @@ function Navbar() {
             <div className="flex h-16 items-center justify-between gap-4">
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2 select-none shrink-0">
-                <img src="/logo.png" alt="SleepSheet Logo" className="h-12 w-auto object-contain" />
+                <img src={logoUrl} alt={siteName} className="h-12 w-auto object-contain" />
               </Link>
 
               {/* Links */}
@@ -415,6 +421,8 @@ function Navbar() {
           <MobileNavbarMenu
             isOpen={isMenuOpen}
             onOpenChange={setIsMenuOpen}
+            logoUrl={logoUrl}
+            siteName={siteName}
           />
         )}
 
