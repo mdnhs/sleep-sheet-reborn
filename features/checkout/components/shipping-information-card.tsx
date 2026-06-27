@@ -86,6 +86,7 @@ function ShippingInformationCard() {
       email: values.email,
       address: values.address,
       shippingZone: values.shippingZone,
+      notes: values.notes,
     }));
 
     if (values.paymentMethod === "card") {
@@ -172,6 +173,22 @@ function ShippingInformationCard() {
                     <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Full Address</label>
                     <FormControl>
                       <Textarea placeholder="House/Flat, Road, Area, District, City" rows={2} className="bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl resize-none py-3 px-4 min-h-[60px]" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="notes"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Order Notes <span className="text-muted-foreground/40 lowercase font-medium tracking-normal">(optional)</span>
+                    </label>
+                    <FormControl>
+                      <Textarea placeholder="Special instructions, delivery preferences, etc." rows={2} className="bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl resize-none py-3 px-4 min-h-[60px]" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

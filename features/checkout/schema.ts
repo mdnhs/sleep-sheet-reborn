@@ -15,6 +15,7 @@ export const shippingInformationSchema = z.object({
   shippingZone: z.enum(["inside_dhaka", "outside_dhaka"], {
     error: "Please select a delivery zone",
   }),
+  notes: z.string().optional(),
 });
 
 export const paymentInformationSchema = z.object({

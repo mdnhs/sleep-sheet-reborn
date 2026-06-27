@@ -87,6 +87,12 @@ function PreviewStepCard() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Delivery Address</p>
                 <p className="font-medium leading-relaxed">{shippingInfo?.address}</p>
               </div>
+              {shippingInfo?.notes && (
+                <div className="md:col-span-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Order Notes</p>
+                  <p className="font-medium leading-relaxed">{shippingInfo.notes}</p>
+                </div>
+              )}
             </div>
           </div>
 

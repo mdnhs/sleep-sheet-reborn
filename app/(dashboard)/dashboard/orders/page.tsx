@@ -209,6 +209,30 @@ export default function OrdersPage() {
       ),
     },
     {
+      id: "saleType",
+      header: "Type",
+      cell: ({ row }) => {
+        const type = row.original.saleType;
+        return (
+          <Badge variant="outline" className={type === "POS" ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800" : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"}>
+            {type || "WEBSITE"}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "reference",
+      header: "Reference",
+      cell: ({ row }) => {
+        const ref = row.original.reference;
+        return ref ? (
+          <span className="font-mono text-sm">{ref}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
+    },
+    {
       id: "customer",
       header: "Customer",
       cell: ({ row }) => {

@@ -1,7 +1,8 @@
 // types/order.ts
 export type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED";
-export type PaymentMethod = "COD" | "CARD";
+export type PaymentMethod = "COD" | "CARD" | "DUE";
+export type SaleType = "POS" | "WEBSITE";
 
 export interface OrderUser {
   id: string;
@@ -64,6 +65,9 @@ export interface OrderItem {
     shippingCountry?: string | null;
     trackingNumber?: string | null;
     cancellationReason?: string | null;
+    saleType?: SaleType | null;
+    reference?: string | null;
+    note?: string | null;
     user?: {
       id: string;
       name: string;

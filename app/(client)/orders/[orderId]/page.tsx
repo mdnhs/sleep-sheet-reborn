@@ -262,6 +262,23 @@ export default function OrderDetail() {
             <p>{data?.order.paymentMethod}</p>
           </CardContent>
         </Card>
+        {(data?.order.reference || data?.order.note) && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                {data?.order.reference && (
+                  <p><span className="text-muted-foreground">Reference:</span> {data.order.reference}</p>
+                )}
+                {data?.order.note && (
+                  <p><span className="text-muted-foreground">Note:</span> {data.order.note}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       <div className="flex flex-wrap gap-4 justify-end">
         <Button variant="outline" onClick={handlePrintReceipt}>

@@ -25,6 +25,7 @@ import {
   IconDollarSign,
   IconCreditCard,
   IconTruck,
+  IconCashRegister,
 } from "@tabler/icons-react"
 
 const data = {
@@ -44,6 +45,12 @@ const data = {
       title: "Orders",
       url: "/dashboard/orders",
       icon: <IconShoppingCart />,
+      items: [],
+    },
+    {
+      title: "POS",
+      url: "/dashboard/pos",
+      icon: <IconCashRegister />,
       items: [],
     },
     {

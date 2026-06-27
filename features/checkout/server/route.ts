@@ -97,6 +97,8 @@ const app = new Hono()
         shippingCost,
         shippingAddress: shippingInfo.address,
         paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+        saleType: 'WEBSITE',
+        note: shippingInfo.notes || null,
       }).returning();
       
       createdOrder = order;
@@ -188,6 +190,8 @@ const app = new Hono()
       shippingCost,
       shippingAddress: shippingInfo.address,
       paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+      saleType: 'WEBSITE',
+      note: shippingInfo.notes || null,
     }).returning();
 
     guestOrderId = order.id;

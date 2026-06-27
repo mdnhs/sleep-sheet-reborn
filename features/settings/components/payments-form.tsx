@@ -10,10 +10,12 @@ export function PaymentsForm() {
 
   const cardEnabled = data ? data.payment_method_card !== "false" : true;
   const codEnabled = data ? data.payment_method_cod !== "false" : true;
+  const dueEnabled = data ? data.payment_method_due !== "false" : true;
 
   if (isLoading) {
     return (
       <div className="space-y-4">
+        <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />
       </div>
@@ -45,6 +47,19 @@ export function PaymentsForm() {
           disabled={isPending}
           onCheckedChange={(checked) =>
             mutate({ payment_method_cod: checked ? "true" : "false" })
+          }
+        />
+      </div>
+      <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold">Due (POS)</span>
+          <span className="text-xs text-muted-foreground">Payment collected later</span>
+        </div>
+        <Switch
+          checked={dueEnabled}
+          disabled={isPending}
+          onCheckedChange={(checked) =>
+            mutate({ payment_method_due: checked ? "true" : "false" })
           }
         />
       </div>

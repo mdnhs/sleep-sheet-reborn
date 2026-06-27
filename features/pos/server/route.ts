@@ -1,0 +1,131 @@
+import { Hono } from 'hono';
+import { db } from '@/db';
+import { orders, orderItems, payments, products } from '@/db/schema';
+import { eq, inArray, sql } from 'drizzle-orm';
+import { z } from 'zod';
+import { zValidator } from '@hono/zod-validator';
+import { sessionMiddleware } from '@/lib/session-middleware';
+
+async function generateOrderNumber(): Promise<string> {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yy = String(now.getFullYear()).slice(-2);
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 86400000);
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(orders)
+    .where(
+      sql`${orders.createdAt} >= ${todayStart.toISOString()} AND ${orders.createdAt} < ${todayEnd.toISOString()}`
+    );
+
+  return `POS-${dd}${mm}${yy}${Number(count) + 1}`;
+}
+
+const app = new Hono()
+
+.post('/', sessionMiddleware, zValidator('json', z.object({
+  customerName: z.string().min(1, 'Customer name is required'),
+  customerPhone: z.string().optional(),
+  reference: z.string().optional(),
+  note: z.string().optional(),
+  paymentMethod: z.enum(['COD', 'CARD', 'DUE']).default('COD'),
+  items: z.array(z.object({
+    productId: z.string(),
+    quantity: z.number().min(1),
+    price: z.number().min(0),
+    size: z.string().optional(),
+    color: z.string().optional(),
+  })).min(1, 'At least one item is required'),
+})), async (c) => {
+  const user = c.get('user');
+  if (!user || user.role !== 'ADMIN') {
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
+
+  try {
+    const { customerName, customerPhone, paymentMethod, reference, note, items } = c.req.valid('json');
+
+    const productIds = items.map(i => i.productId);
+    const productsList = await db.query.products.findMany({
+      where: inArray(products.id, productIds),
+    });
+    const productMap = new Map(productsList.map(p => [p.id, p]));
+
+    for (const item of items) {
+      const product = productMap.get(item.productId);
+      if (!product) {
+        return c.json({ success: false, error: `Product not found: ${item.productId}` }, 400);
+      }
+      if (product.stock < item.quantity) {
+        return c.json({ success: false, error: `Insufficient stock for ${product.name}` }, 400);
+      }
+    }
+
+    const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+    const totalAmount = subtotal;
+    const orderNumber = await generateOrderNumber();
+
+    const [order] = await db.insert(orders).values({
+      orderNumber,
+      userId: null,
+      guestName: customerName,
+      guestPhone: customerPhone || null,
+      subtotal,
+      totalAmount,
+      tax: 0,
+      shippingCost: 0,
+      shippingAddress: 'POS - In-store pickup',
+      reference: reference || null,
+      note: note || null,
+      saleType: 'POS',
+      paymentMethod,
+      paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
+      status: 'PROCESSING',
+    }).returning();
+
+    await db.insert(orderItems).values(
+      items.map(item => ({
+        orderId: order.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        size: item.size || null,
+        color: item.color || null,
+      }))
+    );
+
+    if (paymentMethod === 'CARD') {
+      await db.insert(payments).values({
+        orderId: order.id,
+        amount: totalAmount,
+        method: 'CARD',
+        status: 'COMPLETED',
+      });
+    }
+
+    for (const item of items) {
+      await db.update(products)
+        .set({ stock: sql`${products.stock} - ${item.quantity}` })
+        .where(eq(products.id, item.productId));
+    }
+
+    return c.json({
+      success: true,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        items: items.length,
+      },
+    }, 201);
+  } catch (error) {
+    console.error('POS order error:', error);
+    return c.json({ success: false, error: 'Failed to create POS order' }, 500);
+  }
+});
+
+export default app;

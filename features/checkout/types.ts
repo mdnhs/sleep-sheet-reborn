@@ -7,6 +7,7 @@ export interface ShippingInfo {
   email?: string;
   address: string;
   shippingZone: "inside_dhaka" | "outside_dhaka";
+  notes?: string;
 }
 
 export interface ShippingMethod {

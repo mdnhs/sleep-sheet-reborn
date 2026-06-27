@@ -80,7 +80,8 @@ export const orderStatusEnum = pgEnum("OrderStatus", [
   "DELIVERED",
   "CANCELLED",
 ]);
-export const paymentMethodEnum = pgEnum("PaymentMethod", ["COD", "CARD"]);
+export const paymentMethodEnum = pgEnum("PaymentMethod", ["COD", "CARD", "DUE"]);
+export const saleTypeEnum = pgEnum("SaleType", ["POS", "WEBSITE"]);
 export const paymentStatusEnum = pgEnum("PaymentStatus", [
   "PENDING",
   "COMPLETED",
@@ -251,6 +252,9 @@ export const orders = pgTable("orders", {
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
   trackingNumber: text("trackingNumber"),
   cancellationReason: text("cancellationReason"),
+  reference: text("reference"),
+  note: text("note"),
+  saleType: saleTypeEnum("saleType").default("WEBSITE").notNull(),
 });
 
 export const orderItems = pgTable("order_items", {
