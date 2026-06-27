@@ -3,74 +3,62 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CheckoutLoading() {
   return (
-    <div className="container mx-auto px-4 pb-4 md:pb-8 pt-2 max-w-7xl min-h-[80vh]">
-      {/* Checkout Steps Skeleton */}
-      <div className="w-full flex justify-center mb-6 md:mb-10 mt-2 md:mt-4">
-        <Skeleton className="h-10 md:h-12 w-64 md:w-96 rounded-full" />
+    <div className="container mx-auto px-3 pb-4 pt-1 max-w-5xl">
+      <div className="w-full flex justify-center mb-3 mt-1">
+        <Skeleton className="h-7 w-48 rounded-full" />
       </div>
 
-      <div className="flex flex-col-reverse lg:flex-row items-start gap-6 lg:gap-10 mt-2 md:mt-4">
-        {/* Left Column (Shipping Form Skeleton) */}
-        <div className="w-full lg:w-[55%]">
-          <div className="bg-background border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-6 md:p-8 w-full ring-0">
-            {/* Form Title */}
-            <div className="space-y-2 mb-8">
-              <Skeleton className="h-8 w-48 rounded-xl" />
-              <Skeleton className="h-4 w-64 rounded-lg" />
+      <div className="flex flex-col lg:flex-row items-start gap-4">
+        <div className="w-full lg:w-3/5">
+          <div className="bg-background border border-border/40 rounded-2xl p-4 w-full">
+            <div className="space-y-2 mb-4">
+              <Skeleton className="h-6 w-32 rounded-lg" />
+              <Skeleton className="h-3 w-48 rounded-lg" />
             </div>
 
-            {/* Inputs */}
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Skeleton className="h-14 w-full rounded-2xl" />
-                <Skeleton className="h-14 w-full rounded-2xl" />
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <Skeleton className="h-10 w-full rounded-xl" />
               </div>
-              <Skeleton className="h-14 w-full rounded-2xl" />
-              <Skeleton className="h-28 w-full rounded-2xl" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+              <Skeleton className="h-[50px] w-full rounded-xl" />
             </div>
 
-            {/* Next Button */}
-            <div className="flex justify-end pt-8">
-              <Skeleton className="h-14 w-full md:w-40 rounded-full" />
+            <div className="flex justify-end pt-4">
+              <Skeleton className="h-11 w-full rounded-full" />
             </div>
           </div>
         </div>
 
-        {/* Right Column (Order Summary Skeleton) */}
-        <div className="w-full lg:w-[45%] lg:sticky lg:top-24">
-          <div className="bg-background border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-6 md:p-8 w-full ring-0">
-            <Skeleton className="h-8 w-40 rounded-xl mb-6" />
+        <div className="w-full lg:w-2/5">
+          <div className="bg-background border border-border/40 rounded-2xl p-4 w-full">
+            <Skeleton className="h-5 w-28 rounded-lg mb-4" />
 
-            {/* Cart Items */}
-            <div className="space-y-6 mb-8">
+            <div className="space-y-3 mb-4">
               {[...Array(2)].map((_, i) => (
-                <div key={i} className="flex gap-4">
-                  <Skeleton className="h-20 w-20 rounded-2xl shrink-0" />
-                  <div className="flex flex-col gap-2 flex-1">
-                    <Skeleton className="h-5 w-full rounded-lg" />
-                    <Skeleton className="h-4 w-24 rounded-lg" />
-                    <div className="flex justify-between mt-2">
-                      <Skeleton className="h-5 w-16 rounded-lg" />
-                      <Skeleton className="h-5 w-20 rounded-lg" />
-                    </div>
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-14 w-14 rounded-xl shrink-0" />
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <Skeleton className="h-4 w-full rounded-lg" />
+                    <Skeleton className="h-3 w-20 rounded-lg" />
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Totals */}
-            <div className="space-y-4 border-t border-border/40 pt-6">
+            <div className="space-y-2 border-t border-border/40 pt-3">
               <div className="flex justify-between">
+                <Skeleton className="h-3 w-16 rounded-lg" />
+                <Skeleton className="h-3 w-20 rounded-lg" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-14 rounded-lg" />
+                <Skeleton className="h-3 w-14 rounded-lg" />
+              </div>
+              <div className="flex justify-between pt-2 border-t border-border/40">
                 <Skeleton className="h-5 w-20 rounded-lg" />
-                <Skeleton className="h-5 w-24 rounded-lg" />
-              </div>
-              <div className="flex justify-between">
-                <Skeleton className="h-5 w-16 rounded-lg" />
-                <Skeleton className="h-5 w-16 rounded-lg" />
-              </div>
-              <div className="flex justify-between pt-4 border-t border-border/40">
-                <Skeleton className="h-6 w-24 rounded-lg" />
-                <Skeleton className="h-6 w-32 rounded-lg" />
+                <Skeleton className="h-6 w-28 rounded-lg" />
               </div>
             </div>
           </div>

@@ -26,38 +26,37 @@ function OrderSummeryCard() {
   if (!hasMounted) return null;
 
   return (
-    <Card className="w-full lg:w-[40%] min-h-[300px] h-auto lg:sticky lg:top-24 bg-background border border-border/40 ring-0 py-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] overflow-hidden">
-      <CardHeader className="bg-transparent pt-8 pb-6 px-8 border-b border-border/40">
+    <Card className="w-full bg-background border border-border/40 rounded-2xl shadow-sm overflow-hidden">
+      <CardHeader className="pt-4 pb-3 px-4 border-b border-border/40">
         <CardTitle className="flex items-center gap-2">
-          <p className="text-2xl font-bold tracking-tight">Order Summary</p>
+          <p className="text-base font-bold">Order Summary</p>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6 px-8 pb-8 pt-8">
+      <CardContent className="space-y-3 px-4 pb-4 pt-3">
         {hasMounted &&
           cartItems?.map((cartItem) => (
-            <div key={cartItem.id} className="flex flex-row gap-5 group items-center">
-              <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted/20 relative">
+            <div key={cartItem.id} className="flex gap-3 items-center">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border/40 bg-muted/20 relative">
                 <Image
                   src={cartItem?.image}
                   alt={cartItem?.name}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="object-cover"
                 />
               </div>
-
-              <div className="flex flex-col justify-center w-full">
-                <div className="flex flex-row justify-between gap-4 items-start mb-1">
-                  <h1 className="text-sm font-semibold leading-tight pr-4">{cartItem.name}</h1>
-                  <label className="font-bold text-sm whitespace-nowrap">{symbol}{cartItem.price}</label>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <h1 className="text-xs font-semibold leading-tight truncate">{cartItem.name}</h1>
+                  <label className="font-bold text-xs whitespace-nowrap">{symbol}{cartItem.price}</label>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium text-muted-foreground">
                   <span>Qty: {cartItem.quantity}</span>
-                  <span className="w-1 h-1 rounded-full bg-border"></span>
-                  <span>Variant: {cartItem.color}</span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-border"></span>
+                  <span>{cartItem.color}</span>
                   {cartItem.size && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-border"></span>
-                      <span>Size: {cartItem.size}</span>
+                      <span className="w-0.5 h-0.5 rounded-full bg-border"></span>
+                      <span>{cartItem.size}</span>
                     </>
                   )}
                 </div>
@@ -65,20 +64,18 @@ function OrderSummeryCard() {
             </div>
           ))}
 
-        <div className="border-t border-border/40 pt-6 space-y-4">
-          <div className="space-y-4">
-            <div className="flex justify-between text-sm font-medium">
-              <span className="text-muted-foreground/80">Subtotal</span>
-              <span className="font-semibold text-foreground">{formatAmount(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium">
-              <span className="text-muted-foreground/80">Shipping</span>
-              <span className="font-semibold text-foreground">{shipping > 0 ? formatAmount(shipping) : "Calculated next"}</span>
-            </div>
-            <div className="flex justify-between items-end pt-5 border-t border-border/40 mt-6">
-              <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Total</span>
-              <span className="text-3xl font-black text-foreground tracking-tight">{formatAmount(total)}</span>
-            </div>
+        <div className="border-t border-border/40 pt-3 space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground/80">Subtotal</span>
+            <span className="font-semibold">{formatAmount(subtotal)}</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground/80">Shipping</span>
+            <span className="font-semibold">{shipping > 0 ? formatAmount(shipping) : "—"}</span>
+          </div>
+          <div className="flex justify-between items-end pt-2 border-t border-border/40">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
+            <span className="text-xl font-black text-foreground tracking-tight">{formatAmount(total)}</span>
           </div>
         </div>
       </CardContent>

@@ -110,281 +110,200 @@ function ShippingInformationCard() {
   if (!hasMounted) return null;
 
   return (
-    <div className="p-0 w-full lg:w-[55%]">
+    <div className="w-full">
       <Form {...form}>
-        <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
-          {/* Delivery Information */}
-          <Card className="bg-background border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-6 md:p-8 w-full ring-0">
-            <CardHeader className="p-0 mb-6">
-              <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Delivery</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1.5 font-medium">Tell us where to send your order.</p>
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+          <Card className="bg-background border border-border/40 rounded-2xl p-4 sm:p-6 w-full ring-0 shadow-sm">
+            <CardHeader className="p-0 mb-4">
+              <CardTitle className="text-lg sm:text-xl font-bold text-foreground">Delivery</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">Tell us where to send your order.</p>
             </CardHeader>
-            <CardContent className="p-0 w-full space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FormField
-                  name="fullName"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
-                      <FormControl>
-                        <Input type="text" placeholder="John Doe" className="h-12 bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="phone"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Phone Number</label>
-                      <FormControl>
-                        <Input type="tel" placeholder="01XXXXXXXXX" className="h-12 bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <CardContent className="p-0 w-full space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField name="fullName" control={form.control} render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
+                    <FormControl>
+                      <Input type="text" placeholder="John Doe" className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField name="phone" control={form.control} render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Phone</label>
+                    <FormControl>
+                      <Input type="tel" placeholder="01XXXXXXXXX" className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
-              <FormField
-                name="email"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Email <span className="text-muted-foreground/40 lowercase font-medium tracking-normal">(optional)</span>
-                    </label>
-                    <FormControl>
-                      <Input type="email" placeholder="your@email.com" className="h-12 bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField name="email" control={form.control} render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Email <span className="text-muted-foreground/40 lowercase font-normal tracking-normal">(optional)</span>
+                  </label>
+                  <FormControl>
+                    <Input type="email" placeholder="your@email.com" className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
-              <FormField
-                name="address"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Full Address</label>
-                    <FormControl>
-                      <Textarea placeholder="House/Flat, Road, Area, District, City" rows={2} className="bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl resize-none py-3 px-4 min-h-[60px]" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField name="address" control={form.control} render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Address</label>
+                  <FormControl>
+                    <Textarea placeholder="House/Flat, Road, Area, District, City" rows={2} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[50px]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
-              <FormField
-                name="notes"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Order Notes <span className="text-muted-foreground/40 lowercase font-medium tracking-normal">(optional)</span>
-                    </label>
-                    <FormControl>
-                      <Textarea placeholder="Special instructions, delivery preferences, etc." rows={2} className="bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl resize-none py-3 px-4 min-h-[60px]" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField name="notes" control={form.control} render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Order Notes <span className="text-muted-foreground/40 lowercase font-normal tracking-normal">(optional)</span>
+                  </label>
+                  <FormControl>
+                    <Textarea placeholder="Special instructions..." rows={1} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[40px]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
-              <FormField
-                name="shippingZone"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="pt-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Delivery Zone</label>
-                    <FormControl>
-                      <RadioGroup
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2"
-                      >
-                        {(Object.entries(SHIPPING_ZONES) as [ShippingZone, { label: string; cost: number }][]).map(
-                          ([key, { label }]) => (
-                            <label
-                              key={key}
-                              htmlFor={key}
-                              className={`relative flex flex-col justify-center rounded-2xl border-2 p-5 cursor-pointer transition-all duration-300 ${
-                                field.value === key
-                                  ? "border-foreground bg-secondary/10 shadow-sm"
-                                  : "border-transparent bg-secondary/10 hover:bg-secondary/20 hover:scale-[1.02]"
-                              }`}
-                            >
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0.5 gap-1">
-                                <span className="font-semibold text-sm leading-tight text-foreground">{label}</span>
-                                <RadioGroupItem value={key} id={key} className={field.value === key ? "border-foreground text-foreground" : "opacity-40"} />
-                              </div>
-                              <span className="text-xs text-muted-foreground/80 font-medium">{formatAmount(zoneCosts[key])}</span>
-                            </label>
-                          )
-                        )}
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField name="shippingZone" control={form.control} render={({ field }) => (
+                <FormItem className="pt-1 space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Delivery Zone</label>
+                  <FormControl>
+                    <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-2">
+                      {(Object.entries(SHIPPING_ZONES) as [ShippingZone, { label: string; cost: number }][]).map(
+                        ([key, { label }]) => (
+                          <label key={key} htmlFor={key}
+                            className={`relative flex items-center justify-between rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${
+                              field.value === key ? "border-foreground bg-secondary/10" : "border-transparent bg-secondary/10"
+                            }`}
+                          >
+                            <div>
+                              <span className="font-semibold text-xs text-foreground">{label}</span>
+                              <p className="text-[10px] text-muted-foreground/80 font-medium">{formatAmount(zoneCosts[key])}</p>
+                            </div>
+                            <RadioGroupItem value={key} id={key} className={field.value === key ? "border-foreground text-foreground" : "opacity-40"} />
+                          </label>
+                        )
+                      )}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
           {paymentMethodsCount > 1 && (
-          <Card className="bg-background border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-6 md:p-8 w-full ring-0">
-            <CardHeader className="p-0 mb-6 flex flex-col items-start">
-              <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Payment</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1.5 font-medium">All transactions are secure and encrypted.</p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
+            <Card className="bg-background border border-border/40 rounded-2xl p-4 sm:p-6 w-full ring-0 shadow-sm">
+              <CardHeader className="p-0 mb-4">
+                <CardTitle className="text-lg sm:text-xl font-bold text-foreground">Payment</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">All transactions are secure and encrypted.</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <FormField control={form.control} name="paymentMethod" render={({ field }) => (
                   <FormItem>
-                    {!cardEnabled && !codEnabled && (
-                      <p className="text-sm text-destructive mb-2">
-                        No payment methods are currently available. Please contact support.
-                      </p>
-                    )}
-                    <RadioGroup onValueChange={field.onChange} value={field.value} className="grid gap-4">
+                    <RadioGroup onValueChange={field.onChange} value={field.value} className="grid gap-2">
                       {cardEnabled && (
-                        <div className={`border-2 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${selectedPaymentMethod === "card" ? "border-foreground bg-muted/20 shadow-sm" : "border-border/40 bg-transparent hover:border-foreground/30 hover:bg-muted/10"}`}>
-                          <Label className="flex items-center justify-between p-4 cursor-pointer w-full m-0">
-                            <div className="flex items-center gap-3">
-                              <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors ${selectedPaymentMethod === "card" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
-                                <CreditCard className="h-4 w-4" />
+                        <div className={`border-2 rounded-xl overflow-hidden transition-all duration-200 ${selectedPaymentMethod === "card" ? "border-foreground bg-muted/20" : "border-border/40"}`}>
+                          <Label className="flex items-center justify-between p-3 cursor-pointer w-full m-0">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${selectedPaymentMethod === "card" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
+                                <CreditCard className="h-3.5 w-3.5" />
                               </div>
-                              <span className="font-bold text-sm md:text-base">Credit / Debit Card</span>
+                              <span className="font-bold text-xs sm:text-sm">Credit / Debit Card</span>
                             </div>
                             <RadioGroupItem value="card" className={selectedPaymentMethod === "card" ? "border-foreground text-foreground" : "opacity-50"} />
                           </Label>
-
                           {selectedPaymentMethod === "card" && (
-                            <div className="px-5 pb-6 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-                              <FormField
-                                name="cardNumber"
-                                control={form.control}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Card Number</label>
+                            <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                              <FormField name="cardNumber" control={form.control} render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Card Number</label>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input placeholder="0000 0000 0000 0000" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm font-mono tracking-widest" {...field} />
+                                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                              <FormField name="nameOnCard" control={form.control} render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cardholder Name</label>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input placeholder="John Doe" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm" {...field} />
+                                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                              <div className="grid grid-cols-2 gap-3">
+                                <FormField name="expirationDate" control={form.control} render={({ field }) => (
+                                  <FormItem className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Expiry</label>
                                     <FormControl>
                                       <div className="relative">
-                                        <Input placeholder="0000 0000 0000 0000" className="h-12 bg-background border border-border/40 focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4 pl-11 font-mono tracking-widest" {...field} />
-                                        <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                                        <Input placeholder="MM/YY" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm font-mono tracking-widest" {...field} />
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
                                       </div>
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                name="nameOnCard"
-                                control={form.control}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Cardholder Name</label>
+                                )} />
+                                <FormField name="cvv" control={form.control} render={({ field }) => (
+                                  <FormItem className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CVV</label>
                                     <FormControl>
                                       <div className="relative">
-                                        <Input placeholder="John Doe" className="h-12 bg-background border border-border/40 focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4 pl-11" {...field} />
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                                        <Input placeholder="123" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm font-mono tracking-widest" {...field} />
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
                                       </div>
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
-                                )}
-                              />
-
-                              <div className="grid grid-cols-2 gap-5">
-                                <FormField
-                                  name="expirationDate"
-                                  control={form.control}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Expiry Date</label>
-                                      <FormControl>
-                                        <div className="relative">
-                                          <Input placeholder="MM/YY" className="h-12 bg-background border border-border/40 focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4 pl-11 font-mono tracking-widest" {...field} />
-                                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                                        </div>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-
-                                <FormField
-                                  name="cvv"
-                                  control={form.control}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">CVV</label>
-                                      <FormControl>
-                                        <div className="relative">
-                                          <Input placeholder="123" className="h-12 bg-background border border-border/40 focus-visible:ring-1 focus-visible:ring-foreground transition-all duration-300 rounded-xl px-4 pl-11 font-mono tracking-widest" {...field} />
-                                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                                        </div>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                                )} />
                               </div>
                             </div>
                           )}
                         </div>
                       )}
-
                       {codEnabled && (
-                        <div className={`border-2 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer ${selectedPaymentMethod === "cod" ? "border-foreground bg-muted/20 shadow-sm" : "border-border/40 bg-transparent hover:border-foreground/30 hover:bg-muted/10"}`}>
-                          <Label className="flex items-center justify-between p-4 cursor-pointer w-full m-0">
-                            <div className="flex items-center gap-3">
-                              <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors ${selectedPaymentMethod === "cod" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
-                                <Wallet className="h-4 w-4" />
+                        <div className={`border-2 rounded-xl overflow-hidden transition-all duration-200 ${selectedPaymentMethod === "cod" ? "border-foreground bg-muted/20" : "border-border/40"}`}>
+                          <Label className="flex items-center justify-between p-3 cursor-pointer w-full m-0">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${selectedPaymentMethod === "cod" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
+                                <Wallet className="h-3.5 w-3.5" />
                               </div>
-                              <span className="font-bold text-sm md:text-base">Cash on Delivery</span>
+                              <span className="font-bold text-xs sm:text-sm">Cash on Delivery</span>
                             </div>
                             <RadioGroupItem value="cod" className={selectedPaymentMethod === "cod" ? "border-foreground text-foreground" : "opacity-50"} />
                           </Label>
-                          {selectedPaymentMethod === "cod" && (
-                            <div className="px-5 pb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                              <p className="text-sm font-medium text-muted-foreground">
-                                You can pay in cash when your order is delivered to your address.
-                              </p>
-                            </div>
-                          )}
                         </div>
                       )}
                     </RadioGroup>
                   </FormItem>
-                )}
-              />
-            </CardContent>
+                )} />
+              </CardContent>
+            </Card>
+          )}
 
-            {paymentMethodsCount > 1 && (
-              <div className="flex justify-end pt-4">
-                <Button type="submit" className="w-full md:w-auto h-14 px-12 rounded-full font-bold text-base md:text-lg shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 bg-foreground text-background">
-                  Continue to Review
-                </Button>
-              </div>
-            )}
-          </Card>
-          )}
-          {paymentMethodsCount <= 1 && (
-            <div className="flex justify-end pt-4">
-              <Button type="submit" className="w-full md:w-auto h-14 px-12 rounded-full font-bold text-base md:text-lg shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 bg-foreground text-background">
-                Continue to Review
-              </Button>
-            </div>
-          )}
+          <div className="flex justify-end pt-1">
+            <Button type="submit" className="w-full h-11 rounded-full font-bold text-sm shadow-md bg-foreground text-background">
+              Continue to Review
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

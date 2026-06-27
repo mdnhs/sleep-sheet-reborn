@@ -23,13 +23,19 @@ function CheckoutClinet() {
   }, [currentStep, cartItems.length, guestItems.length, dispatch]);
 
   return (
-    <div className="container mx-auto px-4 pb-4 md:pb-8 pt-2 max-w-7xl min-h-[80vh]">
+    <div className="container mx-auto px-3 pb-4 pt-1 max-w-5xl">
       <CheckoutSteps />
-      <div className="flex flex-col-reverse lg:flex-row items-start gap-6 lg:gap-10 mt-2 md:mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {currentStep === "initial" && <ShippingInformationCard />}
-        {currentStep === "confirmation" && <PreviewStepCard />}
-        {currentStep === "placedSuccessfully" && <OrderPlaced />}
-        {currentStep !== "placedSuccessfully" && <OrderSummeryCard />}
+      <div className="flex flex-col lg:flex-row items-start gap-4 mt-2">
+        <div className="w-full lg:w-3/5 order-2 lg:order-1">
+          {currentStep === "initial" && <ShippingInformationCard />}
+          {currentStep === "confirmation" && <PreviewStepCard />}
+          {currentStep === "placedSuccessfully" && <OrderPlaced />}
+        </div>
+        {currentStep !== "placedSuccessfully" && (
+          <div className="w-full lg:w-2/5 order-1 lg:order-2 lg:sticky lg:top-20">
+            <OrderSummeryCard />
+          </div>
+        )}
       </div>
     </div>
   );
