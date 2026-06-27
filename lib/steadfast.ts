@@ -1,9 +1,12 @@
+import { getSteadfastConfig } from "@/lib/server-config"
+
 const BASE_URL = "https://portal.packzy.com/api/v1";
 
-function headers() {
+async function headers() {
+  const config = await getSteadfastConfig()
   return {
-    "Api-Key": process.env.STEADFAST_API_KEY!,
-    "Secret-Key": process.env.STEADFAST_SECRET_KEY!,
+    "Api-Key": config.apiKey,
+    "Secret-Key": config.secretKey,
     "Content-Type": "application/json",
   };
 }
@@ -53,7 +56,7 @@ export async function createSteadfastOrder(
 ): Promise<SteadfastOrderResponse> {
   const res = await fetch(`${BASE_URL}/create_order`, {
     method: "POST",
-    headers: headers(),
+    headers: await headers(),
     body: JSON.stringify(payload),
   });
   const body = await res.json().catch(() => ({})) as SteadfastOrderResponse & { message?: string; errors?: unknown };
@@ -74,7 +77,7 @@ export async function getSteadfastStatusByInvoice(
   invoice: string
 ): Promise<SteadfastStatusResponse> {
   const res = await fetch(`${BASE_URL}/status_by_invoice/${invoice}`, {
-    headers: headers(),
+    headers: await headers(),
   });
   if (!res.ok) {
     throw new Error(`Steadfast error ${res.status}`);
@@ -84,7 +87,7 @@ export async function getSteadfastStatusByInvoice(
 
 export async function getSteadfastBalance(): Promise<SteadfastBalanceResponse> {
   const res = await fetch(`${BASE_URL}/get_balance`, {
-    headers: headers(),
+    headers: await headers(),
   });
   if (!res.ok) {
     throw new Error(`Steadfast error ${res.status}`);

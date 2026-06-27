@@ -39,6 +39,13 @@ export function useUpdateSettings() {
       seo_bing_verification?: string;
       seo_twitter_handle?: string;
       seo_robots_ai_block?: "true" | "false";
+      cloudinary_cloud_name?: string;
+      cloudinary_api_key?: string;
+      cloudinary_api_secret?: string;
+      steadfast_api_key?: string;
+      steadfast_secret_key?: string;
+      smtp_email_user?: string;
+      smtp_email_pass?: string;
     }) => {
       const res = await client.api.settings.$patch({ json: data });
       if (!res.ok) throw new Error("Failed to save settings");

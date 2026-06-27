@@ -38,6 +38,13 @@ const app = new Hono()
         seo_bing_verification: z.string().optional(),
         seo_twitter_handle: z.string().optional(),
         seo_robots_ai_block: z.enum(["true", "false"]).optional(),
+        cloudinary_cloud_name: z.string().optional(),
+        cloudinary_api_key: z.string().optional(),
+        cloudinary_api_secret: z.string().optional(),
+        steadfast_api_key: z.string().optional(),
+        steadfast_secret_key: z.string().optional(),
+        smtp_email_user: z.string().optional(),
+        smtp_email_pass: z.string().optional(),
       })
     ),
     async (c) => {

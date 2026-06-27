@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getEmailConfig } from '@/lib/server-config';
 
 const luxstoreEmailTemplate = (otp: string) => `
 <!DOCTYPE html>
@@ -73,16 +74,17 @@ export const sendEmail = async ({
   subject: string; 
   otp: string 
 }) => {
+  const config = await getEmailConfig();
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.NEXT_PUBLIC_EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: config.user,
+      pass: config.pass,
     },
   });
 
   const mailOptions = {
-    from: `LUXSTORE <${process.env.NEXT_PUBLIC_EMAIL_USER}>`,
+    from: `LUXSTORE <${config.user}>`,
     to,
     subject,
     text: `Your LUXSTORE verification code is: ${otp}`,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Eye, Search, ArrowRight } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Mail, ArrowRight } from "lucide-react";
 
 const sections = [
   {
@@ -35,6 +35,18 @@ const sections = [
     description: "Configure meta tags, structured data, sitemaps, and search engine settings",
     href: "/dashboard/settings/seo",
     icon: Search,
+  },
+  {
+    title: "CDN",
+    description: "Manage Cloudinary API credentials for image uploads",
+    href: "/dashboard/settings/cdn",
+    icon: ImageIcon,
+  },
+  {
+    title: "SMTP",
+    description: "Manage Gmail SMTP credentials for transactional emails",
+    href: "/dashboard/settings/smtp",
+    icon: Mail,
   },
 ];
 

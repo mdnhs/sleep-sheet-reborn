@@ -1,12 +1,17 @@
 import { v2 as cloudinary } from "cloudinary"
+import { getCloudinaryConfig } from "@/lib/server-config"
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
+async function ensureConfigured() {
+  const config = await getCloudinaryConfig()
+  cloudinary.config({
+    cloud_name: config.cloudName,
+    api_key: config.apiKey,
+    api_secret: config.apiSecret,
+  })
+}
 
 export async function uploadImage(file: File | Buffer, folder = "categories"): Promise<string> {
+  await ensureConfigured()
   const buffer = file instanceof File ? Buffer.from(await file.arrayBuffer()) : file
 
   return new Promise((resolve, reject) => {
@@ -24,6 +29,7 @@ export async function uploadImage(file: File | Buffer, folder = "categories"): P
 export async function deleteImage(url: string): Promise<void> {
   if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) return
 
+  await ensureConfigured()
   const parts = url.split("/")
   const folderAndFile = parts.slice(parts.indexOf("upload") + 2).join("/")
   const publicId = folderAndFile.replace(/\.[^.]+$/, "")

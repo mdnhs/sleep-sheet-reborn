@@ -26,6 +26,8 @@ import {
   IconCreditCard,
   IconTruck,
   IconCashRegister,
+  IconPhoto,
+  IconMail,
 } from "@tabler/icons-react"
 
 const data = {
@@ -88,6 +90,8 @@ const data = {
         { title: "Meta Pixel", url: "/dashboard/settings/pixel" },
         { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
         { title: "SEO", url: "/dashboard/settings/seo" },
+        { title: "CDN", url: "/dashboard/settings/cdn" },
+        { title: "SMTP", url: "/dashboard/settings/smtp" },
       ],
     },
   ],
