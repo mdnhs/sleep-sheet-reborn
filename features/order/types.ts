@@ -1,7 +1,7 @@
 // types/order.ts
 export type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED";
-export type PaymentMethod = "COD" | "CARD" | "DUE";
+export type PaymentMethod = string;
 export type SaleType = "POS" | "WEBSITE";
 
 export interface OrderUser {

@@ -78,10 +78,15 @@ export default function PosClientPage() {
     { value: "price-desc", label: "High to Low" },
   ]
 
+  const customMethods: { label: string; value: string }[] = settings?.pos_payment_methods
+    ? JSON.parse(settings.pos_payment_methods)
+    : []
+
   const paymentMethods = [
-    { value: "COD" as const, label: "Cash", icon: Banknote, enabled: settings ? settings.payment_method_cod !== "false" : true },
-    { value: "CARD" as const, label: "Card", icon: CreditCard, enabled: settings ? settings.payment_method_card !== "false" : true },
-    { value: "DUE" as const, label: "Due", icon: Receipt, enabled: settings ? settings.payment_method_due !== "false" : true },
+    { value: "COD", label: "Cash", icon: Banknote, enabled: settings ? settings.payment_method_cod !== "false" : true },
+    { value: "CARD", label: "Card", icon: CreditCard, enabled: settings ? settings.payment_method_card !== "false" : true },
+    { value: "DUE", label: "Due", icon: Receipt, enabled: settings ? settings.payment_method_due !== "false" : true },
+    ...customMethods.map(m => ({ value: m.value, label: m.label, icon: Banknote, enabled: true })),
   ]
   const enabledMethods = paymentMethods.filter(m => m.enabled)
   const [totalPages, setTotalPages] = useState(1)
@@ -90,8 +95,8 @@ export default function PosClientPage() {
   const [customerPhone, setCustomerPhone] = useState("")
   const [reference, setReference] = useState("")
   const [note, setNote] = useState("")
-  const [paymentMethod, setPaymentMethod_] = useState<"COD" | "CARD" | "DUE">("COD")
-  const setPaymentMethod = (v: "COD" | "CARD" | "DUE") => { setPaymentMethod_(v) }
+  const [paymentMethod, setPaymentMethod_] = useState("COD")
+  const setPaymentMethod = (v: string) => { setPaymentMethod_(v) }
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
   const [lastOrder, setLastOrder] = useState<{ id: string; orderNumber: string; totalAmount: number } | null>(null)
@@ -100,7 +105,7 @@ export default function PosClientPage() {
     if (settings && !enabledMethods.find(m => m.value === paymentMethod)) {
       setPaymentMethod(enabledMethods[0]?.value || "COD")
     }
-  }, [settings])
+  }, [settings, enabledMethods])
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
@@ -540,7 +545,7 @@ export default function PosClientPage() {
                   key={m.value}
                   variant={paymentMethod === m.value ? "default" : "outline"}
                   size="sm"
-                  className={`flex-1 gap-1.5 ${paymentMethod === m.value && m.value === "DUE" ? "bg-orange-600 hover:bg-orange-700 border-orange-600 text-white" : ""}`}
+                  className={`flex-1 gap-1.5 ${paymentMethod === m.value && m.value === "DUE" ? "bg-orange-600 hover:bg-orange-700 border-orange-600 text-white" : paymentMethod === m.value && !["COD","CARD","DUE"].includes(m.value) ? "bg-foreground text-background" : ""}`}
                   onClick={() => setPaymentMethod(m.value)}
                 >
                   <m.icon className="h-4 w-4" />

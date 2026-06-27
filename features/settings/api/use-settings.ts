@@ -26,6 +26,7 @@ export function useUpdateSettings() {
       payment_method_card?: "true" | "false";
       payment_method_cod?: "true" | "false";
       payment_method_due?: "true" | "false";
+      pos_payment_methods?: string;
       meta_pixel_enabled?: "true" | "false";
       meta_pixel_default_id?: string;
       meta_pixel_debug?: "true" | "false";

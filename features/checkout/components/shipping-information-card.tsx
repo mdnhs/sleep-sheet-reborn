@@ -38,6 +38,7 @@ function ShippingInformationCard() {
 
   const cardEnabled = settings ? settings.payment_method_card !== "false" : true;
   const codEnabled = settings ? settings.payment_method_cod !== "false" : true;
+  const paymentMethodsCount = [cardEnabled, codEnabled].filter(Boolean).length;
   const defaultMethod = cardEnabled ? "card" : "cod";
 
   const zoneCosts: Record<string, number> = {
@@ -236,6 +237,7 @@ function ShippingInformationCard() {
           </Card>
 
           {/* Payment Method */}
+          {paymentMethodsCount > 1 && (
           <Card className="bg-background border border-border/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-6 md:p-8 w-full ring-0">
             <CardHeader className="p-0 mb-6 flex flex-col items-start">
               <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Payment</CardTitle>
@@ -367,12 +369,22 @@ function ShippingInformationCard() {
               />
             </CardContent>
 
+            {paymentMethodsCount > 1 && (
+              <div className="flex justify-end pt-4">
+                <Button type="submit" className="w-full md:w-auto h-14 px-12 rounded-full font-bold text-base md:text-lg shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 bg-foreground text-background">
+                  Continue to Review
+                </Button>
+              </div>
+            )}
+          </Card>
+          )}
+          {paymentMethodsCount <= 1 && (
             <div className="flex justify-end pt-4">
               <Button type="submit" className="w-full md:w-auto h-14 px-12 rounded-full font-bold text-base md:text-lg shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 bg-foreground text-background">
                 Continue to Review
               </Button>
             </div>
-          </Card>
+          )}
         </form>
       </Form>
     </div>

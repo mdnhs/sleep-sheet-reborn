@@ -25,6 +25,7 @@ const app = new Hono()
         payment_method_card: z.enum(["true", "false"]).optional(),
         payment_method_cod: z.enum(["true", "false"]).optional(),
         payment_method_due: z.enum(["true", "false"]).optional(),
+        pos_payment_methods: z.string().optional(),
         meta_pixel_enabled: z.enum(["true", "false"]).optional(),
         meta_pixel_default_id: z.string().optional(),
         meta_pixel_debug: z.enum(["true", "false"]).optional(),

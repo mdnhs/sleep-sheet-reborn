@@ -239,7 +239,7 @@ export const orders = pgTable("orders", {
   subtotal: doublePrecision("subtotal").notNull(),
   shippingCost: doublePrecision("shippingCost").notNull(),
   tax: doublePrecision("tax").notNull(),
-  paymentMethod: paymentMethodEnum("paymentMethod").notNull(),
+  paymentMethod: text("paymentMethod").notNull(),
   paymentStatus: paymentStatusEnum("paymentStatus").default("PENDING").notNull(),
   shippingAddress: text("shippingAddress").notNull(),
   shippingCity: text("shippingCity"),
