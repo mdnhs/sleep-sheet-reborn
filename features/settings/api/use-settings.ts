@@ -31,6 +31,14 @@ export function useUpdateSettings() {
       meta_pixel_default_id?: string;
       meta_pixel_debug?: "true" | "false";
       meta_pixel_mappings?: string;
+      seo_site_name?: string;
+      seo_default_title?: string;
+      seo_default_description?: string;
+      seo_default_image?: string;
+      seo_google_verification?: string;
+      seo_bing_verification?: string;
+      seo_twitter_handle?: string;
+      seo_robots_ai_block?: "true" | "false";
     }) => {
       const res = await client.api.settings.$patch({ json: data });
       if (!res.ok) throw new Error("Failed to save settings");

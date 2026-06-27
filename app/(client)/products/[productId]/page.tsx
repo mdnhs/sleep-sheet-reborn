@@ -14,6 +14,7 @@ import React from "react";
 import { useCurrency } from "@/hooks/use-currency";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { seoConfig, productSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
 
 function ProductSkeleton() {
   return (
@@ -112,10 +113,31 @@ function ProductDetailPage() {
   if (isLoading) return <ProductSkeleton />;
   if (!product) return <div>Product not found</div>;
 
+  const productBreadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Products", url: "/products" },
+    { name: product.name, url: `/products/${id}` },
+  ]
+
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
+      {structuredDataScript("product", productSchema({
+        id,
+        name: product.name,
+        description: product.description,
+        slug: id,
+        price: product.price,
+        currency: "BDT",
+        sku: product.sku,
+        category: product.category,
+        images: product.images,
+        rating: product.rating,
+        reviewCount: product.reviewCount,
+        availability: product.stock > 0 ? "InStock" : "OutOfStock",
+        url: `${seoConfig.siteUrl}/products/${id}`,
+      }))}
+      {structuredDataScript("breadcrumbs", breadcrumbSchema(productBreadcrumbs))}
       <div className="container mx-auto px-4 py-2 lg:py-8">
-        {/* Breadcrumbs */}
         <div className="hidden lg:block mb-8">
           <Link href="/" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6" /></svg>

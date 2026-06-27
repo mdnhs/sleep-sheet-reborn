@@ -30,6 +30,14 @@ const app = new Hono()
         meta_pixel_default_id: z.string().optional(),
         meta_pixel_debug: z.enum(["true", "false"]).optional(),
         meta_pixel_mappings: z.string().optional(),
+        seo_site_name: z.string().optional(),
+        seo_default_title: z.string().optional(),
+        seo_default_description: z.string().optional(),
+        seo_default_image: z.string().optional(),
+        seo_google_verification: z.string().optional(),
+        seo_bing_verification: z.string().optional(),
+        seo_twitter_handle: z.string().optional(),
+        seo_robots_ai_block: z.enum(["true", "false"]).optional(),
       })
     ),
     async (c) => {

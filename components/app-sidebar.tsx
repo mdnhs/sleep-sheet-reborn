@@ -87,6 +87,7 @@ const data = {
         { title: "Shipping", url: "/dashboard/settings/shipping" },
         { title: "Meta Pixel", url: "/dashboard/settings/pixel" },
         { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
+        { title: "SEO", url: "/dashboard/settings/seo" },
       ],
     },
   ],

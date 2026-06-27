@@ -1,0 +1,171 @@
+import { seoConfig } from "./config"
+import type { Metadata } from "next"
+import type { SeoMetadata } from "./types"
+
+interface MetadataParams {
+  title: string
+  description: string
+  keywords?: string
+  canonical?: string
+  robots?: string
+  openGraph?: SeoMetadata["openGraph"]
+  twitter?: SeoMetadata["twitter"]
+  alternates?: SeoMetadata["alternates"]
+  noIndex?: boolean
+}
+
+export function generateMetadata({
+  title,
+  description,
+  keywords,
+  canonical,
+  robots,
+  openGraph,
+  twitter,
+  alternates,
+  noIndex,
+}: MetadataParams): Metadata {
+  const fullTitle = `${title} | ${seoConfig.siteName}`
+  const canonicalUrl = canonical || seoConfig.siteUrl
+  const ogImage = openGraph?.image || seoConfig.defaultImage
+
+  return {
+    title: fullTitle,
+    description,
+    keywords,
+    robots: noIndex ? "noindex, nofollow" : robots || "index, follow, max-image-preview:large, max-snippet:-1",
+    referrer: "origin-when-cross-origin",
+    themeColor: seoConfig.themeColor,
+    alternates: {
+      canonical: canonicalUrl,
+      ...(alternates?.languages ? { languages: alternates.languages } : {}),
+    },
+    openGraph: {
+      title: openGraph?.title || fullTitle,
+      description: openGraph?.description || description,
+      url: canonicalUrl,
+      siteName: seoConfig.siteName,
+      images: ogImage
+        ? [
+            {
+              url: ogImage,
+              width: 1200,
+              height: 630,
+              alt: openGraph?.imageAlt || title,
+            },
+          ]
+        : [],
+      locale: openGraph?.locale || seoConfig.defaultLocale,
+      type: (openGraph?.type || "website") as any,
+    },
+    twitter: {
+      card: twitter?.card || "summary_large_image",
+      site: twitter?.site || seoConfig.twitterHandle,
+      creator: twitter?.creator || seoConfig.twitterHandle,
+      title: twitter?.card ? undefined : fullTitle,
+      description: twitter?.card ? undefined : description,
+      images: twitter?.image || ogImage ? [twitter?.image || ogImage] : [],
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: seoConfig.siteName,
+    },
+    applicationName: seoConfig.siteName,
+    ...(seoConfig.verification.google
+      ? { verification: { google: seoConfig.verification.google } }
+      : {}),
+  }
+}
+
+export function generateProductMetadata(product: {
+  name: string
+  description: string
+  slug: string
+  images?: string[]
+  price?: number
+  rating?: number
+  reviewCount?: number
+}): Metadata {
+  return generateMetadata({
+    title: product.name,
+    description: product.description?.slice(0, 160) || `Shop ${product.name} at ${seoConfig.siteName}`,
+    canonical: `${seoConfig.siteUrl}/products/${product.slug}`,
+    openGraph: {
+      title: product.name,
+      description: product.description?.slice(0, 200),
+      image: product.images?.[0] || seoConfig.defaultImage,
+      imageAlt: product.name,
+      type: "product",
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+  })
+}
+
+export function generateCategoryMetadata(category: {
+  name: string
+  description?: string
+  slug: string
+  page?: number
+}): Metadata {
+  const canonical = `${seoConfig.siteUrl}/categories/${category.slug}${category.page && category.page > 1 ? `?page=${category.page}` : ""}`
+  return generateMetadata({
+    title: category.name + (category.page && category.page > 1 ? ` - Page ${category.page}` : ""),
+    description: category.description?.slice(0, 160) || `Browse our collection of ${category.name} at ${seoConfig.siteName}`,
+    canonical,
+    openGraph: {
+      title: category.name,
+      description: category.description?.slice(0, 200),
+      type: "website",
+    },
+  })
+}
+
+export function generateBlogMetadata(post: {
+  title: string
+  excerpt?: string
+  slug: string
+  coverImage?: string
+  author?: { name: string }
+}): Metadata {
+  return generateMetadata({
+    title: post.title,
+    description: post.excerpt?.slice(0, 160) || post.title,
+    canonical: `${seoConfig.siteUrl}/blog/${post.slug}`,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt?.slice(0, 200),
+      image: post.coverImage || seoConfig.defaultImage,
+      imageAlt: post.title,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+  })
+}
+
+export function generatePaginatedMetadata(
+  baseTitle: string,
+  baseDescription: string,
+  baseUrl: string,
+  page: number,
+  totalPages: number,
+): Metadata {
+  const isFirst = page <= 1
+  const canonical = isFirst ? baseUrl : `${baseUrl}?page=${page}`
+  const prevUrl = page > 1 ? `${baseUrl}?page=${page - 1}` : undefined
+  const nextUrl = page < totalPages ? `${baseUrl}?page=${page + 1}` : undefined
+
+  return {
+    ...generateMetadata({
+      title: isFirst ? baseTitle : `${baseTitle} - Page ${page}`,
+      description: baseDescription,
+      canonical,
+    }),
+    ...(prevUrl ? { alternates: { canonical, ...({ prev: prevUrl } as any) } } : {}),
+    ...(nextUrl ? { alternates: { canonical, ...({ next: nextUrl } as any) } } : {}),
+  }
+}

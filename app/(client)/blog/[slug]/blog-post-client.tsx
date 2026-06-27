@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { seoConfig, articleSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
 
 export default function BlogPostClient({ slug }: { slug: string }) {
   const { data: post, isLoading } = useGetPost(slug);
@@ -33,8 +34,27 @@ export default function BlogPostClient({ slug }: { slug: string }) {
     );
   }
 
+  const blogBreadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Blog", url: "/blog" },
+    { name: post.title, url: `/blog/${slug}` },
+  ]
+
   return (
     <article className="container mx-auto py-12 px-4 max-w-4xl min-h-[80vh]">
+      {structuredDataScript("article", articleSchema({
+        id: slug,
+        title: post.title,
+        excerpt: post.summary || post.title,
+        slug,
+        content: post.content,
+        author: post.author ? { name: post.author.name } : undefined,
+        coverImage: post.coverImage || undefined,
+        publishedAt: post.createdAt,
+        updatedAt: post.createdAt,
+        url: `${seoConfig.siteUrl}/blog/${slug}`,
+      }))}
+      {structuredDataScript("breadcrumbs", breadcrumbSchema(blogBreadcrumbs))}
       <Link href="/blog" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to blog
       </Link>

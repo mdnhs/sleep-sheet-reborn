@@ -6,12 +6,19 @@ import Newsletter from "@/components/home/newsletter";
 import Testimonials from "@/components/home/testimonials";
 import Features from "@/components/home/features";
 import React from "react";
+import { seoConfig, webpageSchema, localBusinessSchema, structuredDataScript } from "@/lib/seo";
 
 
 
 async function Page() {
   return (
     <main>
+      {structuredDataScript("webpage", webpageSchema(
+        seoConfig.defaultTitle,
+        seoConfig.defaultDescription,
+        seoConfig.siteUrl,
+      ))}
+      {structuredDataScript("local-business", localBusinessSchema())}
       <Hero />
 
       <Features />
