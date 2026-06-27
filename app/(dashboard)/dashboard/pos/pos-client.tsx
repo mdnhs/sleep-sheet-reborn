@@ -3,13 +3,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Receipt, X, Package, Loader2, ChevronLeft, ChevronRight, ListFilter, ShoppingCart, ChevronUp, ArrowUpCircle, Tag, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -135,7 +129,7 @@ export default function PosClientPage() {
     try {
       const res = await fetch("/api/categories")
       const json = await res.json()
-      if (json.data) setCategories(json.data)
+      if (Array.isArray(json)) setCategories(json)
     } catch (error) {
       console.error("Failed to fetch categories", error)
     }
@@ -314,17 +308,31 @@ export default function PosClientPage() {
                 className="pl-9 rounded-xl"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={(v) => { if (typeof v === 'string') setCategoryFilter(v) }}>
-              <SelectTrigger className="w-[180px] rounded-xl">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.label}>{cat.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-1.5 overflow-x-auto max-w-[420px] pb-1 scrollbar-none">
+              <button
+                onClick={() => { setCategoryFilter("all"); setPage(1) }}
+                className={`shrink-0 px-3 py-1.5 text-xs rounded-full border transition-colors font-medium ${
+                  categoryFilter === "all"
+                    ? "bg-foreground text-background border-foreground"
+                    : "text-muted-foreground border-border hover:border-foreground/50"
+                }`}
+              >
+                All
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => { setCategoryFilter(cat.label); setPage(1) }}
+                  className={`shrink-0 px-3 py-1.5 text-xs rounded-full border transition-colors font-medium ${
+                    categoryFilter === cat.label
+                      ? "bg-foreground text-background border-foreground"
+                      : "text-muted-foreground border-border hover:border-foreground/50"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
             <Button
               variant={showFilters ? "default" : "outline"}
               size="icon"
