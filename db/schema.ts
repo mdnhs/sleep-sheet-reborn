@@ -150,6 +150,9 @@ export const products = pgTable("products", {
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
   isFeatured: boolean("productIsFeatured").default(false).notNull(),
+  discount: doublePrecision("discount").default(0).notNull(),
+  showLowestPriceAsDefault: boolean("showLowestPriceAsDefault").default(true).notNull(),
+  defaultVariantName: text("defaultVariantName"),
 });
 
 export const campaigns = pgTable("campaigns", {

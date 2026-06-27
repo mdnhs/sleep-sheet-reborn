@@ -5,6 +5,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,8 @@ function UpdateProductClient() {
       productFeatures: [],
       careInstructions: "",
       isFeatured: false,
+      discount: 0,
+      defaultVariantName: "",
     },
   });
 
@@ -83,6 +86,8 @@ function UpdateProductClient() {
         productFeatures: product.features,
         careInstructions: product.care,
         isFeatured: product.isFeatured,
+        discount: product.discount || 0,
+        defaultVariantName: product.defaultVariantName || "",
       });
     }
   }, [product, form]);
@@ -105,6 +110,8 @@ function UpdateProductClient() {
     formData.append("productFeature", JSON.stringify(values.productFeatures || []));
     formData.append("careInstruction", values.careInstructions || "");
     formData.append("isFeatured", values.isFeatured ? "true" : "false");
+    formData.append("discount", (values.discount || 0).toString());
+    formData.append("defaultVariantName", values.defaultVariantName || "");
 
     values.productImages.forEach((file) => {
       if (file instanceof File) {
@@ -145,9 +152,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="text-sm font-semibold">
+                      <FormLabel className="text-sm font-semibold">
                         Product Name
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -166,9 +173,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="text-sm font-semibold">
+                      <FormLabel className="text-sm font-semibold">
                         Product Description
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <TiptapEditor
                           value={field.value}
@@ -179,15 +186,15 @@ function UpdateProductClient() {
                     </FormItem>
                   )}
                 />
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
+                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <FormField
                     name="productPrice"
                     control={form.control}
                     render={({ field }) => (
                       <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
+                        <FormLabel className="text-sm font-semibold">
                           Product Price
-                        </label>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -205,13 +212,37 @@ function UpdateProductClient() {
                     )}
                   />
                   <FormField
+                    name="discount"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem className=" w-full">
+                        <FormLabel className="text-sm font-semibold">
+                          Discount Percentage (%)
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value ? Number(e.target.value) : 0)
+                            }
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
                     name="productStock"
                     control={form.control}
                     render={({ field }) => (
                       <FormItem className=" w-full">
-                        <label className="text-sm font-semibold">
+                        <FormLabel className="text-sm font-semibold">
                           Product Stock
-                        </label>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -235,9 +266,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="block text-sm font-semibold">
+                      <FormLabel className="block text-sm font-semibold">
                         SKU (Stock Keeping Unit)
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -262,9 +293,9 @@ function UpdateProductClient() {
                     control={form.control}
                     render={({ field }) => (
                       <FormItem className=" w-full">
-                        <label className="block text-sm font-semibold ">
+                        <FormLabel className="block text-sm font-semibold ">
                           Tags
-                        </label>
+                        </FormLabel>
                         <FormControl>
                           <ChipsInput
                             value={field.value}
@@ -283,9 +314,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem className=" w-full">
-                      <label className="block text-sm font-semibold ">
+                      <FormLabel className="block text-sm font-semibold ">
                         Product Features
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <ChipsInput
                           value={field.value}
@@ -302,9 +333,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="text-sm font-semibold mt-4">
+                      <FormLabel className="text-sm font-semibold mt-4">
                         Care Instruction (optional)
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -331,13 +362,46 @@ function UpdateProductClient() {
                           onChange={field.onChange}
                         />
                       </FormControl>
-                      <label className="text-sm font-semibold inline-block">
+                      <FormLabel className="text-sm font-semibold inline-block">
                         Mark as Featured Product (optional)
-                      </label>
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {form.watch("productVariants") && form.watch("productVariants")!.length > 0 && (
+                  <FormField
+                    name="defaultVariantName"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <FormLabel className="block text-sm font-semibold mb-1">
+                          Default Variant Price to Display
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full h-10 border border-input rounded-xl px-3 bg-white">
+                              <SelectValue placeholder="Select default variant" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None (Use base product price)</SelectItem>
+                            {form.watch("productVariants")?.map((variant) => (
+                              <SelectItem key={variant.name} value={variant.name}>
+                                {variant.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -355,9 +419,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="block text-sm font-semibold mb-2">
+                      <FormLabel className="block text-sm font-semibold mb-2">
                         Category
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <Select
                           value={field.value}
@@ -388,9 +452,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem className=" w-full">
-                      <label className="block text-sm font-semibold mt-4">
+                      <FormLabel className="block text-sm font-semibold mt-4">
                         Product size (optional)
-                      </label>
+                      </FormLabel>
                       <FormControl>
                         <ChipsInput
                           value={field.value || []}
@@ -412,9 +476,9 @@ function UpdateProductClient() {
                   control={form.control}
                   render={() => (
                     <>
-                      <label className="block text-sm font-semibold my-4">
+                      <FormLabel className="block text-sm font-semibold my-4">
                         Upload
-                      </label>
+                      </FormLabel>
                       <FileUpload form={form} name="productImages" />
                     </>
                   )}

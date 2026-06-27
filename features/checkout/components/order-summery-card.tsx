@@ -53,7 +53,7 @@ function OrderSummeryCard() {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   <span>Qty: {cartItem.quantity}</span>
                   <span className="w-1 h-1 rounded-full bg-border"></span>
-                  <span>Color: {cartItem.color}</span>
+                  <span>Variant: {cartItem.color}</span>
                   {cartItem.size && (
                     <>
                       <span className="w-1 h-1 rounded-full bg-border"></span>

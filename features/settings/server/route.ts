@@ -33,7 +33,7 @@ const app = new Hono()
       }
 
       const body = c.req.valid("json");
-      const updates = Object.entries(body).filter(([, v]) => v !== undefined) as [string, number][];
+      const updates = Object.entries(body).filter(([, v]) => v !== undefined) as [string, any][];
 
       await Promise.all(
         updates.map(([key, value]) =>

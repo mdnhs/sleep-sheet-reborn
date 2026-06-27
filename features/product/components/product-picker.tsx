@@ -25,15 +25,18 @@ function ProductPicker({ product }: ProductPickerProps) {
   const { formatAmount } = useCurrency();
 
   const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || "");
   const [quantity, setQuantity] = useState(1);
   const [showStickyBar, setShowStickyBar] = useState(false);
   
+  const [highlightVariant, setHighlightVariant] = useState(false);
   const { isInWishlist, isAdding, isRemoving, handleWishlistToggle } =
     useWishlistToggle({ productId: product.id });
 
   const currentVariant = product.colors?.find(c => c.name === selectedColor);
-  const displayPrice = currentVariant?.price || product.price;
+  const displayPrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
+    ? currentVariant.price
+    : product.price;
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity > 0 && newQuantity <= product.stock) {
@@ -61,6 +64,10 @@ function ProductPicker({ product }: ProductPickerProps) {
       (!selectedSize && isSizeAvailable) ||
       (!selectedColor && isColorAvailable)
     ) {
+      if (!selectedColor && isColorAvailable) {
+        setHighlightVariant(true);
+        setTimeout(() => setHighlightVariant(false), 2000);
+      }
       toast.error("Please select options before adding to cart");
       return;
     }
@@ -91,6 +98,10 @@ function ProductPicker({ product }: ProductPickerProps) {
       (!selectedSize && isSizeAvailable) ||
       (!selectedColor && isColorAvailable)
     ) {
+      if (!selectedColor && isColorAvailable) {
+        setHighlightVariant(true);
+        setTimeout(() => setHighlightVariant(false), 2000);
+      }
       toast.error("Please select options before proceeding to checkout");
       return;
     }
@@ -123,7 +134,7 @@ function ProductPicker({ product }: ProductPickerProps) {
       {isColorAvailable && (
         <div className="mb-4 lg:mb-6">
           <div className="flex justify-between items-center mb-2 lg:mb-3">
-            <h3 className="text-sm text-muted-foreground">Select Color</h3>
+            <h3 className="text-sm text-muted-foreground">Select Variant</h3>
             <span className="text-xs font-medium text-foreground">{selectedColor}</span>
           </div>
           <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -131,13 +142,13 @@ function ProductPicker({ product }: ProductPickerProps) {
               <button
                 key={color.name}
                 onClick={() => setSelectedColor(color.name)}
-                className={`px-4 py-2 lg:px-5 lg:py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 lg:px-5 lg:py-2.5 rounded-full text-sm font-medium transition-all duration-200 border ${
                   selectedColor === color.name
-                    ? "bg-foreground text-background"
-                    : "bg-secondary/30 text-foreground hover:bg-secondary/60"
-                }`}
+                    ? "bg-foreground text-background border-transparent"
+                    : "bg-secondary/30 text-foreground hover:bg-secondary/60 border-transparent"
+                } ${highlightVariant ? "animate-variant-error" : ""}`}
               >
-                {color.name}
+                {color.name} ({formatAmount(color.price || product.price)})
               </button>
             ))}
           </div>
@@ -191,9 +202,16 @@ function ProductPicker({ product }: ProductPickerProps) {
 
           <div className="flex-1 flex flex-col items-center justify-center leading-tight">
             <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-widest">Total Price</span>
-            <span className="font-bold text-lg lg:text-xl text-foreground">
-              {formatAmount(displayPrice * quantity)}
-            </span>
+            <div className="flex items-baseline gap-2">
+              {product.discount > 0 && (
+                <span className="text-sm line-through text-muted-foreground font-medium">
+                  {formatAmount((displayPrice / (1 - product.discount / 100)) * quantity)}
+                </span>
+              )}
+              <span className="font-bold text-lg lg:text-xl text-foreground">
+                {formatAmount(displayPrice * quantity)}
+              </span>
+            </div>
           </div>
 
           <Button

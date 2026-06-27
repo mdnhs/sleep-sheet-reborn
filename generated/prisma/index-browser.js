@@ -147,7 +147,10 @@ exports.Prisma.ProductScalarFieldEnum = {
   categoryId: 'categoryId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  isFeatured: 'isFeatured'
+  isFeatured: 'isFeatured',
+  discount: 'discount',
+  showLowestPriceAsDefault: 'showLowestPriceAsDefault',
+  defaultVariantName: 'defaultVariantName'
 };
 
 exports.Prisma.CampaignScalarFieldEnum = {

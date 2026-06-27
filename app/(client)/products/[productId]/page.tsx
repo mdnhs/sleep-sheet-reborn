@@ -6,6 +6,7 @@ import { ProductStatus } from "@/features/product/components/product-status";
 import { ProductAccordion } from "@/features/product/components/product-accordion";
 import { ProductReviews } from "@/features/product/components/product-reviews";
 import ProductTag from "@/features/product/components/product-tags";
+import { OrderCountdown } from "@/features/product/components/order-countdown";
 import SwitchImage from "@/features/product/components/switch-image";
 import { useProductId } from "@/features/product/hooks/use-product-id";
 import { RotateCw, Truck, Tag, Package, CalendarClock } from "lucide-react";
@@ -139,12 +140,7 @@ function ProductDetailPage() {
               </h1>
             </div>
 
-            <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 border border-border rounded-full px-3 py-1 sm:px-4 bg-background w-fit max-w-full">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                Order in <span className="font-semibold text-foreground">02:30:25</span> to get next day delivery
-              </p>
-            </div>
+            <OrderCountdown />
 
             <ProductPicker product={product} />
 
@@ -152,6 +148,63 @@ function ProductDetailPage() {
               <ProductAccordion product={product} />
             </div>
           </div>
+        </div>
+
+        {/* Full-width Details Section */}
+        <div className="mt-16 border-t border-border/60 pt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 space-y-8">
+            {/* Description */}
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-4">Description & Fit</h2>
+              <div 
+                className="prose prose-sm md:prose-base dark:prose-invert text-muted-foreground leading-relaxed max-w-none" 
+                dangerouslySetInnerHTML={{ __html: product.description || "" }} 
+              />
+            </div>
+
+            {/* Product Features */}
+            {product.features && product.features.length > 0 && (
+              <div className="pt-6 border-t border-border/40">
+                <h2 className="text-xl font-bold text-foreground mb-4">Product Features</h2>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 list-disc pl-5 text-muted-foreground text-sm">
+                  {product.features.map((feature, i) => (
+                    <li key={i} className="leading-relaxed">{feature}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Tags */}
+            {product.tags && product.tags.length > 0 && (
+              <div className="pt-6 border-t border-border/40">
+                <h2 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Product Tags</h2>
+                <ProductTag tags={product.tags} />
+              </div>
+            )}
+          </div>
+
+          {/* Specifications */}
+          {product.specifications && product.specifications.length > 0 && (
+            <div className="bg-secondary/10 border border-border/50 rounded-3xl p-6 md:p-8 h-fit">
+              <h2 className="text-xl font-bold text-foreground mb-4">Specifications</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border/50">
+                  <tbody className="divide-y divide-border/40">
+                    {product.specifications.map((spec, i) => (
+                      <tr key={i} className="hover:bg-secondary/10 transition-colors">
+                        <td className="py-3 pr-4 font-semibold text-sm text-foreground w-1/3 leading-normal">
+                          {spec.key}
+                        </td>
+                        <td className="py-3 text-sm text-muted-foreground leading-normal">
+                          {spec.value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Reviews Section */}

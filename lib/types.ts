@@ -36,6 +36,8 @@ export interface Review {
     createdAt: string;
     updatedAt: string;
     isFeatured:boolean;
+    discount: number;
+    defaultVariantName?: string;
   }
 
   export type ProductColumn = {

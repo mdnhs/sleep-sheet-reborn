@@ -28,5 +28,14 @@ export const useOrderMutations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
-  return { updateOrder, deleteOrder };
+  const bulkDeleteOrders = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const response = await client.api.orders["bulk-delete"].$post({ json: { ids } });
+      if (!response.ok) throw new Error("Bulk delete failed");
+      return response.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+  });
+
+  return { updateOrder, deleteOrder, bulkDeleteOrders };
 };

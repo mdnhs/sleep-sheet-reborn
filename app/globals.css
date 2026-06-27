@@ -141,3 +141,25 @@
   margin-left: auto !important;
   margin-right: auto !important;
 }
+
+@keyframes variant-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes border-glow-red {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 1);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
+  }
+}
+
+.animate-variant-error {
+  animation: variant-shake 0.4s ease-in-out, border-glow-red 1s infinite ease-in-out;
+  border-width: 2px !important;
+}

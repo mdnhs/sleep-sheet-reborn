@@ -70,6 +70,8 @@ const app = new Hono()
       sizes: product.sizes,
       features: product.features,
       isFeatured: product.isFeatured,
+      discount: product.discount,
+      defaultVariantName: product.defaultVariantName || undefined,
       reviews: product.reviews.map((review) => ({
         id: review.id,
         rating: review.rating,
@@ -179,6 +181,8 @@ const app = new Hono()
       createdAt: products.createdAt,
       updatedAt: products.updatedAt,
       isFeatured: products.isFeatured,
+      discount: products.discount,
+      defaultVariantName: products.defaultVariantName,
       categoryValue: categories.value,
       categoryLabel: categories.label,
     })
@@ -214,6 +218,8 @@ const app = new Hono()
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         isFeatured: product.isFeatured,
+        discount: product.discount,
+        defaultVariantName: product.defaultVariantName || undefined,
       })),
       total: totalCount,
       hasNextPage: page * limit < totalCount,

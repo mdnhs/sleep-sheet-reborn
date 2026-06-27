@@ -21,7 +21,8 @@ export const ProductSchema = z.object({
   productFeatures: z.array(z.string()).optional(),
   careInstructions: z.string().optional(),
   isFeatured:z.boolean().optional(),
-
+  discount: z.coerce.number().min(0).max(100).optional(),
+  defaultVariantName: z.string().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof ProductSchema>;

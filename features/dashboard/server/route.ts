@@ -59,6 +59,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
         images: uploadedImageUrls,
         isFeatured: isFeatured,
         categoryId: category.id,
+        discount: Number(formData.get("discount") || 0),
+        defaultVariantName: (formData.get("defaultVariantName") as string) || null,
       }).returning();
 
       const specsToInsert = specificationsList.map((spec) => ({
@@ -92,6 +94,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
         productImages: product.images,
         productSize: product.sizes,
         isFeatured: product.isFeatured,
+        productDiscount: product.discount,
+        productDefaultVariantName: product.defaultVariantName,
         productCategory: product.category.value,
         productSpecifications: product.specifications,
         createdAt: product.createdAt,
@@ -169,6 +173,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
           images: uploadedImageUrls,
           isFeatured: formData.get("isFeatured") === "true",
           categoryId: category.id,
+          discount: Number(formData.get("discount") || 0),
+          defaultVariantName: (formData.get("defaultVariantName") as string) || null,
           updatedAt: new Date(),
         })
         .where(eq(products.id, productId))

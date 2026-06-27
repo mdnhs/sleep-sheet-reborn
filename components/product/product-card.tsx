@@ -28,12 +28,17 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
-  const [selectedColor, setSelectedColor] = useState(product.colors?.[0]?.name || "");
+  const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || product.colors?.[0]?.name || "");
   const [quantity, setQuantity] = useState(1);
 
   const hasColors = product.colors && product.colors.length > 0;
   const hasSizes = product.sizes && product.sizes.length > 0;
   const hasVariants = hasColors || hasSizes;
+
+  const currentVariant = product.colors?.find(c => c.name === selectedColor);
+  const displayPrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
+    ? currentVariant.price
+    : product.price;
 
   const dispatchAddToCart = () => {
     dispatch(
@@ -49,7 +54,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
           size: selectedSize || undefined,
           color: selectedColor || undefined,
           name: product.name,
-          price: product.price,
+          price: displayPrice,
           image: product.images?.[0] ?? "",
           description: product.description || "",
         },
@@ -179,9 +184,14 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         
         {/* Price and Rating Row */}
         <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            {product.discount > 0 && (
+              <span className="text-sm line-through text-slate-400 font-medium">
+                {formatAmount(displayPrice / (1 - product.discount / 100))}
+              </span>
+            )}
             <p className="font-bold text-lg sm:text-[20px] text-slate-800">
-              {formatAmount(product.price)}
+              {formatAmount(displayPrice)}
             </p>
           </div>
           
@@ -258,7 +268,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
 
           {hasColors && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Color</span>
+              <span className="text-xs font-semibold text-slate-500 uppercase">Variant</span>
               <div className="flex flex-wrap gap-2">
                 {product.colors?.map((color) => (
                   <button

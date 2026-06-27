@@ -51,12 +51,14 @@ const app = new Hono()
       if (item.product.stock < item.quantity) {
         return c.json({ message: `Insufficient stock for ${item.product.name}` }, 400);
       }
+      const variant = (item.product.variants as { name: string; price: number | null }[] | null)?.find(v => v.name === item.color);
+      const displayPrice = variant?.price ?? item.product.price;
       cartItemsForOrder.push({
         productId: item.productId,
         quantity: item.quantity,
         size: item.size,
         color: item.color,
-        price: item.product.price,
+        price: displayPrice,
       });
     }
 
@@ -137,12 +139,14 @@ const app = new Hono()
     if (product.stock < item.quantity) {
       return c.json({ message: `Insufficient stock for ${product.name}` }, 400);
     }
+    const variant = (product.variants as { name: string; price: number | null }[] | null)?.find(v => v.name === item.color);
+    const displayPrice = variant?.price ?? product.price;
     cartItemsForOrder.push({
       productId: item.productId,
       quantity: item.quantity,
       size: item.size,
       color: item.color,
-      price: product.price,
+      price: displayPrice,
     });
   }
 

@@ -34,29 +34,32 @@ model User {
 }
 
 model Product {
-  id              String          @id @default(cuid())
-  name            String          @map("productName")
-  description     String          @map("productDescription")
-  price           Float           @map("productPrice")
-  stock           Int             @map("productStock")
-  sku             String          @unique @map("productSKU")
-  variants        String[]        @map("productVariants")
-  tags            String[]        @map("productTags")
-  images          String[]        @map("productImages")
-  sizes           String[]        @map("productSize")
-  features        String[]        @map("productFeatures")
-  careInstruction String?
-  category        Category        @relation(fields: [categoryId], references: [id])
-  categoryId      String          @map("productCategory")
-  specifications  Specification[]
-  reviews         Review[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  isFeatured      Boolean         @default(false) @map("productIsFeatured")
-  OrderItem       OrderItem[]
-  CartItem        CartItem[]
-  WishlistItem    WishlistItem[]
-  Campaign        Campaign[]
+  id                       String          @id @default(cuid())
+  name                     String          @map("productName")
+  description              String          @map("productDescription")
+  price                    Float           @map("productPrice")
+  stock                    Int             @map("productStock")
+  sku                      String          @unique @map("productSKU")
+  variants                 String[]        @map("productVariants")
+  tags                     String[]        @map("productTags")
+  images                   String[]        @map("productImages")
+  sizes                    String[]        @map("productSize")
+  features                 String[]        @map("productFeatures")
+  careInstruction          String?
+  category                 Category        @relation(fields: [categoryId], references: [id])
+  categoryId               String          @map("productCategory")
+  specifications           Specification[]
+  reviews                  Review[]
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  isFeatured               Boolean         @default(false) @map("productIsFeatured")
+  discount                 Float           @default(0) @map("discount")
+  showLowestPriceAsDefault Boolean         @default(true) @map("showLowestPriceAsDefault")
+  defaultVariantName       String?         @map("defaultVariantName")
+  OrderItem                OrderItem[]
+  CartItem                 CartItem[]
+  WishlistItem             WishlistItem[]
+  Campaign                 Campaign[]
 
   @@map("products")
 }

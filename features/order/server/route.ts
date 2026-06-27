@@ -99,12 +99,30 @@ const app = new Hono()
   try {
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
       await db.delete(payments).where(eq(payments.orderId, id));
+      await db.delete(orderTimelineEvents).where(eq(orderTimelineEvents.orderId, id));
       await db.delete(orders).where(eq(orders.id, id));
 
     return c.json({ success: true });
   } catch (error) {
     console.error("Failed to delete order:", error);
     return c.json({ error: "Failed to delete order" }, 500);
+  }
+})
+
+.post("/bulk-delete", zValidator("json", z.object({ ids: z.array(z.string()) })), async (c) => {
+  const { ids } = c.req.valid("json");
+
+  try {
+    if (ids.length > 0) {
+      await db.delete(orderItems).where(inArray(orderItems.orderId, ids));
+      await db.delete(payments).where(inArray(payments.orderId, ids));
+      await db.delete(orderTimelineEvents).where(inArray(orderTimelineEvents.orderId, ids));
+      await db.delete(orders).where(inArray(orders.id, ids));
+    }
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Failed to bulk delete orders:", error);
+    return c.json({ error: "Failed to bulk delete orders" }, 500);
   }
 })
 

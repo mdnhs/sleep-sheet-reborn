@@ -12,6 +12,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import {
@@ -100,7 +101,7 @@ export default function SettingsPage() {
                   control={currencyForm.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="text-sm font-semibold">Store Currency</label>
+                      <FormLabel className="text-sm font-semibold">Store Currency</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
@@ -203,7 +204,7 @@ export default function SettingsPage() {
                   control={shippingForm.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="text-sm font-semibold">Inside Dhaka</label>
+                      <FormLabel className="text-sm font-semibold">Inside Dhaka</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -221,7 +222,7 @@ export default function SettingsPage() {
                   control={shippingForm.control}
                   render={({ field }) => (
                     <FormItem>
-                      <label className="text-sm font-semibold">Outside Dhaka</label>
+                      <FormLabel className="text-sm font-semibold">Outside Dhaka</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -245,6 +246,8 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Product Shipping Details */}
     </div>
   );
 }
