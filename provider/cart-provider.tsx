@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchCart, addGuestItem } from "@/features/cart/state/cart-slice";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { CartItem } from "@/features/cart/type";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 
 const GUEST_CART_KEY = "guest-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const dispatch = useAppDispatch();
   const { data: user } = useCurrent();
-  const guestItems = useAppSelector((state) => state.cart.guestItems);
+  const guestItems = useCartStore((state) => state.guestItems);
+  const addGuestItem = useCartStore((state) => state.addGuestItem);
+  const fetchCart = useCartStore((state) => state.fetchCart);
 
   // Restore guest cart from localStorage on mount
   useEffect(() => {
@@ -19,7 +19,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(GUEST_CART_KEY);
       if (saved) {
         const items: CartItem[] = JSON.parse(saved);
-        items.forEach((item) => dispatch(addGuestItem(item)));
+        items.forEach((item) => addGuestItem(item));
       }
     } catch {
       // ignore parse errors
@@ -39,9 +39,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Fetch DB cart when user is logged in
   useEffect(() => {
     if (user) {
-      dispatch(fetchCart());
+      fetchCart();
     }
-  }, [user, dispatch]);
+  }, [user, fetchCart]);
 
   return <>{children}</>;
 }

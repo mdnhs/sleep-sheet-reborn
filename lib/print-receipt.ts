@@ -12,9 +12,12 @@ type PrintReceiptOptions = {
     subtotal: number;
     shippingCost: number;
     totalAmount: number;
+    siteName?: string;
+    logoUrl?: string;
+    siteDescription?: string;
   };
 
-  export function printReceipt({
+export function printReceipt({
     orderNumber,
     createdAt,
     userName,
@@ -24,13 +27,27 @@ type PrintReceiptOptions = {
     subtotal,
     shippingCost,
     totalAmount,
+    siteName = "LUXSTORE",
+    logoUrl,
+    siteDescription = "Premium Fashion & Accessories",
   }: PrintReceiptOptions) {
-    const receiptWindow = window.open("", "PRINT", "height=650,width=900,top=100,left=150");
+    let iframe = document.getElementById("receipt-print-iframe") as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "receipt-print-iframe";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
+    }
 
     const receiptContent = `
     <html>
       <head>
-        <title>Order Receipt - LUXSTORE</title>
+        <title>Order Receipt - ${siteName}</title>
         <style>
           @page {
             size: 6in 4in;
@@ -71,6 +88,11 @@ type PrintReceiptOptions = {
             letter-spacing: 1px;
             text-transform: uppercase;
             font-weight: 800;
+          }
+
+          .header img {
+            max-height: 24px;
+            object-fit: contain;
           }
 
           .header p {
@@ -173,8 +195,8 @@ type PrintReceiptOptions = {
       </head>
       <body>
         <div class="header">
-          <h1>LUXSTORE</h1>
-          <p>Premium Fashion & Accessories</p>
+          ${logoUrl ? `<img src="${logoUrl}" alt="${siteName}" />` : `<h1>${siteName}</h1>`}
+          ${siteDescription ? `<p>${siteDescription}</p>` : ""}
         </div>
 
         <div class="order-meta">
@@ -233,7 +255,7 @@ type PrintReceiptOptions = {
         </div>
 
         <div class="thank-you">
-          Thank you for shopping with LUXSTORE!<br>
+          Thank you for shopping with ${siteName}!<br>
           We value your business ❤️
         </div>
       </body>
@@ -241,13 +263,18 @@ type PrintReceiptOptions = {
   `;
 
 
-    if (receiptWindow) {
-      receiptWindow.document.write(receiptContent);
-      receiptWindow.document.close();
-      receiptWindow.focus();
-      receiptWindow.onafterprint = () => receiptWindow.close();
-      receiptWindow.print();
+    const iframeWindow = iframe.contentWindow || iframe.contentDocument?.defaultView;
+    if (iframeWindow) {
+      const doc = iframeWindow.document;
+      doc.open();
+      doc.write(receiptContent);
+      doc.close();
+      
+      setTimeout(() => {
+        iframeWindow.focus();
+        iframeWindow.print();
+      }, 150);
     } else {
-      console.error("Unable to open print window. Check popup blocker settings.");
+      console.error("Unable to access print iframe.");
     }
   }

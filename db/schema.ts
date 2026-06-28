@@ -545,3 +545,10 @@ export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
     references: [products.id],
   }),
 }));
+
+export const orderTimelineEventsRelations = relations(orderTimelineEvents, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderTimelineEvents.orderId],
+    references: [orders.id],
+  }),
+}));

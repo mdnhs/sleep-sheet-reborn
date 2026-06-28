@@ -1,26 +1,27 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { addToCart } from "@/features/cart/state/cart-slice";
 import { useWishlistToggle } from "@/lib/helpers";
 import { Product } from "@/lib/types";
-import { useAppDispatch } from "@/store/hooks";
 import { Heart, ShoppingBag, Phone, MessageCircle, ShoppingCart, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/use-currency";
+import { useLanguage } from "@/hooks/use-language";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 
 interface ProductPickerProps {
   product: Product;
 }
 
 function ProductPicker({ product }: ProductPickerProps) {
+  const { t } = useLanguage();
   const isColorAvailable = (product.colors?.length ?? 0) > 0;
   const isSizeAvailable = (product.sizes?.length ?? 0) > 0;
   const isInStock = product.stock > 0;
 
-  const dispatch = useAppDispatch();
+  const addToCart = useCartStore((state) => state.addToCart);
   const router = useRouter();
   const { formatAmount } = useCurrency();
 
@@ -72,25 +73,23 @@ function ProductPicker({ product }: ProductPickerProps) {
       return;
     }
 
-    dispatch(
-      addToCart({
+    addToCart({
+      productId: product.id,
+      quantity: quantity,
+      size: selectedSize,
+      color: selectedColor,
+      guestProduct: {
+        id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
         productId: product.id,
-        quantity: quantity,
-        size: selectedSize,
-        color: selectedColor,
-        guestProduct: {
-          id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
-          productId: product.id,
-          quantity,
-          size: selectedSize || undefined,
-          color: selectedColor || undefined,
-          name: product.name,
-          price: displayPrice,
-          image: product.images[0] ?? "",
-          description: product.description,
-        },
-      })
-    );
+        quantity,
+        size: selectedSize || undefined,
+        color: selectedColor || undefined,
+        name: product.name,
+        price: displayPrice,
+        image: product.images[0] ?? "",
+        description: product.description,
+      },
+    });
   };
 
   const handleBuyNow = () => {
@@ -106,25 +105,23 @@ function ProductPicker({ product }: ProductPickerProps) {
       return;
     }
 
-    dispatch(
-      addToCart({
+    addToCart({
+      productId: product.id,
+      quantity: quantity,
+      size: selectedSize,
+      color: selectedColor,
+      guestProduct: {
+        id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
         productId: product.id,
-        quantity: quantity,
-        size: selectedSize,
-        color: selectedColor,
-        guestProduct: {
-          id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
-          productId: product.id,
-          quantity,
-          size: selectedSize || undefined,
-          color: selectedColor || undefined,
-          name: product.name,
-          price: displayPrice,
-          image: product.images[0] ?? "",
-          description: product.description,
-        },
-      })
-    );
+        quantity,
+        size: selectedSize || undefined,
+        color: selectedColor || undefined,
+        name: product.name,
+        price: displayPrice,
+        image: product.images[0] ?? "",
+        description: product.description,
+      },
+    });
 
     router.push("/checkout");
   };
@@ -238,7 +235,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
-            {isInStock ? "Add to Cart" : "Out of Stock"}
+            {isInStock ? t("addToCart") : t("outOfStock")}
           </Button>
 
           <Button
@@ -247,7 +244,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             onClick={handleBuyNow}
           >
             <Zap className="h-4 w-4 mr-2" fill="currentColor" />
-            Buy Now
+            {t("buyNow")}
           </Button>
         </div>
         
@@ -257,7 +254,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             className="flex items-center justify-center h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 transition-colors text-sm"
           >
             <Phone className="mr-2 h-4 w-4" fill="currentColor" />
-            Phone Call Order
+            {t("phoneOrder")}
           </a>
           <a 
             href="https://wa.me/8801700000000" 
@@ -266,7 +263,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 text-green-600 hover:bg-green-50 transition-colors text-sm"
           >
             <MessageCircle className="mr-2 h-4 w-4" fill="currentColor" />
-            WhatsApp Order
+            {t("whatsappOrder")}
           </a>
         </div>
       </div>
@@ -291,7 +288,7 @@ function ProductPicker({ product }: ProductPickerProps) {
               onClick={handleAddToCart}
             >
               <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
-              Add to Cart
+              {t("addToCart")}
             </Button>
 
             <Button
@@ -300,7 +297,7 @@ function ProductPicker({ product }: ProductPickerProps) {
               onClick={handleBuyNow}
             >
               <Zap className="h-4 w-4 mr-2" fill="currentColor" />
-              Buy Now
+              {t("buyNow")}
             </Button>
           </div>
         </div>

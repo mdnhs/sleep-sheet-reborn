@@ -24,10 +24,29 @@ export interface PaymentInfo {
   nameOnCard?: string;
 }
 
+export interface PlacedOrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+  size?: string | null;
+  color?: string | null;
+}
+
+export interface PlacedOrder {
+  orderNumber: string;
+  subtotal: number;
+  shippingCost: number;
+  totalAmount: number;
+  createdAt: string;
+  paymentMethod: string;
+  items: PlacedOrderItem[];
+}
+
 export interface CheckoutState {
   currentStep: Step;
   shippingInfo: ShippingInfo | null;
   paymentInfo: PaymentInfo | null;
   shippingMethod: ShippingMethod | null;
   paymentMethod: 'card' | 'cod' | null;
+  placedOrder: PlacedOrder | null;
 }

@@ -84,7 +84,7 @@ const FeaturedProduct = () => {
             {products?.data.map((product, index) => (
               <CarouselItem key={product.id} className="pl-4 md:pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                 <div className="h-full">
-                  <ProductCard product={product} priority={index < 2} />
+                  <ProductCard product={product as any} priority={index < 2} />
                 </div>
               </CarouselItem>
             ))}

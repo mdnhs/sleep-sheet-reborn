@@ -12,17 +12,9 @@ async function generateOrderNumber(): Promise<string> {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const yy = String(now.getFullYear()).slice(-2);
 
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 86400000);
+  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(orders)
-    .where(
-      sql`${orders.createdAt} >= ${todayStart.toISOString()} AND ${orders.createdAt} < ${todayEnd.toISOString()}`
-    );
-
-  return `POS-${dd}${mm}${yy}${Number(count) + 1}`;
+  return `POS-${dd}${mm}${yy}-${randomSuffix}`;
 }
 
 const app = new Hono()

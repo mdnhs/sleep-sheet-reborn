@@ -9,12 +9,11 @@ import {
 import { UserButton } from "@/features/auth/components/user-button";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { selectTotalItems } from "@/features/cart/state/cart-slice";
+import { useCartStore, selectTotalItems } from "@/features/cart/state/use-cart-store";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useSyncExternalStore } from "react";
 import { Menu, ShoppingCart, User, Bed, BadgePercent, Search, Sun, Moon, Heart, Home, ShoppingBag } from "lucide-react";
-import { useSelector } from "react-redux";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useTheme } from "next-themes";
@@ -28,29 +27,28 @@ const useHasMounted = () =>
     () => false,
   );
 
+import { useLanguage } from "@/hooks/use-language";
 import CartDrawer from "./cart/cart-drawer";
 import { Button } from "./ui/button";
 
 const NAV_LINKS = [
-  { id: 1, name: "Home", path: "/" },
-  { id: 2, name: "Blog", path: "/blog" },
-  { id: 3, name: "Combos", path: "/products?category=combos" },
-  { id: 4, name: "Offers", path: "/products?sort=discount", hasBadge: true, icon: BadgePercent },
+  { id: 1, name: "home" as const, path: "/" },
+  { id: 2, name: "blog" as const, path: "/blog" },
+  { id: 3, name: "trackMyOrder" as const, path: "/track-order" },
+  { id: 4, name: "offers" as const, path: "/products?sort=discount", hasBadge: true, icon: BadgePercent },
 ];
 
 function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const categoryParam = searchParams.get("category");
   const sortParam = searchParams.get("sort");
+  const { t } = useLanguage();
 
   return NAV_LINKS.map((link) => {
     // Determine active state based on path and query parameters
     let isActive = false;
     if (link.path === "/") {
       isActive = pathname === "/";
-    } else if (link.path.includes("category=combos")) {
-      isActive = pathname === "/products" && categoryParam === "combos";
     } else if (link.path.includes("sort=discount")) {
       isActive = pathname === "/products" && sortParam === "discount";
     } else {
@@ -68,7 +66,7 @@ function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
         onClick={onNavigate}
       >
         {Icon && <Icon className="h-4.5 w-4.5" />}
-        <span>{link.name}</span>
+        <span>{t(link.name)}</span>
         {link.hasBadge && (
             <span className="ml-1 rounded-[4px] bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
             NEW
@@ -138,9 +136,10 @@ function NavbarActions({
   onCartOpen: () => void;
 }) {
   const { data: user } = useCurrent();
-  const totalItems = useSelector(selectTotalItems);
+  const totalItems = useCartStore(selectTotalItems);
   const { data: wishlist } = useWishlist();
   const wishlistItemsCount = wishlist?.items?.length || 0;
+  const { t } = useLanguage();
 
   return (
     <div className="flex items-center gap-4">
@@ -165,7 +164,7 @@ function NavbarActions({
             </span>
           )}
         </TooltipTrigger>
-        <TooltipContent side="bottom">Wishlist</TooltipContent>
+        <TooltipContent side="bottom">{t("wishlist")}</TooltipContent>
       </Tooltip>
 
       {/* Cart Button */}
@@ -186,7 +185,7 @@ function NavbarActions({
             </span>
           )}
         </TooltipTrigger>
-        <TooltipContent side="bottom">Cart</TooltipContent>
+        <TooltipContent side="bottom">{t("cart")}</TooltipContent>
       </Tooltip>
 
       {/* Profile/Sign In Button */}
@@ -203,12 +202,12 @@ function NavbarActions({
           >
             <User className="h-5 w-5" />
           </TooltipTrigger>
-          <TooltipContent side="bottom">Sign In</TooltipContent>
+          <TooltipContent side="bottom">{t("signIn")}</TooltipContent>
         </Tooltip>
       ) : (
         <Tooltip>
           <TooltipTrigger render={<UserButton />} />
-          <TooltipContent side="bottom">Account</TooltipContent>
+          <TooltipContent side="bottom">{t("account")}</TooltipContent>
         </Tooltip>
       )}
     </div>
@@ -253,7 +252,7 @@ function MobileBottomNav({
 }) {
   const pathname = usePathname();
   const { data: user } = useCurrent();
-  const totalItems = useSelector(selectTotalItems);
+  const totalItems = useCartStore(selectTotalItems);
   const { data: wishlist } = useWishlist();
   const wishlistItemsCount = wishlist?.items?.length || 0;
 
@@ -312,6 +311,7 @@ function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hasMounted = useHasMounted();
+  const { t } = useLanguage();
 
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState("search", {
@@ -366,7 +366,7 @@ function Navbar() {
               <form onSubmit={handleSearch} className="relative w-full pb-2">
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t("searchPlaceholder")}
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
@@ -395,7 +395,7 @@ function Navbar() {
               <form onSubmit={handleSearch} className="relative flex-1 max-w-md mx-6">
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t("searchPlaceholder")}
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"

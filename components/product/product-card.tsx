@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { Heart, Star, ChevronUp, ShoppingCart, X, Minus, Plus, Tag, ArrowUpCircle, Zap } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
-import { useAppDispatch } from "@/store/hooks";
-import { addToCart } from "@/features/cart/state/cart-slice";
 import { toast } from "sonner";
 import { Product } from "@/lib/types";
 import { useWishlistToggle } from "@/lib/helpers";
+import { useLanguage } from "@/hooks/use-language";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 
 interface ProductCardProps {
   product: Product & {
@@ -19,12 +19,13 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, priority = false }: ProductCardProps) => {
+  const { t } = useLanguage();
   const { handleWishlistToggle, isAdding, isRemoving, isInWishlist } =
     useWishlistToggle({
       productId: product.id,
     });
   const { formatAmount } = useCurrency();
-  const dispatch = useAppDispatch();
+  const addToCart = useCartStore((state) => state.addToCart);
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
@@ -41,25 +42,23 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
     : product.price;
 
   const dispatchAddToCart = () => {
-    dispatch(
-      addToCart({
+    addToCart({
+      productId: product.id,
+      quantity: quantity,
+      size: selectedSize,
+      color: selectedColor,
+      guestProduct: {
+        id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
         productId: product.id,
-        quantity: quantity,
-        size: selectedSize,
-        color: selectedColor,
-        guestProduct: {
-          id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
-          productId: product.id,
-          quantity,
-          size: selectedSize || undefined,
-          color: selectedColor || undefined,
-          name: product.name,
-          price: displayPrice,
-          image: product.images?.[0] ?? "",
-          description: product.description || "",
-        },
-      })
-    );
+        quantity,
+        size: selectedSize || undefined,
+        color: selectedColor || undefined,
+        name: product.name,
+        price: displayPrice,
+        image: product.images?.[0] ?? "",
+        description: product.description || "",
+      },
+    });
   };
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -298,14 +297,14 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
               className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#f8f9fa] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98]"
             >
               <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Cart
+              {t("cart")}
             </button>
             <button
               onClick={handleBuyNowVariant}
               className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98]"
             >
               <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
-              Buy Now
+              {t("buyNow")}
             </button>
           </div>
         ) : (
@@ -313,7 +312,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             onClick={handleActionClick}
             className="w-full flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98]"
           >
-            <span className="flex items-center gap-1.5">{hasVariants ? "Select Option" : <><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" /> Buy Now</>}</span>
+            <span className="flex items-center gap-1.5">{hasVariants ? t("selectOption") : <><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" /> {t("buyNow")}</>}</span>
             {hasVariants ? (
               <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 opacity-80" />
             ) : (

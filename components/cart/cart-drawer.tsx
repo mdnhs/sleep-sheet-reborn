@@ -10,13 +10,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import CartItem from "./cart-item";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { useCurrency } from "@/hooks/use-currency";
-import {
-  removeFromCart,
-  updateQuantity,
-} from "@/features/cart/state/cart-slice";
 import Link from "next/link";
+import { useLanguage } from "@/hooks/use-language";
+import { useCurrency } from "@/hooks/use-currency";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -24,19 +21,22 @@ interface CartDrawerProps {
 }
 
 const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
-  const items = useAppSelector((state) => state.cart.items);
-  const guestItems = useAppSelector((state) => state.cart.guestItems);
-  const dispatch = useAppDispatch();
+  const items = useCartStore((state) => state.items);
+  const guestItems = useCartStore((state) => state.guestItems);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeFromCart = useCartStore((state) => state.removeFromCart);
+  
+  const { t } = useLanguage();
 
   const cartItems = [...items, ...guestItems];
   const { formatAmount } = useCurrency();
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
-    dispatch(updateQuantity({ id, quantity }));
+    updateQuantity({ id, quantity });
   };
 
   const handleRemoveItem = (id: string) => {
-    dispatch(removeFromCart(id));
+    removeFromCart(id);
   };
 
   const subtotal = cartItems.reduce(
@@ -52,7 +52,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <ShoppingBag className="h-5 w-5" />
-              Your Cart ({cartItems.length})
+              {t("yourCart")} ({cartItems.length})
             </SheetTitle>
           </div>
         </SheetHeader>
@@ -73,11 +73,11 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
             <div className="border-t pt-4 space-y-4 p-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("subtotal")}</span>
                   <span>{formatAmount(subtotal)}</span>
                 </div>
                 <div className="flex justify-between font-medium pt-2">
-                  <span>Total</span>
+                  <span>{t("total")}</span>
                   <span>{formatAmount(total)}</span>
                 </div>
               </div>
@@ -87,22 +87,22 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
                 nativeButton={false}
                 render={<Link href="/checkout" onClick={onClose} />}
               >
-                Proceed to Checkout
+                {t("proceedToCheckout")}
               </Button>
             </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center flex-1 py-12">
             <ShoppingBag className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Your cart is empty</h3>
+            <h3 className="text-xl font-semibold mb-2">{t("cartEmptyTitle")}</h3>
             <p className="text-muted-foreground mb-6 text-center pl-2 pr-2">
-              Looks like you haven&apos;t added any products to your cart yet.
+              {t("cartEmptyDesc")}
             </p>
             <Button
               nativeButton={false}
               render={<Link href="/products" onClick={onClose} />}
             >
-              Start Shopping
+              {t("startShopping")}
             </Button>
           </div>
         )}

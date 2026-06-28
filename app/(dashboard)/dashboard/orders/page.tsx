@@ -30,7 +30,9 @@ import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useSteadfastBalance, useSyncOrderStatus, useBookCourier } from "@/features/steadfast/api/use-steadfast";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { formatDate } from "@/lib/utils";
-import { printReceipt } from "@/lib/print-receipt";
+import { pdf } from "@react-pdf/renderer";
+import { InvoicePDF } from "@/features/checkout/components/invoice-pdf";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { useCurrency } from "@/hooks/use-currency";
 import { toast } from "sonner";
 import {
@@ -43,6 +45,7 @@ import {
   Truck,
   Wallet,
   FilterX,
+  Download,
 } from "lucide-react";
 import type { Order } from "@/features/order/types";
 
@@ -74,31 +77,7 @@ const STATUS_DOTS: Record<Order["status"], React.ReactNode> = {
   CANCELLED: <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />,
 };
 
-function handlePrint(order: Order, currencySymbol: string) {
-  printReceipt({
-    orderNumber: order.orderNumber,
-    createdAt: formatDate(order.createdAt),
-    userName: order.user?.name ?? order.guestName ?? "Guest",
-    shippingAddress: [
-      order.shippingAddress,
-      order.shippingCity,
-      order.shippingState,
-      order.shippingPostalCode,
-      order.shippingCountry,
-    ]
-      .filter(Boolean)
-      .join(", "),
-    currencySymbol,
-    items: order.items.map((item) => ({
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.price,
-    })),
-    subtotal: order.subtotal,
-    shippingCost: order.shippingCost,
-    totalAmount: order.totalAmount,
-  });
-}
+
 
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
@@ -114,9 +93,81 @@ export default function OrdersPage() {
 
   const { data: rawOrders, isLoading } = useOrders(search);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
+  const { siteName, logoUrl } = useWebsiteSettings();
   const { updateOrder, deleteOrder, bulkDeleteOrders } = useOrderMutations();
   const { data: balanceData } = useSteadfastBalance();
   const syncStatus = useSyncOrderStatus();
+
+  const handlePrint = async (order: Order, action: "print" | "download" = "print") => {
+    try {
+      const placedOrderData: any = {
+        orderNumber: order.orderNumber,
+        subtotal: order.subtotal,
+        shippingCost: order.shippingCost,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+        paymentMethod: order.paymentMethod || "COD",
+        items: order.items.map((i: any) => ({
+          name: i.product.name,
+          price: i.price,
+          quantity: i.quantity,
+          size: i.size,
+          color: i.color,
+        }))
+      };
+      
+      const shippingInfoData: any = {
+        fullName: order.user?.name || order.guestName || "Customer",
+        phone: order.user?.phone || order.guestPhone || "",
+        email: order.user?.email || order.guestEmail || "",
+        address: [
+          order.shippingAddress,
+          order.shippingCity,
+          order.shippingState,
+          order.shippingPostalCode,
+          order.shippingCountry,
+        ].filter(Boolean).join(", "),
+        shippingZone: "inside_dhaka",
+        notes: order.note
+      };
+
+      const doc = (
+        <InvoicePDF
+          order={placedOrderData}
+          shippingInfo={shippingInfoData}
+          siteName={siteName}
+          language="en"
+          logoUrl={logoUrl}
+        />
+      );
+      
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      
+      if (action === "download") {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Invoice-${order.orderNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success("Invoice downloaded successfully");
+      } else {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow?.print();
+        };
+      }
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast.error("Failed to generate invoice");
+    }
+  };
 
   const handleBulkDelete = () => {
     const ids = selectedOrders.map((o) => o.id);
@@ -303,7 +354,7 @@ export default function OrdersPage() {
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => handlePrint(order, currencySymbol)}
+              onClick={() => handlePrint(order)}
               className="gap-1.5"
             >
               <Printer className="h-3.5 w-3.5" />
@@ -349,6 +400,9 @@ export default function OrdersPage() {
                 >
                   View Details
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrint(order, "download")}>
+                  Download Invoice
+                </DropdownMenuItem>
                 {order.status !== "DELIVERED" &&
                   order.status !== "CANCELLED" &&
                   !order.trackingNumber && (
@@ -385,7 +439,7 @@ export default function OrdersPage() {
     updateOrder.mutate({
       id: order.id,
       status,
-      paymentStatus: status === "DELIVERED" ? "PAID" : order.paymentStatus,
+      paymentStatus: status === "DELIVERED" ? "COMPLETED" : order.paymentStatus,
     });
   };
 

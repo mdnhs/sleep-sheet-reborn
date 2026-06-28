@@ -22,19 +22,21 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, ChevronRight, CreditCard, Wallet, Lock, User, Calendar } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setShipping } from "@/features/cart/state/cart-slice";
-import { setPaymentInfo, setPaymentMethod, setShippingInfo, setStep } from "../state/checkoutSlice";
+import { useAppSelector } from "@/store/hooks";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { useSettings } from "@/features/settings/api/use-settings";
 import { useCurrency } from "@/hooks/use-currency";
 import { useCurrent } from "@/features/auth/api/use-current";
+import { UseCheckout } from "../api/use-checkout";
+import { useLanguage } from "@/hooks/use-language";
 
 function ShippingInformationCard() {
-  const dispatch = useAppDispatch();
-  const { shippingInfo, paymentInfo, paymentMethod } = useAppSelector((state) => state.checkout);
+  const setShipping = useCartStore((state) => state.setShipping);
   const { data: settings } = useSettings();
   const { formatAmount } = useCurrency();
   const { data: currentUser } = useCurrent();
+  const { mutate, isPending } = UseCheckout();
+  const { t } = useLanguage();
 
   const cardEnabled = settings ? settings.payment_method_card !== "false" : true;
   const codEnabled = settings ? settings.payment_method_cod !== "false" : true;
@@ -49,16 +51,16 @@ function ShippingInformationCard() {
   const form = useForm<DeliveryAndPaymentFormValues>({
     resolver: zodResolver(deliveryAndPaymentSchema),
     defaultValues: {
-      fullName: shippingInfo?.fullName ?? currentUser?.name ?? "",
-      phone: shippingInfo?.phone ?? currentUser?.phone ?? "",
-      email: shippingInfo?.email ?? currentUser?.email ?? "",
-      address: shippingInfo?.address ?? currentUser?.address ?? "",
-      shippingZone: shippingInfo?.shippingZone ?? "inside_dhaka",
-      paymentMethod: paymentMethod ?? defaultMethod,
-      cardNumber: paymentInfo?.cardNumber ?? "",
-      cvv: paymentInfo?.cvc ?? "",
-      expirationDate: paymentInfo?.expiry ?? "",
-      nameOnCard: paymentInfo?.nameOnCard ?? "",
+      fullName: currentUser?.name ?? "",
+      phone: currentUser?.phone ?? "",
+      email: currentUser?.email ?? "",
+      address: currentUser?.address ?? "",
+      shippingZone: "inside_dhaka",
+      paymentMethod: defaultMethod,
+      cardNumber: "",
+      cvv: "",
+      expirationDate: "",
+      nameOnCard: "",
     },
   });
 
@@ -66,43 +68,45 @@ function ShippingInformationCard() {
   const selectedPaymentMethod = form.watch("paymentMethod");
 
   useEffect(() => {
-    if (!currentUser || shippingInfo) return;
+    if (!currentUser) return;
     if (currentUser.name && !form.getValues("fullName")) form.setValue("fullName", currentUser.name);
     if (currentUser.email && !form.getValues("email")) form.setValue("email", currentUser.email);
     if (currentUser.phone && !form.getValues("phone")) form.setValue("phone", currentUser.phone);
     if (currentUser.address && !form.getValues("address")) form.setValue("address", currentUser.address);
-  }, [currentUser, shippingInfo, form]);
+  }, [currentUser, form]);
 
   useEffect(() => {
     if (zoneCosts[selectedZone] !== undefined) {
-      dispatch(setShipping(zoneCosts[selectedZone]));
+      setShipping(zoneCosts[selectedZone]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedZone, zoneCosts.inside_dhaka, zoneCosts.outside_dhaka]);
 
   const onSubmit = (values: DeliveryAndPaymentFormValues) => {
-    dispatch(setShippingInfo({
-      fullName: values.fullName,
-      phone: values.phone,
-      email: values.email,
-      address: values.address,
-      shippingZone: values.shippingZone,
-      notes: values.notes,
-    }));
+    const basePaymentInfo = { paymentMethod: values.paymentMethod };
+    const paymentPayload =
+      values.paymentMethod === "cod"
+        ? basePaymentInfo
+        : {
+            ...basePaymentInfo,
+            cardNumber: values.cardNumber,
+            expirationDate: values.expirationDate,
+            cvv: values.cvv,
+            nameOnCard: values.nameOnCard,
+          };
 
-    if (values.paymentMethod === "card") {
-      dispatch(setPaymentInfo({
-        cardNumber: values.cardNumber!,
-        expiry: values.expirationDate!,
-        cvc: values.cvv!,
-        nameOnCard: values.nameOnCard!,
-      }));
-    } else {
-      dispatch(setPaymentInfo(null));
-    }
-
-    dispatch(setPaymentMethod(values.paymentMethod));
-    dispatch(setStep("confirmation"));
+    mutate({
+      shippingInfo: {
+        fullName: values.fullName,
+        phone: values.phone,
+        email: values.email,
+        address: values.address,
+        shippingZone: values.shippingZone,
+        notes: values.notes,
+      },
+      paymentMethod: values.paymentMethod,
+      paymentInfo: paymentPayload,
+    });
   };
 
   const [hasMounted, setHasMounted] = useState(false);
@@ -115,25 +119,25 @@ function ShippingInformationCard() {
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="bg-background border border-border/40 rounded-2xl p-4 sm:p-6 w-full ring-0 shadow-sm">
             <CardHeader className="p-0 mb-4">
-              <CardTitle className="text-lg sm:text-xl font-bold text-foreground">Delivery</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Tell us where to send your order.</p>
+              <CardTitle className="text-lg sm:text-xl font-bold text-foreground">{t("deliveryTitle")}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("deliveryDesc")}</p>
             </CardHeader>
             <CardContent className="p-0 w-full space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField name="fullName" control={form.control} render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("fullNameLabel")}</label>
                     <FormControl>
-                      <Input type="text" placeholder="John Doe" className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
+                      <Input type="text" placeholder={t("fullNamePlaceholder")} className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField name="phone" control={form.control} render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Phone</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("phoneLabel")}</label>
                     <FormControl>
-                      <Input type="tel" placeholder="01XXXXXXXXX" className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
+                      <Input type="tel" placeholder={t("phonePlaceholder")} className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -143,10 +147,10 @@ function ShippingInformationCard() {
               <FormField name="email" control={form.control} render={({ field }) => (
                 <FormItem className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Email <span className="text-muted-foreground/40 lowercase font-normal tracking-normal">(optional)</span>
+                    {t("emailLabel")}
                   </label>
                   <FormControl>
-                    <Input type="email" placeholder="your@email.com" className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
+                    <Input type="email" placeholder={t("emailPlaceholder")} className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -154,9 +158,9 @@ function ShippingInformationCard() {
 
               <FormField name="address" control={form.control} render={({ field }) => (
                 <FormItem className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Address</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("addressLabel")}</label>
                   <FormControl>
-                    <Textarea placeholder="House/Flat, Road, Area, District, City" rows={2} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[50px]" {...field} />
+                    <Textarea placeholder={t("addressPlaceholder")} rows={2} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[50px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -165,10 +169,10 @@ function ShippingInformationCard() {
               <FormField name="notes" control={form.control} render={({ field }) => (
                 <FormItem className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Order Notes <span className="text-muted-foreground/40 lowercase font-normal tracking-normal">(optional)</span>
+                    {t("notesLabel")}
                   </label>
                   <FormControl>
-                    <Textarea placeholder="Special instructions..." rows={1} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[40px]" {...field} />
+                    <Textarea placeholder={t("notesPlaceholder")} rows={1} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[40px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -176,23 +180,29 @@ function ShippingInformationCard() {
 
               <FormField name="shippingZone" control={form.control} render={({ field }) => (
                 <FormItem className="pt-1 space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Delivery Zone</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("deliveryZoneLabel")}</label>
                   <FormControl>
                     <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-2">
                       {(Object.entries(SHIPPING_ZONES) as [ShippingZone, { label: string; cost: number }][]).map(
-                        ([key, { label }]) => (
-                          <label key={key} htmlFor={key}
-                            className={`relative flex items-center justify-between rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${
-                              field.value === key ? "border-foreground bg-secondary/10" : "border-transparent bg-secondary/10"
-                            }`}
-                          >
-                            <div>
-                              <span className="font-semibold text-xs text-foreground">{label}</span>
-                              <p className="text-[10px] text-muted-foreground/80 font-medium">{formatAmount(zoneCosts[key])}</p>
-                            </div>
-                            <RadioGroupItem value={key} id={key} className={field.value === key ? "border-foreground text-foreground" : "opacity-40"} />
-                          </label>
-                        )
+                        ([key, { label }]) => {
+                          const zoneLabels: Record<string, string> = {
+                            inside_dhaka: t("insideDhaka"),
+                            outside_dhaka: t("outsideDhaka"),
+                          };
+                          return (
+                            <label key={key} htmlFor={key}
+                              className={`relative flex items-center justify-between rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${
+                                field.value === key ? "border-foreground bg-secondary/10" : "border-transparent bg-secondary/10"
+                              }`}
+                            >
+                              <div>
+                                <span className="font-semibold text-xs text-foreground">{zoneLabels[key] || label}</span>
+                                <p className="text-[10px] text-muted-foreground/80 font-medium">{formatAmount(zoneCosts[key])}</p>
+                              </div>
+                              <RadioGroupItem value={key} id={key} className={field.value === key ? "border-foreground text-foreground" : "opacity-40"} />
+                            </label>
+                          );
+                        }
                       )}
                     </RadioGroup>
                   </FormControl>
@@ -205,8 +215,8 @@ function ShippingInformationCard() {
           {paymentMethodsCount > 1 && (
             <Card className="bg-background border border-border/40 rounded-2xl p-4 sm:p-6 w-full ring-0 shadow-sm">
               <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-lg sm:text-xl font-bold text-foreground">Payment</CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">All transactions are secure and encrypted.</p>
+                <CardTitle className="text-lg sm:text-xl font-bold text-foreground">{t("paymentTitle")}</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("paymentDesc")}</p>
               </CardHeader>
               <CardContent className="p-0">
                 <FormField control={form.control} name="paymentMethod" render={({ field }) => (
@@ -219,7 +229,7 @@ function ShippingInformationCard() {
                               <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${selectedPaymentMethod === "card" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
                                 <CreditCard className="h-3.5 w-3.5" />
                               </div>
-                              <span className="font-bold text-xs sm:text-sm">Credit / Debit Card</span>
+                              <span className="font-bold text-xs sm:text-sm">{t("cardPayment")}</span>
                             </div>
                             <RadioGroupItem value="card" className={selectedPaymentMethod === "card" ? "border-foreground text-foreground" : "opacity-50"} />
                           </Label>
@@ -227,7 +237,7 @@ function ShippingInformationCard() {
                             <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                               <FormField name="cardNumber" control={form.control} render={({ field }) => (
                                 <FormItem className="space-y-1">
-                                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Card Number</label>
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("cardNumberLabel")}</label>
                                   <FormControl>
                                     <div className="relative">
                                       <Input placeholder="0000 0000 0000 0000" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm font-mono tracking-widest" {...field} />
@@ -239,10 +249,10 @@ function ShippingInformationCard() {
                               )} />
                               <FormField name="nameOnCard" control={form.control} render={({ field }) => (
                                 <FormItem className="space-y-1">
-                                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cardholder Name</label>
+                                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("cardholderNameLabel")}</label>
                                   <FormControl>
                                     <div className="relative">
-                                      <Input placeholder="John Doe" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm" {...field} />
+                                      <Input placeholder={t("fullNamePlaceholder")} className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm" {...field} />
                                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
                                     </div>
                                   </FormControl>
@@ -252,7 +262,7 @@ function ShippingInformationCard() {
                               <div className="grid grid-cols-2 gap-3">
                                 <FormField name="expirationDate" control={form.control} render={({ field }) => (
                                   <FormItem className="space-y-1">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Expiry</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("expiryLabel")}</label>
                                     <FormControl>
                                       <div className="relative">
                                         <Input placeholder="MM/YY" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm font-mono tracking-widest" {...field} />
@@ -264,7 +274,7 @@ function ShippingInformationCard() {
                                 )} />
                                 <FormField name="cvv" control={form.control} render={({ field }) => (
                                   <FormItem className="space-y-1">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CVV</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("cvvLabel")}</label>
                                     <FormControl>
                                       <div className="relative">
                                         <Input placeholder="123" className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm font-mono tracking-widest" {...field} />
@@ -286,7 +296,7 @@ function ShippingInformationCard() {
                               <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${selectedPaymentMethod === "cod" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
                                 <Wallet className="h-3.5 w-3.5" />
                               </div>
-                              <span className="font-bold text-xs sm:text-sm">Cash on Delivery</span>
+                              <span className="font-bold text-xs sm:text-sm">{t("cashOnDelivery")}</span>
                             </div>
                             <RadioGroupItem value="cod" className={selectedPaymentMethod === "cod" ? "border-foreground text-foreground" : "opacity-50"} />
                           </Label>
@@ -300,8 +310,18 @@ function ShippingInformationCard() {
           )}
 
           <div className="flex justify-end pt-1">
-            <Button type="submit" className="w-full h-11 rounded-full font-bold text-sm shadow-md bg-foreground text-background">
-              Continue to Review
+            <Button type="submit" disabled={isPending} className="w-full h-11 rounded-full font-bold text-sm shadow-md bg-foreground text-background">
+              {isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {selectedPaymentMethod === "cod" ? t("placeOrder") : t("confirmAndPay")}
+                </div>
+              )}
             </Button>
           </div>
         </form>

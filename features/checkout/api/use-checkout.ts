@@ -5,9 +5,7 @@ import {
   PaymentInformationFormValues,
   ShippingInformationFormValues
 } from "../schema";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { clearCart, clearGuestCart } from "@/features/cart/state/cart-slice";
-import { setStep } from "../state/checkoutSlice";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 
 interface useCheckoutProps {
   paymentInfo: Partial<PaymentInformationFormValues>;
@@ -16,8 +14,10 @@ interface useCheckoutProps {
 }
 
 export const UseCheckout = () => {
-  const dispatch = useAppDispatch();
-  const guestItems = useAppSelector((state) => state.cart.guestItems);
+  const guestItems = useCartStore((state) => state.guestItems);
+  const userItems = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const clearGuestCart = useCartStore((state) => state.clearGuestCart);
 
   return useMutation({
     mutationFn: async ({
@@ -46,12 +46,15 @@ export const UseCheckout = () => {
       return response.json();
     },
 
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       toast.success("Order placed successfully!");
-      dispatch(setStep("placedSuccessfully"));
-      dispatch(clearCart());
-      dispatch(clearGuestCart());
+      clearCart();
+      clearGuestCart();
       try { localStorage.removeItem("guest-cart"); } catch { /* ignore */ }
+      const orderId = 'order' in data ? (data as any).order?.id : (data as any).orderId;
+      if (orderId) {
+        window.location.href = `/order-success?orderId=${orderId}&phone=${encodeURIComponent(variables.shippingInfo.phone)}`;
+      }
     },
 
     onError: (error: Error) => {

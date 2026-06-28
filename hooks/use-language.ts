@@ -1,0 +1,211 @@
+"use client";
+import { useEffect, useState } from "react";
+
+export type Language = "en" | "bn";
+
+export const translations = {
+  en: {
+    home: "Home",
+    blog: "Blog",
+    combos: "Combos",
+    offers: "Offers",
+    manageAccount: "Manage account",
+    lightMode: "Light mode",
+    darkMode: "Dark mode",
+    logout: "Log out",
+    language: "Language",
+    english: "English",
+    bangla: "Bangla (বাংলা)",
+    selectLanguage: "Select Language",
+    signIn: "Sign In",
+    account: "Account",
+    searchPlaceholder: "Search products...",
+    wishlist: "Wishlist",
+    cart: "Cart",
+    featuredProducts: "Featured Products",
+    viewAll: "View All",
+    customerReviews: "Customer Reviews",
+    noReviewsYet: "No reviews yet.",
+    buyNow: "Order Now",
+    addToCart: "Add to Cart",
+    placeOrder: "Place Order",
+    confirmAndPay: "Confirm & Pay",
+    selectOption: "Select Option",
+    outOfStock: "Out of Stock",
+    phoneOrder: "Phone Call Order",
+    whatsappOrder: "WhatsApp Order",
+    yourCart: "Your Cart",
+    subtotal: "Subtotal",
+    total: "Total",
+    proceedToCheckout: "Proceed to Checkout",
+    cartEmptyTitle: "Your cart is empty",
+    cartEmptyDesc: "Looks like you haven't added any products to your cart yet.",
+    startShopping: "Start Shopping",
+    deliveryTitle: "Delivery",
+    deliveryDesc: "Tell us where to send your order.",
+    fullNameLabel: "Full Name",
+    phoneLabel: "Phone",
+    emailLabel: "Email",
+    addressLabel: "Full Address",
+    notesLabel: "Order Notes",
+    deliveryZoneLabel: "Delivery Zone",
+    insideDhaka: "Inside Dhaka",
+    outsideDhaka: "Outside Dhaka",
+    paymentTitle: "Payment",
+    paymentDesc: "Choose how you want to pay.",
+    cardPayment: "Card Payment",
+    cashOnDelivery: "Cash on Delivery",
+    cardNumberLabel: "Card Number",
+    cardholderNameLabel: "Cardholder Name",
+    expiryLabel: "Expiry",
+    cvvLabel: "CVV",
+    fullNamePlaceholder: "John Doe",
+    phonePlaceholder: "01XXXXXXXXX",
+    emailPlaceholder: "your@email.com",
+    addressPlaceholder: "House/Flat, Road, Area, District, City",
+    notesPlaceholder: "Special instructions...",
+    orderSummary: "Order Summary",
+    shipping: "Shipping",
+    qty: "Qty",
+    thankYou: "Thank You!",
+    orderSuccessDesc: "Your order has been placed successfully. We are preparing your package.",
+    trackPhone: "Track with phone:",
+    trackMyOrder: "Track My Order",
+    continueShopping: "Continue Shopping",
+    downloadInvoice: "Download Invoice",
+    trackYourOrder: "Track Your Order",
+    trackYourOrderDesc: "Enter the phone number you used when placing your order",
+    search: "Search",
+    searching: "Searching...",
+    noOrdersFound: "No orders found for this phone number.",
+    orderNumberLabel2: "Order Number:",
+    orderIn: "Order in",
+    toGet: "to get",
+    sameDayShipment: "next day delivery",
+    shipmentTomorrow: "delivery day after tomorrow",
+    hour: "Hour",
+    min: "Min",
+    sec: "Sec",
+  },
+  bn: {
+    home: "হোম",
+    blog: "ব্লগ",
+    combos: "কম্বো",
+    offers: "অফার",
+    manageAccount: "অ্যাকাউন্ট পরিচালনা",
+    lightMode: "লাইট মোড",
+    darkMode: "ডার্ক মোড",
+    logout: "লগ আউট",
+    language: "ভাষা",
+    english: "English",
+    bangla: "বাংলা (BN)",
+    selectLanguage: "ভাষা নির্বাচন করুন",
+    signIn: "লগ ইন",
+    account: "অ্যাকাউন্ট",
+    searchPlaceholder: "পণ্য খুঁজুন...",
+    wishlist: "পছন্দ তালিকা",
+    cart: "কার্ট",
+    featuredProducts: "বিশেষায়িত পণ্যসমূহ",
+    viewAll: "সব দেখুন",
+    customerReviews: "ক্রেতাদের মতামত",
+    noReviewsYet: "এখনও কোন রিভিউ নেই।",
+    buyNow: "অর্ডার করুন",
+    addToCart: "কার্টে যোগ করুন",
+    placeOrder: "অর্ডার করুন",
+    confirmAndPay: "নিশ্চিত ও পরিশোধ করুন",
+    selectOption: "অপশন সিলেক্ট করুন",
+    outOfStock: "স্টক আউট",
+    phoneOrder: "ফোনে অর্ডার করুন",
+    whatsappOrder: "হোয়াটসঅ্যাপে অর্ডার",
+    yourCart: "আপনার কার্ট",
+    subtotal: "সাবটোটাল",
+    total: "সর্বমোট",
+    proceedToCheckout: "অর্ডার সম্পন্ন করুন",
+    cartEmptyTitle: "আপনার কার্টটি খালি",
+    cartEmptyDesc: "মনে হচ্ছে আপনি এখনও আপনার কার্টে কোনো পণ্য যোগ করেননি।",
+    startShopping: "কেনাকাটা শুরু করুন",
+    deliveryTitle: "ডেলিভারি",
+    deliveryDesc: "আপনার অর্ডার কোথায় পাঠাতে হবে তা আমাদের জানান।",
+    fullNameLabel: "নাম",
+    phoneLabel: "ফোন নম্বর",
+    emailLabel: "ইমেইল (ঐচ্ছিক)",
+    addressLabel: "ঠিকানা",
+    notesLabel: "অর্ডার নোট (ঐচ্ছিক)",
+    deliveryZoneLabel: "ডেলিভারি জোন",
+    insideDhaka: "ঢাকার ভেতরে",
+    outsideDhaka: "ঢাকার বাইরে",
+    paymentTitle: "পেমেন্ট",
+    paymentDesc: "আপনি কিভাবে পেমেন্ট করতে চান তা নির্বাচন করুন।",
+    cardPayment: "কার্ড পেমেন্ট",
+    cashOnDelivery: "ক্যাশ অন ডেলিভারি",
+    cardNumberLabel: "কার্ড নম্বর",
+    cardholderNameLabel: "কার্ড হোল্ডার এর নাম",
+    expiryLabel: "মেয়াদ",
+    cvvLabel: "সিভিভি (CVV)",
+    fullNamePlaceholder: "আপনার নাম লিখুন",
+    phonePlaceholder: "০১XXXXXXXXX",
+    emailPlaceholder: "your@email.com",
+    addressPlaceholder: "বাসা/ফ্ল্যাট নম্বর, রাস্তা, এলাকা, জেলা ও শহর",
+    notesPlaceholder: "বিশেষ নির্দেশনা থাকলে লিখুন...",
+    orderSummary: "অর্ডারের বিবরণ",
+    shipping: "ডেলিভারি",
+    qty: "পরিমাণ",
+    thankYou: "ধন্যবাদ!",
+    orderSuccessDesc: "আপনার অর্ডারটি সফলভাবে সম্পন্ন হয়েছে। আমরা আপনার পার্সেলটি প্রস্তুত করছি।",
+    trackPhone: "ফোন নম্বর দিয়ে ট্র্যাক করুন:",
+    trackMyOrder: "অর্ডার ট্র্যাক করুন",
+    continueShopping: "কেনাকাটা চালিয়ে যান",
+    downloadInvoice: "ইনভয়েস ডাউনলোড করুন",
+    trackYourOrder: "আপনার অর্ডার ট্র্যাক করুন",
+    trackYourOrderDesc: "অর্ডার করার সময় আপনি যে ফোন নম্বরটি ব্যবহার করেছিলেন তা লিখুন",
+    search: "অনুসন্ধান করুন",
+    searching: "অনুসন্ধান করা হচ্ছে...",
+    noOrdersFound: "এই ফোন নম্বরে কোনো অর্ডার পাওয়া যায়নি।",
+    orderNumberLabel2: "অর্ডার নম্বর:",
+    orderIn: "আর মাত্র",
+    toGet: "এর মধ্যে অর্ডার করলেই পাচ্ছেন",
+    sameDayShipment: "আগামীকাল ডেলিভারি",
+    shipmentTomorrow: "আগামীপরশু ডেলিভারি",
+    hour: "ঘণ্টা",
+    min: "মিনিট",
+    sec: "সেকেন্ড",
+  },
+};
+
+export function useLanguage() {
+  const [language, setLanguageState] = useState<Language>("bn");
+
+  useEffect(() => {
+    // Read initial value from localStorage
+    const saved = localStorage.getItem("language") as Language;
+    if (saved === "en" || saved === "bn") {
+      setLanguageState(saved);
+    } else {
+      // Default to 'bn'
+      localStorage.setItem("language", "bn");
+      setLanguageState("bn");
+    }
+
+    const handleLangChange = () => {
+      const current = localStorage.getItem("language") as Language;
+      if (current === "en" || current === "bn") {
+        setLanguageState(current);
+      }
+    };
+
+    window.addEventListener("language-change", handleLangChange);
+    return () => window.removeEventListener("language-change", handleLangChange);
+  }, []);
+
+  const setLanguage = (lang: Language) => {
+    localStorage.setItem("language", lang);
+    setLanguageState(lang);
+    window.dispatchEvent(new Event("language-change"));
+  };
+
+  const t = (key: keyof typeof translations["en"]) => {
+    return translations[language][key] || translations["bn"][key] || key;
+  };
+
+  return { language, setLanguage, t };
+}

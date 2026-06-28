@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 
 import { useLogout } from "../api/use-logout";
 import { useCurrent } from "../api/use-current";
-import { ChevronRight, Loader, LogOut, Moon, Sun } from "lucide-react";
+import { ChevronRight, Loader, LogOut, Moon, Sun, Globe } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
+import { useLanguage } from "@/hooks/use-language";
 
 const subscribe = () => () => {};
 const useHasMounted = () =>
@@ -29,6 +30,8 @@ export const UserButton = () => {
   const { mutate: logout } = useLogout();
   const { resolvedTheme, setTheme } = useTheme();
   const hasMounted = useHasMounted();
+  const { language, setLanguage, t } = useLanguage();
+
   if (isLoading) {
     return (
       <div className=" size-10 rounded-full flex items-center justify-center border">
@@ -91,9 +94,39 @@ export const UserButton = () => {
             href="/account"
             className="mt-3 flex items-center justify-between rounded-2xl border border-border/60 bg-background px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            Manage account
+            {t("manageAccount")}
             <ChevronRight className="size-4 text-muted-foreground" />
           </Link>
+        </div>
+
+        <DropdownMenuSeparator className="my-1.5" />
+        
+        <div className="px-3 py-1.5 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+            <Globe className="size-3.5" /> {t("language")}
+          </span>
+          <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg border border-border/40">
+            <button
+              onClick={() => setLanguage("bn")}
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-all ${
+                language === "bn"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              BN
+            </button>
+            <button
+              onClick={() => setLanguage("en")}
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-all ${
+                language === "en"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              EN
+            </button>
+          </div>
         </div>
 
         <DropdownMenuSeparator className="my-1.5" />
@@ -106,7 +139,7 @@ export const UserButton = () => {
           ) : (
             <Moon className="size-4" />
           )}
-          {hasMounted && resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+          {hasMounted && resolvedTheme === "dark" ? t("lightMode") : t("darkMode")}
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => logout()}
@@ -114,7 +147,7 @@ export const UserButton = () => {
           className="font-medium"
         >
           <LogOut className="size-4" />
-          Log out
+          {t("logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

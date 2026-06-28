@@ -44,7 +44,7 @@ function UpdateProductClient() {
   const { data: categories, isLoading: categoryLoading } = useGetCategories();
 
   const form = useForm<z.infer<typeof ProductSchema>>({
-    resolver: zodResolver(ProductSchema),
+    resolver: zodResolver(ProductSchema) as any,
     defaultValues: {
       productName: "",
       productDescription: "",
@@ -285,7 +285,7 @@ function UpdateProductClient() {
 
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <div className="w-full">
-                    <VariantFields control={form.control} setValue={form.setValue} />
+                    <VariantFields control={form.control as any} setValue={form.setValue} />
                   </div>
 
                   <FormField
@@ -298,7 +298,7 @@ function UpdateProductClient() {
                         </FormLabel>
                         <FormControl>
                           <ChipsInput
-                            value={field.value}
+                            value={field.value || []}
                             onChange={field.onChange}
                             placeholder="Add tags (press Enter or comma)"
                           />
@@ -319,7 +319,7 @@ function UpdateProductClient() {
                       </FormLabel>
                       <FormControl>
                         <ChipsInput
-                          value={field.value}
+                          value={field.value || []}
                           onChange={field.onChange}
                           placeholder="Add Features (press Enter or comma)"
                         />

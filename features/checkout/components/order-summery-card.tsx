@@ -1,17 +1,19 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAppSelector } from "@/store/hooks";
 import { useCurrency } from "@/hooks/use-currency";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "@/hooks/use-language";
+import { useCartStore } from "@/features/cart/state/use-cart-store";
 
 function OrderSummeryCard() {
-  const userItems = useAppSelector((state) => state.cart.items);
-  const guestItems = useAppSelector((state) => state.cart.guestItems);
+  const userItems = useCartStore((state) => state.items);
+  const guestItems = useCartStore((state) => state.guestItems);
   const cartItems = [...userItems, ...guestItems];
-  const shippingCost = useAppSelector((state) => state.cart.shipping);
+  const shippingCost = useCartStore((state) => state.shipping);
   const { symbol, formatAmount } = useCurrency();
+  const { t } = useLanguage();
 
   const subtotal = cartItems.reduce(
     (acc, item) => acc + item.price * item.quantity,
@@ -26,17 +28,17 @@ function OrderSummeryCard() {
   if (!hasMounted) return null;
 
   return (
-    <Card className="w-full bg-background border border-border/40 rounded-2xl shadow-sm overflow-hidden">
-      <CardHeader className="pt-4 pb-3 px-4 border-b border-border/40">
+    <Card className="w-full bg-background border border-border/40 rounded-xl lg:rounded-2xl shadow-sm overflow-hidden">
+      <CardHeader className="py-2.5 px-3 lg:pt-4 lg:pb-3 lg:px-4 border-b border-border/40">
         <CardTitle className="flex items-center gap-2">
-          <p className="text-base font-bold">Order Summary</p>
+          <p className="text-sm lg:text-base font-bold">{t("orderSummary")}</p>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 px-4 pb-4 pt-3">
+      <CardContent className="space-y-2 lg:space-y-3 p-3 lg:px-4 lg:pb-4 lg:pt-3">
         {hasMounted &&
           cartItems?.map((cartItem) => (
-            <div key={cartItem.id} className="flex gap-3 items-center">
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border/40 bg-muted/20 relative">
+            <div key={cartItem.id} className="flex gap-2 lg:gap-3 items-center">
+              <div className="h-10 w-10 lg:h-14 lg:w-14 shrink-0 overflow-hidden rounded-lg lg:rounded-xl border border-border/40 bg-muted/20 relative">
                 <Image
                   src={cartItem?.image}
                   alt={cartItem?.name}
@@ -46,11 +48,11 @@ function OrderSummeryCard() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-2">
-                  <h1 className="text-xs font-semibold leading-tight truncate">{cartItem.name}</h1>
-                  <label className="font-bold text-xs whitespace-nowrap">{symbol}{cartItem.price}</label>
+                  <h1 className="text-[11px] lg:text-xs font-semibold leading-tight truncate">{cartItem.name}</h1>
+                  <label className="font-bold text-[11px] lg:text-xs whitespace-nowrap">{symbol}{cartItem.price}</label>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium text-muted-foreground">
-                  <span>Qty: {cartItem.quantity}</span>
+                <div className="flex items-center gap-1.5 lg:gap-2 mt-0.5 text-[9px] lg:text-[10px] font-medium text-muted-foreground">
+                  <span>{t("qty")}: {cartItem.quantity}</span>
                   <span className="w-0.5 h-0.5 rounded-full bg-border"></span>
                   <span>{cartItem.color}</span>
                   {cartItem.size && (
@@ -64,18 +66,18 @@ function OrderSummeryCard() {
             </div>
           ))}
 
-        <div className="border-t border-border/40 pt-3 space-y-2">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground/80">Subtotal</span>
+        <div className="border-t border-border/40 pt-2 lg:pt-3 space-y-1.5 lg:space-y-2">
+          <div className="flex justify-between text-[11px] lg:text-xs">
+            <span className="text-muted-foreground/80">{t("subtotal")}</span>
             <span className="font-semibold">{formatAmount(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground/80">Shipping</span>
+          <div className="flex justify-between text-[11px] lg:text-xs">
+            <span className="text-muted-foreground/80">{t("shipping")}</span>
             <span className="font-semibold">{shipping > 0 ? formatAmount(shipping) : "—"}</span>
           </div>
-          <div className="flex justify-between items-end pt-2 border-t border-border/40">
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
-            <span className="text-xl font-black text-foreground tracking-tight">{formatAmount(total)}</span>
+          <div className="flex justify-between items-end pt-1.5 lg:pt-2 border-t border-border/40">
+            <span className="text-[10px] lg:text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("total")}</span>
+            <span className="text-lg lg:text-xl font-black text-foreground tracking-tight">{formatAmount(total)}</span>
           </div>
         </div>
       </CardContent>
