@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "tsx prisma/seed-demo.ts"
+    "db:seed": "tsx prisma/seed-demo.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -15,9 +18,6 @@
     "@hono/zod-validator": "^0.7.6",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.1.0",
-    "@prisma/adapter-neon": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "@prisma/client-runtime-utils": "^7.8.0",
     "@react-pdf/renderer": "^4.5.1",
     "@reduxjs/toolkit": "^2.11.2",
     "@tabler/icons-react": "^3.43.0",
@@ -72,7 +72,6 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"

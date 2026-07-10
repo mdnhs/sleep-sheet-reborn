@@ -40,7 +40,7 @@ export default function OrderSuccessPage() {
   const router = useRouter();
   const orderId = searchParams.get("orderId");
   const { t, language } = useLanguage();
-  const { siteName } = useWebsiteSettings();
+  const { siteName, logoUrl } = useWebsiteSettings();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,6 +106,7 @@ export default function OrderSuccessPage() {
           order={placedOrderData} 
           shippingInfo={shippingInfoData} 
           siteName={siteName} 
+          logoUrl={logoUrl || ""}
           language={language}
         />
       );

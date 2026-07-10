@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client"],
   async rewrites() {
     return [
       { source: "/facebook-feed.xml", destination: "/facebook-feed?format=xml" },

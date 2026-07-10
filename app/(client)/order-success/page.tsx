@@ -41,7 +41,7 @@ export default function OrderSuccessPage() {
   const [orderId] = useQueryState("orderId");
   const [phone] = useQueryState("phone");
   const { t, language } = useLanguage();
-  const { siteName } = useWebsiteSettings();
+  const { siteName, logoUrl } = useWebsiteSettings();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +100,7 @@ export default function OrderSuccessPage() {
           order={placedOrderData}
           shippingInfo={shippingInfoData}
           siteName={siteName}
+          logoUrl={logoUrl || ""}
           language={language}
         />
       );

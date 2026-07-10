@@ -124,15 +124,15 @@ export default function TrackOrderPage() {
         phone: order.guestPhone || phone || "",
         address: order.shippingAddress,
         shippingZone: "inside_dhaka" as const,
-        notes: order.note,
+        notes: (order as any).note,
       };
       const doc = (
         <InvoicePDF
           order={placedOrderData}
           shippingInfo={shippingInfoData}
           siteName={siteName}
+          logoUrl={logoUrl || ""}
           language={language}
-          logoUrl={logoUrl}
         />
       );
       const asPdf = pdf(doc);

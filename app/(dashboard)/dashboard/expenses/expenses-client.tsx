@@ -163,7 +163,7 @@ export default function ExpensesClientPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Category</Label>
-                  <Select value={expenseCategoryId} onValueChange={setExpenseCategoryId} required>
+                  <Select value={expenseCategoryId} onValueChange={(v) => setExpenseCategoryId(v || "")} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
