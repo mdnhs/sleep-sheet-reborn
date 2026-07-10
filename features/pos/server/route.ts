@@ -24,11 +24,13 @@ const app = new Hono()
   customerPhone: z.string().optional(),
   reference: z.string().optional(),
   note: z.string().optional(),
+  shippingType: z.enum(['showroom', 'online']).default('online'),
   paymentMethod: z.enum(['COD', 'CARD', 'DUE']).default('COD'),
   items: z.array(z.object({
     productId: z.string(),
     quantity: z.number().min(1),
     price: z.number().min(0),
+    costPrice: z.number().optional(),
     size: z.string().optional(),
     color: z.string().optional(),
   })).min(1, 'At least one item is required'),
@@ -39,7 +41,7 @@ const app = new Hono()
   }
 
   try {
-    const { customerName, customerPhone, paymentMethod, reference, note, items } = c.req.valid('json');
+    const { customerName, customerPhone, paymentMethod, reference, note, items, shippingType } = c.req.valid('json');
 
     const productIds = items.map(i => i.productId);
     const productsList = await db.query.products.findMany({
@@ -70,13 +72,13 @@ const app = new Hono()
       totalAmount,
       tax: 0,
       shippingCost: 0,
-      shippingAddress: 'POS - In-store pickup',
+      shippingAddress: shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)',
       reference: reference || null,
       note: note || null,
       saleType: 'POS',
       paymentMethod,
       paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
-      status: 'PROCESSING',
+      status: shippingType === 'showroom' ? 'DELIVERED' : 'PENDING',
     }).returning();
 
     await db.insert(orderItems).values(
@@ -85,6 +87,7 @@ const app = new Hono()
         productId: item.productId,
         quantity: item.quantity,
         price: item.price,
+        costPrice: item.costPrice || null,
         size: item.size || null,
         color: item.color || null,
       }))

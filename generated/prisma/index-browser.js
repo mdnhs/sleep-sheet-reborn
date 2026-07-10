@@ -193,6 +193,7 @@ exports.Prisma.CategoryScalarFieldEnum = {
   label: 'label',
   value: 'value',
   parentId: 'parentId',
+  image: 'image',
   createdAt: 'createdAt'
 };
 
@@ -236,6 +237,7 @@ exports.Prisma.OrderItemScalarFieldEnum = {
   productId: 'productId',
   quantity: 'quantity',
   price: 'price',
+  costPrice: 'costPrice',
   size: 'size',
   color: 'color',
   createdAt: 'createdAt'

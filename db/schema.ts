@@ -267,6 +267,7 @@ export const orderItems = pgTable("order_items", {
   productId: text("productId").references(() => products.id),
   quantity: integer("quantity").notNull(),
   price: doublePrecision("price").notNull(),
+  costPrice: doublePrecision("costPrice"),
   size: text("size"),
   color: text("color"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
@@ -550,5 +551,33 @@ export const orderTimelineEventsRelations = relations(orderTimelineEvents, ({ on
   order: one(orders, {
     fields: [orderTimelineEvents.orderId],
     references: [orders.id],
+  }),
+}));
+
+export const expenseCategories = pgTable("expense_categories", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("createdAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
+});
+
+export const expenses = pgTable("expenses", {
+  id: text("id").primaryKey(),
+  amount: doublePrecision("amount").notNull(),
+  categoryId: text("categoryId").references(() => expenseCategories.id).notNull(),
+  date: timestamp("date", { precision: 3, mode: "string" }).defaultNow().notNull(),
+  note: text("note"),
+  createdAt: timestamp("createdAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
+});
+
+export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
+  expenses: many(expenses),
+}));
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  category: one(expenseCategories, {
+    fields: [expenses.categoryId],
+    references: [expenseCategories.id],
   }),
 }));

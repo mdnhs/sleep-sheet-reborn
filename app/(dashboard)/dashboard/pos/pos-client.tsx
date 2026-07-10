@@ -35,6 +35,7 @@ interface CartItem {
   color: string | null
   image: string
   stock: number
+  costPrice?: number
 }
 
 interface Category {
@@ -90,6 +91,7 @@ export default function PosClientPage() {
   const [customerPhone, setCustomerPhone] = useState("")
   const [reference, setReference] = useState("")
   const [note, setNote] = useState("")
+  const [shippingType, setShippingType] = useState<"showroom" | "online">("online")
   const [paymentMethod, setPaymentMethod_] = useState("COD")
   const setPaymentMethod = (v: string) => { setPaymentMethod_(v) }
   const [isCheckingOut, setIsCheckingOut] = useState(false)
@@ -152,12 +154,12 @@ export default function PosClientPage() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
-  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string) => {
+  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number) => {
     setCart(prev => {
       const price = variant?.price ?? product.price
       const color = variant?.name || null
       const existing = prev.find(
-        i => i.productId === product.id && i.color === color && i.size === (size || null)
+        i => i.productId === product.id && i.color === color && i.size === (size || null) && i.costPrice === costPrice
       )
 
       if (existing) {
@@ -166,7 +168,7 @@ export default function PosClientPage() {
           return prev
         }
         return prev.map(i =>
-          i.productId === product.id && i.color === color && i.size === (size || null)
+          i.productId === product.id && i.color === color && i.size === (size || null) && i.costPrice === costPrice
             ? { ...i, quantity: i.quantity + 1 }
             : i
         )
@@ -181,6 +183,7 @@ export default function PosClientPage() {
         color,
         image: product.images?.[0] || "",
         stock: product.stock,
+        costPrice,
       }]
     })
   }
@@ -225,11 +228,13 @@ export default function PosClientPage() {
           customerPhone: customerPhone.trim() || undefined,
           reference: reference.trim() || undefined,
           note: note.trim() || undefined,
+          shippingType,
           paymentMethod,
           items: cart.map(i => ({
             productId: i.productId,
             quantity: i.quantity,
             price: i.price,
+            costPrice: i.costPrice,
             size: i.size || undefined,
             color: i.color || undefined,
           })),
@@ -248,6 +253,9 @@ export default function PosClientPage() {
       setCart([])
       setCustomerName("")
       setCustomerPhone("")
+      setReference("")
+      setNote("")
+      setShippingType("online")
       toast.success("Order placed successfully!")
     } catch (error) {
       toast.error("Failed to place order")
@@ -549,6 +557,25 @@ export default function PosClientPage() {
             </div>
 
             <div className="flex gap-2">
+              <Button
+                variant={shippingType === "online" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setShippingType("online")}
+              >
+                Online
+              </Button>
+              <Button
+                variant={shippingType === "showroom" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setShippingType("showroom")}
+              >
+                Showroom
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
               {enabledMethods.map(m => (
                 <Button
                   key={m.value}
@@ -598,13 +625,14 @@ function ProductCard({
   onAdd,
 }: {
   product: POSProduct
-  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string) => void
+  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number) => void
 }) {
   const { formatAmount } = useCurrency()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "")
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || product.colors?.[0]?.name || "")
   const [quantity, setQuantity] = useState(1)
+  const [costPrice, setCostPrice] = useState("")
 
   const hasColors = product.colors && product.colors.length > 0
   const hasSizes = product.sizes && product.sizes.length > 0
@@ -618,21 +646,19 @@ function ProductCard({
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) { toast.error("Please select a size"); return }
     if (hasColors && !selectedColor) { toast.error("Please select a variant"); return }
+    if (isDrawerOpen && costPrice !== "" && isNaN(Number(costPrice))) { toast.error("Bought price must be a number"); return }
     const variant = currentVariant || undefined
     const size = hasSizes ? selectedSize : undefined
-    onAdd(product, variant, size)
+    const parsedCostPrice = costPrice !== "" ? Number(costPrice) : undefined
+    onAdd(product, variant, size, parsedCostPrice)
     setIsDrawerOpen(false)
+    setCostPrice("")
   }
 
   const handleActionClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (hasVariants) {
-      setIsDrawerOpen(true)
-    } else {
-      onAdd(product, undefined, undefined)
-      toast.success("Added to cart")
-    }
+    setIsDrawerOpen(true)
   }
 
   const updateQuantity = (e: React.MouseEvent, delta: number) => {
@@ -766,6 +792,16 @@ function ProductCard({
                 </div>
               </div>
             )}
+            
+            <div className="flex flex-col gap-1 mt-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Bought Price (Cost)</span>
+              <Input 
+                type="number"
+                placeholder="0.00"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+              />
+            </div>
           </div>
           <div className="flex gap-2 w-full mt-4">
             <button

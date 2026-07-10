@@ -8871,6 +8871,7 @@ export namespace Prisma {
     label: string | null
     value: string | null
     parentId: string | null
+    image: string | null
     createdAt: Date | null
   }
 
@@ -8879,6 +8880,7 @@ export namespace Prisma {
     label: string | null
     value: string | null
     parentId: string | null
+    image: string | null
     createdAt: Date | null
   }
 
@@ -8887,6 +8889,7 @@ export namespace Prisma {
     label: number
     value: number
     parentId: number
+    image: number
     createdAt: number
     _all: number
   }
@@ -8897,6 +8900,7 @@ export namespace Prisma {
     label?: true
     value?: true
     parentId?: true
+    image?: true
     createdAt?: true
   }
 
@@ -8905,6 +8909,7 @@ export namespace Prisma {
     label?: true
     value?: true
     parentId?: true
+    image?: true
     createdAt?: true
   }
 
@@ -8913,6 +8918,7 @@ export namespace Prisma {
     label?: true
     value?: true
     parentId?: true
+    image?: true
     createdAt?: true
     _all?: true
   }
@@ -8994,6 +9000,7 @@ export namespace Prisma {
     label: string
     value: string
     parentId: string | null
+    image: string | null
     createdAt: Date
     _count: CategoryCountAggregateOutputType | null
     _min: CategoryMinAggregateOutputType | null
@@ -9019,6 +9026,7 @@ export namespace Prisma {
     label?: boolean
     value?: boolean
     parentId?: boolean
+    image?: boolean
     createdAt?: boolean
     parent?: boolean | Category$parentArgs<ExtArgs>
     children?: boolean | Category$childrenArgs<ExtArgs>
@@ -9031,6 +9039,7 @@ export namespace Prisma {
     label?: boolean
     value?: boolean
     parentId?: boolean
+    image?: boolean
     createdAt?: boolean
     parent?: boolean | Category$parentArgs<ExtArgs>
   }, ExtArgs["result"]["category"]>
@@ -9040,6 +9049,7 @@ export namespace Prisma {
     label?: boolean
     value?: boolean
     parentId?: boolean
+    image?: boolean
     createdAt?: boolean
     parent?: boolean | Category$parentArgs<ExtArgs>
   }, ExtArgs["result"]["category"]>
@@ -9049,10 +9059,11 @@ export namespace Prisma {
     label?: boolean
     value?: boolean
     parentId?: boolean
+    image?: boolean
     createdAt?: boolean
   }
 
-  export type CategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "label" | "value" | "parentId" | "createdAt", ExtArgs["result"]["category"]>
+  export type CategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "label" | "value" | "parentId" | "image" | "createdAt", ExtArgs["result"]["category"]>
   export type CategoryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     parent?: boolean | Category$parentArgs<ExtArgs>
     children?: boolean | Category$childrenArgs<ExtArgs>
@@ -9078,6 +9089,7 @@ export namespace Prisma {
       label: string
       value: string
       parentId: string | null
+      image: string | null
       createdAt: Date
     }, ExtArgs["result"]["category"]>
     composites: {}
@@ -9509,6 +9521,7 @@ export namespace Prisma {
     readonly label: FieldRef<"Category", 'String'>
     readonly value: FieldRef<"Category", 'String'>
     readonly parentId: FieldRef<"Category", 'String'>
+    readonly image: FieldRef<"Category", 'String'>
     readonly createdAt: FieldRef<"Category", 'DateTime'>
   }
     
@@ -12544,11 +12557,13 @@ export namespace Prisma {
   export type OrderItemAvgAggregateOutputType = {
     quantity: number | null
     price: number | null
+    costPrice: number | null
   }
 
   export type OrderItemSumAggregateOutputType = {
     quantity: number | null
     price: number | null
+    costPrice: number | null
   }
 
   export type OrderItemMinAggregateOutputType = {
@@ -12557,6 +12572,7 @@ export namespace Prisma {
     productId: string | null
     quantity: number | null
     price: number | null
+    costPrice: number | null
     size: string | null
     color: string | null
     createdAt: Date | null
@@ -12568,6 +12584,7 @@ export namespace Prisma {
     productId: string | null
     quantity: number | null
     price: number | null
+    costPrice: number | null
     size: string | null
     color: string | null
     createdAt: Date | null
@@ -12579,6 +12596,7 @@ export namespace Prisma {
     productId: number
     quantity: number
     price: number
+    costPrice: number
     size: number
     color: number
     createdAt: number
@@ -12589,11 +12607,13 @@ export namespace Prisma {
   export type OrderItemAvgAggregateInputType = {
     quantity?: true
     price?: true
+    costPrice?: true
   }
 
   export type OrderItemSumAggregateInputType = {
     quantity?: true
     price?: true
+    costPrice?: true
   }
 
   export type OrderItemMinAggregateInputType = {
@@ -12602,6 +12622,7 @@ export namespace Prisma {
     productId?: true
     quantity?: true
     price?: true
+    costPrice?: true
     size?: true
     color?: true
     createdAt?: true
@@ -12613,6 +12634,7 @@ export namespace Prisma {
     productId?: true
     quantity?: true
     price?: true
+    costPrice?: true
     size?: true
     color?: true
     createdAt?: true
@@ -12624,6 +12646,7 @@ export namespace Prisma {
     productId?: true
     quantity?: true
     price?: true
+    costPrice?: true
     size?: true
     color?: true
     createdAt?: true
@@ -12722,6 +12745,7 @@ export namespace Prisma {
     productId: string | null
     quantity: number
     price: number
+    costPrice: number | null
     size: string | null
     color: string | null
     createdAt: Date
@@ -12752,6 +12776,7 @@ export namespace Prisma {
     productId?: boolean
     quantity?: boolean
     price?: boolean
+    costPrice?: boolean
     size?: boolean
     color?: boolean
     createdAt?: boolean
@@ -12765,6 +12790,7 @@ export namespace Prisma {
     productId?: boolean
     quantity?: boolean
     price?: boolean
+    costPrice?: boolean
     size?: boolean
     color?: boolean
     createdAt?: boolean
@@ -12778,6 +12804,7 @@ export namespace Prisma {
     productId?: boolean
     quantity?: boolean
     price?: boolean
+    costPrice?: boolean
     size?: boolean
     color?: boolean
     createdAt?: boolean
@@ -12791,12 +12818,13 @@ export namespace Prisma {
     productId?: boolean
     quantity?: boolean
     price?: boolean
+    costPrice?: boolean
     size?: boolean
     color?: boolean
     createdAt?: boolean
   }
 
-  export type OrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderId" | "productId" | "quantity" | "price" | "size" | "color" | "createdAt", ExtArgs["result"]["orderItem"]>
+  export type OrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderId" | "productId" | "quantity" | "price" | "costPrice" | "size" | "color" | "createdAt", ExtArgs["result"]["orderItem"]>
   export type OrderItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     order?: boolean | OrderDefaultArgs<ExtArgs>
     product?: boolean | OrderItem$productArgs<ExtArgs>
@@ -12822,6 +12850,7 @@ export namespace Prisma {
       productId: string | null
       quantity: number
       price: number
+      costPrice: number | null
       size: string | null
       color: string | null
       createdAt: Date
@@ -13255,6 +13284,7 @@ export namespace Prisma {
     readonly productId: FieldRef<"OrderItem", 'String'>
     readonly quantity: FieldRef<"OrderItem", 'Int'>
     readonly price: FieldRef<"OrderItem", 'Float'>
+    readonly costPrice: FieldRef<"OrderItem", 'Float'>
     readonly size: FieldRef<"OrderItem", 'String'>
     readonly color: FieldRef<"OrderItem", 'String'>
     readonly createdAt: FieldRef<"OrderItem", 'DateTime'>
@@ -23586,6 +23616,7 @@ export namespace Prisma {
     label: 'label',
     value: 'value',
     parentId: 'parentId',
+    image: 'image',
     createdAt: 'createdAt'
   };
 
@@ -23638,6 +23669,7 @@ export namespace Prisma {
     productId: 'productId',
     quantity: 'quantity',
     price: 'price',
+    costPrice: 'costPrice',
     size: 'size',
     color: 'color',
     createdAt: 'createdAt'
@@ -24437,6 +24469,7 @@ export namespace Prisma {
     label?: StringFilter<"Category"> | string
     value?: StringFilter<"Category"> | string
     parentId?: StringNullableFilter<"Category"> | string | null
+    image?: StringNullableFilter<"Category"> | string | null
     createdAt?: DateTimeFilter<"Category"> | Date | string
     parent?: XOR<CategoryNullableScalarRelationFilter, CategoryWhereInput> | null
     children?: CategoryListRelationFilter
@@ -24448,6 +24481,7 @@ export namespace Prisma {
     label?: SortOrder
     value?: SortOrder
     parentId?: SortOrderInput | SortOrder
+    image?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     parent?: CategoryOrderByWithRelationInput
     children?: CategoryOrderByRelationAggregateInput
@@ -24462,6 +24496,7 @@ export namespace Prisma {
     NOT?: CategoryWhereInput | CategoryWhereInput[]
     label?: StringFilter<"Category"> | string
     parentId?: StringNullableFilter<"Category"> | string | null
+    image?: StringNullableFilter<"Category"> | string | null
     createdAt?: DateTimeFilter<"Category"> | Date | string
     parent?: XOR<CategoryNullableScalarRelationFilter, CategoryWhereInput> | null
     children?: CategoryListRelationFilter
@@ -24473,6 +24508,7 @@ export namespace Prisma {
     label?: SortOrder
     value?: SortOrder
     parentId?: SortOrderInput | SortOrder
+    image?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: CategoryCountOrderByAggregateInput
     _max?: CategoryMaxOrderByAggregateInput
@@ -24487,6 +24523,7 @@ export namespace Prisma {
     label?: StringWithAggregatesFilter<"Category"> | string
     value?: StringWithAggregatesFilter<"Category"> | string
     parentId?: StringNullableWithAggregatesFilter<"Category"> | string | null
+    image?: StringNullableWithAggregatesFilter<"Category"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Category"> | Date | string
   }
 
@@ -24713,6 +24750,7 @@ export namespace Prisma {
     productId?: StringNullableFilter<"OrderItem"> | string | null
     quantity?: IntFilter<"OrderItem"> | number
     price?: FloatFilter<"OrderItem"> | number
+    costPrice?: FloatNullableFilter<"OrderItem"> | number | null
     size?: StringNullableFilter<"OrderItem"> | string | null
     color?: StringNullableFilter<"OrderItem"> | string | null
     createdAt?: DateTimeFilter<"OrderItem"> | Date | string
@@ -24726,6 +24764,7 @@ export namespace Prisma {
     productId?: SortOrderInput | SortOrder
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrderInput | SortOrder
     size?: SortOrderInput | SortOrder
     color?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -24742,6 +24781,7 @@ export namespace Prisma {
     productId?: StringNullableFilter<"OrderItem"> | string | null
     quantity?: IntFilter<"OrderItem"> | number
     price?: FloatFilter<"OrderItem"> | number
+    costPrice?: FloatNullableFilter<"OrderItem"> | number | null
     size?: StringNullableFilter<"OrderItem"> | string | null
     color?: StringNullableFilter<"OrderItem"> | string | null
     createdAt?: DateTimeFilter<"OrderItem"> | Date | string
@@ -24755,6 +24795,7 @@ export namespace Prisma {
     productId?: SortOrderInput | SortOrder
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrderInput | SortOrder
     size?: SortOrderInput | SortOrder
     color?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -24774,6 +24815,7 @@ export namespace Prisma {
     productId?: StringNullableWithAggregatesFilter<"OrderItem"> | string | null
     quantity?: IntWithAggregatesFilter<"OrderItem"> | number
     price?: FloatWithAggregatesFilter<"OrderItem"> | number
+    costPrice?: FloatNullableWithAggregatesFilter<"OrderItem"> | number | null
     size?: StringNullableWithAggregatesFilter<"OrderItem"> | string | null
     color?: StringNullableWithAggregatesFilter<"OrderItem"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"OrderItem"> | Date | string
@@ -25849,6 +25891,7 @@ export namespace Prisma {
     id: string
     label: string
     value: string
+    image?: string | null
     createdAt?: Date | string
     parent?: CategoryCreateNestedOneWithoutChildrenInput
     children?: CategoryCreateNestedManyWithoutParentInput
@@ -25860,6 +25903,7 @@ export namespace Prisma {
     label: string
     value: string
     parentId?: string | null
+    image?: string | null
     createdAt?: Date | string
     children?: CategoryUncheckedCreateNestedManyWithoutParentInput
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
@@ -25869,6 +25913,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     parent?: CategoryUpdateOneWithoutChildrenNestedInput
     children?: CategoryUpdateManyWithoutParentNestedInput
@@ -25880,6 +25925,7 @@ export namespace Prisma {
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     children?: CategoryUncheckedUpdateManyWithoutParentNestedInput
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
@@ -25890,6 +25936,7 @@ export namespace Prisma {
     label: string
     value: string
     parentId?: string | null
+    image?: string | null
     createdAt?: Date | string
   }
 
@@ -25897,6 +25944,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -25905,6 +25953,7 @@ export namespace Prisma {
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -26159,6 +26208,7 @@ export namespace Prisma {
     id?: string
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -26172,6 +26222,7 @@ export namespace Prisma {
     productId?: string | null
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -26181,6 +26232,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26194,6 +26246,7 @@ export namespace Prisma {
     productId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26205,6 +26258,7 @@ export namespace Prisma {
     productId?: string | null
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -26214,6 +26268,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26225,6 +26280,7 @@ export namespace Prisma {
     productId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -27428,6 +27484,7 @@ export namespace Prisma {
     label?: SortOrder
     value?: SortOrder
     parentId?: SortOrder
+    image?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -27436,6 +27493,7 @@ export namespace Prisma {
     label?: SortOrder
     value?: SortOrder
     parentId?: SortOrder
+    image?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -27444,6 +27502,7 @@ export namespace Prisma {
     label?: SortOrder
     value?: SortOrder
     parentId?: SortOrder
+    image?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -27644,6 +27703,17 @@ export namespace Prisma {
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type ProductNullableScalarRelationFilter = {
     is?: ProductWhereInput | null
     isNot?: ProductWhereInput | null
@@ -27655,6 +27725,7 @@ export namespace Prisma {
     productId?: SortOrder
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrder
     size?: SortOrder
     color?: SortOrder
     createdAt?: SortOrder
@@ -27663,6 +27734,7 @@ export namespace Prisma {
   export type OrderItemAvgOrderByAggregateInput = {
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrder
   }
 
   export type OrderItemMaxOrderByAggregateInput = {
@@ -27671,6 +27743,7 @@ export namespace Prisma {
     productId?: SortOrder
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrder
     size?: SortOrder
     color?: SortOrder
     createdAt?: SortOrder
@@ -27682,6 +27755,7 @@ export namespace Prisma {
     productId?: SortOrder
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrder
     size?: SortOrder
     color?: SortOrder
     createdAt?: SortOrder
@@ -27690,6 +27764,23 @@ export namespace Prisma {
   export type OrderItemSumOrderByAggregateInput = {
     quantity?: SortOrder
     price?: SortOrder
+    costPrice?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type PaymentCountOrderByAggregateInput = {
@@ -28927,6 +29018,14 @@ export namespace Prisma {
     connect?: ProductWhereUniqueInput
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type OrderUpdateOneRequiredWithoutItemsNestedInput = {
     create?: XOR<OrderCreateWithoutItemsInput, OrderUncheckedCreateWithoutItemsInput>
     connectOrCreate?: OrderCreateOrConnectWithoutItemsInput
@@ -29491,6 +29590,33 @@ export namespace Prisma {
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
   }
 
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumTestimonialUserRoleFilter<$PrismaModel = never> = {
     equals?: $Enums.TestimonialUserRole | EnumTestimonialUserRoleFieldRefInput<$PrismaModel>
     in?: $Enums.TestimonialUserRole[] | ListEnumTestimonialUserRoleFieldRefInput<$PrismaModel>
@@ -29857,6 +29983,7 @@ export namespace Prisma {
     id: string
     label: string
     value: string
+    image?: string | null
     createdAt?: Date | string
     parent?: CategoryCreateNestedOneWithoutChildrenInput
     children?: CategoryCreateNestedManyWithoutParentInput
@@ -29867,6 +29994,7 @@ export namespace Prisma {
     label: string
     value: string
     parentId?: string | null
+    image?: string | null
     createdAt?: Date | string
     children?: CategoryUncheckedCreateNestedManyWithoutParentInput
   }
@@ -29930,6 +30058,7 @@ export namespace Prisma {
     id?: string
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -29941,6 +30070,7 @@ export namespace Prisma {
     orderId: string
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -30065,6 +30195,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     parent?: CategoryUpdateOneWithoutChildrenNestedInput
     children?: CategoryUpdateManyWithoutParentNestedInput
@@ -30075,6 +30206,7 @@ export namespace Prisma {
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     children?: CategoryUncheckedUpdateManyWithoutParentNestedInput
   }
@@ -30146,6 +30278,7 @@ export namespace Prisma {
     productId?: StringNullableFilter<"OrderItem"> | string | null
     quantity?: IntFilter<"OrderItem"> | number
     price?: FloatFilter<"OrderItem"> | number
+    costPrice?: FloatNullableFilter<"OrderItem"> | number | null
     size?: StringNullableFilter<"OrderItem"> | string | null
     color?: StringNullableFilter<"OrderItem"> | string | null
     createdAt?: DateTimeFilter<"OrderItem"> | Date | string
@@ -30695,6 +30828,7 @@ export namespace Prisma {
     id: string
     label: string
     value: string
+    image?: string | null
     createdAt?: Date | string
     parent?: CategoryCreateNestedOneWithoutChildrenInput
     products?: ProductCreateNestedManyWithoutCategoryInput
@@ -30705,6 +30839,7 @@ export namespace Prisma {
     label: string
     value: string
     parentId?: string | null
+    image?: string | null
     createdAt?: Date | string
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
   }
@@ -30718,6 +30853,7 @@ export namespace Prisma {
     id: string
     label: string
     value: string
+    image?: string | null
     createdAt?: Date | string
     children?: CategoryCreateNestedManyWithoutParentInput
     products?: ProductCreateNestedManyWithoutCategoryInput
@@ -30727,6 +30863,7 @@ export namespace Prisma {
     id: string
     label: string
     value: string
+    image?: string | null
     createdAt?: Date | string
     children?: CategoryUncheckedCreateNestedManyWithoutParentInput
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
@@ -30821,6 +30958,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     parent?: CategoryUpdateOneWithoutChildrenNestedInput
     products?: ProductUpdateManyWithoutCategoryNestedInput
@@ -30831,6 +30969,7 @@ export namespace Prisma {
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
   }
@@ -30859,6 +30998,7 @@ export namespace Prisma {
     label?: StringFilter<"Category"> | string
     value?: StringFilter<"Category"> | string
     parentId?: StringNullableFilter<"Category"> | string | null
+    image?: StringNullableFilter<"Category"> | string | null
     createdAt?: DateTimeFilter<"Category"> | Date | string
   }
 
@@ -31070,6 +31210,7 @@ export namespace Prisma {
     id?: string
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -31081,6 +31222,7 @@ export namespace Prisma {
     productId?: string | null
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -32678,6 +32820,7 @@ export namespace Prisma {
     orderId: string
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -32764,6 +32907,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32775,6 +32919,7 @@ export namespace Prisma {
     orderId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32785,6 +32930,7 @@ export namespace Prisma {
     orderId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32890,6 +33036,7 @@ export namespace Prisma {
     id: string
     label: string
     value: string
+    image?: string | null
     createdAt?: Date | string
   }
 
@@ -32918,6 +33065,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     children?: CategoryUpdateManyWithoutParentNestedInput
     products?: ProductUpdateManyWithoutCategoryNestedInput
@@ -32927,6 +33075,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     children?: CategoryUncheckedUpdateManyWithoutParentNestedInput
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
@@ -32936,6 +33085,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     label?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -33019,6 +33169,7 @@ export namespace Prisma {
     productId?: string | null
     quantity: number
     price: number
+    costPrice?: number | null
     size?: string | null
     color?: string | null
     createdAt?: Date | string
@@ -33035,6 +33186,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33046,6 +33198,7 @@ export namespace Prisma {
     productId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33056,6 +33209,7 @@ export namespace Prisma {
     productId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: FloatFieldUpdateOperationsInput | number
+    costPrice?: NullableFloatFieldUpdateOperationsInput | number | null
     size?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

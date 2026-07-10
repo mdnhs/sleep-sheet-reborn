@@ -8,7 +8,7 @@ import {
   getSteadfastBalance,
 } from "@/lib/steadfast";
 import { db } from "@/db";
-import { orders, orderTimelineEvents } from "@/db/schema";
+import { orders, orderTimelineEvents, orderItems } from "@/db/schema";
 import type { OrderStatus } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -56,6 +56,10 @@ const app = new Hono()
         orderId: z.string(),
         recipient_phone: z.string().min(11).max(11),
         note: z.string().optional(),
+        costPrices: z.array(z.object({
+          orderItemId: z.string(),
+          costPrice: z.number(),
+        })).optional(),
       })
     ),
     async (c) => {
@@ -64,7 +68,7 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const { orderId, recipient_phone, note } = c.req.valid("json");
+      const { orderId, recipient_phone, note, costPrices } = c.req.valid("json");
 
       const order = await db.query.orders.findFirst({
         where: eq(orders.id, orderId),
@@ -72,6 +76,14 @@ const app = new Hono()
       });
 
       if (!order) return c.json({ error: "Order not found" }, 404);
+
+      if (costPrices && costPrices.length > 0) {
+        for (const item of costPrices) {
+          await db.update(orderItems)
+            .set({ costPrice: item.costPrice })
+            .where(eq(orderItems.id, item.orderItemId));
+        }
+      }
 
       const address = [
         order.shippingAddress,

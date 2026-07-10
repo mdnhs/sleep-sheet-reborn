@@ -1,5 +1,6 @@
 import Categories from "@/components/home/categories";
 import FeaturedProduct from "@/components/home/featured-product";
+import SubcategoryProducts from "@/components/home/subcategory-products";
 import Hero from "@/components/home/hero";
 import NarrowBanner from "@/components/home/narrow-banner";
 import Newsletter from "@/components/home/newsletter";
@@ -26,6 +27,7 @@ async function Page() {
       <Categories />
       <NarrowBanner />
       <FeaturedProduct />
+      <SubcategoryProducts />
       <Testimonials />
       <Newsletter />
     </main>

@@ -22,7 +22,9 @@ import {
   IconLayoutDashboard,
   IconPackage,
   IconSettings,
-  IconShoppingCart
+  IconShoppingCart,
+  IconChartBar,
+  IconReceipt2
 } from "@tabler/icons-react"
 
 const data = {
@@ -72,6 +74,18 @@ const data = {
       title: "Blog",
       url: "/dashboard/blog",
       icon: <IconArticle />,
+      items: [],
+    },
+    {
+      title: "Reports",
+      url: "/dashboard/reports",
+      icon: <IconChartBar />,
+      items: [],
+    },
+    {
+      title: "Expenses",
+      url: "/dashboard/expenses",
+      icon: <IconReceipt2 />,
       items: [],
     },
     {

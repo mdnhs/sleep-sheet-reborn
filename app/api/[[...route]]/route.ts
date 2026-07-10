@@ -16,6 +16,8 @@ import steadfast from "@/features/steadfast/server/route";
 import settings from "@/features/settings/server/route";
 import blog from "@/features/blog/server/route";
 import pos from "@/features/pos/server/route";
+import reports from "@/features/reports/server/route";
+import expenses from "@/features/expenses/server/route";
 const app = new Hono().basePath("/api");
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -36,7 +38,8 @@ const routes =app
 .route("/settings",settings)
 .route("/blog",blog)
 .route("/pos",pos)
-
+.route("/reports",reports)
+.route("/expenses",expenses)
 
 export const GET = handle(app)
 export const POST = handle(app)

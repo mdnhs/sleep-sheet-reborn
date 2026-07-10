@@ -62,7 +62,7 @@ const productsData: DemoProduct[] = [
     description: "Ultra-soft microfibre comforter designed to keep you cozy in winter and cool in summer.",
     price: 3490,
     stock: 120,
-    variants: ["White", "Grey", "Navy"],
+    variants: [{ name: "White", price: null }, { name: "Grey", price: null }, { name: "Navy", price: null }],
     tags: ["comforter", "all-season", "featured"],
     images: ["https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1200"],
     sizes: ["Queen", "King"],
@@ -80,7 +80,7 @@ const productsData: DemoProduct[] = [
     description: "Experience hotel-like luxury with our 400 thread count Egyptian cotton bedsheet set.",
     price: 2290,
     stock: 85,
-    variants: ["Ivory", "Sage", "Slate"],
+    variants: [{ name: "Ivory", price: null }, { name: "Sage", price: null }, { name: "Slate", price: null }],
     tags: ["bedsheet", "cotton", "luxury"],
     images: ["https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1200"],
     sizes: ["Twin", "Queen", "King"],
@@ -96,7 +96,7 @@ const productsData: DemoProduct[] = [
     description: "Thick and incredibly warm fleece blanket for those chilly winter nights.",
     price: 1890,
     stock: 200,
-    variants: ["Charcoal", "Maroon"],
+    variants: [{ name: "Charcoal", price: null }, { name: "Maroon", price: null }],
     tags: ["blanket", "winter", "fleece"],
     images: ["https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=1200"],
     sizes: ["Single", "Double"],
@@ -112,7 +112,7 @@ const productsData: DemoProduct[] = [
     description: "Protect your hair and skin with our 100% pure mulberry silk pillow covers.",
     price: 1490,
     stock: 45,
-    variants: ["Pearl", "Champagne"],
+    variants: [{ name: "Pearl", price: null }, { name: "Champagne", price: null }],
     tags: ["pillow", "silk", "beauty"],
     images: ["https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200"],
     sizes: ["Standard", "King"],
@@ -249,7 +249,7 @@ async function seedStoreData() {
 
   for (const [key, value] of Object.entries(settings)) {
     await db.insert(siteSettings)
-      .values({ key, value })
+      .values({ key, value, updatedAt: new Date() })
       .onConflictDoUpdate({
         target: siteSettings.key,
         set: { value, updatedAt: new Date() }

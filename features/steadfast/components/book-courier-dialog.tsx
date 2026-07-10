@@ -32,13 +32,22 @@ export function BookCourierDialog({
     (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "").slice(0, 11)
   );
   const [note, setNote] = useState("");
+  const [costs, setCosts] = useState<Record<string, string>>({});
   const { mutate, isPending } = useBookCourier();
   const { formatAmount } = useCurrency();
 
+  const handleCostChange = (itemId: string, val: string) => {
+    setCosts((prev) => ({ ...prev, [itemId]: val }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const costPrices = order.items.map((item) => ({
+      orderItemId: item.id,
+      costPrice: costs[item.id] ? parseFloat(costs[item.id]) : 0,
+    }));
     mutate(
-      { orderId: order.id, recipient_phone: phone, note: note || undefined },
+      { orderId: order.id, recipient_phone: phone, note: note || undefined, costPrices },
       { onSuccess: () => onOpenChange(false) }
     );
   };
@@ -55,7 +64,7 @@ export function BookCourierDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5 text-primary" />
@@ -95,6 +104,32 @@ export function BookCourierDialog({
         <Separator />
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-3">
+            <Label>Enter Bought Prices (Cost) for each item</Label>
+            {order.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-3 text-sm border p-2 rounded-md">
+                <div className="flex-1 truncate">
+                  <span className="font-medium">{item.product.name}</span>
+                  <div className="text-muted-foreground text-xs">Qty: {item.quantity} | Sold: {formatAmount(item.price)}</div>
+                </div>
+                <div className="w-24 shrink-0">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Cost"
+                    value={costs[item.id] || ""}
+                    onChange={(e) => handleCostChange(item.id, e.target.value)}
+                    disabled={item.costPrice !== null && item.costPrice !== undefined}
+                    required
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Separator />
+
           <div className="space-y-1.5">
             <Label htmlFor="phone">
               Recipient Phone{" "}
@@ -140,7 +175,7 @@ export function BookCourierDialog({
               className="gap-2"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Book Courier
+              Confirm Booking
             </Button>
           </div>
         </form>

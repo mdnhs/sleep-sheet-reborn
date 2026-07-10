@@ -28,6 +28,7 @@ import { ConfirmDialog } from "@/components/conform-dialouge";
 import { useOrders } from "@/features/order/api/use-order";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useSteadfastBalance, useSyncOrderStatus, useBookCourier } from "@/features/steadfast/api/use-steadfast";
+import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { formatDate } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
@@ -89,6 +90,7 @@ export default function OrdersPage() {
 
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [isBulkBooking, setIsBulkBooking] = useState(false);
+  const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
   const bookCourier = useBookCourier();
 
   const { data: rawOrders, isLoading } = useOrders(search);
@@ -192,18 +194,29 @@ export default function OrdersPage() {
 
   const selectedOrders = filtered?.filter((_, index) => rowSelection[index.toString()]) || [];
 
-  const handleBulkBook = async () => {
+  const handleBulkBook = () => {
     if (selectedOrders.length === 0) return;
+    setIsBulkBookDialogOpen(true);
+  };
+
+  const handleConfirmBulkBook = async (costPrices: { orderItemId: string; costPrice: number }[]) => {
     setIsBulkBooking(true);
+    setIsBulkBookDialogOpen(false);
     try {
       let successCount = 0;
       for (const order of selectedOrders) {
         if (order.trackingNumber) continue;
         const phone = (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "").slice(0, 11);
         if (phone.length === 11) {
+          
+          // filter the costPrices for this specific order
+          const orderItemIds = order.items.map((i: any) => i.id);
+          const orderCostPrices = costPrices.filter(c => orderItemIds.includes(c.orderItemId));
+
           await bookCourier.mutateAsync({
             orderId: order.id,
             recipient_phone: phone,
+            costPrices: orderCostPrices.length > 0 ? orderCostPrices : undefined,
           });
           successCount++;
         }
@@ -699,6 +712,14 @@ export default function OrdersPage() {
         onConfirm={handleBulkDelete}
         title="Delete Selected Orders"
         description={`Are you sure you want to delete ${selectedOrders.length} selected orders? This action cannot be undone.`}
+      />
+      
+      <BulkBookCourierDialog 
+        open={isBulkBookDialogOpen}
+        onOpenChange={setIsBulkBookDialogOpen}
+        orders={selectedOrders}
+        onConfirm={handleConfirmBulkBook}
+        isBooking={isBulkBooking}
       />
     </div>
   );
