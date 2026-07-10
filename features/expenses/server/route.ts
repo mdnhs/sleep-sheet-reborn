@@ -87,7 +87,7 @@ const app = new Hono()
             amount,
             categoryId,
             note: note || null,
-            date: date ? new Date(date).toISOString() : new Date().toISOString(),
+            date: date ? new Date(date) : new Date(),
           })
           .returning();
         return c.json({ data: expense });

@@ -15,6 +15,13 @@
       "when": 1782148719567,
       "tag": "0001_marvelous_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783702957467,
+      "tag": "0002_workable_logan",
+      "breakpoints": true
     }
   ]
 }

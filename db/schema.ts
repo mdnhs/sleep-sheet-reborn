@@ -557,18 +557,18 @@ export const orderTimelineEventsRelations = relations(orderTimelineEvents, ({ on
 export const expenseCategories = pgTable("expense_categories", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
-  createdAt: timestamp("createdAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
 });
 
 export const expenses = pgTable("expenses", {
   id: text("id").primaryKey(),
   amount: doublePrecision("amount").notNull(),
   categoryId: text("categoryId").references(() => expenseCategories.id).notNull(),
-  date: timestamp("date", { precision: 3, mode: "string" }).defaultNow().notNull(),
+  date: timestamp("date", { precision: 3 }).defaultNow().notNull(),
   note: text("note"),
-  createdAt: timestamp("createdAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { precision: 3, mode: "string" }).defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
 });
 
 export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
