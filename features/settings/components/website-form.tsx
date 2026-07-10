@@ -196,7 +196,7 @@ export function WebsiteForm() {
               <FormField control={form.control} name="hero_cta_link" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{FIELD_LABELS.hero_cta_link}</FormLabel>
-                  <FormControl><Input placeholder="/products" {...field} /></FormControl>
+                  <FormControl><Input placeholder="/shop" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

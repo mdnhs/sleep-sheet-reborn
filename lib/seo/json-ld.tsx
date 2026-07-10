@@ -35,7 +35,7 @@ export function organizationSchema() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${seoConfig.siteUrl}/products?search={search_term_string}`,
+        urlTemplate: `${seoConfig.siteUrl}/shop?search={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
@@ -52,7 +52,7 @@ export function websiteSchema() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${seoConfig.siteUrl}/products?search={search_term_string}`,
+        urlTemplate: `${seoConfig.siteUrl}/shop?search={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

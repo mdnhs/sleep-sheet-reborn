@@ -12,21 +12,21 @@ const SLIDES = [
     image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1600&auto=format&fit=crop",
     title: "Premium Comfort",
     heading: "Luxury Comforters",
-    link: "/products?category=Comforters",
+    link: "/shop?category=Comforters",
   },
   {
     id: 2,
     image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1600&auto=format&fit=crop",
     title: "Soft & Breathable",
     heading: "Bedsheet Collection",
-    link: "/products?category=Bedsheets",
+    link: "/shop?category=Bedsheets",
   },
   {
     id: 3,
     image: "https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=1600&auto=format&fit=crop",
     title: "Cozy Nights",
     heading: "Winter Blankets",
-    link: "/products?category=Blankets",
+    link: "/shop?category=Blankets",
   },
 ];
 
@@ -135,7 +135,7 @@ function Hero() {
           {/* Right: Stacked Banners */}
           <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
             {/* Top Right Card */}
-            <Link href="/products?category=Comforters" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
+            <Link href="/shop?category=Comforters" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
               <Image
                 src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop"
                 alt="Comforters"
@@ -159,7 +159,7 @@ function Hero() {
             </Link>
 
             {/* Bottom Right Card */}
-            <Link href="/products?category=Bedsheets" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
+            <Link href="/shop?category=Bedsheets" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
               <Image
                 src="https://images.unsplash.com/photo-1616627547584-bf28cee262db?q=80&w=800&auto=format&fit=crop"
                 alt="Bedsheets"

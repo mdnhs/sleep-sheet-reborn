@@ -303,7 +303,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
               <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
                 <Button
                   nativeButton={false}
-                  render={<Link href="/products" />}
+                  render={<Link href="/shop" />}
                   size="sm"
                   className="w-full gap-2 sm:w-auto"
                 >
@@ -470,7 +470,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                     cta={
                       <Button
                         nativeButton={false}
-                        render={<Link href="/products" />}
+                        render={<Link href="/shop" />}
                       >
                         Start shopping
                       </Button>
@@ -532,7 +532,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                                 nativeButton={false}
                                 variant="outline"
                                 render={
-                                  <Link href={`/products/${item.product.id}`} />
+                                  <Link href={`/shop/${item.product.id}`} />
                                 }
                                 className="w-full sm:w-auto"
                               >

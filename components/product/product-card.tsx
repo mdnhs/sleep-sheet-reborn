@@ -139,7 +139,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
     <div className="group relative w-full h-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 p-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       
       {/* Product Image */}
-      <Link href={`/products/${product.id}`} className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0" onClick={(e) => {
+      <Link href={`/shop/${product.id}`} className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0" onClick={(e) => {
         if (isDrawerOpen) e.preventDefault();
       }}>
         <Image
@@ -179,7 +179,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       <div className="flex flex-col px-1 flex-1 relative z-10 bg-white dark:bg-slate-900">
         
         {/* Title */}
-        <Link href={`/products/${product.id}`} className="flex-1" onClick={(e) => { if (isDrawerOpen) e.preventDefault(); }}>
+        <Link href={`/shop/${product.id}`} className="flex-1" onClick={(e) => { if (isDrawerOpen) e.preventDefault(); }}>
           <h3 className="font-medium text-sm sm:text-[15px] text-slate-800 dark:text-slate-200 leading-snug line-clamp-2 mb-2 sm:mb-3">
             {product.name}
           </h3>

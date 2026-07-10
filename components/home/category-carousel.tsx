@@ -68,7 +68,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue }: CategoryCarouselProp
             </h2>
           </div>
           <Link
-            href={`/products?category=${categoryLabel}`}
+            href={`/shop?category=${categoryLabel}`}
             className="group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
           >
             <span className="hidden sm:inline">View All</span>
@@ -86,7 +86,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue }: CategoryCarouselProp
           <CarouselContent className="-ml-4 md:-ml-6">
             {products?.data.map((product, index) => (
               <CarouselItem key={product.id} className="pl-4 md:pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                <div className="h-full">
+                <div className="h-full py-4">
                   <ProductCard product={product as any} priority={index < 2} />
                 </div>
               </CarouselItem>

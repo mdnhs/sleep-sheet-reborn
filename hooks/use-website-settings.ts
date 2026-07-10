@@ -13,7 +13,7 @@ export function useWebsiteSettings() {
     heroTitle: settings?.hero_title || "Premium Comfort",
     heroSubtitle: settings?.hero_subtitle || "Luxury Comforters",
     heroCtaText: settings?.hero_cta_text || "Shop Now",
-    heroCtaLink: settings?.hero_cta_link || "/products",
+    heroCtaLink: settings?.hero_cta_link || "/shop",
     heroBgImage: settings?.hero_bg_image || "",
     features: [
       {

@@ -7,7 +7,7 @@ const NarrowBanner = () => {
     <section className="py-6 bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4">
         <Link
-          href="/products?category=combos"
+          href="/shop?category=combos"
           className="block relative overflow-hidden rounded-xl border border-orange-100 bg-orange-50/50 hover:bg-orange-50 transition-colors group"
         >
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 px-4 md:px-6 min-h-[50px] gap-2 sm:gap-4">

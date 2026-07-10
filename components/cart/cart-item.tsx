@@ -35,7 +35,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }: CartItemProps) => {
   return (
     <div className="flex py-4 border-b last:border-0 p-4">
       <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border">
-        <Link href={`/products/${item.productId}`}>
+        <Link href={`/shop/${item.productId}`}>
           <Image
             src={item.image}
             alt={item.name}

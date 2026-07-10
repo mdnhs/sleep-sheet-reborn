@@ -90,7 +90,7 @@ export function generateProductMetadata(product: {
   return generateMetadata({
     title: product.name,
     description: product.description?.slice(0, 160) || `Shop ${product.name} at ${seoConfig.siteName}`,
-    canonical: `${seoConfig.siteUrl}/products/${product.slug}`,
+    canonical: `${seoConfig.siteUrl}/shop/${product.slug}`,
     openGraph: {
       title: product.name,
       description: product.description?.slice(0, 200),

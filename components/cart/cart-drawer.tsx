@@ -100,7 +100,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
             </p>
             <Button
               nativeButton={false}
-              render={<Link href="/products" onClick={onClose} />}
+              render={<Link href="/shop" onClick={onClose} />}
             >
               {t("startShopping")}
             </Button>

@@ -68,7 +68,7 @@ export async function generatePagesSitemap() {
   const now = new Date().toISOString()
   const staticPages = [
     { url: `${seoConfig.siteUrl}`, priority: 1.0, changeFrequency: "weekly" as const },
-    { url: `${seoConfig.siteUrl}/products`, priority: 0.9, changeFrequency: "daily" as const },
+    { url: `${seoConfig.siteUrl}/shop`, priority: 0.9, changeFrequency: "daily" as const },
     { url: `${seoConfig.siteUrl}/blog`, priority: 0.8, changeFrequency: "daily" as const },
     { url: `${seoConfig.siteUrl}/about`, priority: 0.5, changeFrequency: "monthly" as const },
     { url: `${seoConfig.siteUrl}/contact`, priority: 0.5, changeFrequency: "monthly" as const },
@@ -93,7 +93,7 @@ export async function generateProductsSitemap() {
 
   return buildSitemap(
     allItems.map((p) => ({
-      url: `${seoConfig.siteUrl}/products/${p.id}`,
+      url: `${seoConfig.siteUrl}/shop/${p.id}`,
       lastModified: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
@@ -143,7 +143,7 @@ export async function generateImagesSitemap() {
 
   const entries: SitemapEntry[] = []
   for (const p of allItems) {
-    const productUrl = `${seoConfig.siteUrl}/products/${p.id}`
+    const productUrl = `${seoConfig.siteUrl}/shop/${p.id}`
     const allImages = (p.images || []).filter(Boolean) as string[]
     if (allImages.length > 0) {
       entries.push({

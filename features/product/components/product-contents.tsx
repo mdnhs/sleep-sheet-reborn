@@ -125,11 +125,11 @@ function ProductContents() {
       {/* Floating Bottom Sort Tab */}
       <div className="fixed bottom-26 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center p-1.5 bg-background/80 backdrop-blur-md border border-border/50 rounded-full shadow-2xl">
         {[
-          { label: "Featured", value: "featured" },
+          { label: "New Arrival", value: "newest" },
           { label: "Low to High", value: "price-asc" },
           { label: "High to Low", value: "price-desc" },
         ].map((option) => {
-          const isActive = (sort || "featured") === option.value;
+          const isActive = (sort || "newest") === option.value;
           return (
             <button
               key={option.value}

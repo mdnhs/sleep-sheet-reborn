@@ -94,14 +94,19 @@ export function BulkBookCourierDialog({
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <div className="w-28 shrink-0">
-                        <Input
-                          type="number"
-                          placeholder="Bought Price"
-                          className="h-8 text-sm"
-                          value={costPricesMap[item.id] || ""}
-                          onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                          disabled={item.costPrice !== null && item.costPrice !== undefined}
-                        />
+                        {item.costPrice !== null && item.costPrice !== undefined ? (
+                          <div className="flex h-8 w-full items-center justify-end px-3 text-sm font-medium text-muted-foreground border rounded-md bg-muted/50">
+                            ৳{item.costPrice}
+                          </div>
+                        ) : (
+                          <Input
+                            type="number"
+                            placeholder="Bought Price"
+                            className="h-8 text-sm"
+                            value={costPricesMap[item.id] || ""}
+                            onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}

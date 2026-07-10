@@ -103,7 +103,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/products"
+                  href="/shop"
                   className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">

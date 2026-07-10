@@ -35,7 +35,7 @@ const NAV_LINKS = [
   { id: 1, name: "home" as const, path: "/" },
   { id: 2, name: "blog" as const, path: "/blog" },
   { id: 3, name: "trackMyOrder" as const, path: "/track-order" },
-  { id: 4, name: "offers" as const, path: "/products?sort=discount", hasBadge: true, icon: BadgePercent },
+  { id: 4, name: "shop" as const, path: "/shop", hasBadge: false, icon: ShoppingBag },
 ];
 
 function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -50,7 +50,7 @@ function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
     if (link.path === "/") {
       isActive = pathname === "/";
     } else if (link.path.includes("sort=discount")) {
-      isActive = pathname === "/products" && sortParam === "discount";
+      isActive = pathname === "/shop" && sortParam === "discount";
     } else {
       isActive = pathname === link.path;
     }
@@ -276,7 +276,7 @@ function MobileBottomNav({
       {/* Center Shop Icon */}
       <div className="relative -top-5 flex items-center justify-center">
         <div className="absolute inset-0 bg-background rounded-full scale-110 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"></div>
-        <Link href="/products" className="relative flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform z-10">
+        <Link href="/shop" className="relative flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform z-10">
           <ShoppingBag className="h-6 w-6" />
         </Link>
       </div>
@@ -327,14 +327,14 @@ function Navbar() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const isProductsPage = window.location.pathname === "/products";
+    const isProductsPage = window.location.pathname === "/shop";
     if (isProductsPage) {
       setSearchQuery(inputVal.trim() || null);
     } else {
       if (inputVal.trim()) {
-        router.push(`/products?search=${encodeURIComponent(inputVal.trim())}`);
+        router.push(`/shop?search=${encodeURIComponent(inputVal.trim())}`);
       } else {
-        router.push(`/products`);
+        router.push(`/shop`);
       }
     }
   };

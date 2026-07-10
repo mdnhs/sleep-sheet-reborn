@@ -70,7 +70,7 @@ export const translations = {
     thankYou: "Thank You!",
     orderSuccessDesc: "Your order has been placed successfully. We are preparing your package.",
     trackPhone: "Track with phone:",
-    trackMyOrder: "Track My Order",
+    trackMyOrder: "Track Order",
     continueShopping: "Continue Shopping",
     downloadInvoice: "Download Invoice",
     trackYourOrder: "Track Your Order",

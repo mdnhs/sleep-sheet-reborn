@@ -71,7 +71,7 @@ const app = new Hono()
 
 .get("/", async (c) => {
   const category = c.req.query("category");
-  const sort = c.req.query("sort");
+  const sort = c.req.query("sort") || "newest";
   const priceRange = c.req.query("price");
   const page = parseInt(c.req.query("page") || "1");
   const search = c.req.query("search");
