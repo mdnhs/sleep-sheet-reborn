@@ -21,7 +21,7 @@ const FeaturedProduct = () => {
 
   if (isLoading) {
     return (
-      <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
+      <section className="py-6 md:py-10 bg-primary/5 dark:bg-primary/10 border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
         <div className="container mx-auto px-4 relative">
           <div className="flex flex-row items-end justify-between mb-6">
             <div>
@@ -55,7 +55,7 @@ const FeaturedProduct = () => {
   }
 
   return (
-    <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
+    <section className="py-6 md:py-10 bg-primary/5 dark:bg-primary/10 border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
       <div className="container mx-auto px-4 relative">
         {/* Minimal Section header */}
         <div className="flex flex-row items-end justify-between mb-6">

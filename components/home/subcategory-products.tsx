@@ -42,11 +42,12 @@ const SubcategoryProducts = () => {
 
   return (
     <>
-      {displayCategories.map((category: any) => (
+      {displayCategories.map((category: any, index: number) => (
         <CategoryCarousel
           key={category.id}
           categoryLabel={category.label}
           categoryValue={category.value}
+          isEven={index % 2 !== 0}
         />
       ))}
     </>

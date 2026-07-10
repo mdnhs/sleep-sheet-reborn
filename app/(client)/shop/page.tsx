@@ -11,26 +11,28 @@ export const metadata = generateMetadata({
 
 function ProductsPage() {
   return (
-    <div className="container mx-auto py-4 px-4 min-h-[80vh]">
-      {structuredDataScript("collection-page", webpageSchema(
-        "All Products | " + seoConfig.siteName,
-        "Browse our complete collection of premium bedding, mattresses, pillows, and sleep accessories.",
-        `${seoConfig.siteUrl}/shop`,
-      ))}
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        <Suspense
-          fallback={
-            <div className="p-4 text-center text-muted-foreground">
-              Loading products...
-            </div>
-          }
-        >
-          <ProductSidebar />
-          <ProductContents />
-        </Suspense>
+    <div className="w-full bg-primary/5 dark:bg-primary/10 min-h-screen">
+      <div className="container mx-auto py-4 px-4 min-h-[80vh]">
+        {structuredDataScript("collection-page", webpageSchema(
+          "All Products | " + seoConfig.siteName,
+          "Browse our complete collection of premium bedding, mattresses, pillows, and sleep accessories.",
+          `${seoConfig.siteUrl}/shop`,
+        ))}
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Sidebar */}
+          <Suspense fallback={<div className="w-full lg:w-64 shrink-0 h-96 bg-muted animate-pulse rounded-lg" />}>
+            <ProductSidebar />
+          </Suspense>
+  
+          {/* Main Content */}
+          <div className="flex-1 w-full">
+            <Suspense fallback={<div className="w-full h-96 bg-muted animate-pulse rounded-lg" />}>
+              <ProductContents />
+            </Suspense>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    </div>);
 }
 
 export default ProductsPage;

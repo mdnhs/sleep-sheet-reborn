@@ -14,18 +14,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CategoryCarouselProps {
-  categoryLabel: string;
-  categoryValue: string;
+  categoryLabel?: string;
+  categoryValue?: string;
+  isEven?: boolean;
 }
 
-const CategoryCarousel = ({ categoryLabel, categoryValue }: CategoryCarouselProps) => {
+const CategoryCarousel = ({ categoryLabel, categoryValue, isEven = false }: CategoryCarouselProps) => {
   const { data: products, isLoading } = useGetProducts({
     category: categoryLabel,
   });
 
   if (isLoading) {
     return (
-      <section className="py-6 md:py-10 bg-background relative overflow-hidden">
+      <section className={`py-6 md:py-10 relative overflow-hidden ${isEven ? 'bg-primary/5 dark:bg-primary/10' : 'bg-background'}`}>
         <div className="container mx-auto px-4 relative">
           <div className="flex flex-row items-end justify-between mb-6">
             <div>
@@ -59,7 +60,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue }: CategoryCarouselProp
   }
 
   return (
-    <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
+    <section className={`py-6 md:py-10 border-t border-slate-100 dark:border-slate-800 relative overflow-hidden ${isEven ? 'bg-primary/5 dark:bg-primary/10' : 'bg-background'}`}>
       <div className="container mx-auto px-4 relative">
         <div className="flex flex-row items-end justify-between mb-6">
           <div>
