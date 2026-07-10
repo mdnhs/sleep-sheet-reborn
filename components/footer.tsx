@@ -133,6 +133,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/about"
+                  prefetch={false}
                   className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Our Story
@@ -142,6 +143,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/sustainability"
+                  prefetch={false}
                   className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Sustainability
@@ -151,6 +153,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/careers"
+                  prefetch={false}
                   className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Careers
@@ -160,6 +163,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/press"
+                  prefetch={false}
                   className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Press
@@ -205,18 +209,21 @@ const Footer = () => {
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 md:justify-end">
             <Link
               href="/privacy-policy"
+              prefetch={false}
               className="text-xs text-white/40 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms-of-service"
+              prefetch={false}
               className="text-xs text-white/40 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
             >
               Terms of Service
             </Link>
             <Link
               href="/shipping-returns"
+              prefetch={false}
               className="text-xs text-white/40 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
             >
               Shipping & Returns

@@ -1,5 +1,7 @@
 import {Hono} from "hono";
 import {handle} from "hono/vercel";
+
+export const dynamic = "force-dynamic";
 import auth from "@/features/auth/server/route"
 import products from "@/features/product/server/route"
 import product from "@/features/dashboard/server/route"
