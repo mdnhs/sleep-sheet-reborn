@@ -124,8 +124,8 @@ export default function RootLayout({
         {structuredDataScript("website", websiteSchema())}
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <TooltipProvider>
