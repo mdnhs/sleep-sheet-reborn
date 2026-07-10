@@ -19,7 +19,7 @@ interface SimpleChartData {
 
 export function CustomLineChart({ data }: { data: SimpleChartData[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
       <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -33,7 +33,7 @@ export function CustomLineChart({ data }: { data: SimpleChartData[] }) {
 
 export function CustomBarChart({ data }: { data: SimpleChartData[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
       <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
