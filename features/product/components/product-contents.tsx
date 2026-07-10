@@ -82,7 +82,7 @@ function ProductContents() {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {products?.data?.map((product, index) => (
-              <ProductCard key={product.id} product={product} priority={index < 4} />
+              <ProductCard key={product.id} product={product as any} priority={index < 4} />
             ))}
           </div>
 

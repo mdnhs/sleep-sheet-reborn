@@ -11,7 +11,11 @@ async function SignInPage() {
     );
   }
 
-  return <SignInCard />;
+  return (
+    <React.Suspense fallback={null}>
+      <SignInCard />
+    </React.Suspense>
+  );
 }
 
 export default SignInPage;

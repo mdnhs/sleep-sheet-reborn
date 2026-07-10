@@ -43,7 +43,6 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
   return (
     <div className="w-full space-y-4">
       <Accordion 
-        type="multiple" 
         defaultValue={["shipping"]}
         className="w-full border-none space-y-4"
       >

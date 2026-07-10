@@ -31,8 +31,8 @@ export function BulkBookCourierDialog({
       const initialMap: Record<string, string> = {};
       orders.forEach(order => {
         order.items?.forEach(item => {
-          if (item.costPrice !== null && item.costPrice !== undefined) {
-            initialMap[item.id] = item.costPrice.toString();
+          if ((item as any).costPrice !== null && (item as any).costPrice !== undefined) {
+            initialMap[item.id] = (item as any).costPrice.toString();
           }
         });
       });
@@ -94,9 +94,9 @@ export function BulkBookCourierDialog({
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <div className="w-28 shrink-0">
-                        {item.costPrice !== null && item.costPrice !== undefined ? (
+                        {(item as any).costPrice !== null && (item as any).costPrice !== undefined ? (
                           <div className="flex h-8 w-full items-center justify-end px-3 text-sm font-medium text-muted-foreground border rounded-md bg-muted/50">
-                            ৳{item.costPrice}
+                            ৳{(item as any).costPrice}
                           </div>
                         ) : (
                           <Input

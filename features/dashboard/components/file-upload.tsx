@@ -54,7 +54,10 @@ export function FileUpload<T extends FieldValues>({
 
   const removeFile = (index: number) => {
     const newFiles = files.filter((_, i) => i !== index);
-    form.setValue(name, newFiles as FieldPathValue<T, Path<T>>);
+    if (onChange) onChange(newFiles);
+    if (form && name) {
+      form.setValue(name, newFiles as FieldPathValue<T, Path<T>>);
+    }
   };
 
   return (

@@ -23,7 +23,7 @@ export const useCreateExpenseCategory = () => {
     mutationFn: async (json: CreateExpenseCategoryRequest) => {
       const response = await client.api.expenses.categories.$post({ json });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData = await response.json().catch(() => null) as any;
         throw new Error(errorData?.error || "Failed to create category");
       }
       return await response.json();
@@ -58,7 +58,7 @@ export const useCreateExpense = () => {
     mutationFn: async (json: CreateExpenseRequest) => {
       const response = await client.api.expenses.$post({ json });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData = await response.json().catch(() => null) as any;
         throw new Error(errorData?.error || "Failed to create expense");
       }
       return await response.json();

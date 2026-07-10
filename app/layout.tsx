@@ -86,17 +86,18 @@ export const metadata: Metadata = {
   },
   applicationName: seoConfig.siteName,
   referrer: "origin-when-cross-origin",
-  themeColor: seoConfig.themeColor,
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
   category: "ecommerce",
   other: {
     "msapplication-TileColor": seoConfig.themeColor,
     "msapplication-config": "/browserconfig.xml",
   },
+};
+
+export const viewport = {
+  themeColor: seoConfig.themeColor,
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

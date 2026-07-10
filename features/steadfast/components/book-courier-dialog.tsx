@@ -120,7 +120,7 @@ export function BookCourierDialog({
                     placeholder="Cost"
                     value={costs[item.id] || ""}
                     onChange={(e) => handleCostChange(item.id, e.target.value)}
-                    disabled={item.costPrice !== null && item.costPrice !== undefined}
+                    disabled={(item as any).costPrice !== null && (item as any).costPrice !== undefined}
                     required
                   />
                 </div>

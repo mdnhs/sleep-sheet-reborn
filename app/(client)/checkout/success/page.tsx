@@ -35,7 +35,7 @@ interface Order {
   items: OrderItem[];
 }
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get("orderId");
@@ -205,5 +205,13 @@ export default function OrderSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <OrderSuccessContent />
+    </React.Suspense>
   );
 }

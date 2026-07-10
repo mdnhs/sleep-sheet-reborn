@@ -97,7 +97,7 @@ export default function DashBoardClientPage() {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <MetricCard
           title="Total Revenue"
           value={overview?.totalRevenue}
@@ -113,6 +113,20 @@ export default function DashBoardClientPage() {
         <MetricCard
           title="Average Order Value"
           value={overview?.aov}
+          format="currency"
+          currencySymbol={currencySymbol}
+          loading={loadingOverview}
+        />
+        <MetricCard
+          title="Total Expenses"
+          value={overview?.totalExpenses}
+          format="currency"
+          currencySymbol={currencySymbol}
+          loading={loadingOverview}
+        />
+        <MetricCard
+          title="Net Profit"
+          value={overview?.netProfit}
           format="currency"
           currencySymbol={currencySymbol}
           loading={loadingOverview}

@@ -36,7 +36,7 @@ interface Order {
   items: OrderItem[];
 }
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const router = useRouter();
   const [orderId] = useQueryState("orderId");
   const [phone] = useQueryState("phone");
@@ -190,5 +190,13 @@ export default function OrderSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <OrderSuccessContent />
+    </React.Suspense>
   );
 }

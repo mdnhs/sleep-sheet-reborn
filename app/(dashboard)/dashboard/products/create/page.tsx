@@ -10,7 +10,11 @@ async function AddProduct() {
     redirect("/");
   }
 
-  return <AddProductClient />;
+  return (
+    <React.Suspense fallback={null}>
+      <AddProductClient />
+    </React.Suspense>
+  );
 }
 
 export default AddProduct;

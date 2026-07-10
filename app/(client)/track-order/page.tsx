@@ -45,7 +45,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: "Cancelled", color: "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200/30" },
 };
 
-export default function TrackOrderPage() {
+function TrackOrderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const phoneParam = searchParams.get("phone");
@@ -153,7 +153,8 @@ export default function TrackOrderPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-16 max-w-5xl">
+    <div className="w-full bg-primary/5 dark:bg-primary/10 min-h-screen">
+      <div className="container mx-auto px-4 py-8 sm:py-16 max-w-5xl">
       <Button 
         variant="ghost" 
         onClick={() => router.back()} 
@@ -331,5 +332,14 @@ export default function TrackOrderPage() {
         </div>
       )}
     </div>
+    </div>
+  );
+}
+
+export default function TrackOrderPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <TrackOrderContent />
+    </React.Suspense>
   );
 }

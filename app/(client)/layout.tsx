@@ -32,7 +32,9 @@ function clientLayout({ children }: ClientLayoutProps) {
     <ReduxProvider>
       <CartProvider>
         <div className="flex flex-col min-h-screen">
-          <Navbar />
+          <React.Suspense fallback={null}>
+            <Navbar />
+          </React.Suspense>
           <main className="flex-1">{children}</main>
           <Footer />
         </div>

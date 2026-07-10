@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { orders, orderItems, products, carts, users, wishlistItems } from "@/db/schema";
+import { orders, orderItems, products, carts, users, wishlistItems, expenses } from "@/db/schema";
 import { eq, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
 import { getDateRange, getStartDate } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ const app = new Hono()
     const { period = "month" } = c.req.query();
     const { startDate, endDate } = getDateRange(period);
 
-    const [revenueRes, ordersRes, salesTrend] = await Promise.all([
+    const [revenueRes, ordersRes, salesTrend, expensesRes, costRes] = await Promise.all([
       db.select({ sum: sum(orders.totalAmount) })
         .from(orders)
         .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
@@ -29,12 +29,29 @@ const app = new Hono()
         .from(orders)
         .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate)))
         .orderBy(asc(orders.createdAt)),
+      db.select({ sum: sum(expenses.amount) })
+        .from(expenses)
+        .where(and(gte(expenses.date, startDate), lte(expenses.date, endDate))),
+      db.select({ 
+          sum: sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))` 
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
     ]);
 
+    const totalRevenue = Number(revenueRes[0]?.sum || 0);
+    const totalOrders = Number(ordersRes[0]?.count || 0);
+    const totalExpenses = Number(expensesRes[0]?.sum || 0);
+    const totalCost = Number(costRes[0]?.sum || 0);
+    const netProfit = totalRevenue - totalCost - totalExpenses;
+
     return c.json({
-      totalRevenue: Number(revenueRes[0]?.sum || 0),
-      totalOrders: Number(ordersRes[0]?.count || 0),
-      aov: Number(ordersRes[0]?.count || 0) > 0 ? Number(revenueRes[0]?.sum || 0) / Number(ordersRes[0]?.count || 0) : 0,
+      totalRevenue,
+      totalOrders,
+      totalExpenses,
+      netProfit,
+      aov: totalOrders > 0 ? totalRevenue / totalOrders : 0,
       trendData: salesTrend.map((item) => ({
         date: item.createdAt.toISOString(),
         amount: item.totalAmount,
