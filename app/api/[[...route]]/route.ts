@@ -20,7 +20,10 @@ import blog from "@/features/blog/server/route";
 import pos from "@/features/pos/server/route";
 import reports from "@/features/reports/server/route";
 import expenses from "@/features/expenses/server/route";
+import { cors } from "hono/cors";
+
 const app = new Hono().basePath("/api");
+app.use("*", cors());
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const routes =app
@@ -48,4 +51,5 @@ export const POST = handle(app)
 export const PUT =handle(app)
 export const PATCH = handle(app)
 export const DELETE = handle(app)
+export const OPTIONS = handle(app)
 export type AppType = typeof routes;
