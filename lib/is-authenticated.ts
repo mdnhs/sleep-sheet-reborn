@@ -25,11 +25,13 @@ export async function getCurrentUser() {
 
     if (!user) return null;
 
+    const isSuperAdmin = user.email === process.env.SUPER_ADMIN_EMAIL;
+
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: isSuperAdmin ? "ADMIN" : user.role,
     };
   } catch (error) {
     console.error("Token verification failed:", error);

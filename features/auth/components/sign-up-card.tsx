@@ -23,8 +23,11 @@ import { useDispatch } from "react-redux";
 import { setRegisterData } from "../state/register-slice";
 import { useRouter } from "next/navigation";
 import { OTPType } from "../state/forgot-password-slice";
+import { useLanguage } from "@/hooks/use-language";
 
 function SignUpCard() {
+  const { language } = useLanguage();
+  const isBn = language === "bn";
   const dispatch = useDispatch();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -39,23 +42,25 @@ function SignUpCard() {
     },
   });
   const onSubmit = (value: z.infer<typeof RegisterSchema>) => {
-    dispatch(
-      setRegisterData({
-        ...value,
-        purpose: OTPType.EMAIL_VERIFICATION,
-      })
-    );
-    router.push("/verify");
+    mutate({ json: value }, {
+      onSuccess: () => {
+        router.push("/signin");
+      }
+    });
   };
 
   return (
     <Card className=" w-full">
       <CardHeader>
         <CardTitle className=" text-center">
-          <h1 className=" text-2xl font-bold text-center mb-2">Sign Up</h1>
+          <h1 className=" text-2xl font-bold text-center mb-2">
+            {isBn ? "সাইন আপ করুন" : "Sign Up"}
+          </h1>
         </CardTitle>
         <p className=" text-muted-foreground text-center">
-          Join us and enjoy exclusive benefits and personalized shopping.
+          {isBn
+            ? "আমাদের সাথে যোগ দিন এবং বিশেষ সুবিধা ও নিজস্ব কেনাকাটার অভিজ্ঞতা উপভোগ করুন।"
+            : "Join us and enjoy exclusive benefits and personalized shopping."}
         </p>
       </CardHeader>
       <CardContent>
@@ -66,11 +71,13 @@ function SignUpCard() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <label className=" text-sm font-semibold">Username</label>
+                  <label className=" text-sm font-semibold">
+                    {isBn ? "পুরো নাম" : "Full Name"}
+                  </label>
                   <FormControl>
                     <Input
                       type="text"
-                      placeholder="User Name"
+                      placeholder={isBn ? "পুরো নাম" : "Full Name"}
                       {...field}
                       className="w-full "
                     />
@@ -85,12 +92,12 @@ function SignUpCard() {
               render={({ field }) => (
                 <FormItem>
                   <label className=" text-sm font-semibold">
-                    Email Address
+                    {isBn ? "ইমেইল ঠিকানা" : "Email Address"}
                   </label>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="Email"
+                      placeholder={isBn ? "ইমেইল" : "Email"}
                       {...field}
                       className="w-full "
                     />
@@ -104,12 +111,14 @@ function SignUpCard() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <label className=" text-sm font-semibold">Password</label>
+                  <label className=" text-sm font-semibold">
+                    {isBn ? "পাসওয়ার্ড" : "Password"}
+                  </label>
                   <div className=" relative">
                     <FormControl>
                       <Input
                         type={showPassword ? "text" : "password"}
-                        placeholder="Password"
+                        placeholder={isBn ? "পাসওয়ার্ড" : "Password"}
                         {...field}
                         className="w-full "
                       />
@@ -128,15 +137,15 @@ function SignUpCard() {
             />
 
             <Button type="submit" size="lg" className=" w-full mt-2" disabled={isPending}>
-              Create Account
+              {isBn ? "অ্যাকাউন্ট তৈরি করুন" : "Create Account"}
             </Button>
           </form>
         </Form>
         <p className=" text-md text-muted-foreground text-center mt-4">
-          Already have an account?{" "}
+          {isBn ? "আগে থেকেই অ্যাকাউন্ট আছে?" : "Already have an account?"}{" "}
           <Link href={"/signin"}>
             <span className=" text-primary font-bold cursor-pointer">
-              Sign In
+              {isBn ? "লগ ইন করুন" : "Sign In"}
             </span>
           </Link>
         </p>

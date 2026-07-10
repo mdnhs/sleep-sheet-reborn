@@ -19,8 +19,11 @@ import Link from "next/link";
 import { LoginSchema } from "../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLogin } from "../api/use-login";
+import { useLanguage } from "@/hooks/use-language";
 
 function SignInCard() {
+  const { language } = useLanguage();
+  const isBn = language === "bn";
   const { mutate, isPending } = useLogin();
   const [showPassword, setShowPassword] = useState(false);
   const form = useForm<z.infer<typeof LoginSchema>>({
@@ -38,10 +41,14 @@ function SignInCard() {
     <Card className=" w-full">
       <CardHeader>
         <CardTitle className=" text-center">
-          <h1 className=" text-2xl font-bold text-center mb-2">Sign In</h1>
+          <h1 className=" text-2xl font-bold text-center mb-2">
+            {isBn ? "লগ ইন করুন" : "Sign In"}
+          </h1>
         </CardTitle>
         <p className=" text-muted-foreground text-center">
-          Welcome back! Sign in to your account to continue shopping.
+          {isBn
+            ? "স্বাগতম! কেনাকাটা চালিয়ে যেতে আপনার অ্যাকাউন্টে লগ ইন করুন।"
+            : "Welcome back! Sign in to your account to continue shopping."}
         </p>
       </CardHeader>
       <CardContent>
@@ -53,12 +60,12 @@ function SignInCard() {
               render={({ field }) => (
                 <FormItem>
                   <label className=" text-sm font-semibold">
-                    Email Address
+                    {isBn ? "ইমেইল ঠিকানা" : "Email Address"}
                   </label>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="Email"
+                      placeholder={isBn ? "ইমেইল" : "Email"}
                       {...field}
                       className="w-full "
                     />
@@ -72,12 +79,14 @@ function SignInCard() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <label className=" text-sm font-semibold">Password</label>
+                  <label className=" text-sm font-semibold">
+                    {isBn ? "পাসওয়ার্ড" : "Password"}
+                  </label>
                   <div className=" relative">
                     <FormControl>
                       <Input
                         type={showPassword ? "text" : "password"}
-                        placeholder="Password"
+                        placeholder={isBn ? "পাসওয়ার্ড" : "Password"}
                         {...field}
                         className="w-full "
                       />
@@ -101,25 +110,25 @@ function SignInCard() {
                   className="h-4 w-4 text-primary border-gray-300 dark:border-slate-600 rounded focus:ring-primary"
                 />
                 <span className="text-sm text-muted-foreground">
-                  Remember me
+                  {isBn ? "আমাকে মনে রাখুন" : "Remember me"}
                 </span>
               </label>
               <Link href={"/forgot-password"}>
                 <span className=" text-sm text-primary font-bold cursor-pointer">
-                  Forgot Password?
+                  {isBn ? "পাসওয়ার্ড ভুলে গেছেন?" : "Forgot Password?"}
                 </span>
               </Link>
             </div>
             <Button type="submit" size="lg" className=" w-full" disabled={isPending}>
-              Login
+              {isBn ? "লগ ইন" : "Login"}
             </Button>
           </form>
         </Form>
         <p className=" text-md text-muted-foreground text-center mt-4">
-          Don&apos;t have an account?{" "}
+          {isBn ? "অ্যাকাউন্ট নেই?" : "Don't have an account?"}{" "}
           <Link href={"/signup"}>
             <span className=" text-primary font-bold cursor-pointer">
-              Create Account
+              {isBn ? "অ্যাকাউন্ট তৈরি করুন" : "Create Account"}
             </span>
           </Link>
         </p>

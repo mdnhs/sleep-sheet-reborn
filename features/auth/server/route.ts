@@ -91,6 +91,7 @@ const app = new Hono()
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.email === process.env.SUPER_ADMIN_EMAIL ? "ADMIN" : user.role,
         },
       });
     } catch (error) {

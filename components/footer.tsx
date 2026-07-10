@@ -6,9 +6,10 @@ import {
   IconBrandTwitter,
   IconBrandYoutube,
 } from "@tabler/icons-react";
-import { Mail, Phone, ShieldCheck, Truck, ArrowRight } from "lucide-react";
+import { Mail, Phone, ShieldCheck, Truck, ArrowRight, Globe } from "lucide-react";
 import Link from "next/link";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { useLanguage } from "@/hooks/use-language";
 
 const Footer = () => {
   const {
@@ -21,6 +22,7 @@ const Footer = () => {
     socialYoutube,
     footerCopyright,
   } = useWebsiteSettings();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <footer className="bg-foreground dark:bg-slate-950 text-background dark:text-slate-100 pt-10 md:pt-16 pb-24 md:pb-8 border-t border-white/5 dark:border-white/5 relative overflow-hidden">
@@ -228,6 +230,33 @@ const Footer = () => {
             >
               Shipping & Returns
             </Link>
+            <div className="flex items-center gap-2 ml-4">
+              <span className="text-xs font-semibold text-white/40 flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" /> {t("language")}
+              </span>
+              <div className="flex gap-0.5 bg-white/5 p-0.5 rounded-lg border border-white/10">
+                <button
+                  onClick={() => setLanguage("bn")}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-all ${
+                    language === "bn"
+                      ? "bg-white text-slate-950 shadow-sm"
+                      : "text-white/40 hover:text-white"
+                  }`}
+                >
+                  BN
+                </button>
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-all ${
+                    language === "en"
+                      ? "bg-white text-slate-950 shadow-sm"
+                      : "text-white/40 hover:text-white"
+                  }`}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
