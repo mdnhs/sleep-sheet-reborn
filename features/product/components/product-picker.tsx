@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ProductPickerProps {
   product: Product;
@@ -29,6 +30,10 @@ function ProductPicker({ product }: ProductPickerProps) {
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || "");
   const [quantity, setQuantity] = useState(1);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogAction, setDialogAction] = useState<"cart" | "buy" | null>(null);
+  
+  const hasVariants = isColorAvailable || isSizeAvailable;
   
   const [highlightVariant, setHighlightVariant] = useState(false);
   const { isInWishlist, isAdding, isRemoving, handleWishlistToggle } =
@@ -128,53 +133,91 @@ function ProductPicker({ product }: ProductPickerProps) {
 
   return (
     <>
-      {isColorAvailable && (
-        <div className="mb-4 lg:mb-6">
-          <div className="flex justify-between items-center mb-2 lg:mb-3">
-            <h3 className="text-sm text-muted-foreground">Select Variant</h3>
-            <span className="text-xs font-medium text-foreground">{selectedColor}</span>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            {product.colors?.map((color) => (
-              <button
-                key={color.name}
-                onClick={() => setSelectedColor(color.name)}
-                className={`px-4 py-2 lg:px-5 lg:py-2.5 rounded-full text-sm font-medium transition-all duration-200 border ${
-                  selectedColor === color.name
-                    ? "bg-foreground text-background border-transparent"
-                    : "bg-secondary/30 text-foreground hover:bg-secondary/60 border-transparent"
-                } ${highlightVariant ? "animate-variant-error" : ""}`}
-              >
-                {color.name} ({formatAmount(color.price || product.price)})
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Dialog for Variants */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{t("selectOption")}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1">
+            {isSizeAvailable && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Size</span>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                        selectedSize === size
+                          ? 'border-primary bg-primary text-white shadow-sm'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {isSizeAvailable && (
-        <div className="mb-4 lg:mb-8">
-          <div className="flex justify-between items-center mb-2 lg:mb-3">
-            <h3 className="text-sm text-muted-foreground">Select Size</h3>
-            <span className="text-xs font-medium text-foreground">{selectedSize}</span>
+            {isColorAvailable && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variant</span>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors?.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => setSelectedColor(color.name)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                        selectedColor === color.name
+                          ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      {color.name} ({formatAmount(color.price || product.price)})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            {product.sizes.map((size) => (
-              <button
-                key={size}
-                onClick={() => setSelectedSize(size)}
-                className={`px-4 py-2 lg:px-6 lg:py-3 rounded-full text-sm font-medium transition-all duration-200 ${
-                  selectedSize === size
-                    ? "bg-foreground text-background"
-                    : "bg-secondary/30 text-foreground hover:bg-secondary/60"
-                }`}
+          <div className="flex gap-2 w-full mt-4">
+            {dialogAction === "cart" && (
+              <Button
+                className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide border-2 border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background transition-all"
+                onClick={() => {
+                  if ((isSizeAvailable && !selectedSize) || (isColorAvailable && !selectedColor)) {
+                    toast.error("Please select options before adding to cart");
+                    return;
+                  }
+                  handleAddToCart();
+                  setIsDialogOpen(false);
+                }}
               >
-                {size}
-              </button>
-            ))}
+                <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
+                {t("addToCart")}
+              </Button>
+            )}
+            {dialogAction === "buy" && (
+              <Button
+                className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                onClick={() => {
+                  if ((isSizeAvailable && !selectedSize) || (isColorAvailable && !selectedColor)) {
+                    toast.error("Please select options before proceeding to checkout");
+                    return;
+                  }
+                  handleBuyNow();
+                  setIsDialogOpen(false);
+                }}
+              >
+                <Zap className="h-4 w-4 mr-2" fill="currentColor" />
+                {t("buyNow")}
+              </Button>
+            )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-col gap-3 lg:gap-4 mb-4 lg:mb-8">
         {/* Top Row: Quantity & Wishlist */}
@@ -232,7 +275,14 @@ function ProductPicker({ product }: ProductPickerProps) {
             variant="outline"
             className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide border-2 border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background transition-all"
             disabled={!isInStock}
-            onClick={handleAddToCart}
+            onClick={() => {
+              if (hasVariants) {
+                setDialogAction("cart");
+                setIsDialogOpen(true);
+              } else {
+                handleAddToCart();
+              }
+            }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
             {isInStock ? t("addToCart") : t("outOfStock")}
@@ -241,7 +291,14 @@ function ProductPicker({ product }: ProductPickerProps) {
           <Button
             className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
             disabled={!isInStock}
-            onClick={handleBuyNow}
+            onClick={() => {
+              if (hasVariants) {
+                setDialogAction("buy");
+                setIsDialogOpen(true);
+              } else {
+                handleBuyNow();
+              }
+            }}
           >
             <Zap className="h-4 w-4 mr-2" fill="currentColor" />
             {t("buyNow")}
@@ -285,16 +342,30 @@ function ProductPicker({ product }: ProductPickerProps) {
               variant="outline"
               className="flex-1 sm:w-40 h-12 rounded-full font-semibold border-2 border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background transition-all"
               disabled={!isInStock}
-              onClick={handleAddToCart}
+              onClick={() => {
+                if (hasVariants) {
+                  setDialogAction("cart");
+                  setIsDialogOpen(true);
+                } else {
+                  handleAddToCart();
+                }
+              }}
             >
               <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
-              {t("addToCart")}
+              {isInStock ? t("addToCart") : t("outOfStock")}
             </Button>
 
             <Button
               className="flex-1 sm:w-40 h-12 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
               disabled={!isInStock}
-              onClick={handleBuyNow}
+              onClick={() => {
+                if (hasVariants) {
+                  setDialogAction("buy");
+                  setIsDialogOpen(true);
+                } else {
+                  handleBuyNow();
+                }
+              }}
             >
               <Zap className="h-4 w-4 mr-2" fill="currentColor" />
               {t("buyNow")}

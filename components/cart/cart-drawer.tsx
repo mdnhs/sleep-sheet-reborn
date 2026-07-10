@@ -70,7 +70,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
               ))}
             </div>
 
-            <div className="border-t pt-4 space-y-4 p-4">
+            <div className="border-t pt-4 space-y-4 p-4 pb-24 sm:pb-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("subtotal")}</span>
@@ -92,7 +92,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center flex-1 py-12">
+          <div className="flex flex-col items-center justify-center flex-1 py-12 pb-24 sm:pb-12">
             <ShoppingBag className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">{t("cartEmptyTitle")}</h3>
             <p className="text-muted-foreground mb-6 text-center pl-2 pr-2">

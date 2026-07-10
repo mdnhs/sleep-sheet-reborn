@@ -40,7 +40,7 @@ function clientLayout({ children }: ClientLayoutProps) {
           href={`https://wa.me/${seoConfig.contact.telephone.replace(/\D/g, "")}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-all duration-300 hover:bg-green-600"
+          className="fixed bottom-24 sm:bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-all duration-300 hover:bg-green-600"
           aria-label="Contact us on WhatsApp"
         >
           <MessageCircle className="h-5 w-5" />
@@ -48,7 +48,7 @@ function clientLayout({ children }: ClientLayoutProps) {
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className={cn(
-            "fixed bottom-20 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all duration-300 hover:opacity-90",
+            "fixed bottom-36 sm:bottom-20 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all duration-300 hover:opacity-90",
             showScrollTop ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
           )}
           aria-label="Scroll to top"

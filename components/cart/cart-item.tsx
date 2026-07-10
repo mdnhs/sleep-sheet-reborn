@@ -39,8 +39,8 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }: CartItemProps) => {
           <Image
             src={item.image}
             alt={item.name}
-            height={20}
-            width={20}
+            height={96}
+            width={96}
             className="h-full w-full object-cover object-center"
           />
         </Link>

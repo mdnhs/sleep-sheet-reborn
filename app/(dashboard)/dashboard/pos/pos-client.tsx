@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSettings } from "@/features/settings/api/use-settings"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface POSProduct {
   id: string
@@ -717,92 +718,78 @@ function ProductCard({
         </div>
       </div>
 
-      {/* Slide-up Drawer Overlay */}
-      <div
-        className={`absolute left-0 right-0 bottom-[60px] bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_24px_rgba(0,0,0,0.4)] p-4 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] z-30 flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 ${
-          isDrawerOpen ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0 pointer-events-none'
-        }`}
-      >
-        <div className="flex justify-between items-center mb-2">
-          <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Select Options</span>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsDrawerOpen(false); }}
-            className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-4 max-h-[180px] overflow-y-auto pr-1">
-          {hasSizes && (
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Size</span>
-              <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedSize(size); }}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                      selectedSize === size
-                        ? 'border-primary bg-primary text-white shadow-sm'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+      {/* Dialog for Variants */}
+      <Dialog open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Select Options</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1">
+            {hasSizes && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Size</span>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedSize(size); }}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                        selectedSize === size
+                          ? 'border-primary bg-primary text-white shadow-sm'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {hasColors && (
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variant</span>
-              <div className="flex flex-wrap gap-2">
-                {product.colors?.map((color) => (
-                  <button
-                    key={color.name}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(color.name); }}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                      selectedColor === color.name
-                        ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
-                  >
-                    {color.name}
-                  </button>
-                ))}
+            {hasColors && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variant</span>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors?.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(color.name); }}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                        selectedColor === color.name
+                          ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      {color.name} ({formatAmount(color.price !== null ? color.price : product.price)})
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+          <div className="flex gap-2 w-full mt-4">
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(); }}
+              disabled={product.stock === 0 || (hasSizes && !selectedSize) || (hasColors && !selectedColor)}
+              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Add to Cart
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Action Button */}
       <div className="relative z-40 px-1 shrink-0 bg-white dark:bg-slate-900">
-        {isDrawerOpen ? (
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(); }}
-            disabled={product.stock === 0 || (hasSizes && !selectedSize) || (hasColors && !selectedColor)}
-            className="w-full flex items-center justify-center gap-2 bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Add to Cart
-          </button>
-        ) : (
-          <button
-            onClick={handleActionClick}
-            disabled={product.stock === 0}
-            className="w-full flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span>{hasVariants ? "Select Option" : "Add to Cart"}</span>
-            {hasVariants ? (
-              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 opacity-80" />
-            ) : (
-              <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5 opacity-80 rotate-90" />
-            )}
-          </button>
-        )}
+        <button
+          onClick={handleActionClick}
+          disabled={product.stock === 0}
+          className="w-full flex items-center justify-between bg-primary text-primary-foreground hover:bg-primary/90 py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span>Add to Cart</span>
+          <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5 opacity-80 rotate-90" />
+        </button>
       </div>
     </div>
   )
