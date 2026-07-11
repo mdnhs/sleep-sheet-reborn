@@ -39,8 +39,13 @@ const app = new Hono()
       .limit(limit)
       .offset((page - 1) * limit)
 
+    const mappedList = list.map(t => ({
+      ...t,
+      screenshot: t.screenshot || t.image
+    }))
+
     return c.json({
-      data: list,
+      data: mappedList,
       total: totalCount,
       hasNextPage: page * limit < totalCount,
       totalPages: Math.ceil(totalCount / limit),
@@ -56,8 +61,8 @@ const app = new Hono()
   zValidator(
     'json',
     z.object({
-      name: z.string().min(1, 'Name is required'),
-      message: z.string(),
+      name: z.string().optional().default(""),
+      message: z.string().optional().default(""),
       rating: z.number().min(1).max(5),
       image: z.string().optional(),
       screenshot: z.string().optional(),
@@ -129,6 +134,42 @@ const app = new Hono()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       return c.json({ success: false, message: 'Failed to delete testimonial', error: errorMessage }, 500)
+    }
+  }
+)
+
+.patch(
+  '/:id',
+  zValidator(
+    'json',
+    z.object({
+      name: z.string().optional().default(""),
+      message: z.string().optional().default(""),
+      rating: z.number().min(1).max(5).optional(),
+      image: z.string().optional(),
+      screenshot: z.string().optional(),
+      role: z.enum(['FASHION_ENTHUSIAST', 'CUSTOMER', 'INFLUENCER', 'OTHER']).optional(),
+    })
+  ),
+  async (c) => {
+    try {
+      const id = c.req.param('id')
+      const data = c.req.valid('json')
+
+      const updatedTestimonial = await db
+        .update(testimonials)
+        .set(data)
+        .where(eq(testimonials.id, id))
+        .returning()
+
+      if (!updatedTestimonial.length) {
+        return c.json({ success: false, message: 'Testimonial not found' }, 404)
+      }
+
+      return c.json({ success: true, testimonial: updatedTestimonial[0] }, 200)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      return c.json({ success: false, message: 'Failed to update testimonial', error: errorMessage }, 500)
     }
   }
 )

@@ -100,10 +100,8 @@ const app = new Hono()
     }
   }
 
-  const isFeatured = sort === "featured" ? true : undefined;
-  if (isFeatured !== undefined) {
-    filterConditions.push(eq(products.isFeatured, isFeatured));
-  }
+  // Note: We don't filter by isFeatured when sort="featured" because it's a sort option, 
+  // not a filter. It will sort featured products first via orderConditions.
 
   if (search) {
     filterConditions.push(

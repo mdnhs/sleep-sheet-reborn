@@ -9,6 +9,8 @@ import React, { useEffect, useState } from "react";
 import { ChevronUp, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { seoConfig } from "@/lib/seo/config";
+import Testimonials from "@/components/home/testimonials";
+import Newsletter from "@/components/home/newsletter";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -36,6 +38,12 @@ function clientLayout({ children }: ClientLayoutProps) {
             <Navbar />
           </React.Suspense>
           <main className="flex-1">{children}</main>
+          {!pathname.includes("/checkout") && !pathname.includes("/account") && !pathname.includes("/signin") && !pathname.includes("/signup") && !pathname.includes("/orders") && (
+            <>
+              <Testimonials />
+              <Newsletter />
+            </>
+          )}
           <Footer />
         </div>
         <a

@@ -42,6 +42,7 @@ import {
 import Image from "next/image"
 import { useGetCategories } from "@/features/categories/api/use-get-categories"
 import { useCreateCategories } from "@/features/categories/api/use-create-categories"
+import { useUpdateCategory } from "@/features/categories/api/use-update-category"
 import { useDeleteCategory } from "@/features/categories/api/use-delete-category"
 import { useBulkDeleteCategories } from "@/features/categories/api/use-bulk-delete-categories"
 import { toast } from "sonner"
@@ -62,6 +63,7 @@ type CategoryRow = FlatCategory & {
 function CategoriesClientPage() {
   const { data: rawCategories, isLoading } = useGetCategories()
   const { mutate: createCategory, isPending: isCreating } = useCreateCategories()
+  const { mutate: updateCategory, isPending: isUpdating } = useUpdateCategory()
   const { mutate: deleteCategory, isPending: isDeleting } = useDeleteCategory()
   const { mutate: bulkDelete, isPending: isBulkDeleting } = useBulkDeleteCategories()
 
@@ -71,6 +73,9 @@ function CategoriesClientPage() {
   const [deleteTarget, setDeleteTarget] = useState<CategoryRow | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<CategoryRow | null>(null)
+  
   const [categoryName, setCategoryName] = useState("")
   const [categoryValue, setCategoryValue] = useState("")
   const [selectedParentValue, setSelectedParentValue] = useState("none")
@@ -158,6 +163,51 @@ function CategoriesClientPage() {
           setImagePreview("")
           setImageUrl("")
           setCreateOpen(false)
+        },
+      }
+    )
+  }
+
+  const handleEdit = (category: CategoryRow) => {
+    setCategoryName(category.label)
+    setCategoryValue(category.value)
+    setSelectedParentValue(category.parentId ? categories.find(c => c.id === category.parentId)?.value ?? "none" : "none")
+    setImagePreview(category.image || "")
+    setImageUrl(category.image || "")
+    setImageFile(null)
+    setEditTarget(category)
+    setEditOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editTarget) return
+
+    const finalImage = await uploadImage()
+    if (imageFile && !finalImage) return
+
+    const parentCategory = selectedParentValue !== "none"
+      ? categories.find((c) => c.value === selectedParentValue)
+      : null
+
+    updateCategory(
+      { 
+        currentValue: editTarget.value, 
+        value: categoryValue, 
+        label: categoryName, 
+        parentId: parentCategory?.id ?? null, 
+        image: finalImage ?? null 
+      },
+      {
+        onSuccess: () => {
+          setCategoryName("")
+          setCategoryValue("")
+          setSelectedParentValue("none")
+          setImageFile(null)
+          setImagePreview("")
+          setImageUrl("")
+          setEditTarget(null)
+          setEditOpen(false)
         },
       }
     )
@@ -255,6 +305,12 @@ function CategoriesClientPage() {
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  onClick={() => handleEdit(cat)}
+                >
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className={!canDelete ? "text-destructive focus:text-destructive" : ""}
                   disabled={!canDelete || isDeleting}
@@ -404,6 +460,110 @@ function CategoriesClientPage() {
                   Switch to top-level
                 </Button>
               )}
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={editOpen} onOpenChange={(open) => {
+          setEditOpen(open)
+          if (!open) {
+            setCategoryName("")
+            setCategoryValue("")
+            setSelectedParentValue("none")
+            setImageFile(null)
+            setImagePreview("")
+            setImageUrl("")
+            setEditTarget(null)
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Parent Category</label>
+                <select
+                  value={selectedParentValue}
+                  onChange={(e) => setSelectedParentValue(e.target.value)}
+                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  <option value="none">None (top-level)</option>
+                  {rootCategories.filter(c => c.value !== editTarget?.value).map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Name</label>
+                <Input
+                  placeholder="Category Name"
+                  value={categoryName}
+                  onChange={(e) => {
+                    setCategoryName(e.target.value)
+                    setCategoryValue(generateSlug(e.target.value))
+                  }}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Slug</label>
+                <Input
+                  placeholder="category-slug"
+                  value={categoryValue}
+                  onChange={(e) => setCategoryValue(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Image</label>
+                <div className="flex items-start gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageSelect(file)
+                    }}
+                  />
+                  {imagePreview ? (
+                    <div className="relative h-20 w-20 rounded-lg overflow-hidden border">
+                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-background/80 flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-20 w-20 rounded-lg border-2 border-dashed border-input flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground hover:border-foreground/50 transition-colors"
+                    >
+                      <ImagePlus className="h-5 w-5" />
+                      Upload
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isUpdating || isUploading}>
+                {(isUpdating || isUploading) ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> {isUploading ? "Uploading..." : "Updating..."}</>
+                ) : (
+                  "Update Category"
+                )}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>

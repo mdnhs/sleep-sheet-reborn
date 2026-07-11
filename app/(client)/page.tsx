@@ -28,8 +28,6 @@ async function Page() {
       <NarrowBanner />
       <FeaturedProduct />
       <SubcategoryProducts />
-      <Testimonials />
-      <Newsletter />
     </main>
   );
 }

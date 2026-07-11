@@ -16,10 +16,12 @@ interface ProductAccordionProps {
 import { useSettings } from "@/features/settings/api/use-settings";
 import React from "react";
 import { useCurrency } from "@/hooks/use-currency";
+import { useLanguage } from "@/hooks/use-language";
 
 export function ProductAccordion({ product }: ProductAccordionProps) {
   const { data: settings } = useSettings();
   const { formatAmount } = useCurrency();
+  const { t } = useLanguage();
 
   const insideCost = Number(settings?.shipping_inside_dhaka ?? 60);
   const outsideCost = Number(settings?.shipping_outside_dhaka ?? 120);
@@ -46,33 +48,53 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
         defaultValue={["shipping"]}
         className="w-full border-none space-y-4"
       >
-        <AccordionItem value="shipping" className="border border-border rounded-xl px-4 bg-background">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Shipping & Delivery</AccordionTrigger>
-          <AccordionContent className="pb-4">
+        <AccordionItem value="shipping" className="border border-border/50 rounded-2xl px-5 bg-white dark:bg-slate-900 shadow-sm">
+          <AccordionTrigger className="text-base font-bold hover:no-underline py-5">{t("shippingAndDelivery")}</AccordionTrigger>
+          <AccordionContent className="pb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Inside Dhaka */}
-              <div className="flex items-start gap-2.5">
-                <div className="bg-secondary/40 p-2 rounded-full mt-0.5 shrink-0">
-                  <Truck className="h-4 w-4 text-foreground" />
+              <div className="flex flex-col p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-all duration-300 hover:shadow-md">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-primary/10 text-primary p-2.5 rounded-xl shrink-0">
+                    <Truck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">{t("insideDhaka")}</p>
+                    <p className="text-[15px] font-bold text-slate-800 dark:text-slate-100 leading-tight mt-0.5">{t("oneDayDelivery")}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold leading-none">Inside Dhaka</p>
-                  <p className="text-xs font-bold text-foreground mt-1">1 Day Delivery</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Shipping Cost: {formatAmount(insideCost)}</p>
-                  <p className="text-[10px] text-primary/80 font-medium mt-0.5">Estimated delivery: {tomorrowStr}</p>
+                
+                <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-[13px] font-medium text-slate-500 dark:text-slate-400">{t("shippingCost")}</span>
+                  <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">{formatAmount(insideCost)}</span>
+                </div>
+                
+                <div className="mt-3 bg-primary/10 text-primary text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5">
+                  <CalendarClock className="h-4 w-4" />
+                  {t("estDelivery")}: {tomorrowStr}
                 </div>
               </div>
 
               {/* Outside Dhaka */}
-              <div className="flex items-start gap-2.5">
-                <div className="bg-secondary/40 p-2 rounded-full mt-0.5 shrink-0">
-                  <Package className="h-4 w-4 text-foreground" />
+              <div className="flex flex-col p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-orange-500/50 transition-all duration-300 hover:shadow-md">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-orange-500/10 text-orange-600 dark:text-orange-400 p-2.5 rounded-xl shrink-0">
+                    <Package className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">{t("outsideDhaka")}</p>
+                    <p className="text-[15px] font-bold text-slate-800 dark:text-slate-100 leading-tight mt-0.5">{t("threeToFourDaysDelivery")}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold leading-none">Outside Dhaka</p>
-                  <p className="text-xs font-bold text-foreground mt-1">3-4 Days Delivery</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Shipping Cost: {formatAmount(outsideCost)}</p>
-                  <p className="text-[10px] text-primary/80 font-medium mt-0.5">Estimated delivery: {outsideRangeStr}</p>
+                
+                <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-[13px] font-medium text-slate-500 dark:text-slate-400">{t("shippingCost")}</span>
+                  <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">{formatAmount(outsideCost)}</span>
+                </div>
+                
+                <div className="mt-3 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5">
+                  <CalendarClock className="h-4 w-4" />
+                  {t("estDelivery")}: {outsideRangeStr}
                 </div>
               </div>
             </div>

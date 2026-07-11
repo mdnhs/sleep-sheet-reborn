@@ -205,7 +205,7 @@ function ProductDetailPage() {
         <div className="mt-16 border-t border-border/60 pt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
-            <div>
+            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-border/50 shadow-sm">
               <h2 className="text-xl font-bold text-foreground mb-4">Description & Fit</h2>
               <div 
                 className="prose prose-sm md:prose-base dark:prose-invert text-muted-foreground leading-relaxed max-w-none" 

@@ -4,6 +4,7 @@ import { useGetTestimonials } from "@/features/testimonials/api/use-get-testimon
 import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import Autoplay from "embla-carousel-autoplay";
 import {
   Carousel,
   CarouselContent,
@@ -29,7 +30,14 @@ const Testimonials = () => {
           <Carousel
             opts={{
               align: "start",
+              loop: true,
             }}
+            plugins={[
+              Autoplay({
+                delay: 4000,
+                stopOnInteraction: true,
+              }),
+            ]}
             className="w-full"
           >
             <CarouselContent className="-ml-4">
@@ -43,19 +51,26 @@ const Testimonials = () => {
                         fill
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="absolute bottom-4 left-4 right-4 text-white">
-                          <p className="font-medium text-sm truncate">{testimonial.name}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            {Array.from({ length: testimonial.rating }).map((_, i) => (
-                              <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            ))}
+                      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8 border border-white/20 bg-secondary overflow-hidden shrink-0">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${testimonial.name || 'User'}`} />
+                            <AvatarFallback className="text-xs bg-white text-black">
+                              {(testimonial.name || "U").charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            {testimonial.name && (
+                              <p className="font-medium text-sm text-white truncate drop-shadow-md">
+                                {testimonial.name}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-0.5 mt-0.5 drop-shadow-md">
+                              {Array.from({ length: testimonial.rating }).map((_, i) => (
+                                <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              ))}
+                            </div>
                           </div>
-                          {testimonial.message && (
-                            <p className="text-xs mt-2 line-clamp-2 text-white/80">
-                              {testimonial.message}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -70,10 +85,10 @@ const Testimonials = () => {
                         </p>
                       </div>
                       <div className="pt-4 mt-4 border-t border-border flex items-center gap-3">
-                        <Avatar className="h-8 w-8 shrink-0">
-                          {testimonial.image && <AvatarImage src={testimonial.image} />}
+                        <Avatar className="h-8 w-8 shrink-0 bg-secondary overflow-hidden">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${testimonial.name || 'User'}`} />
                           <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {testimonial.name.charAt(0).toUpperCase()}
+                            {(testimonial.name || "U").charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">

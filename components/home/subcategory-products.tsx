@@ -47,6 +47,7 @@ const SubcategoryProducts = () => {
           key={category.id}
           categoryLabel={category.label}
           categoryValue={category.value}
+          categoryImage={category.image}
           isEven={index % 2 !== 0}
         />
       ))}

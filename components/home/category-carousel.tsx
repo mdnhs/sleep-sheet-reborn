@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import ProductCard from "../product/product-card";
 import { useGetProducts } from "@/features/product/api/use-get-products";
@@ -16,10 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface CategoryCarouselProps {
   categoryLabel?: string;
   categoryValue?: string;
+  categoryImage?: string;
   isEven?: boolean;
 }
 
-const CategoryCarousel = ({ categoryLabel, categoryValue, isEven = false }: CategoryCarouselProps) => {
+const CategoryCarousel = ({ categoryLabel, categoryValue, categoryImage, isEven = false }: CategoryCarouselProps) => {
   const { data: products, isLoading } = useGetProducts({
     category: categoryLabel,
   });
@@ -29,11 +31,16 @@ const CategoryCarousel = ({ categoryLabel, categoryValue, isEven = false }: Cate
       <section className={`py-6 md:py-10 relative overflow-hidden ${isEven ? 'bg-primary/5 dark:bg-primary/10' : 'bg-background'}`}>
         <div className="container mx-auto px-4 relative">
           <div className="flex flex-row items-end justify-between mb-6">
-            <div>
-              <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
-                {categoryLabel}
-              </h2>
-            </div>
+          <div className="flex items-center gap-3">
+            {categoryImage && (
+              <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border shadow-sm">
+                <Image src={categoryImage} alt={categoryLabel || "Category"} fill className="object-cover" />
+              </div>
+            )}
+            <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
+              {categoryLabel}
+            </h2>
+          </div>
             <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <span className="hidden sm:inline">View All</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -63,7 +70,12 @@ const CategoryCarousel = ({ categoryLabel, categoryValue, isEven = false }: Cate
     <section className={`py-6 md:py-10 border-t border-slate-100 dark:border-slate-800 relative overflow-hidden ${isEven ? 'bg-primary/5 dark:bg-primary/10' : 'bg-background'}`}>
       <div className="container mx-auto px-4 relative">
         <div className="flex flex-row items-end justify-between mb-6">
-          <div>
+          <div className="flex items-center gap-3">
+            {categoryImage && (
+              <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border shadow-sm">
+                <Image src={categoryImage} alt={categoryLabel || "Category"} fill className="object-cover" />
+              </div>
+            )}
             <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
               {categoryLabel}
             </h2>

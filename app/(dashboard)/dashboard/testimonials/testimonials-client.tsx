@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import type { ColumnDef, PaginationState, Updater } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -21,10 +22,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { MoreVertical, Search, Trash2, Loader2, Star, ImageIcon } from "lucide-react"
+import { MoreVertical, Search, Trash2, Loader2, Star, ImageIcon, Plus, X, ImagePlus } from "lucide-react"
+import Image from "next/image"
+import { toast } from "sonner"
 import { useGetTestimonials } from "@/features/testimonials/api/use-get-testimonials"
+import { useCreateTestimonial } from "@/features/testimonials/api/use-create-testimonial"
 import { useDeleteTestimonial } from "@/features/testimonials/api/use-delete-testimonial"
 import { useBulkDeleteTestimonials } from "@/features/testimonials/api/use-bulk-delete-testimonials"
+import { useUpdateTestimonial } from "@/features/testimonials/api/use-update-testimonial"
 
 export type TestimonialColumn = {
   id: string
@@ -46,8 +51,24 @@ const roleLabel: Record<string, string> = {
 export default function TestimonialsClientPage() {
   const { mutate: deleteTestimonial, isPending: isDeleting } = useDeleteTestimonial()
   const { mutate: bulkDelete, isPending: isBulkDeleting } = useBulkDeleteTestimonials()
+  const { mutate: updateTestimonial, isPending: isUpdating } = useUpdateTestimonial()
+  
   const [testimonialToDelete, setTestimonialToDelete] = useState<TestimonialColumn | null>(null)
+  const [testimonialToEdit, setTestimonialToEdit] = useState<TestimonialColumn | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+
+  const { mutate: createTestimonial, isPending: isCreating } = useCreateTestimonial()
+  
+  const [createOpen, setCreateOpen] = useState(false)
+  const [testimonialName, setTestimonialName] = useState("")
+  const [testimonialMessage, setTestimonialMessage] = useState("")
+  const [testimonialRating, setTestimonialRating] = useState(5)
+  const [testimonialRole, setTestimonialRole] = useState("CUSTOMER")
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -82,6 +103,110 @@ export default function TestimonialsClientPage() {
       },
       onError: () => setConfirmBulkDelete(false),
     })
+  }
+
+  const handleImageSelect = (file: File) => {
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const removeImage = () => {
+    setImageFile(null)
+    setImagePreview("")
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("image", imageFile)
+      const res = await fetch("/api/testimonials/upload-image", { method: "POST", body: formData })
+      const json = await res.json()
+      if (!res.ok) throw new Error((json as { error?: string }).error || "Upload failed")
+      return (json as { url: string }).url
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload image")
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const finalImage = await uploadImage()
+    if (imageFile && !finalImage) return
+
+    createTestimonial(
+      { 
+        name: testimonialName, 
+        message: testimonialMessage, 
+        rating: testimonialRating, 
+        role: testimonialRole as "FASHION_ENTHUSIAST" | "CUSTOMER" | "INFLUENCER" | "OTHER",
+        screenshot: finalImage ?? undefined 
+      },
+      {
+        onSuccess: () => {
+          setTestimonialName("")
+          setTestimonialMessage("")
+          setTestimonialRating(5)
+          setTestimonialRole("CUSTOMER")
+          setImageFile(null)
+          setImagePreview("")
+          setCreateOpen(false)
+        },
+      }
+    )
+  }
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!testimonialToEdit) return
+
+    let finalImage = testimonialToEdit.screenshot
+    if (imageFile) {
+      const uploaded = await uploadImage()
+      if (!uploaded) return
+      finalImage = uploaded
+    }
+
+    updateTestimonial(
+      { 
+        id: testimonialToEdit.id,
+        json: {
+          name: testimonialName, 
+          message: testimonialMessage, 
+          rating: testimonialRating, 
+          role: testimonialRole as "FASHION_ENTHUSIAST" | "CUSTOMER" | "INFLUENCER" | "OTHER",
+          screenshot: finalImage ?? undefined 
+        }
+      },
+      {
+        onSuccess: () => {
+          setTestimonialName("")
+          setTestimonialMessage("")
+          setTestimonialRating(5)
+          setTestimonialRole("CUSTOMER")
+          setImageFile(null)
+          setImagePreview("")
+          setEditOpen(false)
+          setTestimonialToEdit(null)
+        },
+      }
+    )
+  }
+
+  const openEditModal = (testimonial: TestimonialColumn) => {
+    setTestimonialToEdit(testimonial)
+    setTestimonialName(testimonial.name || "")
+    setTestimonialMessage(testimonial.message || "")
+    setTestimonialRating(testimonial.rating || 5)
+    setTestimonialRole(testimonial.role || "CUSTOMER")
+    setImageFile(null)
+    setImagePreview(testimonial.screenshot || "")
+    setEditOpen(true)
   }
 
   const columns: ColumnDef<TestimonialColumn>[] = [
@@ -168,6 +293,14 @@ export default function TestimonialsClientPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    openEditModal(testimonial)
+                  }}
+                >
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   disabled={isDeleting}
                   onSelect={(e) => e.preventDefault()}
@@ -208,6 +341,109 @@ export default function TestimonialsClientPage() {
     <div className="container mx-auto space-y-4 py-4 px-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Testimonials</h1>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger className={buttonVariants()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Testimonial
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Testimonial</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Name</label>
+                <Input
+                  placeholder="Reviewer Name (Optional)"
+                  value={testimonialName}
+                  onChange={(e) => setTestimonialName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Message</label>
+                <textarea
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]"
+                  placeholder="Testimonial message (Optional)"
+                  value={testimonialMessage}
+                  onChange={(e) => setTestimonialMessage(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Rating (1-5)</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={testimonialRating}
+                    onChange={(e) => setTestimonialRating(parseInt(e.target.value) || 5)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Role</label>
+                  <select
+                    value={testimonialRole}
+                    onChange={(e) => setTestimonialRole(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  >
+                    <option value="CUSTOMER">Customer</option>
+                    <option value="FASHION_ENTHUSIAST">Fashion Enthusiast</option>
+                    <option value="INFLUENCER">Influencer</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Image</label>
+                <div className="flex items-start gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleImageSelect(file)
+                    }}
+                  />
+                  {imagePreview ? (
+                    <div className="relative h-20 w-20 rounded-lg overflow-hidden border">
+                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-background/80 flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-20 w-20 rounded-lg border-2 border-dashed border-input flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground hover:border-foreground/50 transition-colors"
+                    >
+                      <ImagePlus className="h-5 w-5" />
+                      Upload
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isCreating || isUploading}>
+                {(isCreating || isUploading) ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {isUploading ? "Uploading..." : "Creating..."}</>
+                ) : (
+                  "Create Testimonial"
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <DataTable<TestimonialColumn, unknown>
@@ -297,6 +533,109 @@ export default function TestimonialsClientPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={editOpen} onOpenChange={(open) => {
+        setEditOpen(open)
+        if (!open) setTestimonialToEdit(null)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Testimonial</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Name</label>
+              <Input
+                placeholder="Reviewer Name (Optional)"
+                value={testimonialName}
+                onChange={(e) => setTestimonialName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Message</label>
+              <textarea
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]"
+                placeholder="Testimonial message (Optional)"
+                value={testimonialMessage}
+                onChange={(e) => setTestimonialMessage(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Rating (1-5)</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={testimonialRating}
+                  onChange={(e) => setTestimonialRating(parseInt(e.target.value) || 5)}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">Role</label>
+                <select
+                  value={testimonialRole}
+                  onChange={(e) => setTestimonialRole(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  <option value="CUSTOMER">Customer</option>
+                  <option value="FASHION_ENTHUSIAST">Fashion Enthusiast</option>
+                  <option value="INFLUENCER">Influencer</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Image</label>
+              <div className="flex items-start gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleImageSelect(file)
+                  }}
+                />
+                {imagePreview ? (
+                  <div className="relative h-20 w-20 rounded-lg overflow-hidden border">
+                    <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-background/80 flex items-center justify-center"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-20 w-20 rounded-lg border-2 border-dashed border-input flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground hover:border-foreground/50 transition-colors"
+                  >
+                    <ImagePlus className="h-5 w-5" />
+                    Upload
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isUpdating || isUploading}>
+              {(isUpdating || isUploading) ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {isUploading ? "Uploading..." : "Updating..."}</>
+              ) : (
+                "Update Testimonial"
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

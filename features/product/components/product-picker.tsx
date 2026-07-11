@@ -5,6 +5,7 @@ import { useWishlistToggle } from "@/lib/helpers";
 import { Product } from "@/lib/types";
 import { Heart, ShoppingBag, Phone, MessageCircle, ShoppingCart, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/use-currency";
@@ -222,17 +223,17 @@ function ProductPicker({ product }: ProductPickerProps) {
       <div className="flex flex-col gap-3 lg:gap-4 mb-4 lg:mb-8">
         {/* Top Row: Quantity & Wishlist */}
         <div className="flex items-center gap-2 lg:gap-3">
-          <div className="flex items-center justify-between bg-secondary/30 rounded-full px-2 h-12 lg:h-14 w-28 lg:w-32 shrink-0">
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-border/50 shadow-sm rounded-full px-1.5 h-12 lg:h-14 w-32 lg:w-36 shrink-0">
             <button
-              className="h-10 w-10 flex items-center justify-center rounded-full text-lg text-foreground hover:bg-background transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
+              className="h-9 w-9 lg:h-11 lg:w-11 flex items-center justify-center rounded-full text-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-foreground transition-all disabled:opacity-50 disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-800"
               onClick={() => handleQuantityChange(quantity - 1)}
               disabled={quantity <= 1}
             >
               −
             </button>
-            <span className="w-8 text-center font-semibold text-sm text-foreground">{quantity}</span>
+            <span className="w-8 text-center font-bold text-[15px] text-foreground">{quantity}</span>
             <button
-              className="h-10 w-10 flex items-center justify-center rounded-full text-lg text-foreground hover:bg-background transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
+              className="h-9 w-9 lg:h-11 lg:w-11 flex items-center justify-center rounded-full text-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-foreground transition-all disabled:opacity-50 disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-800"
               onClick={() => handleQuantityChange(quantity + 1)}
               disabled={quantity >= product.stock}
             >
@@ -273,7 +274,7 @@ function ProductPicker({ product }: ProductPickerProps) {
         <div className="grid grid-cols-2 gap-2 lg:gap-3">
           <Button
             variant="outline"
-            className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide border-2 border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background transition-all"
+            className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide border-2 border-foreground bg-white dark:bg-slate-900 text-foreground hover:bg-foreground hover:text-background transition-all"
             disabled={!isInStock}
             onClick={() => {
               if (hasVariants) {
@@ -317,7 +318,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             href="https://wa.me/8801700000000" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 text-green-600 hover:bg-green-50 transition-colors text-sm"
+            className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 bg-white dark:bg-slate-900 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors text-sm"
           >
             <MessageCircle className="mr-2 h-4 w-4" fill="currentColor" />
             {t("whatsappOrder")}
@@ -332,9 +333,21 @@ function ProductPicker({ product }: ProductPickerProps) {
         }`}
       >
         <div className="container mx-auto px-4 flex items-center justify-between gap-4">
-          <div className="hidden sm:block flex-1 min-w-0 pr-4">
-            <p className="font-semibold truncate text-sm text-foreground">{product.name}</p>
-            <p className="text-xs text-muted-foreground font-medium">{formatAmount(displayPrice)}</p>
+          <div className="hidden sm:flex items-center gap-3 flex-1 min-w-0 pr-4">
+            {product.images && product.images[0] && (
+              <div className="relative h-10 w-10 shrink-0 rounded-md overflow-hidden bg-secondary/20 border border-border/50 shadow-sm">
+                <Image
+                  src={product.images[0]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold truncate text-sm text-foreground">{product.name}</p>
+              <p className="text-xs text-muted-foreground font-medium">{formatAmount(displayPrice)}</p>
+            </div>
           </div>
           
           <div className="flex items-center gap-3 w-full sm:w-auto">

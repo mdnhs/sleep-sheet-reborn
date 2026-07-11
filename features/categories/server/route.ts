@@ -225,31 +225,34 @@ const app = new Hono()
    });
 
    const categoriesWithImages = categoriesList
-     .map((category) => {
-       const validProducts = category.products.filter(p => p.images && p.images.length > 0);
-       if (validProducts.length === 0) return null;
+      .map((category) => {
+        const validProducts = category.products.filter(p => p.images && p.images.length > 0);
+        
+        let productImage = null;
+        if (validProducts.length > 0) {
+          const bestProduct = validProducts
+            .map((p) => {
+              const avgRating =
+                p.reviews.length > 0
+                  ? p.reviews.reduce((acc, r) => acc + r.rating, 0) / p.reviews.length
+                  : 0;
+              return { ...p, avgRating };
+            })
+            .sort((a, b) => b.avgRating - a.avgRating)[0];
+          productImage = bestProduct?.images?.[0] ?? null;
+        }
 
-       const bestProduct = validProducts
-         .map((p) => {
-           const avgRating =
-             p.reviews.length > 0
-               ? p.reviews.reduce((acc, r) => acc + r.rating, 0) / p.reviews.length
-               : 0;
-           return { ...p, avgRating };
-         })
-         .sort((a, b) => b.avgRating - a.avgRating)[0];
+        const image = category.image || productImage;
+        if (!image) return null;
 
-       const image = bestProduct?.images?.[0] ?? null;
-       if (!image) return null;
-
-       return {
-         label: category.label,
-         value: category.value,
-         image,
-         _productCount: validProducts.length, // internal only
-       };
-     })
-     .filter((c): c is { label: string; value: string; image: string; _productCount: number } => !!c)
+        return {
+          label: category.label,
+          value: category.value,
+          image,
+          _productCount: validProducts.length, // internal only
+        };
+      })
+      .filter((c): c is { label: string; value: string; image: string; _productCount: number } => !!c)
      .sort((a, b) => b._productCount - a._productCount)
      .map(({ _productCount, ...rest }) => rest);
 
