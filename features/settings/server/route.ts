@@ -52,6 +52,8 @@ const app = new Hono()
         hero_cta_text: z.string().optional(),
         hero_cta_link: z.string().optional(),
         hero_bg_image: z.string().optional(),
+        hero_slides: z.string().optional(),
+        promo_banners: z.string().optional(),
         feature_1_title: z.string().optional(),
         feature_1_desc: z.string().optional(),
         feature_2_title: z.string().optional(),

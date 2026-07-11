@@ -22,7 +22,7 @@ async function Page() {
       {structuredDataScript("local-business", localBusinessSchema())}
       <Hero />
 
-      <Features />
+      {/* <Features /> */}
 
       <Categories />
       <NarrowBanner />

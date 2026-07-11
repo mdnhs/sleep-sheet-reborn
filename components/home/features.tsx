@@ -16,24 +16,24 @@ const Features = () => {
   const { features } = useWebsiteSettings();
 
   return (
-    <section className="py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-      <div className="container mx-auto px-2 sm:px-4">
-        <div className="grid grid-cols-4 gap-2 md:gap-6">
+    <section className="py-10 md:py-16 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-6 lg:gap-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
           {features.map((feature, index) => {
             const Icon = ICONS[index];
             const { color, bgColor } = COLORS[index];
             return (
-              <div key={index} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-2 md:gap-3">
+              <div key={index} className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 lg:px-8 group cursor-default">
                 <div
-                  className={`flex-shrink-0 h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl flex items-center justify-center ${bgColor} ${color}`}
+                  className={`flex-shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 shadow-sm ${bgColor} ${color}`}
                 >
-                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                  <Icon className="h-6 w-6" strokeWidth={1.75} />
                 </div>
-                <div className="flex flex-col gap-0.5 mt-1 items-center md:items-start w-full px-0.5">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-[11px] sm:text-xs md:text-sm tracking-tight leading-tight w-full break-words line-clamp-3 text-center md:text-left">
+                <div className="flex flex-col gap-1.5 items-center sm:items-start pt-1">
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm md:text-base tracking-tight transition-colors group-hover:text-primary">
                     {feature.title}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight hidden md:block">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
                     {feature.description}
                   </p>
                 </div>

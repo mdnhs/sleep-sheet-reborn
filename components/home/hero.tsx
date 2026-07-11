@@ -30,25 +30,48 @@ const SLIDES = [
   },
 ];
 
+const DEFAULT_PROMO_BANNERS = [
+  {
+    id: "top-banner",
+    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop",
+    subtitle: "Best Seller",
+    title: "All-Season Comforters",
+    linkText: "View Collection",
+    link: "/shop?category=Comforters",
+  },
+  {
+    id: "bottom-banner",
+    image: "https://images.unsplash.com/photo-1616627547584-bf28cee262db?q=80&w=800&auto=format&fit=crop",
+    subtitle: "New Arrivals",
+    title: "Luxury Hotel Bedsheets",
+    linkText: "Shop Now",
+    link: "/shop?category=Bedsheets",
+  },
+];
+
 function Hero() {
-  const { heroTitle, heroSubtitle, heroCtaText, heroCtaLink } = useWebsiteSettings();
+  const { heroTitle, heroSubtitle, heroCtaText, heroCtaLink, heroSlides, promoBanners } = useWebsiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const activeSlides = heroSlides && heroSlides.length > 0 ? heroSlides : SLIDES;
+  const activePromoBanners = promoBanners && promoBanners.length > 0 ? promoBanners : DEFAULT_PROMO_BANNERS;
+
   const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
-  }, []);
+    setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
+  }, [activeSlides.length]);
 
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
-  }, []);
+    setCurrentSlide((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
+  }, [activeSlides.length]);
 
   useEffect(() => {
     const timer = setInterval(nextSlide, 6000);
     return () => clearInterval(timer);
   }, [nextSlide]);
 
-  const slideData = SLIDES.map((slide, index) => {
-    if (index === 0) {
+  const slideData = activeSlides.map((slide, index) => {
+    if (!heroSlides && index === 0) {
+      // For legacy fallback: apply old text settings to the first default slide
       return {
         ...slide,
         title: heroTitle || slide.title,
@@ -135,55 +158,35 @@ function Hero() {
 
           {/* Right: Stacked Banners */}
           <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
-            {/* Top Right Card */}
-            <Link href="/shop?category=Comforters" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
-              <Image
-                src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop"
-                alt="Comforters"
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end opacity-90 group-hover:opacity-100 transition-opacity">
-                <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/90 font-bold mb-1.5 flex items-center gap-2">
-                    <span className="h-px w-4 bg-white/90"></span>
-                    Best Seller
-                  </p>
-                  <h3 className="text-2xl font-heading font-medium text-white leading-tight mb-2">
-                    All-Season Comforters
-                  </h3>
-                  <div className="flex items-center text-[11px] uppercase tracking-wider font-bold text-white group-hover:text-primary-foreground transition-colors">
-                    View Collection <ArrowRight className="h-3 w-3 ml-1.5 transform group-hover:translate-x-1 transition-transform" />
+            {activePromoBanners.map((banner) => (
+              <Link 
+                key={banner.id}
+                href={banner.link} 
+                className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800"
+              >
+                <Image
+                  src={banner.image}
+                  alt={banner.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end opacity-90 group-hover:opacity-100 transition-opacity">
+                  <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-white/90 font-bold mb-1.5 flex items-center gap-2">
+                      <span className="h-px w-4 bg-white/90"></span>
+                      {banner.subtitle}
+                    </p>
+                    <h3 className="text-2xl font-heading font-medium text-white leading-tight mb-2">
+                      {banner.title}
+                    </h3>
+                    <div className="flex items-center text-[11px] uppercase tracking-wider font-bold text-white group-hover:text-primary-foreground transition-colors">
+                      {banner.linkText} <ArrowRight className="h-3 w-3 ml-1.5 transform group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-
-            {/* Bottom Right Card */}
-            <Link href="/shop?category=Bedsheets" className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800">
-              <Image
-                src="https://images.unsplash.com/photo-1616627547584-bf28cee262db?q=80&w=800&auto=format&fit=crop"
-                alt="Bedsheets"
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end opacity-90 group-hover:opacity-100 transition-opacity">
-                <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/90 font-bold mb-1.5 flex items-center gap-2">
-                    <span className="h-px w-4 bg-white/90"></span>
-                    New Arrivals
-                  </p>
-                  <h3 className="text-2xl font-heading font-medium text-white leading-tight mb-2">
-                    Luxury Hotel Bedsheets
-                  </h3>
-                  <div className="flex items-center text-[11px] uppercase tracking-wider font-bold text-white group-hover:text-primary-foreground transition-colors">
-                    Shop Now <ArrowRight className="h-3 w-3 ml-1.5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </div>
-            </Link>
+              </Link>
+            ))}
           </div>
         </div>
       </div>

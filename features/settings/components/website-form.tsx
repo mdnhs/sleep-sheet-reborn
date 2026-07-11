@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
+import { HeroSlidesManager } from "./hero-slides-manager";
+import { PromoBannersManager } from "./promo-banners-manager";
 
 const websiteSchema = z.object({
   site_name: z.string().optional(),
@@ -21,6 +23,8 @@ const websiteSchema = z.object({
   hero_cta_text: z.string().optional(),
   hero_cta_link: z.string().optional(),
   hero_bg_image: z.string().optional(),
+  hero_slides: z.string().optional(),
+  promo_banners: z.string().optional(),
   feature_1_title: z.string().optional(),
   feature_1_desc: z.string().optional(),
   feature_2_title: z.string().optional(),
@@ -79,7 +83,7 @@ export function WebsiteForm() {
     resolver: zodResolver(websiteSchema),
     defaultValues: {
       site_name: "", logo_url: "",
-      hero_title: "", hero_subtitle: "", hero_cta_text: "", hero_cta_link: "", hero_bg_image: "",
+      hero_title: "", hero_subtitle: "", hero_cta_text: "", hero_cta_link: "", hero_bg_image: "", hero_slides: "", promo_banners: "",
       feature_1_title: "", feature_1_desc: "",
       feature_2_title: "", feature_2_desc: "",
       feature_3_title: "", feature_3_desc: "",
@@ -101,6 +105,8 @@ export function WebsiteForm() {
         hero_cta_text: settings.hero_cta_text || "",
         hero_cta_link: settings.hero_cta_link || "",
         hero_bg_image: settings.hero_bg_image || "",
+        hero_slides: settings.hero_slides || "",
+        promo_banners: settings.promo_banners || "",
         feature_1_title: settings.feature_1_title || "",
         feature_1_desc: settings.feature_1_desc || "",
         feature_2_title: settings.feature_2_title || "",
@@ -165,51 +171,9 @@ export function WebsiteForm() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Hero Section</CardTitle>
-            <CardDescription>Main banner content displayed on the homepage.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="hero_title" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.hero_title}</FormLabel>
-                  <FormControl><Input placeholder="Premium Comfort" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="hero_subtitle" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.hero_subtitle}</FormLabel>
-                  <FormControl><Input placeholder="Luxury Comforters" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="hero_cta_text" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.hero_cta_text}</FormLabel>
-                  <FormControl><Input placeholder="Shop Now" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="hero_cta_link" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.hero_cta_link}</FormLabel>
-                  <FormControl><Input placeholder="/shop" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-            <FormField control={form.control} name="hero_bg_image" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{FIELD_LABELS.hero_bg_image}</FormLabel>
-                <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </CardContent>
-        </Card>
+        <HeroSlidesManager />
+
+        <PromoBannersManager />
 
         <Card>
           <CardHeader>

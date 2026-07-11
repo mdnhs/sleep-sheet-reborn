@@ -15,6 +15,39 @@ export function useWebsiteSettings() {
     heroCtaText: settings?.hero_cta_text || "Shop Now",
     heroCtaLink: settings?.hero_cta_link || "/shop",
     heroBgImage: settings?.hero_bg_image || "",
+    heroSlides: (() => {
+      if (settings?.hero_slides) {
+        try {
+          return JSON.parse(settings.hero_slides) as Array<{
+            id: string;
+            image: string;
+            title: string;
+            heading: string;
+            link: string;
+          }>;
+        } catch (e) {
+          console.error("Failed to parse hero_slides", e);
+        }
+      }
+      return null;
+    })(),
+    promoBanners: (() => {
+      if (settings?.promo_banners) {
+        try {
+          return JSON.parse(settings.promo_banners) as Array<{
+            id: string;
+            image: string;
+            subtitle: string;
+            title: string;
+            linkText: string;
+            link: string;
+          }>;
+        } catch (e) {
+          console.error("Failed to parse promo_banners", e);
+        }
+      }
+      return null;
+    })(),
     features: [
       {
         title: settings?.feature_1_title || "Payment only online",

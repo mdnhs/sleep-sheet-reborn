@@ -53,6 +53,7 @@ export function useUpdateSettings() {
       hero_cta_text?: string;
       hero_cta_link?: string;
       hero_bg_image?: string;
+      hero_slides?: string;
       feature_1_title?: string;
       feature_1_desc?: string;
       feature_2_title?: string;
