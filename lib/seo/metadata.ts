@@ -35,7 +35,6 @@ export function generateMetadata({
     keywords,
     robots: noIndex ? "noindex, nofollow" : robots || "index, follow, max-image-preview:large, max-snippet:-1",
     referrer: "origin-when-cross-origin",
-    themeColor: seoConfig.themeColor,
     alternates: {
       canonical: canonicalUrl,
       ...(alternates?.languages ? { languages: alternates.languages } : {}),

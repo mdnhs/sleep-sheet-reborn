@@ -121,6 +121,12 @@ const app = new Hono()
     }
   }
 
+  const featured = c.req.query("featured");
+
+  if (featured === "true") {
+    filterConditions.push(eq(products.isFeatured, true));
+  }
+
   // Note: We don't filter by isFeatured when sort="featured" because it's a sort option, 
   // not a filter. It will sort featured products first via orderConditions.
 

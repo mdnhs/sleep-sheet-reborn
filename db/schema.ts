@@ -100,6 +100,15 @@ export const otpTypeEnum = pgEnum("OTPType", [
 ]);
 
 // Tables
+export const roles = pgTable("roles", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  name: text("name").unique().notNull(),
+  permissions: text("permissions").array().notNull().default([]),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+});
+
 export const users = pgTable("User", {
   id: text("id")
     .primaryKey()
@@ -110,6 +119,7 @@ export const users = pgTable("User", {
   phone: text("phone"),
   address: text("address"),
   role: roleEnum("role").default("USER").notNull(),
+  roleId: text("roleId").references(() => roles.id, { onDelete: "set null" }),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 
@@ -408,13 +418,17 @@ export const siteSettings = pgTable("site_settings", {
 });
 
 // Relationships
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   reviews: many(reviews),
   orders: many(orders),
   carts: many(carts),
   wishlists: many(wishlists),
   otpVerifications: many(otpVerifications),
   posts: many(posts),
+  assignedRole: one(roles, {
+    fields: [users.roleId],
+    references: [roles.id],
+  }),
 }));
 
 export const postsRelations = relations(posts, ({ one }) => ({
@@ -581,3 +595,8 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
     references: [expenseCategories.id],
   }),
 }));
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  users: many(users),
+}));
+

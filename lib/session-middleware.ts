@@ -17,6 +17,7 @@ type CustomContext = {
       email: string
       name: string
       role: string
+      permissions: string[]
       phone: string | null
       address: string | null
     } | null
@@ -41,6 +42,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, decoded.id),
+      with: { assignedRole: true },
     })
 
     if (!user) {
@@ -56,6 +58,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       email: user.email, 
       name: user.name, 
       role: isSuperAdmin ? 'ADMIN' : user.role, 
+      permissions: user.assignedRole ? user.assignedRole.permissions : [],
       phone: user.phone, 
       address: user.address 
     })

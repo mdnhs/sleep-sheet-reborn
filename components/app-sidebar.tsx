@@ -24,7 +24,9 @@ import {
   IconSettings,
   IconShoppingCart,
   IconChartBar,
-  IconReceipt2
+  IconReceipt2,
+  IconUsers,
+  IconShield
 } from "@tabler/icons-react"
 
 const data = {
@@ -86,6 +88,18 @@ const data = {
       title: "Expenses",
       url: "/dashboard/expenses",
       icon: <IconReceipt2 />,
+      items: [],
+    },
+    {
+      title: "Users / Staff",
+      url: "/dashboard/users",
+      icon: <IconUsers />,
+      items: [],
+    },
+    {
+      title: "Roles",
+      url: "/dashboard/settings/roles",
+      icon: <IconShield />,
       items: [],
     },
     {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Mail, Globe, ArrowRight } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Mail, Globe, ArrowRight, Shield } from "lucide-react";
 
 const sections = [
   {
@@ -53,6 +53,12 @@ const sections = [
     description: "Configure homepage hero, features, newsletter, footer, and site-wide content",
     href: "/dashboard/settings/website",
     icon: Globe,
+  },
+  {
+    title: "Roles & Permissions",
+    description: "Manage system access levels and create custom roles for your team",
+    href: "/dashboard/settings/roles",
+    icon: Shield,
   },
 ];
 

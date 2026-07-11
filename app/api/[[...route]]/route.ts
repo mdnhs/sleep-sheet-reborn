@@ -20,6 +20,8 @@ import blog from "@/features/blog/server/route";
 import pos from "@/features/pos/server/route";
 import reports from "@/features/reports/server/route";
 import expenses from "@/features/expenses/server/route";
+import roles from "@/features/roles/server/route";
+import users from "@/features/users/server/route";
 import { cors } from "hono/cors";
 
 const app = new Hono().basePath("/api");
@@ -45,6 +47,8 @@ const routes =app
 .route("/pos",pos)
 .route("/reports",reports)
 .route("/expenses",expenses)
+.route("/roles",roles)
+.route("/users",users)
 
 export const GET = handle(app)
 export const POST = handle(app)

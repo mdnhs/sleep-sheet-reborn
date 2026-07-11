@@ -22,9 +22,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { Copy, MoreVertical, Plus, Search, Trash2, Loader2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { useGetProducts } from "@/features/product/api/use-get-products"
 import { useDeleteProduct } from "@/features/dashboard/api/use-delete-product"
 import { useBulkDeleteProducts } from "@/features/dashboard/api/use-bulk-delete-products"
+import { useBulkUpdateFeatured } from "@/features/dashboard/api/use-bulk-update-featured"
 import { useCurrency } from "@/hooks/use-currency"
 import Link from "next/link"
 
@@ -43,11 +46,13 @@ export default function ProductsClientPage() {
   const { formatAmount } = useCurrency()
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct()
   const { mutate: bulkDelete, isPending: isBulkDeleting } = useBulkDeleteProducts()
+  const { mutate: updateFeatured, isPending: isUpdatingFeatured } = useBulkUpdateFeatured()
   const [productToDelete, setProductToDelete] = useState<ProductColumn | null>(null)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false)
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -141,7 +146,15 @@ export default function ProductsClientPage() {
     {
       accessorKey: "isFeatured",
       header: "Featured",
-      cell: ({ row }) => (row.original.isFeatured ? "Yes" : "No"),
+      cell: ({ row }) => (
+        <Switch
+          checked={row.original.isFeatured}
+          onCheckedChange={(checked) => 
+            updateFeatured({ ids: [row.original.id], isFeatured: checked })
+          }
+          disabled={isUpdatingFeatured}
+        />
+      ),
     },
     {
       accessorKey: "createdAt",

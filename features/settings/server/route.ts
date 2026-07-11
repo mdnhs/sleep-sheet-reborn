@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
 
@@ -76,7 +77,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+      if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

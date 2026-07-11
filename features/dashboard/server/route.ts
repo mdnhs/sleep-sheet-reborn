@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { products, categories, specifications, wishlistItems, cartItems, reviews, orderItems, campaigns } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { imageStorage } from '@/lib/imageStorage';
 import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
@@ -289,6 +289,30 @@ app.delete('/:id', sessionMiddleware, async (c) => {
   } catch (error) {
     console.error("Error deleting product:", error);
     return c.json({ error: "Failed to delete product" }, 500);
+  }
+});
+
+app.patch('/bulk-feature', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  try {
+    const { ids, isFeatured } = await c.req.json();
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: "No product IDs provided" }, 400);
+    }
+
+    await db.update(products)
+      .set({ isFeatured: Boolean(isFeatured) })
+      .where(inArray(products.id, ids));
+
+    invalidateFeed();
+    return c.json({ success: true, updated: ids.length });
+  } catch (error) {
+    console.error("Error bulk updating feature status:", error);
+    return c.json({ error: "Failed to update products" }, 500);
   }
 });
 

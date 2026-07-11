@@ -9,6 +9,7 @@ interface ProductQueryParams {
   page?: string;
   search?: string;
   limit?: string;
+  featured?: string;
 }
 
 export const useGetProducts = (params?: ProductQueryParams) => {

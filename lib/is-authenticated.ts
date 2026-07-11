@@ -21,6 +21,7 @@ export async function getCurrentUser() {
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, decoded.id),
+      with: { assignedRole: true },
     });
 
     if (!user) return null;
@@ -32,6 +33,7 @@ export async function getCurrentUser() {
       email: user.email,
       name: user.name,
       role: isSuperAdmin ? "ADMIN" : user.role,
+      permissions: user.assignedRole ? user.assignedRole.permissions : [],
     };
   } catch (error) {
     console.error("Token verification failed:", error);
