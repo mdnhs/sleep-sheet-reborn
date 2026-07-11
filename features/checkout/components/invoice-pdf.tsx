@@ -212,7 +212,7 @@ export const InvoicePDF = ({ order, shippingInfo, siteName, language, logoUrl }:
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            {logoUrl && (
+            {logoUrl && logoUrl !== "/logo.png" && (
               <Image 
                 source={{ uri: logoUrl.startsWith('http') ? logoUrl : (typeof window !== "undefined" ? window.location.origin + logoUrl : logoUrl) }} 
                 style={{ width: 35, height: 35, marginRight: 8, objectFit: "contain" }} 
@@ -220,7 +220,6 @@ export const InvoicePDF = ({ order, shippingInfo, siteName, language, logoUrl }:
             )}
             <View>
               <Text style={styles.brandName}>{siteName}</Text>
-              <Text style={styles.brandDesc}>Premium Bedding & Sleep Solutions</Text>
             </View>
           </View>
           <View style={styles.headerRight}>

@@ -17,7 +17,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { TiptapEditor } from "@/components/tiptap-editor";
-import { Package, Save, Settings } from "lucide-react";
+import { Package, Save, Settings, Loader2 } from "lucide-react";
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -41,7 +41,7 @@ function UpdateProductClient() {
   const { data: product, isLoading: productLoading } = useGetProduct({
     id,
   });
-  const { mutate } = useUpdateProduct();
+  const { mutate, isPending } = useUpdateProduct();
 
   const { data: categories, isLoading: categoryLoading } = useGetCategories();
 
@@ -468,6 +468,19 @@ function UpdateProductClient() {
                 />
 
                 <FormField
+                  name="productImages"
+                  control={form.control}
+                  render={() => (
+                    <>
+                      <FormLabel className="block text-sm font-semibold my-4">
+                        Upload Product Photos
+                      </FormLabel>
+                      <FileUpload form={form} name="productImages" />
+                    </>
+                  )}
+                />
+
+                <FormField
                   name="productSize"
                   control={form.control}
                   render={({ field }) => (
@@ -491,18 +504,6 @@ function UpdateProductClient() {
                   control={form.control}
                   setValue={form.setValue}
                 />
-                <FormField
-                  name="productImages"
-                  control={form.control}
-                  render={() => (
-                    <>
-                      <FormLabel className="block text-sm font-semibold my-4">
-                        Upload
-                      </FormLabel>
-                      <FileUpload form={form} name="productImages" />
-                    </>
-                  )}
-                />
               </CardContent>
             </Card>
           </div>
@@ -518,8 +519,12 @@ function UpdateProductClient() {
               Clear
             </Button>
 
-            <Button type="submit" size="lg" className="w-full sm:w-[120px]">
-              <Save className="w-4 h-4 mr-2" />
+            <Button type="submit" size="lg" className="w-full sm:w-[120px]" disabled={isPending}>
+              {isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
               Update
             </Button>
           </div>

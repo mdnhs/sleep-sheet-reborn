@@ -1,65 +1,61 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { sortOptions } from "@/lib/utils";
 import React, { useEffect } from "react";
-import { useGetProducts } from "../api/use-get-products";
+import { useGetInfiniteProducts } from "../api/use-get-products";
 import ProductCard from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInView } from "react-intersection-observer";
+import { Loader2 } from "lucide-react";
 
 import { MobileFilterSheet } from "./products-sidebar";
 
-// ... inside ProductContents component
 function ProductContents() {
   const [category] = useQueryState("category", { defaultValue: "" });
-  const [price] = useQueryState("price", { defaultValue: "" });
+  const [minPrice] = useQueryState("minPrice", { defaultValue: "" });
+  const [maxPrice] = useQueryState("maxPrice", { defaultValue: "" });
   const [search] = useQueryState("search", { defaultValue: "" });
   const [sort, setSort] = useQueryState("sort", { defaultValue: "", shallow: false });
-  const [page, setPage] = useQueryState("page", { defaultValue: "1", shallow: false });
-
-  const currentPage = parseInt(page);
 
   const handleSortChange = (value: string | null) => {
     setSort(value || null);
-    setPage("1");
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage.toString());
-  };
-
-  const { data: products, isLoading } = useGetProducts({
+  const { 
+    data: productsPages, 
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage 
+  } = useGetInfiniteProducts({
     category: category,
+    minPrice: minPrice,
+    maxPrice: maxPrice,
     sort: sort,
-    price: price,
     search: search,
-    page: page,
+  });
+
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px", // Trigger slightly before the bottom
   });
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentPage]);
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const allProducts = productsPages?.pages.flatMap((page) => page.data) || [];
+  const totalCount = productsPages?.pages[0]?.total || 0;
 
   return (
     <div className="w-full">
       <div className="flex flex-row justify-between items-center mb-8 gap-4 pb-4 border-b border-border/50">
         <p className="text-muted-foreground text-sm font-medium">
-          Showing{" "}
-          <span className="text-foreground">
-            {products?.total
-              ? `${(currentPage - 1) * 8 + 1} - ${(currentPage - 1) * 8 + products.data.length
-              }`
-              : "0"}
-          </span>{" "}
-          of {products?.total || 0} products
+          Showing <span className="text-foreground">{allProducts.length}</span> of {totalCount} products
         </p>
 
         <MobileFilterSheet />
@@ -81,12 +77,12 @@ function ProductContents() {
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {products?.data?.map((product, index) => (
-              <ProductCard key={product.id} product={product as any} priority={index < 4} />
+            {allProducts.map((product: any, index: number) => (
+              <ProductCard key={product.id} product={product} priority={index < 4} />
             ))}
           </div>
 
-          {products?.data.length === 0 && (
+          {allProducts.length === 0 && (
             <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] gap-4 text-center">
               <div className="h-20 w-20 rounded-full bg-secondary/50 flex items-center justify-center mb-2">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
@@ -98,27 +94,20 @@ function ProductContents() {
         </>
       )}
 
-      {(products?.total ?? 0) > 0 && !isLoading && (
-        <div className="flex items-center justify-end gap-4 mt-10 pb-20">
-          <Button
-            className="w-[100px]"
-            disabled={currentPage === 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-            variant="outline"
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {currentPage}
-          </span>
-          <Button
-            className="w-[100px]"
-            disabled={!products?.hasNextPage}
-            onClick={() => handlePageChange(currentPage + 1)}
-            variant="outline"
-          >
-            Next
-          </Button>
+      {/* Infinite Scroll Trigger */}
+      {hasNextPage && (
+        <div ref={ref} className="w-full flex items-center justify-center py-10 mt-4">
+          {isFetchingNextPage ? (
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          ) : (
+            <div className="h-6" /> // Placeholder for the intersection observer
+          )}
+        </div>
+      )}
+
+      {!hasNextPage && allProducts.length > 0 && (
+        <div className="w-full text-center py-10 mt-4 text-muted-foreground text-sm pb-24">
+          You've reached the end!
         </div>
       )}
 

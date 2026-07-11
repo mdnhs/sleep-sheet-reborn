@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSettings } from "@/features/settings/api/use-settings"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 interface POSProduct {
   id: string
@@ -298,10 +299,170 @@ export default function PosClientPage() {
     )
   }
 
+  const renderCartContents = () => (
+    <>
+      <div className="p-4 border-b">
+        <h2 className="font-semibold flex items-center gap-2">
+          <Receipt className="h-4 w-4" />
+          Current Sale
+          {cart.length > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">
+              ({cart.length} item{cart.length !== 1 ? "s" : ""})
+            </span>
+          )}
+        </h2>
+      </div>
+
+      {/* Cart Items */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+            <Package className="h-10 w-10 mb-2" />
+            <p className="text-sm">Cart is empty</p>
+            <p className="text-xs">Select products to start a sale</p>
+          </div>
+        ) : (
+          cart.map((item, index) => (
+            <div key={`${item.productId}-${item.color}-${item.size}`} className="flex gap-3 p-3 rounded-xl bg-muted/50 border">
+              <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                    No img
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{item.name}</p>
+                {item.color && <p className="text-xs text-muted-foreground">Color: {item.color}</p>}
+                {item.size && <p className="text-xs text-muted-foreground">Size: {item.size}</p>}
+                <p className="text-sm font-semibold mt-1">৳{item.price.toLocaleString()}</p>
+              </div>
+              <div className="flex flex-col items-end justify-between">
+                <button
+                  onClick={() => removeFromCart(index)}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => updateQuantity(index, -1)}
+                    className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(index, 1)}
+                    className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
+                    disabled={item.quantity >= item.stock}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Customer & Checkout */}
+      {cart.length > 0 && (
+        <div className="border-t p-4 space-y-3 shrink-0 bg-background">
+          <div className="space-y-2">
+            <Input
+              placeholder="Customer name *"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+            <Input
+              placeholder="Phone (optional)"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              type="tel"
+            />
+            <Input
+              placeholder="Reference (optional)"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+            />
+            <textarea
+              placeholder="Notes (optional)"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="flex w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none"
+              rows={2}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant={shippingType === "online" ? "default" : "outline"}
+              size="sm"
+              className="flex-1"
+              onClick={() => setShippingType("online")}
+            >
+              Online
+            </Button>
+            <Button
+              variant={shippingType === "showroom" ? "default" : "outline"}
+              size="sm"
+              className="flex-1"
+              onClick={() => setShippingType("showroom")}
+            >
+              Showroom
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            {enabledMethods.map(m => (
+              <Button
+                key={m.value}
+                variant={paymentMethod === m.value ? "default" : "outline"}
+                size="sm"
+                className={`flex-1 gap-1.5 ${paymentMethod === m.value && m.value === "DUE" ? "bg-orange-600 hover:bg-orange-700 border-orange-600 text-white" : paymentMethod === m.value && !["COD","CARD","DUE"].includes(m.value) ? "bg-foreground text-background" : ""}`}
+                onClick={() => setPaymentMethod(m.value)}
+              >
+                <m.icon className="h-4 w-4" />
+                {m.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>৳{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total</span>
+              <span className="text-lg font-bold">৳{subtotal.toLocaleString()}</span>
+            </div>
+          </div>
+
+          <Button
+            className="w-full h-11 text-base gap-2"
+            onClick={handleCheckout}
+            disabled={isCheckingOut}
+          >
+            {isCheckingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CreditCard className="h-4 w-4" />
+            )}
+            {isCheckingOut ? "Processing..." : `Complete Sale — ৳${subtotal.toLocaleString()}`}
+          </Button>
+        </div>
+      )}
+    </>
+  )
+
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-0">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)] gap-0 relative">
       {/* Left Panel - Product Browser */}
-      <div className="flex-1 flex flex-col border-r overflow-hidden">
+      <div className="flex-1 flex flex-col lg:border-r overflow-hidden pb-16 lg:pb-0">
         {/* Search & Filter Bar */}
         <div className="p-4 border-b bg-background space-y-3 shrink-0">
           <div className="flex items-center justify-between">
@@ -458,163 +619,33 @@ export default function PosClientPage() {
         </div>
       </div>
 
-      {/* Right Panel - Cart */}
-      <div className="w-[400px] flex flex-col bg-background shrink-0">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Receipt className="h-4 w-4" />
-            Current Sale
-            {cart.length > 0 && (
-              <span className="text-sm font-normal text-muted-foreground">
-                ({cart.length} item{cart.length !== 1 ? "s" : ""})
-              </span>
-            )}
-          </h2>
+      {/* Desktop Right Panel - Cart */}
+      <div className="hidden lg:flex w-[400px] flex-col bg-background shrink-0">
+        {renderCartContents()}
+      </div>
+
+      {/* Mobile Sticky Cart Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-background border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between md:left-64">
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold text-muted-foreground">{cart.length} item(s)</span>
+          <span className="text-lg font-bold text-foreground">৳{subtotal.toLocaleString()}</span>
         </div>
-
-        {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
-              <Package className="h-10 w-10 mb-2" />
-              <p className="text-sm">Cart is empty</p>
-              <p className="text-xs">Select products to start a sale</p>
-            </div>
-          ) : (
-            cart.map((item, index) => (
-              <div key={`${item.productId}-${item.color}-${item.size}`} className="flex gap-3 p-3 rounded-xl bg-muted/50 border">
-                <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted shrink-0">
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                      No img
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.name}</p>
-                  {item.color && <p className="text-xs text-muted-foreground">Color: {item.color}</p>}
-                  {item.size && <p className="text-xs text-muted-foreground">Size: {item.size}</p>}
-                  <p className="text-sm font-semibold mt-1">৳{item.price.toLocaleString()}</p>
-                </div>
-                <div className="flex flex-col items-end justify-between">
-                  <button
-                    onClick={() => removeFromCart(index)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => updateQuantity(index, -1)}
-                      className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(index, 1)}
-                      className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
-                      disabled={item.quantity >= item.stock}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Customer & Checkout */}
-        {cart.length > 0 && (
-          <div className="border-t p-4 space-y-3">
-            <div className="space-y-2">
-              <Input
-                placeholder="Customer name *"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-              <Input
-                placeholder="Phone (optional)"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                type="tel"
-              />
-              <Input
-                placeholder="Reference (optional)"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-              />
-              <textarea
-                placeholder="Notes (optional)"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="flex w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none"
-                rows={2}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant={shippingType === "online" ? "default" : "outline"}
-                size="sm"
-                className="flex-1"
-                onClick={() => setShippingType("online")}
-              >
-                Online
+        <Sheet>
+          <SheetTrigger
+            render={
+              <Button size="lg" className="px-8 shadow-sm">
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                View Cart
               </Button>
-              <Button
-                variant={shippingType === "showroom" ? "default" : "outline"}
-                size="sm"
-                className="flex-1"
-                onClick={() => setShippingType("showroom")}
-              >
-                Showroom
-              </Button>
-            </div>
-
-            <div className="flex gap-2">
-              {enabledMethods.map(m => (
-                <Button
-                  key={m.value}
-                  variant={paymentMethod === m.value ? "default" : "outline"}
-                  size="sm"
-                  className={`flex-1 gap-1.5 ${paymentMethod === m.value && m.value === "DUE" ? "bg-orange-600 hover:bg-orange-700 border-orange-600 text-white" : paymentMethod === m.value && !["COD","CARD","DUE"].includes(m.value) ? "bg-foreground text-background" : ""}`}
-                  onClick={() => setPaymentMethod(m.value)}
-                >
-                  <m.icon className="h-4 w-4" />
-                  {m.label}
-                </Button>
-              ))}
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>৳{subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total</span>
-                <span className="text-lg font-bold">৳{subtotal.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <Button
-              className="w-full h-11 text-base gap-2"
-              onClick={handleCheckout}
-              disabled={isCheckingOut}
-            >
-              {isCheckingOut ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CreditCard className="h-4 w-4" />
-              )}
-              {isCheckingOut ? "Processing..." : `Complete Sale — ৳${subtotal.toLocaleString()}`}
-            </Button>
-          </div>
-        )}
+            }
+          />
+          <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col rounded-t-xl overflow-hidden">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Shopping Cart</SheetTitle>
+            </SheetHeader>
+            {renderCartContents()}
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )

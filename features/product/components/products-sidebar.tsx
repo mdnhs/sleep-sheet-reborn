@@ -3,8 +3,10 @@ import CategoryLoading from "@/components/loading/category-loading";
 import { Button } from "@/components/ui/button";
 import { useGetCategories } from "@/features/categories/api/use-get-categories";
 import { useCurrency } from "@/hooks/use-currency";
-import { Funnel } from "lucide-react";
+import { Funnel, RefreshCcw } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryState } from "nuqs";
 import {
   Sheet,
@@ -14,12 +16,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-const PRICE_RANGES = [
-  { value: "under-50", min: 0, max: 49, threshold: 50 },
-  { value: "50-100", min: 50, max: 100, low: 50, high: 100 },
-  { value: "100-200", min: 100, max: 200, low: 100, high: 200 },
-  { value: "200+", min: 200, max: null, threshold: 200 },
-];
+
 
 
 
@@ -78,79 +75,123 @@ export function MobileFilterSheet() {
 
 export function ProductSidebarContent() {
   const { symbol } = useCurrency();
-  const [category, setCategory] = useQueryState("category", { defaultValue: "", shallow: false });
-  const [price, setPrice] = useQueryState("price", { defaultValue: "", shallow: false });
+  
+  // URL States
+  const [categoryParam, setCategoryParam] = useQueryState("category", { defaultValue: "", shallow: false });
+  const [minPrice, setMinPrice] = useQueryState("minPrice", { defaultValue: "", shallow: false });
+  const [maxPrice, setMaxPrice] = useQueryState("maxPrice", { defaultValue: "", shallow: false });
+  
+  // Local states
+  const [localPrice, setLocalPrice] = useState<number[]>([
+    minPrice ? parseInt(minPrice) : 0, 
+    maxPrice ? parseInt(maxPrice) : 5000
+  ]);
+
   const { data: categories = [], isLoading: isCategoryListLoading } = useGetCategories();
 
-  const categoryList = [{ label: "All" }, ...categories];
-  const activeCategory = category || "All";
-  const selectedPrice = price || null;
+  const selectedCategories = categoryParam ? categoryParam.split(",").filter(Boolean) : [];
 
-  const handleCategoryClick = (cat: string) => {
-    setCategory(cat === "All" ? null : cat);
+  // Update slider local state, debounce URL update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinPrice(localPrice[0] > 0 ? localPrice[0].toString() : null);
+      setMaxPrice(localPrice[1] < 5000 ? localPrice[1].toString() : null);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localPrice, setMinPrice, setMaxPrice]);
+
+  const toggleCategory = (label: string) => {
+    const newCategories = selectedCategories.includes(label)
+      ? selectedCategories.filter(c => c !== label)
+      : [...selectedCategories, label];
+    
+    setCategoryParam(newCategories.length > 0 ? newCategories.join(",") : null);
   };
 
-  const handlePriceChange = (value: string) => {
-    setPrice(selectedPrice === value ? null : value);
+  const handleResetCategories = () => {
+    setCategoryParam(null);
   };
+
+  const parentCategories = categories.filter(c => !c.parentId);
 
   return (
     <div className="space-y-10">
-      {/* Categories */}
-      <div>
-        <h3 className="font-heading font-semibold text-lg text-foreground mb-4">Categories</h3>
-        <div className="flex flex-col gap-1.5">
-          {categoryList.map((cat) => {
-            const isActive = activeCategory === cat.label;
-            return (
-              <button
-                key={cat.label}
-                onClick={() => handleCategoryClick(cat.label)}
-                className={`flex items-center w-full px-3 py-2 rounded-xl text-sm transition-all duration-300 ${isActive
-                    ? "bg-foreground text-background font-medium shadow-md shadow-foreground/10"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                  }`}
-              >
-                {cat.label}
-              </button>
-            );
-          })}
-        </div>
-        {isCategoryListLoading && <CategoryLoading />}
-      </div>
-
       {/* Price Range */}
       <div>
-        <h3 className="font-heading font-semibold text-lg text-foreground mb-4">Price Range</h3>
-        <div className="flex flex-col gap-3">
-          {PRICE_RANGES.map((range) => {
-            const label =
-              range.max === null
-                ? `${symbol}${range.min}+`
-                : range.min === 0
-                  ? `Under ${symbol}${range.max}`
-                  : `${symbol}${range.min} – ${symbol}${range.max}`;
-            const isActive = selectedPrice === range.value;
-
-            return (
-              <button
-                key={range.value}
-                onClick={() => handlePriceChange(range.value)}
-                className="flex items-center gap-3 text-left group"
-              >
-                <div
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isActive ? "border-foreground bg-foreground" : "border-border group-hover:border-foreground/50"
-                    }`}
-                >
-                  {isActive && <div className="w-2 h-2 rounded-full bg-background" />}
-                </div>
-                <span className={`text-sm transition-colors ${isActive ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground"}`}>
-                  {label}
-                </span>
-              </button>
-            );
-          })}
+        <h3 className="font-heading font-semibold text-lg text-foreground mb-6 flex items-center gap-2">
+          <span className="text-muted-foreground">{symbol}</span> Price Range
+        </h3>
+        <div className="px-2">
+          <Slider
+            min={0}
+            max={5000}
+            step={50}
+            value={localPrice}
+            onValueChange={setLocalPrice}
+            className="mb-4"
+          />
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-medium mt-4">
+            <span>{localPrice[0].toLocaleString()} {symbol}</span>
+            <span>{localPrice[1].toLocaleString()} {symbol}</span>
+          </div>
         </div>
+      </div>
+
+      {/* Categories */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-heading font-semibold text-lg text-foreground flex items-center gap-2">
+            <span className="text-muted-foreground rotate-45 text-sm font-light">⬣</span> Categories
+          </h3>
+          <button 
+            onClick={handleResetCategories}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            title="Reset categories"
+          >
+            <RefreshCcw className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {isCategoryListLoading ? (
+          <CategoryLoading />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {parentCategories.map((parent) => {
+              const children = categories.filter(c => c.parentId === parent.id);
+              return (
+                <div key={parent.id} className="flex flex-col gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <Checkbox 
+                      checked={selectedCategories.includes(parent.label)}
+                      onCheckedChange={() => toggleCategory(parent.label)}
+                      className="border-muted-foreground/30 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500 rounded-sm"
+                    />
+                    <span className="text-sm font-medium text-foreground group-hover:text-rose-500 transition-colors">
+                      {parent.label}
+                    </span>
+                  </label>
+                  
+                  {children.length > 0 && (
+                    <div className="flex flex-col gap-3 pl-7 border-l-2 border-muted/50 ml-2">
+                      {children.map(child => (
+                        <label key={child.id} className="flex items-center gap-3 cursor-pointer group">
+                          <Checkbox 
+                            checked={selectedCategories.includes(child.label)}
+                            onCheckedChange={() => toggleCategory(child.label)}
+                            className="border-muted-foreground/30 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500 rounded-sm"
+                          />
+                          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                            {child.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

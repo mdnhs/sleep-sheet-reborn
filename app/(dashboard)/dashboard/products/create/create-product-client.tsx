@@ -17,7 +17,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { TiptapEditor } from "@/components/tiptap-editor";
-import { Package, Save, Settings } from "lucide-react";
+import { Package, Save, Settings, Loader2 } from "lucide-react";
 import React, { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGetProduct } from "@/features/product/api/use-get-product";
@@ -35,7 +35,7 @@ import { useGetCategories } from "@/features/categories/api/use-get-categories";
 
 function AddProductClient() {
   const router = useRouter();
-  const { mutate } = useCreateProduct();
+  const { mutate, isPending } = useCreateProduct();
   const { data: categories } = useGetCategories();
   const searchParams = useSearchParams()
   const duplicateId = searchParams.get("duplicate")
@@ -463,6 +463,19 @@ function AddProductClient() {
                 />
 
                 <FormField
+                  name="productImages"
+                  control={form.control}
+                  render={() => (
+                    <>
+                      <FormLabel className="block text-sm font-semibold my-4">
+                        Upload Product Photos
+                      </FormLabel>
+                      <FileUpload form={form} name="productImages" />
+                    </>
+                  )}
+                />
+
+                <FormField
                   name="productSize"
                   control={form.control}
                   render={({ field }) => (
@@ -486,18 +499,6 @@ function AddProductClient() {
                   control={form.control}
                   setValue={form.setValue}
                 />
-                <FormField
-                  name="productImages"
-                  control={form.control}
-                  render={() => (
-                    <>
-                      <FormLabel className="block text-sm font-semibold my-4">
-                        Upload
-                      </FormLabel>
-                      <FileUpload form={form} name="productImages" />
-                    </>
-                  )}
-                />
               </CardContent>
             </Card>
           </div>
@@ -513,8 +514,12 @@ function AddProductClient() {
               Clear
             </Button>
 
-            <Button type="submit" size="lg" className="w-full sm:w-[120px]">
-              <Save className="w-4 h-4 mr-2" />
+            <Button type="submit" size="lg" className="w-full sm:w-[120px]" disabled={isPending}>
+              {isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
               Publish
             </Button>
           </div>
