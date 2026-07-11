@@ -115,7 +115,11 @@ export function UsersClient() {
             disabled={updateRole.isPending}
           >
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select a role" />
+              <SelectValue placeholder="Select a role">
+                {user.roleId && user.roleId !== "none"
+                  ? roles?.find((r: any) => r.id === user.roleId)?.name || user.assignedRole?.name || user.roleId
+                  : "No Custom Role"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Custom Role</SelectItem>

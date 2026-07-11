@@ -140,7 +140,7 @@ const app = new Hono()
     );
   }
 
-  const orderConditions: any[] = [];
+  const orderConditions: any[] = [desc(products.isFeatured)];
   switch (sort) {
     case "newest":
       orderConditions.push(desc(products.createdAt));
@@ -152,7 +152,7 @@ const app = new Hono()
       orderConditions.push(desc(products.price));
       break;
     case "featured":
-      orderConditions.push(desc(products.isFeatured), desc(products.updatedAt));
+      orderConditions.push(desc(products.updatedAt));
       break;
   }
 

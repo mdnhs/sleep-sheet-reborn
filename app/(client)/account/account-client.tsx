@@ -11,6 +11,7 @@ import {
   Heart,
   Loader2,
   LockKeyhole,
+  LayoutDashboard,
   MapPin,
   Package2,
   ShieldCheck,
@@ -212,10 +213,20 @@ function AccountClientPage({ name }: AccountClientPageProps) {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
           <div className="grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.35fr)_340px]">
             <div className="space-y-4">
-              <Badge variant="outline" className="rounded-full px-3 py-1">
-                <Sparkles className="size-3.5" />
-                Account hub
-              </Badge>
+              <div className="flex items-center gap-4">
+                <Badge variant="outline" className="rounded-full px-3 py-1">
+                  <Sparkles className="size-3.5" />
+                  Account hub
+                </Badge>
+                {currentUser?.role && currentUser.role !== "USER" && (
+                  <Link href="/dashboard">
+                    <Button variant="outline" size="sm" className="rounded-full h-8 px-4 font-medium hover:bg-muted">
+                      <LayoutDashboard className="mr-2 size-4" />
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                )}
+              </div>
               <div className="space-y-2">
                 <h1 className="max-w-2xl text-xl font-semibold tracking-tight sm:text-3xl">
                   Welcome back, {displayName}.
