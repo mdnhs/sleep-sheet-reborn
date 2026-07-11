@@ -19,6 +19,7 @@ import {
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Package, Save, Settings } from "lucide-react";
 import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ProductSchema } from "@/features/dashboard/schema";
@@ -34,6 +35,7 @@ import { useUpdateProduct } from "@/features/dashboard/api/use-update-product";
 import { useProductId } from "@/features/product/hooks/use-product-id";
 
 function UpdateProductClient() {
+  const router = useRouter();
   const id = useProductId();
 
   const { data: product, isLoading: productLoading } = useGetProduct({
@@ -121,7 +123,11 @@ function UpdateProductClient() {
       }
     });
 
-    mutate(formData);
+    mutate(formData, {
+      onSuccess: () => {
+        router.push("/dashboard/products");
+      },
+    });
   };
 
   if (productLoading && categoryLoading) {
@@ -201,8 +207,9 @@ function UpdateProductClient() {
                             placeholder="0.00"
                             required
                             {...field}
+                            value={field.value ?? ""}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value))
+                              field.onChange(e.target.value === "" ? "" : Number(e.target.value))
                             }
                             className="w-full"
                           />
@@ -226,7 +233,7 @@ function UpdateProductClient() {
                             {...field}
                             value={field.value ?? ""}
                             onChange={(e) =>
-                              field.onChange(e.target.value ? Number(e.target.value) : 0)
+                              field.onChange(e.target.value === "" ? "" : Number(e.target.value))
                             }
                             className="w-full"
                           />
@@ -249,8 +256,9 @@ function UpdateProductClient() {
                             placeholder="0"
                             required
                             {...field}
+                            value={field.value ?? ""}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value))
+                              field.onChange(e.target.value === "" ? "" : Number(e.target.value))
                             }
                             className="w-full"
                           />
@@ -270,13 +278,25 @@ function UpdateProductClient() {
                         SKU (Stock Keeping Unit)
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter product SKU"
-                          required
-                          {...field}
-                          className="w-full mb-2"
-                        />
+                        <div className="flex gap-2 mb-2">
+                          <Input
+                            type="text"
+                            placeholder="Enter product SKU"
+                            required
+                            {...field}
+                            className="w-full"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const sku = Math.random().toString(36).substring(2, 8).toUpperCase();
+                              form.setValue("productSKU", sku, { shouldValidate: true });
+                            }}
+                          >
+                            Auto Generate
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

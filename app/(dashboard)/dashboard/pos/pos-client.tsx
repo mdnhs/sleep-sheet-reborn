@@ -688,7 +688,7 @@ function ProductCard({
           <div className="flex gap-2">
             {product.discount && product.discount > 0 ? (
               <div className="bg-[#1a1a1a] text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
-                <Tag className="h-3 w-3 text-orange-400" /> {product.discount}% OFF
+                <Tag className="h-3 w-3 text-orange-400" /> {Math.round(product.discount)}% OFF
               </div>
             ) : null}
             {product.stock > 0 && product.stock <= 5 && (

@@ -19,7 +19,7 @@ import {
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Package, Save, Settings } from "lucide-react";
 import React, { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useGetProduct } from "@/features/product/api/use-get-product";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,6 +34,7 @@ import { VariantFields } from "@/features/dashboard/components/variant-fields";
 import { useGetCategories } from "@/features/categories/api/use-get-categories";
 
 function AddProductClient() {
+  const router = useRouter();
   const { mutate } = useCreateProduct();
   const { data: categories } = useGetCategories();
   const searchParams = useSearchParams()
@@ -125,6 +126,7 @@ function AddProductClient() {
     mutate(formData, {
       onSuccess: () => {
         form.reset();
+        router.push("/dashboard/products");
       },
     });
   };
@@ -198,8 +200,9 @@ function AddProductClient() {
                             placeholder="0.00"
                             required
                             {...field}
+                            value={field.value ?? ""}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value))
+                              field.onChange(e.target.value === "" ? "" : Number(e.target.value))
                             }
                             className="w-full"
                           />
@@ -223,7 +226,7 @@ function AddProductClient() {
                             {...field}
                             value={field.value ?? ""}
                             onChange={(e) =>
-                              field.onChange(e.target.value ? Number(e.target.value) : 0)
+                              field.onChange(e.target.value === "" ? "" : Number(e.target.value))
                             }
                             className="w-full"
                           />
@@ -246,8 +249,9 @@ function AddProductClient() {
                             placeholder="0"
                             required
                             {...field}
+                            value={field.value ?? ""}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value))
+                              field.onChange(e.target.value === "" ? "" : Number(e.target.value))
                             }
                             className="w-full"
                           />
@@ -267,13 +271,25 @@ function AddProductClient() {
                         SKU (Stock Keeping Unit)
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter product SKU"
-                          required
-                          {...field}
-                          className="w-full mb-2"
-                        />
+                        <div className="flex gap-2 mb-2">
+                          <Input
+                            type="text"
+                            placeholder="Enter product SKU"
+                            required
+                            {...field}
+                            className="w-full"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const sku = Math.random().toString(36).substring(2, 8).toUpperCase();
+                              form.setValue("productSKU", sku, { shouldValidate: true });
+                            }}
+                          >
+                            Auto Generate
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
