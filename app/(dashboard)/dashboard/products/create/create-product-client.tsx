@@ -81,7 +81,7 @@ function AddProductClient() {
         productPrice: duplicateProduct.price,
         productStock: duplicateProduct.stock,
         productCategory: duplicateProduct.category,
-        productSKU: duplicateProduct.sku,
+        productSKU: duplicateProduct.sku ? Math.random().toString(36).substring(2, 8).toUpperCase() : "",
         productImages: duplicateProduct.images,
         productTags: duplicateProduct.tags,
         productSize: duplicateProduct.sizes,
@@ -394,7 +394,8 @@ function AddProductClient() {
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""}
+                          value={field.value}
+                          defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full h-10 border border-input rounded-xl px-3 bg-white dark:bg-slate-900">
@@ -438,6 +439,8 @@ function AddProductClient() {
                       <FormControl>
                         <Select
                           onValueChange={(value) => field.onChange(value)}
+                          value={field.value}
+                          defaultValue={field.value}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select categories" />

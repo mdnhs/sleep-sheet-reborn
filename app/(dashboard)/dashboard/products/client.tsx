@@ -155,7 +155,14 @@ export default function ProductsClientPage() {
       cell: ({ row }) => {
         const product = row.original
         return (
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-1">
+            <Link 
+              href={`/dashboard/products/create?duplicate=${product.id}`}
+              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
+              title="Duplicate"
+            >
+              <Copy className="h-4 w-4 text-muted-foreground" />
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}>
                 <MoreVertical className="h-4 w-4" />
@@ -163,12 +170,6 @@ export default function ProductsClientPage() {
               <DropdownMenuContent align="end">
                 <Link href={`/dashboard/products/update/${product.id}`}>
                   <DropdownMenuItem>Edit</DropdownMenuItem>
-                </Link>
-                <Link href={`/dashboard/products/create?duplicate=${product.id}`}>
-                  <DropdownMenuItem>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplicate
-                  </DropdownMenuItem>
                 </Link>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"

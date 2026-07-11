@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { Upload, X } from "lucide-react";
-import { useCallback } from "react";
+import { Upload, X, RefreshCw } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   FieldValues,
@@ -27,6 +27,9 @@ export function FileUpload<T extends FieldValues>({
   const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
   const files = (form && name ? form.watch(name) : value) as Array<File | string> || [];
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -60,6 +63,29 @@ export function FileUpload<T extends FieldValues>({
     }
   };
 
+  const handleReplaceClick = (index: number) => {
+    setReplaceIndex(index);
+    fileInputRef.current?.click();
+  };
+
+  const onReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && replaceIndex !== null) {
+      const newFiles = [...files];
+      newFiles[replaceIndex] = file;
+      if (form && name) {
+        form.setValue(name, newFiles as any);
+      }
+      if (onChange) {
+        onChange(newFiles);
+      }
+    }
+    setReplaceIndex(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="space-y-2">
       <div
@@ -88,27 +114,44 @@ export function FileUpload<T extends FieldValues>({
 
       {files?.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mt-4">
+          <input
+            type="file"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={onReplaceFile}
+            accept="image/png, image/jpeg, image/webp"
+          />
           {files.map((file, index) => (
-            <div key={index} className="relative group">
+            <div key={index} className="relative group overflow-hidden rounded-md border">
               <img
                 src={file instanceof File ? URL.createObjectURL(file) : file}
                 alt={`Preview ${index}`}
-                className="h-24 w-full object-cover rounded-md border"
+                className="h-24 w-full object-cover transition-opacity group-hover:opacity-60"
                 onLoad={() => {
                   if (file instanceof File) {
                     URL.revokeObjectURL(URL.createObjectURL(file));
                   }
                 }}
               />
-              <button
-                type="button"
-                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 
-                  transition-opacity cursor-pointer bg-red-500 rounded-full p-1"
-                onClick={() => removeFile(index)}
-              >
-                <X className="h-3 w-3 text-white" />
-              </button>
-              <div className="text-xs mt-1 truncate">
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                <button
+                  type="button"
+                  title="Replace Image"
+                  className="p-2 bg-white/20 hover:bg-white/40 rounded-full backdrop-blur-sm transition-colors text-white mr-2"
+                  onClick={() => handleReplaceClick(index)}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  title="Remove Image"
+                  className="p-2 bg-red-500/80 hover:bg-red-500 rounded-full backdrop-blur-sm transition-colors text-white"
+                  onClick={() => removeFile(index)}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 text-[10px] p-1 bg-black/50 text-white truncate text-center">
                 {file instanceof File ? file.name : "External URL"}
               </div>
             </div>

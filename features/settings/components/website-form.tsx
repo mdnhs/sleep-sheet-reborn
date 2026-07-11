@@ -55,6 +55,8 @@ const FIELD_LABELS: Record<keyof WebsiteFormValues, string> = {
   hero_cta_text: "CTA Button Text",
   hero_cta_link: "CTA Button Link",
   hero_bg_image: "Background Image URL",
+  hero_slides: "Hero Slides",
+  promo_banners: "Promo Banners",
   feature_1_title: "Feature 1 Title",
   feature_1_desc: "Feature 1 Description",
   feature_2_title: "Feature 2 Title",
