@@ -20,7 +20,7 @@ import {
 
 
 
-export function MobileFilterSheet() {
+export function MobileFilterSheet({ side = "bottom" }: { side?: "bottom" | "left" | "right" }) {
   const [category] = useQueryState("category", { defaultValue: "", shallow: false });
   const [price] = useQueryState("price", { defaultValue: "", shallow: false });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -28,7 +28,7 @@ export function MobileFilterSheet() {
   const selectedPrice = price || null;
 
   return (
-    <div className="lg:hidden">
+    <div>
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger
           render={
@@ -51,7 +51,13 @@ export function MobileFilterSheet() {
             )}
           </div>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[70vh] data-[side=bottom]:h-[70vh] rounded-t-[2rem] px-6 py-8">
+        <SheetContent 
+          side={side} 
+          className={side === "bottom" 
+            ? "h-[70vh] data-[side=bottom]:h-[70vh] rounded-t-[2rem] px-6 py-8" 
+            : "w-full sm:max-w-md px-6 py-8"
+          }
+        >
           <SheetHeader className="mb-8 px-0 text-left">
             <SheetTitle className="font-heading text-2xl font-semibold">Filters</SheetTitle>
           </SheetHeader>
@@ -127,7 +133,7 @@ export function ProductSidebarContent() {
             max={5000}
             step={50}
             value={localPrice}
-            onValueChange={setLocalPrice}
+            onValueChange={(val) => setLocalPrice(val as number[])}
             className="mb-4"
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground font-medium mt-4">

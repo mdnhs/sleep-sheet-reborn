@@ -1,5 +1,9 @@
 "use client"
 import { useEffect, useState, useCallback } from "react"
+import { useGetInfiniteProducts } from "@/features/product/api/use-get-products"
+import { useInView } from "react-intersection-observer"
+import { useQueryState } from "nuqs"
+import { MobileFilterSheet } from "@/features/product/components/products-sidebar"
 import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Receipt, X, Package, Loader2, ChevronLeft, ChevronRight, ListFilter, ShoppingCart, ChevronUp, ArrowUpCircle, Tag, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,19 +52,13 @@ interface Category {
 export default function PosClientPage() {
   const router = useRouter()
   const { data: settings } = useSettings()
-  const [products, setProducts] = useState<POSProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [categoryFilter, setCategoryFilter_] = useState("all")
-  const [priceFilter, setPriceFilter_] = useState("")
-  const [sortFilter, setSortFilter_] = useState("featured")
-  const [showFilters, setShowFilters] = useState(false)
-  const [page, setPage] = useState(1)
-  const setCategoryFilter = (v: string) => { setCategoryFilter_(v) }
-  const setPriceFilter = (v: string) => { setPriceFilter_(v) }
-  const setSortFilter = (v: string) => { setSortFilter_(v) }
+  const [categoryFilter] = useQueryState("category", { defaultValue: "" })
+  const [minPrice] = useQueryState("minPrice", { defaultValue: "" })
+  const [maxPrice] = useQueryState("maxPrice", { defaultValue: "" })
+  const [sortFilter] = useQueryState("sort", { defaultValue: "featured" })
 
   const PRICE_RANGES = [
     { value: "under-50", label: "Under ৳50" },
@@ -86,7 +84,6 @@ export default function PosClientPage() {
     ...customMethods.map(m => ({ value: m.value, label: m.label, icon: Banknote, enabled: true })),
   ]
   const enabledMethods = paymentMethods.filter(m => m.enabled)
-  const [totalPages, setTotalPages] = useState(1)
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
@@ -105,29 +102,34 @@ export default function PosClientPage() {
     }
   }, [settings, enabledMethods])
 
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (debouncedSearch) params.set("search", debouncedSearch)
-      if (categoryFilter !== "all") params.set("category", categoryFilter)
-      if (priceFilter) params.set("price", priceFilter)
-      if (sortFilter) params.set("sort", sortFilter)
-      params.set("page", page.toString())
-      params.set("limit", "20")
+  // The filter limits are now managed by nuqs via MobileFilterSheet
 
-      const res = await fetch(`/api/products?${params}`)
-      const json = await res.json()
-      if (json.data) {
-        setProducts(json.data)
-        setTotalPages(json.totalPages || 1)
-      }
-    } catch (error) {
-      console.error("Failed to fetch products", error)
-    } finally {
-      setIsLoading(false)
+  const { 
+    data: productsPages, 
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage 
+  } = useGetInfiniteProducts({
+    category: categoryFilter,
+    minPrice,
+    maxPrice,
+    sort: sortFilter,
+    search: debouncedSearch,
+  });
+
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: "200px",
+  });
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [debouncedSearch, categoryFilter, priceFilter, sortFilter, page])
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const products = productsPages?.pages.flatMap((page) => page.data) || [];
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -144,13 +146,8 @@ export default function PosClientPage() {
   }, [fetchCategories])
 
   useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
-
-  useEffect(() => {
     const timeout = setTimeout(() => {
       setDebouncedSearch(searchQuery)
-      setPage(1)
     }, 400)
     return () => clearTimeout(timeout)
   }, [searchQuery])
@@ -478,87 +475,8 @@ export default function PosClientPage() {
                 className="pl-9 rounded-xl"
               />
             </div>
-            <div className="flex gap-1.5 overflow-x-auto max-w-[420px] pb-1 scrollbar-none">
-              <button
-                onClick={() => { setCategoryFilter("all"); setPage(1) }}
-                className={`shrink-0 px-3 py-1.5 text-xs rounded-full border transition-colors font-medium ${
-                  categoryFilter === "all"
-                    ? "bg-foreground text-background border-foreground"
-                    : "text-muted-foreground border-border hover:border-foreground/50"
-                }`}
-              >
-                All
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setCategoryFilter(cat.label); setPage(1) }}
-                  className={`shrink-0 px-3 py-1.5 text-xs rounded-full border transition-colors font-medium ${
-                    categoryFilter === cat.label
-                      ? "bg-foreground text-background border-foreground"
-                      : "text-muted-foreground border-border hover:border-foreground/50"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              size="icon"
-              className="rounded-xl shrink-0"
-              onClick={() => setShowFilters(p => !p)}
-            >
-              <ListFilter className="h-4 w-4" />
-            </Button>
+            <MobileFilterSheet side="left" />
           </div>
-
-          {showFilters && (
-            <>
-              {/* Sort */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs text-muted-foreground font-medium mr-1">Sort:</span>
-                {SORT_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSortFilter(opt.value)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${sortFilter === opt.value
-                      ? "bg-foreground text-background border-foreground"
-                      : "text-muted-foreground border-border hover:border-foreground/50"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Price Range */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs text-muted-foreground font-medium mr-1">Price:</span>
-                <button
-                  onClick={() => setPriceFilter("")}
-                  className={`px-3 py-1 text-xs rounded-full border transition-colors ${!priceFilter
-                    ? "bg-foreground text-background border-foreground"
-                    : "text-muted-foreground border-border hover:border-foreground/50"
-                  }`}
-                >
-                  All
-                </button>
-                {PRICE_RANGES.map(range => (
-                  <button
-                    key={range.value}
-                    onClick={() => setPriceFilter(range.value)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${priceFilter === range.value
-                      ? "bg-foreground text-background border-foreground"
-                      : "text-muted-foreground border-border hover:border-foreground/50"
-                    }`}
-                  >
-                    {range.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>
 
         {/* Product Grid */}
@@ -590,28 +508,20 @@ export default function PosClientPage() {
                 ))}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {page} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage(p => p + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+              {/* Infinite Scroll Trigger */}
+              {hasNextPage && (
+                <div ref={ref} className="w-full flex items-center justify-center py-6 mt-4">
+                  {isFetchingNextPage ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  ) : (
+                    <div className="h-6" /> // Placeholder
+                  )}
+                </div>
+              )}
+
+              {!hasNextPage && products.length > 0 && (
+                <div className="w-full text-center py-6 mt-4 text-muted-foreground text-sm">
+                  You've reached the end!
                 </div>
               )}
             </>
