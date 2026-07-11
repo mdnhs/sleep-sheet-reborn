@@ -2,7 +2,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useCurrency } from "@/hooks/use-currency";
+import { IconCashRegister } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
 import {
   useSalesOverview,
   useCustomerLifetimeValue,
@@ -83,21 +86,30 @@ export default function DashBoardClientPage() {
 
   return (
     <div className="container mx-auto px-4 space-y-6 py-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Business Analytics</h1>
-        <Tabs
-          value={period}
-          onValueChange={(value) => setPeriod(value as "month" | "year")}
-        >
-          <TabsList>
-            <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="year">Year</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Business Analytics</h1>
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto items-center gap-2">
+          <Link href="/dashboard/pos" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto gap-2 text-white">
+              <IconCashRegister className="h-4 w-4" />
+              Quick POS
+            </Button>
+          </Link>
+          <Tabs
+            value={period}
+            onValueChange={(value) => setPeriod(value as "month" | "year")}
+            className="w-full sm:w-auto"
+          >
+            <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
+              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="year">Year</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <MetricCard
           title="Total Revenue"
           value={overview?.totalRevenue}
@@ -130,6 +142,7 @@ export default function DashBoardClientPage() {
           format="currency"
           currencySymbol={currencySymbol}
           loading={loadingOverview}
+          className="col-span-2 lg:col-span-1"
         />
       </div>
 
@@ -139,9 +152,9 @@ export default function DashBoardClientPage() {
           <TabsTrigger value="customers">Customer Insights</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="sales">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+        <TabsContent value="sales" className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-7 gap-4">
+            <Card className="col-span-1 xl:col-span-4">
               <CardHeader>
                 <CardTitle>Sales Trend</CardTitle>
               </CardHeader>
@@ -154,7 +167,7 @@ export default function DashBoardClientPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="col-span-1 xl:col-span-3">
               <CardHeader>
                 <CardTitle>Geographic Distribution</CardTitle>
               </CardHeader>
@@ -190,8 +203,8 @@ export default function DashBoardClientPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="customers">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="customers" className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle>Customer Acquisition</CardTitle>
@@ -345,7 +358,7 @@ export default function DashBoardClientPage() {
       </div>
 
       {/* Bottom Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <MetricCard
           title="Customer Lifetime Value"
           value={clv?.averageCLV}
@@ -376,6 +389,7 @@ interface MetricCardProps {
   format?: "currency" | "percentage" | "number";
   currencySymbol?: string;
   loading?: boolean;
+  className?: string;
 }
 
 function MetricCard({
@@ -384,6 +398,7 @@ function MetricCard({
   format = "number",
   currencySymbol = "$",
   loading,
+  className,
 }: MetricCardProps) {
   const formattedValue = () => {
     if (typeof value === "undefined") return "-";
@@ -401,7 +416,7 @@ function MetricCard({
   };
 
   return (
-    <Card>
+    <Card className={className}>
       <CardContent className="p-6">
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>

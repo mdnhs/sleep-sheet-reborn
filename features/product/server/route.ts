@@ -76,6 +76,7 @@ const app = new Hono()
   const maxPrice = c.req.query("maxPrice");
   const page = parseInt(c.req.query("page") || "1");
   const search = c.req.query("search");
+  const admin = c.req.query("admin");
   const limit = Math.min(parseInt(c.req.query("limit") || "8", 10) || 8, 100);
 
   const filterConditions: any[] = [];
@@ -125,6 +126,8 @@ const app = new Hono()
 
   if (featured === "true") {
     filterConditions.push(eq(products.isFeatured, true));
+  } else if (featured === "false") {
+    filterConditions.push(eq(products.isFeatured, false));
   }
 
   // Note: We don't filter by isFeatured when sort="featured" because it's a sort option, 
@@ -140,7 +143,7 @@ const app = new Hono()
     );
   }
 
-  const orderConditions: any[] = [desc(products.isFeatured)];
+  const orderConditions: any[] = admin === "true" ? [] : [desc(products.isFeatured)];
   switch (sort) {
     case "newest":
       orderConditions.push(desc(products.createdAt));

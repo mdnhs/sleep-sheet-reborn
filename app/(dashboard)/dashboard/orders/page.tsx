@@ -476,7 +476,7 @@ export default function OrdersPage() {
         onValueChange={(value) => setStatusFilter(value as Order["status"] | "ALL")}
         className="w-full"
       >
-        <TabsList className="flex flex-wrap w-full sm:w-fit gap-1 bg-muted p-1 rounded-xl">
+        <TabsList className="flex flex-wrap h-auto w-full sm:w-fit gap-1 bg-muted p-1 rounded-xl">
           <TabsTrigger
             value="ALL"
             className="rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -498,7 +498,7 @@ export default function OrdersPage() {
 
       {isLoading ? (
         <div className="space-y-6">
-          <div className="flex gap-3 items-center">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="relative max-w-sm w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -536,7 +536,7 @@ export default function OrdersPage() {
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
           searchSlot={
-            <div className="flex items-center gap-3 w-full">
+            <div className="flex flex-wrap items-center gap-3 w-full">
               <div className="relative max-w-sm w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input

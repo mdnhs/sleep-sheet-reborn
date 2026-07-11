@@ -10,6 +10,8 @@ import {
   PaginationState,
   VisibilityState,
   Updater,
+  getSortedRowModel,
+  SortingState,
 } from "@tanstack/react-table"
 
 import {
@@ -27,7 +29,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -57,6 +59,7 @@ export function DataTable<TData, TValue>({
     pageIndex: 0,
     pageSize: 10,
   })
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const pagination = manualPagination ? (externalPagination ?? internalPagination) : internalPagination
   const setPagination = manualPagination
@@ -73,10 +76,13 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange: onRowSelectionChange,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
     state: {
       rowSelection: rowSelection ?? {},
       columnVisibility,
       pagination,
+      sorting,
     },
   })
 
@@ -110,20 +116,36 @@ export function DataTable<TData, TValue>({
         </DropdownMenu>
       </div>
 
-      <div className="rounded-xl border border-border/80 bg-background overflow-hidden">
+      <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full">
         <Table>
           <TableHeader className="bg-secondary/20">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-semibold text-foreground">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
+                    <TableHead key={header.id} className="font-semibold text-foreground whitespace-nowrap">
+                      {header.isPlaceholder ? null : (
+                        header.column.getCanSort() && header.id !== "select" && header.id !== "actions" ? (
+                          <Button
+                            variant="ghost"
+                            className="-ml-4 h-8 data-[state=open]:bg-accent"
+                            onClick={() => header.column.toggleSorting(header.column.getIsSorted() === "asc")}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {{
+                              asc: <ArrowUp className="ml-2 h-4 w-4" />,
+                              desc: <ArrowDown className="ml-2 h-4 w-4" />,
+                            }[header.column.getIsSorted() as string] ?? (
+                              <ArrowUpDown className="ml-2 h-4 w-4" />
+                            )}
+                          </Button>
+                        ) : (
+                          flexRender(
                             header.column.columnDef.header,
                             header.getContext()
-                          )}
+                          )
+                        )
+                      )}
                     </TableHead>
                   )
                 })}
@@ -136,7 +158,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted/30 transition-colors"
+                  className="hover:bg-muted/30 transition-colors whitespace-nowrap"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

@@ -165,11 +165,15 @@ export default function ExpensesClientPage() {
                   <Label>Category</Label>
                   <Select value={expenseCategoryId} onValueChange={(v) => setExpenseCategoryId(v || "")} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder="Select a category">
+                        {expenseCategoryId 
+                          ? categories?.find((c: any) => c.id === expenseCategoryId)?.name 
+                          : "Select a category"}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {categories?.map((cat: any) => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

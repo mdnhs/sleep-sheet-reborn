@@ -43,10 +43,10 @@ export default function ReportsPage() {
 
   return (
     <div className="flex-col">
-      <div className="flex-1 space-y-4 p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Reports & Profit/Loss</h2>
-          <div className="flex items-center space-x-2">
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 space-y-0">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Reports & Profit/Loss</h2>
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => handleFilter("all")}>All Time</Button>
             <Button variant="outline" size="sm" onClick={() => handleFilter("today")}>Today</Button>
             <Button variant="outline" size="sm" onClick={() => handleFilter("week")}>Last 7 Days</Button>
@@ -133,7 +133,7 @@ export default function ReportsPage() {
                 {!data.monthlyData || data.monthlyData.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No data available for this period.</div>
                 ) : (
-                  <div className="rounded-md border">
+                  <div className="overflow-x-auto rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>

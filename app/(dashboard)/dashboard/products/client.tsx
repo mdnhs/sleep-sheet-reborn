@@ -24,7 +24,15 @@ import { cn } from "@/lib/utils"
 import { Copy, MoreVertical, Plus, Search, Trash2, Loader2 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useGetProducts } from "@/features/product/api/use-get-products"
+import { useGetCategories } from "@/features/categories/api/use-get-categories"
 import { useDeleteProduct } from "@/features/dashboard/api/use-delete-product"
 import { useBulkDeleteProducts } from "@/features/dashboard/api/use-bulk-delete-products"
 import { useBulkUpdateFeatured } from "@/features/dashboard/api/use-bulk-update-featured"
@@ -66,11 +74,18 @@ export default function ProductsClientPage() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
+  const [categoryId, setCategoryId] = useState("all")
+  const [featuredFilter, setFeaturedFilter] = useState("all")
+  const { data: categories } = useGetCategories()
+
   const { data: products, isLoading } = useGetProducts({
     page: (pagination.pageIndex + 1).toString(),
     search: debouncedSearch,
     sort: "newest",
     limit: pagination.pageSize.toString(),
+    admin: "true",
+    category: categoryId === "all" ? undefined : categoryId,
+    featured: featuredFilter === "all" ? undefined : featuredFilter,
   })
 
   const handleBulkDelete = () => {
@@ -246,16 +261,39 @@ export default function ProductsClientPage() {
           setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
         }}
         searchSlot={
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap items-center gap-3 w-full">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={handleSearch}
-                className="pl-9 max-w-sm rounded-xl"
+                className="pl-9 w-full rounded-xl"
               />
             </div>
+            <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
+              <SelectTrigger className="w-[180px] rounded-xl">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories?.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.label}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={featuredFilter} onValueChange={(val) => setFeaturedFilter(val || "all")}>
+              <SelectTrigger className="w-[150px] rounded-xl">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="true">Featured</SelectItem>
+                <SelectItem value="false">Standard</SelectItem>
+              </SelectContent>
+            </Select>
             {selectedCount > 0 && (
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>

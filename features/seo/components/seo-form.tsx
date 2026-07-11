@@ -33,13 +33,13 @@ export function SeoForm() {
   const form = useForm<SeoFormValues>({
     resolver: zodResolver(seoSchema),
     values: {
-      seo_site_name: data?.seo_site_name || "Sleep Sheet Reborn",
-      seo_default_title: data?.seo_default_title || "Sleep Sheet Reborn - Premium Bedding & Sleep Solutions",
-      seo_default_description: data?.seo_default_description || "Discover premium bedding, mattresses, pillows, and sleep accessories for ultimate comfort.",
+      seo_site_name: data?.seo_site_name || "Sleep Sheet",
+      seo_default_title: data?.seo_default_title || "Sleep Sheet - Premium Bedding & Sleep Solutions",
+      seo_default_description: data?.seo_default_description || "Discover premium bedding, Comforters, mattresses, pillows, and sleep accessories for ultimate comfort.",
       seo_default_image: data?.seo_default_image || "",
       seo_google_verification: data?.seo_google_verification || "",
       seo_bing_verification: data?.seo_bing_verification || "",
-      seo_twitter_handle: data?.seo_twitter_handle || "@sleepsheet",
+      seo_twitter_handle: data?.seo_twitter_handle || "@sleepsheet2025",
       seo_robots_ai_block: data?.seo_robots_ai_block !== "false",
     },
   });
@@ -85,7 +85,7 @@ export function SeoForm() {
                 <FormItem>
                   <FormLabel>Site Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Sleep Sheet Reborn" className="rounded-xl" />
+                    <Input {...field} placeholder="Sleep Sheet" className="rounded-xl" />
                   </FormControl>
                   <FormDescription>Used in Open Graph, Twitter Cards, and schema.org markup</FormDescription>
                   <FormMessage />
@@ -99,7 +99,7 @@ export function SeoForm() {
                 <FormItem>
                   <FormLabel>Default Meta Title</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Sleep Sheet Reborn - Premium Bedding" className="rounded-xl" />
+                    <Input {...field} placeholder="Sleep Sheet - Premium Bedding & Comforters" className="rounded-xl" />
                   </FormControl>
                   <FormDescription>Shown on homepage and as fallback for pages without a custom title</FormDescription>
                   <FormMessage />

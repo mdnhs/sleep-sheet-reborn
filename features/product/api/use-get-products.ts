@@ -10,6 +10,7 @@ interface ProductQueryParams {
   search?: string;
   limit?: string;
   featured?: string;
+  admin?: string;
 }
 
 export const useGetProducts = (params?: ProductQueryParams) => {

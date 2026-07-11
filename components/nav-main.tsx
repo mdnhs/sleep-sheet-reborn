@@ -17,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { IconChevronRight } from "@tabler/icons-react"
 
@@ -36,6 +37,7 @@ export function NavMain({
 }) {
   const pathname = usePathname()
   const initialPathname = useRef(pathname).current
+  const { setOpenMobile } = useSidebar()
   const defaultOpen = useMemo(() => {
     const map: Record<string, boolean> = {}
     for (const item of items) {
@@ -70,7 +72,7 @@ export function NavMain({
                   {item.items.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
-                        render={<Link href={subItem.url} />}
+                        render={<Link href={subItem.url} onClick={() => setOpenMobile(false)} />}
                         isActive={pathname === subItem.url}
                       >
                         <span>{subItem.title}</span>
@@ -85,7 +87,7 @@ export function NavMain({
               <SidebarMenuButton
                 tooltip={item.title}
                 isActive={pathname === item.url}
-                render={<Link href={item.url} />}
+                render={<Link href={item.url} onClick={() => setOpenMobile(false)} />}
               >
                 {item.icon}
                 <span>{item.title}</span>

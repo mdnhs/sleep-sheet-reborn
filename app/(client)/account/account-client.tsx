@@ -218,7 +218,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                   <Sparkles className="size-3.5" />
                   Account hub
                 </Badge>
-                {currentUser?.role && currentUser.role !== "USER" && (
+                {currentUser && (currentUser.role !== "USER" || (currentUser.permissions && currentUser.permissions.length > 0)) && (
                   <Link href="/dashboard">
                     <Button variant="outline" size="sm" className="rounded-full h-8 px-4 font-medium hover:bg-muted">
                       <LayoutDashboard className="mr-2 size-4" />
