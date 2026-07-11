@@ -60,7 +60,7 @@ const Categories = () => {
                       src={category?.image || ""}
                       alt={category?.label as string}
                       fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
+                      sizes="112px"
                       className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500 rounded-full"></div>

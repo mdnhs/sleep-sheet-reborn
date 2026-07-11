@@ -34,7 +34,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue, categoryImage, isEven 
           <div className="flex items-center gap-3">
             {categoryImage && (
               <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border shadow-sm">
-                <Image src={categoryImage} alt={categoryLabel || "Category"} fill className="object-cover" />
+                <Image src={categoryImage} alt={categoryLabel || "Category"} fill sizes="40px" className="object-cover" />
               </div>
             )}
             <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
@@ -73,7 +73,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue, categoryImage, isEven 
           <div className="flex items-center gap-3">
             {categoryImage && (
               <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border shadow-sm">
-                <Image src={categoryImage} alt={categoryLabel || "Category"} fill className="object-cover" />
+                <Image src={categoryImage} alt={categoryLabel || "Category"} fill sizes="40px" className="object-cover" />
               </div>
             )}
             <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">

@@ -6,72 +6,87 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
-const SLIDES = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1600&auto=format&fit=crop",
-    title: "Premium Comfort",
-    heading: "Luxury Comforters",
-    link: "/shop?category=Comforters",
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1600&auto=format&fit=crop",
-    title: "Soft & Breathable",
-    heading: "Bedsheet Collection",
-    link: "/shop?category=Bedsheets",
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=1600&auto=format&fit=crop",
-    title: "Cozy Nights",
-    heading: "Winter Blankets",
-    link: "/shop?category=Blankets",
-  },
-];
+function HeroSkeleton() {
+  return (
+    <section className="w-full bg-background py-4 relative overflow-hidden">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-auto lg:h-[320px] xl:h-[400px]">
+          {/* Left: Main Slider Skeleton */}
+          <div className="lg:col-span-2 relative w-full h-[320px] sm:h-[400px] lg:h-full rounded-2xl overflow-hidden bg-muted animate-pulse">
+            <div className="absolute inset-0 bg-gradient-to-r from-muted-foreground/10 to-muted-foreground/5" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
+              <div className="h-3 w-24 bg-muted-foreground/20 rounded-full" />
+              <div className="h-10 w-64 bg-muted-foreground/20 rounded-lg" />
+              <div className="h-10 w-48 bg-muted-foreground/20 rounded-lg" />
+              <div className="h-12 w-40 bg-muted-foreground/20 rounded-full mt-4" />
+            </div>
+            {/* Navigation arrows placeholder */}
+            <div className="absolute left-6 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-muted-foreground/10 hidden sm:block" />
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-muted-foreground/10 hidden sm:block" />
+            {/* Indicators placeholder */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+              <div className="h-1.5 w-8 bg-muted-foreground/20 rounded-full" />
+              <div className="h-1.5 w-1.5 bg-muted-foreground/20 rounded-full" />
+              <div className="h-1.5 w-1.5 bg-muted-foreground/20 rounded-full" />
+            </div>
+          </div>
 
-const DEFAULT_PROMO_BANNERS = [
-  {
-    id: "top-banner",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop",
-    subtitle: "Best Seller",
-    title: "All-Season Comforters",
-    linkText: "View Collection",
-    link: "/shop?category=Comforters",
-  },
-  {
-    id: "bottom-banner",
-    image: "https://images.unsplash.com/photo-1616627547584-bf28cee262db?q=80&w=800&auto=format&fit=crop",
-    subtitle: "New Arrivals",
-    title: "Luxury Hotel Bedsheets",
-    linkText: "Shop Now",
-    link: "/shop?category=Bedsheets",
-  },
-];
+          {/* Right: Stacked Banners Skeleton */}
+          <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
+            <div className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden bg-muted animate-pulse">
+              <div className="absolute inset-0 bg-gradient-to-t from-muted-foreground/10 to-transparent" />
+              <div className="absolute bottom-6 left-6 flex flex-col gap-2">
+                <div className="h-2 w-16 bg-muted-foreground/20 rounded-full" />
+                <div className="h-6 w-40 bg-muted-foreground/20 rounded" />
+                <div className="h-3 w-24 bg-muted-foreground/20 rounded" />
+              </div>
+            </div>
+            <div className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden bg-muted animate-pulse">
+              <div className="absolute inset-0 bg-gradient-to-t from-muted-foreground/10 to-transparent" />
+              <div className="absolute bottom-6 left-6 flex flex-col gap-2">
+                <div className="h-2 w-20 bg-muted-foreground/20 rounded-full" />
+                <div className="h-6 w-48 bg-muted-foreground/20 rounded" />
+                <div className="h-3 w-20 bg-muted-foreground/20 rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function Hero() {
-  const { heroTitle, heroSubtitle, heroCtaText, heroCtaLink, heroSlides, promoBanners } = useWebsiteSettings();
+  const { heroTitle, heroSubtitle, heroCtaText, heroCtaLink, heroSlides, promoBanners, isLoading } = useWebsiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const activeSlides = heroSlides && heroSlides.length > 0 ? heroSlides : SLIDES;
-  const activePromoBanners = promoBanners && promoBanners.length > 0 ? promoBanners : DEFAULT_PROMO_BANNERS;
+  if (isLoading) {
+    return <HeroSkeleton />;
+  }
+
+  if (!heroSlides || heroSlides.length === 0) {
+    return null;
+  }
+
+  if (!promoBanners || promoBanners.length === 0) {
+    return null;
+  }
 
   const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
-  }, [activeSlides.length]);
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+  }, [heroSlides.length]);
 
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
-  }, [activeSlides.length]);
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  }, [heroSlides.length]);
 
   useEffect(() => {
     const timer = setInterval(nextSlide, 6000);
     return () => clearInterval(timer);
   }, [nextSlide]);
 
-  const slideData = activeSlides.map((slide, index) => {
-    if (!heroSlides && index === 0) {
-      // For legacy fallback: apply old text settings to the first default slide
+  const slideData = heroSlides.map((slide, index) => {
+    if (index === 0) {
       return {
         ...slide,
         title: heroTitle || slide.title,
@@ -100,28 +115,12 @@ function Hero() {
                   src={slide.image}
                   alt={slide.heading}
                   fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  priority={index === 0}
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  quality={90}
+                  priority={index < 2}
                   className="object-cover transition-transform duration-[15000ms] ease-linear scale-100 group-hover:scale-110"
                 />
-                {/* Premium Overlay Text without Blur */}
-                <div className="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-center px-6 select-none transition-all duration-700">
-                  <div className="flex flex-col items-center transform transition-transform duration-700 hover:scale-[1.02]">
-                    <span className="text-xs sm:text-[13px] font-semibold tracking-[0.3em] uppercase text-white/90 mb-3">
-                      {slide.title}
-                    </span>
-                    <h1 className="font-heading text-3xl sm:text-4xl md:text-6xl font-light text-white mb-6">
-                      {slide.heading}
-                    </h1>
-                    <Link
-                      href={slide.link}
-                      className="group/btn relative overflow-hidden rounded-full bg-white dark:bg-slate-800 px-8 py-3.5 text-foreground dark:text-slate-100 text-xs uppercase tracking-[0.2em] font-bold shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center gap-2"
-                    >
-                      <span className="relative z-10">{heroCtaText}</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/btn:translate-x-1 relative z-10" />
-                    </Link>
-                  </div>
-                </div>
+
               </div>
             ))}
 
@@ -143,7 +142,7 @@ function Hero() {
 
             {/* Minimal Indicators */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-              {SLIDES.map((_, index) => (
+              {slideData.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
@@ -158,7 +157,7 @@ function Hero() {
 
           {/* Right: Stacked Banners */}
           <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
-            {activePromoBanners.map((banner) => (
+            {promoBanners.map((banner) => (
               <Link 
                 key={banner.id}
                 href={banner.link} 
@@ -168,7 +167,8 @@ function Hero() {
                   src={banner.image}
                   alt={banner.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  sizes="(max-width: 1024px) 100vw, 33vw"
+                  quality={90}
                   className="object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end opacity-90 group-hover:opacity-100 transition-opacity">

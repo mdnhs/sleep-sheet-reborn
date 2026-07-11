@@ -49,6 +49,7 @@ const Testimonials = () => {
                         src={testimonial.screenshot}
                         alt={`Review from ${testimonial.name}`}
                         fill
+                        sizes="(max-width: 640px) 75vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
