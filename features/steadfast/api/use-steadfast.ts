@@ -9,7 +9,7 @@ type BookRequestType = InferRequestType<
   typeof client.api.steadfast.book["$post"]
 >;
 
-export function useSteadfastBalance() {
+export function useSteadfastBalance(enabled = true) {
   return useQuery({
     queryKey: ["steadfast-balance"],
     queryFn: async () => {
@@ -18,6 +18,7 @@ export function useSteadfastBalance() {
       return res.json();
     },
     staleTime: 5 * 60 * 1000,
+    enabled,
   });
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { DataTable } from "@/components/ui/data-table";
@@ -47,6 +47,7 @@ import {
   Wallet,
   FilterX,
   Download,
+  Eye,
 } from "lucide-react";
 import type { Order } from "@/features/order/types";
 
@@ -91,13 +92,20 @@ export default function OrdersPage() {
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [isBulkBooking, setIsBulkBooking] = useState(false);
   const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
+  const [showBalance, setShowBalance] = useState(false);
+
+  useEffect(() => {
+    if (!showBalance) return;
+    const timer = setTimeout(() => setShowBalance(false), 2000);
+    return () => clearTimeout(timer);
+  }, [showBalance]);
   const bookCourier = useBookCourier();
 
   const { data: rawOrders, isLoading } = useOrders(search);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl } = useWebsiteSettings();
   const { updateOrder, deleteOrder, bulkDeleteOrders } = useOrderMutations();
-  const { data: balanceData } = useSteadfastBalance();
+  const { data: balanceData, isLoading: isBalanceLoading } = useSteadfastBalance(showBalance);
   const syncStatus = useSyncOrderStatus();
 
   const handlePrint = async (order: Order, action: "print" | "download" = "print") => {
@@ -460,15 +468,29 @@ export default function OrdersPage() {
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        <div className="flex items-center gap-2 text-sm bg-muted/50 border rounded-xl px-4 py-2">
+        <button
+          type="button"
+          onClick={() => setShowBalance(!showBalance)}
+          className="flex items-center gap-2 text-sm bg-muted/50 border rounded-xl px-4 py-2 hover:bg-muted transition-colors cursor-pointer"
+        >
           <Wallet className="h-4 w-4 text-primary" />
-          <span className="text-muted-foreground">Steadfast Balance:</span>
-          <span className="font-semibold">
-            {balanceData
-              ? `${currencySymbol}${Number(balanceData.current_balance).toLocaleString()}`
-              : "—"}
-          </span>
-        </div>
+          {showBalance ? (
+            <>
+              <span className="text-muted-foreground">Steadfast Balance:</span>
+              {isBalanceLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <span className="font-semibold">
+                  {balanceData
+                    ? `${currencySymbol}${Number(balanceData.current_balance).toLocaleString()}`
+                    : "—"}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-muted-foreground">View Balance</span>
+          )}
+        </button>
       </div>
 
       <Tabs

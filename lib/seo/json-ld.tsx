@@ -1,3 +1,4 @@
+import Script from "next/script"
 import { seoConfig } from "./config"
 import type { BreadcrumbItem, ProductSeoData, CategorySeoData, BlogSeoData } from "./types"
 
@@ -335,9 +336,10 @@ export function productGroupSchema(
 
 export function structuredDataScript(id: string, schema: string) {
   return (
-    <script
-      key={id}
+    <Script
+      id={id}
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: schema }}
     />
   )

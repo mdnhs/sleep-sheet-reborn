@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ChevronRight, CreditCard, Wallet, Lock, User, Calendar } from "lucide-react";
+import { CheckCircle2, ChevronRight, CreditCard, Wallet, Lock, User, Calendar, Zap } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { useSettings } from "@/features/settings/api/use-settings";
@@ -55,7 +55,7 @@ function ShippingInformationCard() {
       phone: currentUser?.phone ?? "",
       email: currentUser?.email ?? "",
       address: currentUser?.address ?? "",
-      shippingZone: "inside_dhaka",
+      shippingZone: "" as any,
       paymentMethod: defaultMethod,
       cardNumber: "",
       cvv: "",
@@ -76,7 +76,7 @@ function ShippingInformationCard() {
   }, [currentUser, form]);
 
   useEffect(() => {
-    if (zoneCosts[selectedZone] !== undefined) {
+    if (selectedZone && zoneCosts[selectedZone] !== undefined) {
       setShipping(zoneCosts[selectedZone]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,7 +126,7 @@ function ShippingInformationCard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField name="fullName" control={form.control} render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("fullNameLabel")}</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("fullNameLabel")} *</label>
                     <FormControl>
                       <Input type="text" placeholder={t("fullNamePlaceholder")} className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
                     </FormControl>
@@ -135,7 +135,7 @@ function ShippingInformationCard() {
                 )} />
                 <FormField name="phone" control={form.control} render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("phoneLabel")}</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("phoneLabel")} *</label>
                     <FormControl>
                       <Input type="tel" placeholder={t("phonePlaceholder")} className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
                     </FormControl>
@@ -144,21 +144,9 @@ function ShippingInformationCard() {
                 )} />
               </div>
 
-              <FormField name="email" control={form.control} render={({ field }) => (
-                <FormItem className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    {t("emailLabel")}
-                  </label>
-                  <FormControl>
-                    <Input type="email" placeholder={t("emailPlaceholder")} className="h-10 bg-muted/30 border-transparent rounded-xl px-3 text-sm" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
               <FormField name="address" control={form.control} render={({ field }) => (
                 <FormItem className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("addressLabel")}</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("addressLabel")} *</label>
                   <FormControl>
                     <Textarea placeholder={t("addressPlaceholder")} rows={2} className="bg-muted/30 border-transparent rounded-xl resize-none py-2 px-3 text-sm min-h-[50px]" {...field} />
                   </FormControl>
@@ -178,37 +166,53 @@ function ShippingInformationCard() {
                 </FormItem>
               )} />
 
-              <FormField name="shippingZone" control={form.control} render={({ field }) => (
-                <FormItem className="pt-1 space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("deliveryZoneLabel")}</label>
-                  <FormControl>
-                    <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-2">
-                      {(Object.entries(SHIPPING_ZONES) as [ShippingZone, { label: string; cost: number }][]).map(
-                        ([key, { label }]) => {
-                          const zoneLabels: Record<string, string> = {
-                            inside_dhaka: t("insideDhaka"),
-                            outside_dhaka: t("outsideDhaka"),
-                          };
-                          return (
-                            <label key={key} htmlFor={key}
-                              className={`relative flex items-center justify-between rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${
-                                field.value === key ? "border-foreground bg-secondary/10" : "border-transparent bg-secondary/10"
-                              }`}
-                            >
-                              <div>
-                                <span className="font-semibold text-xs text-foreground">{zoneLabels[key] || label}</span>
-                                <p className="text-[10px] text-muted-foreground/80 font-medium">{formatAmount(zoneCosts[key])}</p>
-                              </div>
-                              <RadioGroupItem value={key} id={key} className={field.value === key ? "border-foreground text-foreground" : "opacity-40"} />
-                            </label>
-                          );
-                        }
-                      )}
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField name="shippingZone" control={form.control} render={({ field }) => {
+                const zoneError = form.formState.errors.shippingZone;
+                const hasError = !!zoneError;
+                return (
+                  <FormItem className="pt-1 space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("deliveryZoneLabel")} *</label>
+                    <FormControl>
+                      <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-3">
+                        {(Object.entries(SHIPPING_ZONES) as [ShippingZone, { label: string; cost: number }][]).map(
+                          ([key, { label }]) => {
+                            const zoneLabels: Record<string, string> = {
+                              inside_dhaka: t("insideDhaka"),
+                              outside_dhaka: t("outsideDhaka"),
+                            };
+                            const isSelected = field.value === key;
+                            return (
+                              <label key={key} htmlFor={key}
+                                className={`relative flex items-center justify-between rounded-2xl border-2 p-4 cursor-pointer transition-all duration-300 select-none ${
+                                  isSelected
+                                    ? "border-foreground bg-foreground/5 shadow-[0_0_0_1px_rgba(0,0,0,0.08)] scale-[1.02]"
+                                    : hasError
+                                      ? "border-red-500 bg-red-500/5 hover:border-red-400 active:scale-[0.98]"
+                                      : "border-border/60 bg-background hover:border-foreground/40 hover:bg-muted/30 hover:shadow-md active:scale-[0.98]"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                                    isSelected ? "border-foreground bg-foreground" : "border-muted-foreground/40"
+                                  }`}>
+                                    {isSelected && <div className="h-2 w-2 rounded-full bg-background" />}
+                                  </div>
+                                  <div>
+                                    <span className="font-semibold text-sm text-foreground">{zoneLabels[key] || label}</span>
+                                    <p className="text-xs text-muted-foreground font-medium mt-0.5">{formatAmount(zoneCosts[key])}</p>
+                                  </div>
+                                </div>
+                                <RadioGroupItem value={key} id={key} className="sr-only" />
+                              </label>
+                            );
+                          }
+                        )}
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }} />
             </CardContent>
           </Card>
 
@@ -310,15 +314,15 @@ function ShippingInformationCard() {
           )}
 
           <div className="flex justify-end pt-1">
-            <Button type="submit" disabled={isPending} className="w-full h-11 rounded-full font-bold text-sm shadow-md bg-foreground text-background">
+            <Button type="submit" disabled={isPending} className="w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
               {isPending ? (
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
+                  <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
                   Processing...
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
+                  <Zap className="h-4 w-4" fill="currentColor" />
                   {selectedPaymentMethod === "cod" ? t("placeOrder") : t("confirmAndPay")}
                 </div>
               )}
