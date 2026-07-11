@@ -507,19 +507,19 @@ function UpdateProductClient() {
             </Card>
           </div>
 
-          <div className="  flex flex-col lg:flex-row gap-y-4 lg:justify-end mt-6">
+          <div className="sticky bottom-0 flex flex-col sm:flex-row gap-4 justify-end mt-8 p-4 -mx-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <Button
               type="button"
               size="lg"
               variant="outline"
-              className="w-full lg:w-[120px] mr-4"
+              className="w-full sm:w-[120px]"
               onClick={() => form.reset()}
             >
               Clear
             </Button>
 
-            <Button type="submit" size="lg" className=" w-full lg:w-[120px]">
-              <Save />
+            <Button type="submit" size="lg" className="w-full sm:w-[120px]">
+              <Save className="w-4 h-4 mr-2" />
               Update
             </Button>
           </div>
