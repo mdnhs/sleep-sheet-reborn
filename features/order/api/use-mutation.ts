@@ -12,6 +12,7 @@ export const useOrderMutations = () => {
       status?: OrderStatus; 
       paymentStatus?: PaymentStatus;
       shippingCost?: number;
+      items?: { id: string; costPrice: number }[];
     }) => {
       const response = await client.api.orders[":id"].$patch({
         param: { id: data.id },
@@ -19,6 +20,7 @@ export const useOrderMutations = () => {
           status: data.status, 
           paymentStatus: data.paymentStatus,
           shippingCost: data.shippingCost,
+          items: data.items,
         },
       });
       return response.json();

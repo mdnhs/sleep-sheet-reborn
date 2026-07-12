@@ -56,6 +56,7 @@ const app = new Hono().get(
     
     // Grouping by month YYYY-MM
     const monthlyMap: Record<string, { month: string; revenue: number; cost: number; shippingCost: number; expense: number; profit: number }> = {};
+    const productCostBreakdown: any[] = [];
 
     const getMonthKey = (dateStr: string | Date) => {
       const d = new Date(dateStr);
@@ -86,6 +87,16 @@ const app = new Hono().get(
           const itemTotalCost = item.costPrice * item.quantity;
           totalCost += itemTotalCost;
           orderCost += itemTotalCost;
+          
+          productCostBreakdown.push({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            productName: item.product?.name || "Unknown Product",
+            quantity: item.quantity,
+            costPrice: item.costPrice,
+            totalItemCost: itemTotalCost,
+            date: order.createdAt,
+          });
         }
       }
       monthlyMap[monthKey].cost += orderCost;
@@ -110,6 +121,8 @@ const app = new Hono().get(
 
     // Sort monthly data chronologically
     monthlyData.sort((a, b) => a.month.localeCompare(b.month));
+    
+    productCostBreakdown.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return c.json({
       totalRevenue,
@@ -119,6 +132,7 @@ const app = new Hono().get(
       netProfit,
       orderCount: filteredOrders.length,
       monthlyData,
+      productCostBreakdown,
     });
   }
 );

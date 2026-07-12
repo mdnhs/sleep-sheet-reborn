@@ -56,9 +56,13 @@ const app = new Hono()
   status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]).optional(),
   paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED"]).optional(),
   shippingCost: z.number().min(0).optional(),
+  items: z.array(z.object({
+    id: z.string(),
+    costPrice: z.number().min(0)
+  })).optional()
 })), async (c) => {
   const id = c.req.param("id");
-  const { status, paymentStatus, shippingCost } = c.req.valid("json");
+  const { status, paymentStatus, shippingCost, items } = c.req.valid("json");
 
   const statusMessages: Record<string, string> = {
     PENDING: "Order placed and pending confirmation.",
@@ -89,6 +93,14 @@ const app = new Hono()
     await db.update(orders)
       .set(updateFields)
       .where(eq(orders.id, id));
+
+    if (items && items.length > 0) {
+      await Promise.all(items.map(item =>
+        db.update(orderItems)
+          .set({ costPrice: item.costPrice })
+          .where(eq(orderItems.id, item.id))
+      ));
+    }
 
     if (status !== undefined || paymentStatus !== undefined) {
       const newStatus = status ?? currentOrder.status;

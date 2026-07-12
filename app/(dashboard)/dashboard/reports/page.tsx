@@ -6,11 +6,13 @@ import { useCurrency } from "@/hooks/use-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt } from "lucide-react";
 import { subDays, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
+  const [showProductCostBreakdown, setShowProductCostBreakdown] = useState(false);
   const { data, isLoading } = useGetReports(dateRange);
   const { formatAmount } = useCurrency();
 
@@ -72,14 +74,17 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setShowProductCostBreakdown(true)}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                   <CardTitle className="text-xs sm:text-sm font-medium">Product Cost</CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                   <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalCost)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Bought prices</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Bought prices (Click to view)</p>
                 </CardContent>
               </Card>
 
@@ -170,6 +175,47 @@ export default function ReportsPage() {
                 )}
               </CardContent>
             </Card>
+
+            <Dialog open={showProductCostBreakdown} onOpenChange={setShowProductCostBreakdown}>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Product Cost Breakdown</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4">
+                  {!data.productCostBreakdown || data.productCostBreakdown.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No product costs found for this period.</div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Order #</TableHead>
+                          <TableHead>Product</TableHead>
+                          <TableHead className="text-right">Qty</TableHead>
+                          <TableHead className="text-right">Unit Cost</TableHead>
+                          <TableHead className="text-right font-bold">Total Cost</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.productCostBreakdown.map((item: any, i: number) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {format(new Date(item.date), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="font-medium text-xs">{item.orderNumber}</TableCell>
+                            <TableCell className="text-xs">{item.productName}</TableCell>
+                            <TableCell className="text-right text-xs">{item.quantity}</TableCell>
+                            <TableCell className="text-right text-xs">{formatAmount(item.costPrice)}</TableCell>
+                            <TableCell className="text-right font-bold text-xs">{formatAmount(item.totalItemCost)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+
           </div>
         ) : (
           <div>Failed to load reports.</div>

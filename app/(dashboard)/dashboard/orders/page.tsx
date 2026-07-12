@@ -98,6 +98,7 @@ export default function OrdersPage() {
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const [shippingCostOrder, setShippingCostOrder] = useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
+  const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
 
   const queryClient = useQueryClient();
   const bookCourier = useBookCourier();
@@ -546,9 +547,14 @@ export default function OrdersPage() {
                   onClick={() => {
                     setShippingCostOrder(order);
                     setNewShippingCost(order.shippingCost.toString());
+                    const costs: Record<string, string> = {};
+                    order.items.forEach(item => {
+                      costs[item.id] = item.costPrice?.toString() || "";
+                    });
+                    setItemCosts(costs);
                   }}
                 >
-                  Edit Shipping Cost
+                  Edit Order Costs
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -893,9 +899,9 @@ export default function OrdersPage() {
       <Dialog open={!!shippingCostOrder} onOpenChange={(open) => !open && setShippingCostOrder(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Shipping Cost</DialogTitle>
+            <DialogTitle>Edit Order Costs</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
             <div className="space-y-2">
               <label className="text-sm font-medium">Shipping Cost (৳)</label>
               <Input
@@ -906,6 +912,20 @@ export default function OrdersPage() {
                 placeholder="Enter shipping cost"
               />
             </div>
+            {shippingCostOrder?.items.map((item) => (
+              <div key={item.id} className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground truncate block">
+                  Bought Price (Cost) for: {item.product?.name || 'Item'}
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={itemCosts[item.id] || ""}
+                  onChange={(e) => setItemCosts({ ...itemCosts, [item.id]: e.target.value })}
+                  placeholder="Enter bought price"
+                />
+              </div>
+            ))}
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 variant="outline"
@@ -922,15 +942,21 @@ export default function OrdersPage() {
                     return;
                   }
                   
+                  const itemsToUpdate = shippingCostOrder.items.map(item => ({
+                    id: item.id,
+                    costPrice: parseFloat(itemCosts[item.id] || "0") || 0
+                  }));
+
                   try {
                     await updateOrder.mutateAsync({
                       id: shippingCostOrder.id,
                       shippingCost: cost,
+                      items: itemsToUpdate,
                     });
-                    toast.success("Shipping cost updated successfully");
+                    toast.success("Order costs updated successfully");
                     setShippingCostOrder(null);
                   } catch (error) {
-                    toast.error("Failed to update shipping cost");
+                    toast.error("Failed to update order costs");
                   }
                 }}
                 disabled={updateOrder.isPending}
