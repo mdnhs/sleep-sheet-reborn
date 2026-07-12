@@ -15,6 +15,7 @@ export interface OrderItem {
     id: string;
     quantity: number;
     price: number;
+    costPrice?: number | null;
     size?: string | null;
     color?: string | null;
     images?: string[];

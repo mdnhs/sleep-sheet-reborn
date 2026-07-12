@@ -28,7 +28,11 @@ const app = new Hono().get(
     // Fetch all non-cancelled orders
     const allOrders = await db.query.orders.findMany({
       with: {
-        items: true,
+        items: {
+          with: {
+            product: true
+          }
+        },
       },
     });
 
