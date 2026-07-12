@@ -34,6 +34,7 @@ const app = new Hono()
     size: z.string().optional(),
     color: z.string().optional(),
   })).min(1, 'At least one item is required'),
+  shippingCost: z.number().optional(),
 })), async (c) => {
   const user = c.get('user');
   if (!user || user.role !== 'ADMIN') {
@@ -41,7 +42,7 @@ const app = new Hono()
   }
 
   try {
-    const { customerName, customerPhone, paymentMethod, reference, note, items, shippingType } = c.req.valid('json');
+    const { customerName, customerPhone, paymentMethod, reference, note, items, shippingType, shippingCost } = c.req.valid('json');
 
     const productIds = items.map(i => i.productId);
     const productsList = await db.query.products.findMany({
@@ -60,7 +61,7 @@ const app = new Hono()
     }
 
     const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-    const totalAmount = subtotal;
+    const totalAmount = subtotal + (shippingCost || 0);
     const orderNumber = await generateOrderNumber();
 
     const [order] = await db.insert(orders).values({
@@ -71,7 +72,7 @@ const app = new Hono()
       subtotal,
       totalAmount,
       tax: 0,
-      shippingCost: 0,
+      shippingCost: shippingCost || 0,
       shippingAddress: shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)',
       reference: reference || null,
       note: note || null,

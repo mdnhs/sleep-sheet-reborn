@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Order } from "@/features/order/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, X, Pencil } from "lucide-react";
 
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
@@ -13,7 +13,11 @@ interface BulkBookCourierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orders: ShippingOrder[];
-  onConfirm: (costPrices: { orderItemId: string; costPrice: number }[]) => void;
+  onConfirm: (
+    costPrices: { orderItemId: string; costPrice: number }[],
+    shippingCosts: { orderId: string; shippingCost: number }[],
+    bookedOrderIds: string[]
+  ) => void;
   isBooking: boolean;
 }
 
@@ -24,12 +28,18 @@ export function BulkBookCourierDialog({
   onConfirm,
   isBooking
 }: BulkBookCourierDialogProps) {
+  const [localOrders, setLocalOrders] = useState<ShippingOrder[]>([]);
   const [costPricesMap, setCostPricesMap] = useState<Record<string, string>>({});
+  const [shippingCostsMap, setShippingCostsMap] = useState<Record<string, string>>({});
+  const [editingItems, setEditingItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (open) {
+      setLocalOrders(orders);
       const initialMap: Record<string, string> = {};
+      const initialCostsMap: Record<string, string> = {};
       orders.forEach(order => {
+        initialCostsMap[order.id] = order.shippingCost.toString();
         order.items?.forEach(item => {
           if ((item as any).costPrice !== null && (item as any).costPrice !== undefined) {
             initialMap[item.id] = (item as any).costPrice.toString();
@@ -37,25 +47,56 @@ export function BulkBookCourierDialog({
         });
       });
       setCostPricesMap(initialMap);
+      setShippingCostsMap(initialCostsMap);
+      setEditingItems({});
     }
   }, [open, orders]);
 
   const handleConfirm = () => {
     const payload = Object.entries(costPricesMap)
-      .filter(([_, priceStr]) => priceStr.trim() !== "" && !isNaN(Number(priceStr)))
+      .filter(([id, priceStr]) => {
+        const belongsToRemainingOrder = localOrders.some(order => 
+          order.items?.some(item => item.id === id)
+        );
+        return belongsToRemainingOrder && priceStr.trim() !== "" && !isNaN(Number(priceStr));
+      })
       .map(([id, priceStr]) => ({
         orderItemId: id,
         costPrice: Number(priceStr)
       }));
+
+    const shippingCostsPayload = Object.entries(shippingCostsMap)
+      .filter(([id, costStr]) => {
+        const existsInRemainingOrders = localOrders.some(order => order.id === id);
+        return existsInRemainingOrders && costStr.trim() !== "" && !isNaN(Number(costStr));
+      })
+      .map(([id, costStr]) => ({
+        orderId: id,
+        shippingCost: Number(costStr)
+      }));
     
-    onConfirm(payload);
+    const bookedOrderIds = localOrders.map(o => o.id);
+    onConfirm(payload, shippingCostsPayload, bookedOrderIds);
   };
 
   const handlePriceChange = (id: string, value: string) => {
     setCostPricesMap(prev => ({ ...prev, [id]: value }));
   };
 
-  const itemsCount = orders.reduce((acc, order) => acc + (order.items?.length || 0), 0);
+  const handleShippingCostChange = (id: string, value: string) => {
+    setShippingCostsMap(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleRemoveOrder = (orderId: string) => {
+    setLocalOrders(prev => prev.filter(o => o.id !== orderId));
+  };
+
+  const startEditing = (itemId: string, currentCost: number) => {
+    setCostPricesMap(prev => ({ ...prev, [itemId]: currentCost.toString() }));
+    setEditingItems(prev => ({ ...prev, [itemId]: true }));
+  };
+
+  const itemsCount = localOrders.reduce((acc, order) => acc + (order.items?.length || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -63,21 +104,45 @@ export function BulkBookCourierDialog({
         <DialogHeader>
           <DialogTitle>Bulk Booking: Bought Prices</DialogTitle>
           <DialogDescription>
-            You are about to book {orders.length} orders containing {itemsCount} items.
-            Please verify or enter the bought prices (cost prices) for the items below to accurately calculate your profit.
+            You are about to book {localOrders.length} orders containing {itemsCount} items.
+            Please verify or enter the bought prices (cost prices) and shipping costs for the orders below to accurately calculate your profit.
           </DialogDescription>
         </DialogHeader>
         
         <div className="flex-1 -mx-4 px-4 overflow-y-auto">
-          <div className="space-y-6 pb-4">
-            {orders.map(order => (
+          <div className={`space-y-6 pb-4 ${localOrders.length > 3 ? "max-h-[500px] overflow-y-auto pr-2" : ""}`}>
+            {localOrders.map(order => (
               <div key={order.id} className="space-y-3 border rounded-xl p-4 bg-muted/20">
                 <div className="flex justify-between items-center border-b pb-2">
                   <div>
                     <h4 className="font-semibold">{order.orderNumber}</h4>
                     <p className="text-xs text-muted-foreground">{order.guestName || order.user?.name || "Customer"}</p>
                   </div>
-                  <span className="text-sm font-medium">৳{order.totalAmount.toLocaleString()}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground font-medium">Ship Cost:</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        className="h-7 w-20 text-xs px-2 rounded-md"
+                        value={shippingCostsMap[order.id] || ""}
+                        onChange={(e) => handleShippingCostChange(order.id, e.target.value)}
+                      />
+                    </div>
+                    <span className="text-sm font-medium">৳{order.totalAmount.toLocaleString()}</span>
+                    {localOrders.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                        onClick={() => handleRemoveOrder(order.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-3">
                   {order.items?.map(item => (
@@ -94,9 +159,18 @@ export function BulkBookCourierDialog({
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <div className="w-28 shrink-0">
-                        {(item as any).costPrice !== null && (item as any).costPrice !== undefined ? (
-                          <div className="flex h-8 w-full items-center justify-end px-3 text-sm font-medium text-muted-foreground border rounded-md bg-muted/50">
-                            ৳{(item as any).costPrice}
+                        {(item as any).costPrice !== null && (item as any).costPrice !== undefined && !editingItems[item.id] ? (
+                          <div className="flex h-8 w-full items-center justify-between pl-2 pr-1 text-sm font-medium text-muted-foreground border rounded-md bg-muted/50 gap-1.5">
+                            <span>৳{(item as any).costPrice}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded"
+                              onClick={() => startEditing(item.id, (item as any).costPrice)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
                           </div>
                         ) : (
                           <Input

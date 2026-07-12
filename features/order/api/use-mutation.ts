@@ -9,12 +9,17 @@ export const useOrderMutations = () => {
   const updateOrder = useMutation({
     mutationFn: async (data: { 
       id: string; 
-      status: OrderStatus; 
-      paymentStatus: PaymentStatus 
+      status?: OrderStatus; 
+      paymentStatus?: PaymentStatus;
+      shippingCost?: number;
     }) => {
       const response = await client.api.orders[":id"].$patch({
         param: { id: data.id },
-        json: { status: data.status, paymentStatus: data.paymentStatus },
+        json: { 
+          status: data.status, 
+          paymentStatus: data.paymentStatus,
+          shippingCost: data.shippingCost,
+        },
       });
       return response.json();
     },

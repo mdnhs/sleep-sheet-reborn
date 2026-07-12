@@ -53,11 +53,12 @@ const app = new Hono()
 })
 
 .patch("/:id", zValidator("json", z.object({
-  status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]),
-  paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED"])
+  status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]).optional(),
+  paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED"]).optional(),
+  shippingCost: z.number().min(0).optional(),
 })), async (c) => {
   const id = c.req.param("id");
-  const { status, paymentStatus } = await c.req.json();
+  const { status, paymentStatus, shippingCost } = c.req.valid("json");
 
   const statusMessages: Record<string, string> = {
     PENDING: "Order placed and pending confirmation.",
@@ -68,15 +69,36 @@ const app = new Hono()
   };
 
   try {
-      await db.update(orders)
-        .set({ status, paymentStatus })
-        .where(eq(orders.id, id));
+    const currentOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+    });
+    
+    if (!currentOrder) {
+      return c.json({ error: "Order not found" }, 404);
+    }
 
+    const updateFields: any = {};
+    if (status !== undefined) updateFields.status = status;
+    if (paymentStatus !== undefined) updateFields.paymentStatus = paymentStatus;
+    
+    if (shippingCost !== undefined) {
+      updateFields.shippingCost = shippingCost;
+      updateFields.totalAmount = currentOrder.subtotal + shippingCost;
+    }
+
+    await db.update(orders)
+      .set(updateFields)
+      .where(eq(orders.id, id));
+
+    if (status !== undefined || paymentStatus !== undefined) {
+      const newStatus = status ?? currentOrder.status;
+      const newPaymentStatus = paymentStatus ?? currentOrder.paymentStatus;
       await db.insert(orderTimelineEvents).values({
         orderId: id,
-        status,
-        message: `${statusMessages[status] || `Status changed to ${status}`}, payment status is now ${paymentStatus.toLowerCase()}.`
+        status: newStatus,
+        message: `${statusMessages[newStatus] || `Status changed to ${newStatus}`}, payment status is now ${newPaymentStatus.toLowerCase()}.`
       });
+    }
 
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),

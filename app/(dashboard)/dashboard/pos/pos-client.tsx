@@ -41,6 +41,7 @@ interface CartItem {
   image: string
   stock: number
   costPrice?: number
+  shippingCost?: number
 }
 
 interface Category {
@@ -152,7 +153,7 @@ export default function PosClientPage() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
-  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number) => {
+  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number) => {
     setCart(prev => {
       const price = variant?.price ?? product.price
       const color = variant?.name || null
@@ -182,6 +183,7 @@ export default function PosClientPage() {
         image: product.images?.[0] || "",
         stock: product.stock,
         costPrice,
+        shippingCost: shippingCost || 0,
       }]
     })
   }
@@ -200,11 +202,17 @@ export default function PosClientPage() {
     })
   }
 
+  const updateShippingCost = (index: number, cost: number) => {
+    setCart(prev => prev.map((item, idx) => idx === index ? { ...item, shippingCost: cost } : item))
+  }
+
   const removeFromCart = (index: number) => {
     setCart(prev => prev.filter((_, i) => i !== index))
   }
 
   const subtotal = cart.reduce((acc, i) => acc + i.price * i.quantity, 0)
+  const totalShipping = cart.reduce((acc, i) => acc + (i.shippingCost || 0) * i.quantity, 0)
+  const totalAmount = subtotal + totalShipping
 
   const handleCheckout = async () => {
     if (!customerName.trim()) {
@@ -236,6 +244,7 @@ export default function PosClientPage() {
             size: i.size || undefined,
             color: i.color || undefined,
           })),
+          shippingCost: totalShipping,
         }),
       })
 
@@ -335,6 +344,20 @@ export default function PosClientPage() {
                 {item.color && <p className="text-xs text-muted-foreground">Color: {item.color}</p>}
                 {item.size && <p className="text-xs text-muted-foreground">Size: {item.size}</p>}
                 <p className="text-sm font-semibold mt-1">৳{item.price.toLocaleString()}</p>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase shrink-0">Ship Cost:</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={item.shippingCost || ""}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0
+                      updateShippingCost(index, val)
+                    }}
+                    className="h-6 w-20 px-2 text-xs rounded-md shadow-none"
+                  />
+                </div>
               </div>
               <div className="flex flex-col items-end justify-between">
                 <button
@@ -434,8 +457,12 @@ export default function PosClientPage() {
               <span>৳{subtotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Shipping Cost</span>
+              <span>৳{totalShipping.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total</span>
-              <span className="text-lg font-bold">৳{subtotal.toLocaleString()}</span>
+              <span className="text-lg font-bold">৳{totalAmount.toLocaleString()}</span>
             </div>
           </div>
 
@@ -449,7 +476,7 @@ export default function PosClientPage() {
             ) : (
               <CreditCard className="h-4 w-4" />
             )}
-            {isCheckingOut ? "Processing..." : `Complete Sale — ৳${subtotal.toLocaleString()}`}
+            {isCheckingOut ? "Processing..." : `Complete Sale — ৳${totalAmount.toLocaleString()}`}
           </Button>
         </div>
       )}
@@ -538,7 +565,7 @@ export default function PosClientPage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-background border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between md:left-64">
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-muted-foreground">{cart.length} item(s)</span>
-          <span className="text-lg font-bold text-foreground">৳{subtotal.toLocaleString()}</span>
+          <span className="text-lg font-bold text-foreground">৳{totalAmount.toLocaleString()}</span>
         </div>
         <Sheet>
           <SheetTrigger
@@ -566,7 +593,7 @@ function ProductCard({
   onAdd,
 }: {
   product: POSProduct
-  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number) => void
+  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number) => void
 }) {
   const { formatAmount } = useCurrency()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -574,6 +601,7 @@ function ProductCard({
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || product.colors?.[0]?.name || "")
   const [quantity, setQuantity] = useState(1)
   const [costPrice, setCostPrice] = useState("")
+  const [shippingCost, setShippingCost] = useState("")
 
   const hasColors = product.colors && product.colors.length > 0
   const hasSizes = product.sizes && product.sizes.length > 0
@@ -588,12 +616,15 @@ function ProductCard({
     if (hasSizes && !selectedSize) { toast.error("Please select a size"); return }
     if (hasColors && !selectedColor) { toast.error("Please select a variant"); return }
     if (isDrawerOpen && costPrice !== "" && isNaN(Number(costPrice))) { toast.error("Bought price must be a number"); return }
+    if (isDrawerOpen && shippingCost !== "" && isNaN(Number(shippingCost))) { toast.error("Shipping cost must be a number"); return }
     const variant = currentVariant || undefined
     const size = hasSizes ? selectedSize : undefined
     const parsedCostPrice = costPrice !== "" ? Number(costPrice) : undefined
-    onAdd(product, variant, size, parsedCostPrice)
+    const parsedShippingCost = shippingCost !== "" ? Number(shippingCost) : undefined
+    onAdd(product, variant, size, parsedCostPrice, parsedShippingCost)
     setIsDrawerOpen(false)
     setCostPrice("")
+    setShippingCost("")
   }
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -741,6 +772,16 @@ function ProductCard({
                 placeholder="0.00"
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex flex-col gap-1 mt-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Shipping Cost</span>
+              <Input 
+                type="number"
+                placeholder="0.00"
+                value={shippingCost}
+                onChange={(e) => setShippingCost(e.target.value)}
               />
             </div>
           </div>

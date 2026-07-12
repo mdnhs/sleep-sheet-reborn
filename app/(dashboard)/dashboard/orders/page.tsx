@@ -94,6 +94,8 @@ export default function OrdersPage() {
   const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
+  const [shippingCostOrder, setShippingCostOrder] = useState<ShippingOrder | null>(null);
+  const [newShippingCost, setNewShippingCost] = useState("");
 
   useEffect(() => {
     if (!showBalance) return;
@@ -291,7 +293,10 @@ export default function OrdersPage() {
     setIsBulkBookDialogOpen(true);
   };
 
-  const handleConfirmBulkBook = async (costPrices: { orderItemId: string; costPrice: number }[]) => {
+  const handleConfirmBulkBook = async (
+    costPrices: { orderItemId: string; costPrice: number }[],
+    shippingCosts: { orderId: string; shippingCost: number }[]
+  ) => {
     setIsBulkBooking(true);
     setIsBulkBookDialogOpen(false);
     try {
@@ -300,7 +305,15 @@ export default function OrdersPage() {
         if (order.trackingNumber) continue;
         const phone = (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "").slice(0, 11);
         if (phone.length === 11) {
-          
+          // If this order's shipping cost was edited, update it in the DB first!
+          const orderShipCostObj = shippingCosts.find(s => s.orderId === order.id);
+          if (orderShipCostObj && orderShipCostObj.shippingCost !== order.shippingCost) {
+            await updateOrder.mutateAsync({
+              id: order.id,
+              shippingCost: orderShipCostObj.shippingCost,
+            });
+          }
+
           // filter the costPrices for this specific order
           const orderItemIds = order.items.map((i: any) => i.id);
           const orderCostPrices = costPrices.filter(c => orderItemIds.includes(c.orderItemId));
@@ -525,6 +538,14 @@ export default function OrdersPage() {
                     Sync Courier Status
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShippingCostOrder(order);
+                    setNewShippingCost(order.shippingCost.toString());
+                  }}
+                >
+                  Edit Shipping Cost
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setDeleteOrderId(order.id)}
@@ -843,6 +864,60 @@ export default function OrdersPage() {
         onConfirm={handleConfirmBulkBook}
         isBooking={isBulkBooking}
       />
+      <Dialog open={!!shippingCostOrder} onOpenChange={(open) => !open && setShippingCostOrder(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Shipping Cost</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Shipping Cost (৳)</label>
+              <Input
+                type="number"
+                min="0"
+                value={newShippingCost}
+                onChange={(e) => setNewShippingCost(e.target.value)}
+                placeholder="Enter shipping cost"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShippingCostOrder(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!shippingCostOrder) return;
+                  const cost = parseFloat(newShippingCost);
+                  if (isNaN(cost) || cost < 0) {
+                    toast.error("Please enter a valid shipping cost");
+                    return;
+                  }
+                  
+                  try {
+                    await updateOrder.mutateAsync({
+                      id: shippingCostOrder.id,
+                      shippingCost: cost,
+                    });
+                    toast.success("Shipping cost updated successfully");
+                    setShippingCostOrder(null);
+                  } catch (error) {
+                    toast.error("Failed to update shipping cost");
+                  }
+                }}
+                disabled={updateOrder.isPending}
+              >
+                {updateOrder.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : null}
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
