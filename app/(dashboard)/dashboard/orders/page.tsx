@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/conform-dialouge";
+import { useQueryClient } from "@tanstack/react-query";
 import { useOrders } from "@/features/order/api/use-order";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useSteadfastBalance, useSyncOrderStatus, useBookCourier } from "@/features/steadfast/api/use-steadfast";
@@ -48,6 +49,7 @@ import {
   FilterX,
   Download,
   Eye,
+  Pointer,
 } from "lucide-react";
 import type { Order } from "@/features/order/types";
 
@@ -97,12 +99,14 @@ export default function OrdersPage() {
   const [shippingCostOrder, setShippingCostOrder] = useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
 
-  useEffect(() => {
-    if (!showBalance) return;
-    const timer = setTimeout(() => setShowBalance(false), 2000);
-    return () => clearTimeout(timer);
-  }, [showBalance]);
+  const queryClient = useQueryClient();
   const bookCourier = useBookCourier();
+
+  useEffect(() => {
+    if (showBalance) {
+      queryClient.invalidateQueries({ queryKey: ["steadfast-balance"] });
+    }
+  }, [showBalance, queryClient]);
 
   const { data: rawOrders, isLoading } = useOrders(search);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
@@ -573,29 +577,49 @@ export default function OrdersPage() {
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        <button
-          type="button"
+        
+        <div 
           onClick={() => setShowBalance(!showBalance)}
-          className="flex items-center gap-2 text-sm bg-muted/50 border rounded-xl px-4 py-2 hover:bg-muted transition-colors cursor-pointer"
+          className="relative flex items-center h-12 w-[240px] rounded-full border border-[#00bfa5] bg-white dark:bg-slate-900 select-none cursor-pointer transition-all duration-200"
         >
-          <Wallet className="h-4 w-4 text-primary" />
-          {showBalance ? (
-            <>
-              <span className="text-muted-foreground">Steadfast Balance:</span>
-              {isBalanceLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <span className="font-semibold">
-                  {balanceData
-                    ? `${currencySymbol}${Number(balanceData.current_balance).toLocaleString()}`
-                    : "—"}
-                </span>
-              )}
-            </>
-          ) : (
-            <span className="text-muted-foreground">View Balance</span>
-          )}
-        </button>
+          {/* Sliding indicator */}
+          <div 
+            className={cn(
+              "absolute top-[4px] left-[4px] h-[38px] w-[38px] rounded-full bg-white dark:bg-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center transition-all duration-300 ease-out z-10",
+              showBalance ? "translate-x-[194px]" : "translate-x-0"
+            )}
+          >
+            <Pointer className="h-[18px] w-[18px] text-[#00bfa5] -rotate-[15deg]" />
+          </div>
+
+          {/* Balance Amount (Slide in from left) */}
+          <div 
+            className={cn(
+              "absolute left-[16px] transition-all duration-300 ease-out pr-[50px] truncate",
+              showBalance ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+            )}
+          >
+            {isBalanceLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#00bfa5]" />
+            ) : (
+              <span className="text-sm font-semibold text-[#00bfa5] tracking-wide">
+                {currencySymbol}{balanceData ? Number(balanceData.current_balance).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+              </span>
+            )}
+          </div>
+
+          {/* "Check Balance" label */}
+          <div 
+            className={cn(
+              "absolute right-[24px] transition-all duration-300 ease-out",
+              showBalance ? "opacity-0 translate-x-4 pointer-events-none" : "opacity-100 translate-x-0"
+            )}
+          >
+            <span className="text-sm font-semibold text-[#00bfa5] tracking-wide">
+              Check Balance
+            </span>
+          </div>
+        </div>
       </div>
 
       <Tabs
@@ -603,24 +627,26 @@ export default function OrdersPage() {
         onValueChange={(value) => setStatusFilter(value as Order["status"] | "ALL")}
         className="w-full"
       >
-        <TabsList className="flex flex-wrap h-auto w-full sm:w-fit gap-1 bg-muted p-1 rounded-xl">
-          <TabsTrigger
-            value="ALL"
-            className="rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
-          >
-            All ({orders?.length ?? 0})
-          </TabsTrigger>
-          {ALL_STATUSES.map((s) => (
+        <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
+          <TabsList className="flex flex-nowrap h-auto w-max sm:w-fit gap-1 bg-muted p-1 rounded-xl">
             <TabsTrigger
-              key={s}
-              value={s}
-              className="rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              value="ALL"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              {STATUS_DOTS[s]}
-              {s.toLowerCase()} ({counts[s]})
+              All ({orders?.length ?? 0})
             </TabsTrigger>
-          ))}
-        </TabsList>
+            {ALL_STATUSES.map((s) => (
+              <TabsTrigger
+                key={s}
+                value={s}
+                className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              >
+                {STATUS_DOTS[s]}
+                {s.toLowerCase()} ({counts[s]})
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
       </Tabs>
 
       {isLoading ? (
