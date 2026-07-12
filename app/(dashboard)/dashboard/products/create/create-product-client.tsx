@@ -503,7 +503,7 @@ function AddProductClient() {
             </Card>
           </div>
 
-          <div className="sticky bottom-0 flex flex-col sm:flex-row gap-4 justify-end mt-8 p-4 -mx-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <div className="sticky bottom-16 sm:bottom-0 flex flex-col sm:flex-row gap-4 justify-end mt-8 p-4 -mx-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <Button
               type="button"
               size="lg"

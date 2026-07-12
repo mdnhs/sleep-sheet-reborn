@@ -60,65 +60,65 @@ export default function ReportsPage() {
           </div>
         ) : data ? (
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatAmount(data.totalRevenue)}</div>
-                  <p className="text-xs text-muted-foreground">From {data.orderCount} orders</p>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalRevenue)}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">From {data.orderCount} orders</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Product Cost</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Product Cost</CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatAmount(data.totalCost)}</div>
-                  <p className="text-xs text-muted-foreground">Bought prices</p>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalCost)}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Bought prices</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Shipping Cost</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Shipping Cost</CardTitle>
                   <TruckIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatAmount(data.totalShippingCost)}</div>
-                  <p className="text-xs text-muted-foreground">Courier fees</p>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalShippingCost)}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Courier fees</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Expenses</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Expenses</CardTitle>
                   <Receipt className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatAmount(data.totalExpense || 0)}</div>
-                  <p className="text-xs text-muted-foreground">Misc costs</p>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalExpense || 0)}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Misc costs</p>
                 </CardContent>
               </Card>
 
-              <Card className={data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20" : "bg-red-50 dark:bg-red-950/20"}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Net Profit / Loss</CardTitle>
+              <Card className={`col-span-2 lg:col-span-1 ${data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20" : "bg-red-50 dark:bg-red-950/20"}`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Net Profit / Loss</CardTitle>
                   {data.netProfit >= 0 ? (
                     <TrendingUp className="h-4 w-4 text-green-600" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   )}
                 </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl font-bold ${data.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className={`text-lg sm:text-2xl font-bold ${data.netProfit >= 0 ? "text-green-600" : "text-red-600"} truncate`}>
                     {formatAmount(data.netProfit)}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     Rev - (Cost+Ship+Exp)
                   </p>
                 </CardContent>

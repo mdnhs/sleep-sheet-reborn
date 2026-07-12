@@ -7,6 +7,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import React from "react";
+import { BottomNav } from "@/components/bottom-nav";
 
 interface DashBoardLayoutProps {
   children: React.ReactNode;
@@ -26,7 +27,8 @@ function DashBoardLayout({ children }: DashBoardLayoutProps) {
           {/* <DashboardBreadcrumb /> */}
           <DashboardHeaderActions />
         </header>
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pb-20 md:pb-0">{children}</main>
+        <BottomNav />
       </SidebarInset>
     </SidebarProvider>
   );

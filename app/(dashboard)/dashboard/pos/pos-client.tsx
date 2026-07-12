@@ -562,7 +562,7 @@ export default function PosClientPage() {
       </div>
 
       {/* Mobile Sticky Cart Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-background border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between md:left-64">
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 p-3 bg-background border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between md:left-64">
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-muted-foreground">{cart.length} item(s)</span>
           <span className="text-lg font-bold text-foreground">৳{totalAmount.toLocaleString()}</span>
