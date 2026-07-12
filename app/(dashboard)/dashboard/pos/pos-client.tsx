@@ -88,6 +88,7 @@ export default function PosClientPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
+  const [customerAddress, setCustomerAddress] = useState("")
   const [reference, setReference] = useState("")
   const [note, setNote] = useState("")
   const [shippingType, setShippingType] = useState<"showroom" | "online">("online")
@@ -232,6 +233,7 @@ export default function PosClientPage() {
         body: JSON.stringify({
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim() || undefined,
+          customerAddress: customerAddress.trim() || undefined,
           reference: reference.trim() || undefined,
           note: note.trim() || undefined,
           shippingType,
@@ -402,6 +404,11 @@ export default function PosClientPage() {
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               type="tel"
+            />
+            <Input
+              placeholder="Address (optional)"
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
             />
             <Input
               placeholder="Reference (optional)"

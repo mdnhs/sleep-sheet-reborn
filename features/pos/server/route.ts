@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
-import { orders, orderItems, payments, products } from '@/db/schema';
+import { orders, orderItems, payments, products, users } from '@/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
@@ -23,6 +24,7 @@ const app = new Hono()
 .post('/', sessionMiddleware, zValidator('json', z.object({
   customerName: z.string().min(1, 'Customer name is required'),
   customerPhone: z.string().optional(),
+  customerAddress: z.string().optional(),
   reference: z.string().optional(),
   note: z.string().optional(),
   shippingType: z.enum(['showroom', 'online']).default('online'),
@@ -43,7 +45,7 @@ const app = new Hono()
   }
 
   try {
-    const { customerName, customerPhone, paymentMethod, reference, note, items, shippingType, shippingCost } = c.req.valid('json');
+    const { customerName, customerPhone, customerAddress, paymentMethod, reference, note, items, shippingType, shippingCost } = c.req.valid('json');
 
     const productIds = items.map(i => i.productId);
     const productsList = await db.query.products.findMany({
@@ -65,16 +67,48 @@ const app = new Hono()
     const totalAmount = subtotal + (shippingCost || 0);
     const orderNumber = await generateOrderNumber();
 
+    let finalUserId: string | null = null;
+    
+    if (customerPhone) {
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.phone, customerPhone),
+      });
+      
+      if (existingUser) {
+        finalUserId = existingUser.id;
+      } else {
+        const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
+        const [newUser] = await db.insert(users).values({
+          name: customerName,
+          email: `${customerPhone}@pos.local`,
+          phone: customerPhone,
+          password: hashedPassword,
+          address: customerAddress || null,
+        }).returning();
+        finalUserId = newUser.id;
+      }
+    } else {
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
+      const [newUser] = await db.insert(users).values({
+        name: customerName,
+        email: `guest_${randomSuffix}@pos.local`,
+        password: hashedPassword,
+        address: customerAddress || null,
+      }).returning();
+      finalUserId = newUser.id;
+    }
+
     const [order] = await db.insert(orders).values({
       orderNumber,
-      userId: null,
+      userId: finalUserId,
       guestName: customerName,
       guestPhone: customerPhone || null,
       subtotal,
       totalAmount,
       tax: 0,
       shippingCost: shippingCost || 0,
-      shippingAddress: shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)',
+      shippingAddress: customerAddress || (shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)'),
       reference: reference || null,
       note: note || null,
       saleType: 'POS',
