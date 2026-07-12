@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { orders, orderTimelineEvents, orderItems } from "@/db/schema";
 import type { OrderStatus } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 function mapSteadfastStatus(s: string): OrderStatus | null {
   switch (s) {
@@ -35,7 +36,7 @@ const app = new Hono()
 
   .get("/balance", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -64,7 +65,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -132,7 +133,7 @@ const app = new Hono()
 
   .post("/sync/:orderId", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 

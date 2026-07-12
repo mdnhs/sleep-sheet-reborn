@@ -5,6 +5,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { orders, orderItems, expenses } from "@/db/schema";
 import { eq, and, gte, lte, isNotNull } from "drizzle-orm";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono().get(
   "/",
@@ -18,7 +19,7 @@ const app = new Hono().get(
   ),
   async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 

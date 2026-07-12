@@ -6,9 +6,12 @@ import React from "react";
 async function SignInPage() {
   const user = await getCurrentUser();
   if (user) {
-    redirect(
-      user.role === "ADMIN" || user.role === "MODERATOR" ? "/dashboard" : "/"
-    );
+    const hasDashboardAccess =
+      user.role === "ADMIN" ||
+      user.role === "MODERATOR" ||
+      (user.permissions && user.permissions.length > 0);
+
+    redirect(hasDashboardAccess ? "/dashboard" : "/");
   }
 
   return (

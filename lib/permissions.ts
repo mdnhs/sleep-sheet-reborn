@@ -2,6 +2,9 @@ export const PERMISSIONS = {
   // Products
   MANAGE_PRODUCTS: "manage_products",
   
+  // Blog
+  MANAGE_BLOG: "manage_blog",
+  
   // Orders & POS
   MANAGE_ORDERS: "manage_orders",
   POS_ACCESS: "pos_access",
@@ -19,9 +22,10 @@ export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
 export const PERMISSION_GROUPS = [
   {
-    label: "Products",
+    label: "Products & Blog",
     permissions: [
       { id: PERMISSIONS.MANAGE_PRODUCTS, label: "Manage Products" },
+      { id: PERMISSIONS.MANAGE_BLOG, label: "Manage Blog" },
     ]
   },
   {

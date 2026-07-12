@@ -7,6 +7,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import cuid from 'cuid';
 import { uploadImage, deleteImage } from '@/lib/cloudinary';
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
 .get("/", async(c)=>{
@@ -37,7 +38,7 @@ const app = new Hono()
       const user = c.get("user");
       const {label,value,parentId,image}=c.req.valid("json");
 
-      if(!user || user.role !== "ADMIN"){
+      if(!user || !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS)){
          return c.json({ success: false, error: 'Unauthorized' }, 403);
        }
 

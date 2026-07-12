@@ -6,12 +6,13 @@ import { imageStorage } from '@/lib/imageStorage';
 import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { invalidateFeed } from '@/lib/meta-catalog/cache';
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono();
 
 app.post('/upload',sessionMiddleware, async (c) => {
-  const user =c.get("user");
-  if(!user || user.role !== "ADMIN"){
+  const user = c.get("user");
+  if(!user || !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS)){
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   try {
@@ -113,8 +114,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
   }
 })
 .put("/update",sessionMiddleware, async (c) => {
-  const user =c.get("user");
-  if(!user || user.role !== "ADMIN"){
+  const user = c.get("user");
+  if(!user || !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS)){
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -217,7 +218,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
 
 app.post('/bulk-delete', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS))) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -258,7 +259,7 @@ app.post('/bulk-delete', sessionMiddleware, async (c) => {
 
 app.delete('/:id', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS))) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -294,7 +295,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
 
 app.patch('/bulk-feature', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS))) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 

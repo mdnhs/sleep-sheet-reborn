@@ -5,6 +5,7 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -37,7 +38,7 @@ const app = new Hono()
   shippingCost: z.number().optional(),
 })), async (c) => {
   const user = c.get('user');
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || !hasPermission(user, PERMISSIONS.POS_ACCESS)) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
 

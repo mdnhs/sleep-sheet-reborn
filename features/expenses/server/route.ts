@@ -6,11 +6,12 @@ import { db } from "@/db";
 import { expenseCategories, expenses } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import cuid from "cuid";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
   .get("/categories", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -29,7 +30,7 @@ const app = new Hono()
     zValidator("json", z.object({ name: z.string().min(1) })),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       try {
@@ -47,7 +48,7 @@ const app = new Hono()
   )
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -75,7 +76,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       try {
@@ -99,7 +100,7 @@ const app = new Hono()
   )
   .delete("/:id", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {

@@ -5,7 +5,14 @@ import { redirect } from "next/navigation";
 
 async function DashBoardPage() {
   const user = await getCurrentUser();
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
+  const hasDashboardAccess =
+    user && (
+      user.role === "ADMIN" ||
+      user.role === "MODERATOR" ||
+      (user.permissions && user.permissions.length > 0)
+    );
+
+  if (!hasDashboardAccess) {
     redirect("/");
   }
 
