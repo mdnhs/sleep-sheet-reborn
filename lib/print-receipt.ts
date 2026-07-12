@@ -35,11 +35,11 @@ export function printReceipt({
     if (!iframe) {
       iframe = document.createElement("iframe");
       iframe.id = "receipt-print-iframe";
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
+      iframe.style.position = "absolute";
+      iframe.style.left = "-9999px";
+      iframe.style.top = "-9999px";
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
       iframe.style.border = "0";
       document.body.appendChild(iframe);
     }
@@ -50,7 +50,7 @@ export function printReceipt({
         <title>Order Receipt - ${siteName}</title>
         <style>
           @page {
-            size: 6in 4in;
+            size: A4;
             margin: 0.15in;
           }
 
@@ -73,6 +73,8 @@ export function printReceipt({
             background: white;
             font-size: 9px;
             line-height: 1.3;
+            max-width: 5.5in; /* Keep receipt narrow on A4 paper */
+            margin: 0; /* Left aligned */
           }
 
           .header {
@@ -101,14 +103,18 @@ export function printReceipt({
           }
 
           .order-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.08in;
+            display: flex;
+            flex-wrap: wrap;
             margin: 0.12in 0;
             padding: 0.1in;
             background: #f8f9fa;
             border-radius: 4px;
             font-size: 8px;
+          }
+
+          .order-meta > div {
+            width: 50%;
+            margin-bottom: 0.06in;
           }
 
           .order-meta p {
@@ -121,6 +127,7 @@ export function printReceipt({
             border-collapse: collapse;
             margin: 0.12in 0;
             font-size: 8px;
+            table-layout: fixed;
           }
 
           th {
@@ -131,15 +138,16 @@ export function printReceipt({
             text-align: left;
             font-size: 8px;
           }
-
-          th:last-child,
-          td:last-child {
-            text-align: right;
-          }
+          
+          th:nth-child(1), td:nth-child(1) { width: 45%; }
+          th:nth-child(2), td:nth-child(2) { width: 15%; }
+          th:nth-child(3), td:nth-child(3) { width: 20%; }
+          th:nth-child(4), td:nth-child(4) { width: 20%; text-align: right; }
 
           td {
             padding: 0.05in 0.08in;
             border-bottom: 1px solid #eee;
+            word-wrap: break-word;
           }
 
           tr:last-child td {
@@ -149,7 +157,7 @@ export function printReceipt({
           .totals {
             margin-top: 0.12in;
             margin-left: auto;
-            width: fit-content;
+            width: 2.5in;
             padding: 0.1in;
             background: #f8f9fa;
             border-radius: 4px;
@@ -157,9 +165,8 @@ export function printReceipt({
           }
 
           .totals div {
-            display: grid;
-            grid-template-columns: 0.8in 0.9in;
-            gap: 0.08in;
+            display: flex;
+            justify-content: space-between;
             margin-bottom: 0.04in;
           }
 
@@ -262,7 +269,6 @@ export function printReceipt({
     </html>
   `;
 
-
     const iframeWindow = iframe.contentWindow || iframe.contentDocument?.defaultView;
     if (iframeWindow) {
       const doc = iframeWindow.document;
@@ -273,7 +279,7 @@ export function printReceipt({
       setTimeout(() => {
         iframeWindow.focus();
         iframeWindow.print();
-      }, 150);
+      }, 500);
     } else {
       console.error("Unable to access print iframe.");
     }
