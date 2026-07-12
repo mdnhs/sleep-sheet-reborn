@@ -32,7 +32,7 @@ import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { formatDate } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
-import { InvoicePDF } from "@/features/checkout/components/invoice-pdf";
+import { InvoicePDF, BulkInvoicePDF } from "@/features/checkout/components/invoice-pdf";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { useCurrency } from "@/hooks/use-currency";
 import { toast } from "sonner";
@@ -93,6 +93,7 @@ export default function OrdersPage() {
   const [isBulkBooking, setIsBulkBooking] = useState(false);
   const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
+  const [isBulkPrinting, setIsBulkPrinting] = useState(false);
 
   useEffect(() => {
     if (!showBalance) return;
@@ -177,6 +178,88 @@ export default function OrdersPage() {
     } catch (error) {
       console.error("PDF generation failed:", error);
       toast.error("Failed to generate invoice");
+    }
+  };
+
+  const handleBulkPrint = async (action: "print" | "download" = "print") => {
+    if (selectedOrders.length === 0) return;
+    setIsBulkPrinting(true);
+    try {
+      const ordersData = selectedOrders.map((order) => {
+        const placedOrderData: any = {
+          orderNumber: order.orderNumber,
+          subtotal: order.subtotal,
+          shippingCost: order.shippingCost,
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt,
+          paymentMethod: order.paymentMethod || "COD",
+          items: order.items.map((i: any) => ({
+            name: i.product.name,
+            price: i.price,
+            quantity: i.quantity,
+            size: i.size,
+            color: i.color,
+            image: i.product.images?.[0] || null,
+          }))
+        };
+
+        const shippingInfoData: any = {
+          fullName: order.user?.name || order.guestName || "Customer",
+          phone: order.user?.phone || order.guestPhone || "",
+          email: order.user?.email || order.guestEmail || "",
+          address: [
+            order.shippingAddress,
+            order.shippingCity,
+            order.shippingState,
+            order.shippingPostalCode,
+            order.shippingCountry,
+          ].filter(Boolean).join(", "),
+          shippingZone: "inside_dhaka",
+          notes: order.note
+        };
+
+        return {
+          order: placedOrderData,
+          shippingInfo: shippingInfoData,
+        };
+      });
+
+      const doc = (
+        <BulkInvoicePDF
+          orders={ordersData}
+          siteName={siteName}
+          language="en"
+          logoUrl={logoUrl}
+        />
+      );
+
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+
+      if (action === "download") {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Invoices-Bulk-${Date.now()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success("Bulk invoices downloaded successfully");
+      } else {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow?.print();
+        };
+      }
+    } catch (error) {
+      console.error("Bulk PDF generation failed:", error);
+      toast.error("Failed to generate bulk invoices");
+    } finally {
+      setIsBulkPrinting(false);
     }
   };
 
@@ -594,6 +677,22 @@ export default function OrdersPage() {
                     <Truck className="h-3.5 w-3.5" />
                   )}
                   Book Selected ({selectedOrders.length})
+                </Button>
+              )}
+              {selectedOrders.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleBulkPrint("print")}
+                  disabled={isBulkPrinting}
+                  className="rounded-xl gap-1 shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
+                >
+                  {isBulkPrinting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Printer className="h-3.5 w-3.5" />
+                  )}
+                  Print Selected ({selectedOrders.length})
                 </Button>
               )}
               {selectedOrders.length > 0 && (
