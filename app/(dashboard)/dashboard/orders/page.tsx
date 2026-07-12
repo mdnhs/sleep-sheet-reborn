@@ -123,6 +123,7 @@ export default function OrdersPage() {
           quantity: i.quantity,
           size: i.size,
           color: i.color,
+          image: i.product.images?.[0] || null,
         }))
       };
       

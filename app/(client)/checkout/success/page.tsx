@@ -18,7 +18,7 @@ interface OrderItem {
   price: number;
   size?: string | null;
   color?: string | null;
-  product: { name: string };
+  product: { name: string; images?: string[] };
 }
 
 interface Order {
@@ -82,6 +82,7 @@ function OrderSuccessContent() {
         quantity: item.quantity,
         size: item.size || null,
         color: item.color || null,
+        image: item.product.images?.[0] || null,
       }));
 
       const placedOrderData = {

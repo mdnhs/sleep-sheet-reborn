@@ -20,9 +20,9 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    padding: 12,
+    padding: 23,
     fontFamily: "Hind Siliguri",
-    fontSize: 8,
+    fontSize: 15.5,
     color: "#334155",
     backgroundColor: "#ffffff",
   },
@@ -30,9 +30,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
+    marginBottom: 15,
+    paddingBottom: 12,
+    borderBottomWidth: 1.5,
     borderBottomColor: "#e2e8f0",
   },
   headerLeft: {
@@ -41,23 +41,23 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: "Space Grotesk",
-    fontSize: 14,
+    fontSize: 27,
     fontWeight: "bold",
     color: "#0f172a",
-    letterSpacing: 1,
+    letterSpacing: 2,
     textTransform: "uppercase",
   },
   brandDesc: {
-    fontSize: 7,
+    fontSize: 13.5,
     color: "#64748b",
-    marginTop: 1,
+    marginTop: 2,
   },
   invoiceTitle: {
     fontFamily: "Space Grotesk",
-    fontSize: 16,
+    fontSize: 31,
     fontWeight: "bold",
     color: "#cbd5e1",
-    letterSpacing: 2,
+    letterSpacing: 4,
   },
   headerRight: {
     alignItems: "flex-end",
@@ -65,31 +65,31 @@ const styles = StyleSheet.create({
   headerMetaItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 2,
+    marginTop: 4,
   },
   headerMetaLabel: {
-    fontSize: 6,
+    fontSize: 11.5,
     color: "#64748b",
     textTransform: "uppercase",
-    marginRight: 4,
+    marginRight: 8,
   },
   headerMetaValue: {
-    fontSize: 7,
+    fontSize: 13.5,
     fontWeight: "bold",
     color: "#0f172a",
   },
   metaItem: {
-    marginBottom: 4,
+    marginBottom: 8,
   },
   label: {
-    fontSize: 7,
+    fontSize: 13.5,
     fontWeight: "bold",
     color: "#94a3b8",
     textTransform: "uppercase",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   value: {
-    fontSize: 9,
+    fontSize: 17.5,
     color: "#334155",
     fontWeight: "bold",
   },
@@ -98,100 +98,132 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     backgroundColor: "#f8fafc",
-    padding: 8,
-    borderRadius: 6,
-    borderWidth: 1,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1.5,
     borderColor: "#f1f5f9",
-    marginBottom: 5,
+    marginBottom: 10,
   },
   rightColumn: {
     width: "62%",
   },
   table: {
     width: "100%",
-    marginBottom: 10,
+    marginBottom: 20,
   },
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#f1f5f9",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 4,
-    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   tableRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
+    borderBottomWidth: 1.5,
     borderBottomColor: "#f1f5f9",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: "flex-start",
   },
-  thItem: { flex: 2.5, fontFamily: "Space Grotesk", fontSize: 7, fontWeight: "bold", color: "#64748b", textTransform: "uppercase" },
-  thQty: { flex: 0.5, fontFamily: "Space Grotesk", fontSize: 7, fontWeight: "bold", color: "#64748b", textAlign: "center", textTransform: "uppercase" },
-  thPrice: { flex: 1, fontFamily: "Space Grotesk", fontSize: 7, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
-  thTotal: { flex: 1, fontFamily: "Space Grotesk", fontSize: 7, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
+  thItem: { flex: 2.5, fontFamily: "Space Grotesk", fontSize: 13.5, fontWeight: "bold", color: "#64748b", textTransform: "uppercase" },
+  thQty: { flex: 0.5, fontFamily: "Space Grotesk", fontSize: 13.5, fontWeight: "bold", color: "#64748b", textAlign: "center", textTransform: "uppercase" },
+  thPrice: { flex: 1, fontFamily: "Space Grotesk", fontSize: 13.5, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
+  thTotal: { flex: 1, fontFamily: "Space Grotesk", fontSize: 13.5, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
   
-  tdItem: { flex: 2.5, fontSize: 8, color: "#1e293b", fontWeight: "bold" },
-  tdItemDesc: { fontSize: 7, color: "#64748b", marginTop: 2 },
-  tdQty: { flex: 0.5, fontSize: 8, color: "#475569", textAlign: "center" },
-  tdPrice: { flex: 1, fontSize: 8, color: "#475569", textAlign: "right" },
-  tdTotal: { flex: 1, fontSize: 8, color: "#1e293b", fontWeight: "bold", textAlign: "right" },
+  tdItem: { flex: 2.5, flexDirection: "row", alignItems: "flex-start" },
+  tdItemDesc: { fontSize: 13.5, color: "#64748b", marginTop: 4 },
+  tdQty: { flex: 0.5, fontSize: 15.5, color: "#475569", textAlign: "center" },
+  tdPrice: { flex: 1, fontSize: 15.5, color: "#475569", textAlign: "right" },
+  tdTotal: { flex: 1, fontSize: 15.5, color: "#1e293b", fontWeight: "bold", textAlign: "right" },
   
   totalsSection: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 6,
+    marginTop: 15,
   },
   totalsTable: {
-    width: 130,
+    width: 253,
     backgroundColor: "#f8fafc",
-    padding: 6,
-    borderRadius: 6,
-    borderWidth: 1,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
     borderColor: "#f1f5f9",
   },
   totalsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 1,
+    paddingVertical: 4,
   },
   totalsLabel: {
-    fontSize: 7,
+    fontSize: 13.5,
     color: "#64748b",
   },
   totalsValue: {
-    fontSize: 8,
+    fontSize: 15.5,
     color: "#334155",
     fontWeight: "bold",
   },
   grandTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 4,
-    marginTop: 2,
-    borderTopWidth: 1,
+    paddingTop: 8,
+    marginTop: 4,
+    borderTopWidth: 1.5,
     borderTopColor: "#e2e8f0",
   },
   grandTotalLabel: {
-    fontSize: 8,
+    fontSize: 15.5,
     fontWeight: "bold",
     color: "#0f172a",
     textTransform: "uppercase",
   },
   grandTotalValue: {
-    fontSize: 9,
+    fontSize: 17.5,
     fontWeight: "bold",
     color: "#10b981", // elegant emerald for total
   },
   thankYou: {
     textAlign: "left",
-    fontSize: 8,
+    fontSize: 15.5,
     color: "#64748b",
-    marginTop: 15,
+    marginTop: 30,
     lineHeight: 1.5,
   }
 });
+
+const getPdfFriendlyImageUrl = (url: string, isLogo = false) => {
+  if (!url) return "";
+  
+  let friendlyUrl = url;
+  if (friendlyUrl.includes("cloudinary.com")) {
+    friendlyUrl = friendlyUrl.replace(/\.(jpg|jpeg|webp)$/i, ".png");
+    
+    // Inject Cloudinary transformations for sizing and quality optimization
+    if (friendlyUrl.includes("image/upload/")) {
+      const transform = isLogo 
+        ? "w_120,h_120,c_limit,q_auto" 
+        : "w_80,h_80,c_fill,q_auto";
+      friendlyUrl = friendlyUrl.replace("image/upload/", `image/upload/${transform}/`);
+    }
+  }
+  
+  if (friendlyUrl.startsWith('//')) {
+    friendlyUrl = 'https:' + friendlyUrl;
+  }
+  
+  return friendlyUrl.startsWith('http') 
+    ? friendlyUrl 
+    : (typeof window !== "undefined" 
+        ? window.location.origin + (friendlyUrl.startsWith('/') ? '' : '/') + friendlyUrl 
+        : friendlyUrl);
+};
+
+const clampText = (text: string, maxLength = 46) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.slice(0, maxLength - 3) + "..." : text;
+};
 
 interface InvoicePDFProps {
   order: PlacedOrder;
@@ -208,18 +240,19 @@ export const InvoicePDF = ({ order, shippingInfo, siteName, language, logoUrl }:
 
   return (
     <Document>
-      <Page size={[432, 288]} style={styles.page}>
+      <Page size="A4" orientation="landscape" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            {logoUrl && logoUrl !== "/logo.png" && (
+            {logoUrl && (
               <Image 
-                source={{ uri: logoUrl.startsWith('http') ? logoUrl : (typeof window !== "undefined" ? window.location.origin + logoUrl : logoUrl) }} 
-                style={{ width: 35, height: 35, marginRight: 8, objectFit: "contain" }} 
+                source={{ uri: getPdfFriendlyImageUrl(logoUrl, true) }} 
+                style={{ width: 68, height: 68, marginRight: 15, objectFit: "contain" }} 
               />
             )}
             <View>
               <Text style={styles.brandName}>{siteName}</Text>
+              <Text style={styles.brandDesc}>Steadfast Merchant ID - 1661653</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -258,7 +291,7 @@ export const InvoicePDF = ({ order, shippingInfo, siteName, language, logoUrl }:
             </View>
 
             <View style={styles.thankYou}>
-              <Text style={{ fontWeight: "bold", color: "#475569", marginBottom: 2 }}>Thank you for your order!</Text>
+              <Text style={{ fontWeight: "bold", color: "#475569", marginBottom: 4 }}>Thank you for your order!</Text>
             </View>
           </View>
 
@@ -275,13 +308,21 @@ export const InvoicePDF = ({ order, shippingInfo, siteName, language, logoUrl }:
               {order.items.map((item, index) => (
                 <View key={index} style={styles.tableRow}>
                   <View style={styles.tdItem}>
-                    <Text>{item.name}</Text>
-                    {(item.color || item.size) && (
-                      <Text style={styles.tdItemDesc}>
-                        {item.color ? `Variant: ${item.color}` : ""}
-                        {item.size ? `${item.color ? " | " : ""}Size: ${item.size}` : ""}
-                      </Text>
+                    {item.image && (
+                      <Image 
+                        source={{ uri: getPdfFriendlyImageUrl(item.image, false) }} 
+                        style={{ width: 47, height: 47, marginRight: 15, borderRadius: 4, objectFit: "contain" }} 
+                      />
                     )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14.5, color: "#1e293b", fontWeight: "bold" }}>{clampText(item.name)}</Text>
+                      {(item.color || item.size) && (
+                        <Text style={styles.tdItemDesc}>
+                          {item.color ? `Variant: ${item.color}` : ""}
+                          {item.size ? `${item.color ? " | " : ""}Size: ${item.size}` : ""}
+                        </Text>
+                      )}
+                    </View>
                   </View>
                   <Text style={styles.tdQty}>{item.quantity}</Text>
                   <Text style={styles.tdPrice}>৳{item.price}</Text>

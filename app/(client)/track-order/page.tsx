@@ -109,6 +109,7 @@ function TrackOrderContent() {
         price: item.price,
         size: item.size || undefined,
         color: item.color || undefined,
+        image: item.product.images?.[0] || undefined,
       }));
       const placedOrderData = {
         orderNumber: order.orderNumber,

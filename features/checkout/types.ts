@@ -30,6 +30,7 @@ export interface PlacedOrderItem {
   quantity: number;
   size?: string | null;
   color?: string | null;
+  image?: string | null;
 }
 
 export interface PlacedOrder {
