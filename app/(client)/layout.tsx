@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { seoConfig } from "@/lib/seo/config";
 import Testimonials from "@/components/home/testimonials";
 import Newsletter from "@/components/home/newsletter";
+import Link from "next/link";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -46,7 +47,7 @@ function clientLayout({ children }: ClientLayoutProps) {
           )}
           <Footer />
         </div>
-        <a
+        <Link
           href={`https://wa.me/${seoConfig.contact.telephone.replace(/\D/g, "")}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -54,7 +55,7 @@ function clientLayout({ children }: ClientLayoutProps) {
           aria-label="Contact us on WhatsApp"
         >
           <MessageCircle className="h-5 w-5" />
-        </a>
+        </Link>
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className={cn(

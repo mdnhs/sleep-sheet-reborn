@@ -21,7 +21,7 @@ export function getPixelId(pageName: string): string | undefined {
 }
 
 export function isValidPixelId(value: string): boolean {
-  return /^\d{15,16}$/.test(value)
+  return /^\d+$/.test(value)
 }
 
 export function resolvePixelId(

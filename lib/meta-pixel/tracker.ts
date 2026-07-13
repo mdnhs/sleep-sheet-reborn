@@ -25,10 +25,9 @@ function loadSDK(): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") return resolve()
 
-    if (window.fbq) {
+    if (document.querySelector(`script[src="${PIXEL_CONFIG.sdkUrl}"]`)) {
       sdkLoaded = true
-      resolve()
-      return
+      return resolve()
     }
 
     const script = document.createElement("script")
@@ -43,6 +42,8 @@ function loadSDK(): Promise<void> {
     const firstScript = document.getElementsByTagName("script")[0]
     if (firstScript?.parentNode) {
       firstScript.parentNode.insertBefore(script, firstScript)
+    } else {
+      document.head.appendChild(script)
     }
   })
 }
@@ -51,29 +52,19 @@ function ensureFbq(): void {
   if (typeof window === "undefined") return
   if (window.fbq) return
 
-  window.fbq = function () {
-    const f = window.fbq as unknown as {
-      callMethod?: (...args: unknown[]) => void
-      queue?: unknown[]
+  const n = (window.fbq = function () {
+    if (n.callMethod) {
+      n.callMethod.apply(n, arguments as unknown as unknown[])
+    } else {
+      n.queue.push(arguments)
     }
-    if (f.callMethod) {
-      f.callMethod.apply(f, arguments as unknown as unknown[])
-    } else if (f.queue) {
-      f.queue.push(Array.from(arguments))
-    }
-  } as unknown as (...args: unknown[]) => void
+  } as any)
 
-  const f = window.fbq as unknown as {
-    queue?: unknown[]
-    loaded?: boolean
-    version?: string
-  }
-
-  if (!f.queue) {
-    f.queue = []
-  }
-
-  window._fbq = window.fbq
+  if (!window._fbq) window._fbq = n
+  n.push = n
+  n.loaded = true
+  n.version = '2.0'
+  n.queue = []
 }
 
 export async function initPixel(pixelId: string): Promise<void> {
@@ -84,13 +75,14 @@ export async function initPixel(pixelId: string): Promise<void> {
   }
   if (initializedPixels.has(pixelId)) return
 
-  await loadSDK()
   ensureFbq()
 
   window.fbq?.("init", pixelId)
   initializedPixels.add(pixelId)
 
   debugLog("init", { pixelId })
+  
+  await loadSDK()
 }
 
 export function track<E extends MetaEventName>(
