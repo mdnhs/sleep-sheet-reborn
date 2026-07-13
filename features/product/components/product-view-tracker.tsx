@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePixelTracking } from "@/lib/meta-pixel";
+import { trackEvent } from "@/lib/traffic-tracker";
 import type { Product } from "@/lib/types";
 
 /**
@@ -26,6 +27,16 @@ export function ProductViewTracker({ product }: { product: Product }) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, product.id]);
+
+  useEffect(() => {
+    const guardKey = `traffic_pv_tracked_${product.id}`;
+    if (typeof window !== "undefined" && sessionStorage.getItem(guardKey)) return;
+    trackEvent("product_view", `/shop/${product.id}`, product.name, {
+      productId: product.id,
+      price: product.price,
+    });
+    sessionStorage.setItem(guardKey, "1");
+  }, []);
 
   return null;
 }

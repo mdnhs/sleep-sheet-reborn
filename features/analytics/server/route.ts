@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { orders, orderItems, products, carts, wishlistItems, expenses } from "@/db/schema";
+import { orders, orderItems, products, carts, wishlistItems, expenses, users } from "@/db/schema";
 import { eq, ne, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
 import { getDateRange, getPreviousDateRange, getStartDate } from "@/lib/utils";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -407,6 +407,60 @@ const app = new Hono()
     return c.json({ error: "Failed to fetch most wishlisted products" }, 500);
   }
 })
-  
+.get('/recent-orders', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
+
+  try {
+    const data = await db.select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      createdAt: orders.createdAt,
+      status: orders.status,
+      totalAmount: orders.totalAmount,
+      guestName: orders.guestName,
+      userName: users.name,
+    })
+    .from(orders)
+    .leftJoin(users, eq(orders.userId, users.id))
+    .orderBy(desc(orders.createdAt))
+    .limit(5);
+
+    return c.json(data.map(item => ({
+      ...item,
+      customerName: item.userName || item.guestName || "Guest",
+    })));
+  } catch (error) {
+    console.error("Recent orders error:", error);
+    return c.json({ error: "Failed to fetch recent orders" }, 500);
+  }
+})
+.get('/low-stock', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
+
+  try {
+    const threshold = 10;
+    const data = await db.select({
+      id: products.id,
+      name: products.name,
+      stock: products.stock,
+      images: products.images,
+    })
+    .from(products)
+    .where(lte(products.stock, threshold))
+    .orderBy(asc(products.stock))
+    .limit(10);
+
+    return c.json(data);
+  } catch (error) {
+    console.error("Low stock error:", error);
+    return c.json({ error: "Failed to fetch low stock" }, 500);
+  }
+});
 
 export default app;

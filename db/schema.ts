@@ -600,3 +600,12 @@ export const rolesRelations = relations(roles, ({ many }) => ({
   users: many(users),
 }));
 
+export const trafficEvents = pgTable("traffic_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  path: text("path").notNull(),
+  label: text("label"),
+  meta: json("meta").$type<Record<string, string | number | boolean>>(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+});
+

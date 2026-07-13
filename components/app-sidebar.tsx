@@ -24,6 +24,7 @@ import {
   IconSettings,
   IconShoppingCart,
   IconChartBar,
+  IconActivity,
   IconReceipt2,
   IconUsers,
   IconUserHeart,
@@ -83,6 +84,12 @@ const data = {
       title: "Reports",
       url: "/dashboard/reports",
       icon: <IconChartBar />,
+      items: [],
+    },
+    {
+      title: "Analytics",
+      url: "/dashboard/analytics",
+      icon: <IconActivity />,
       items: [],
     },
     {

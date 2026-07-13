@@ -120,3 +120,23 @@ export const useCustomerAcquisition = (period = "month") =>
         return res.json();
       },
     });
+
+export const useRecentOrders = () =>
+  useQuery({
+    queryKey: ["recent-orders"],
+    queryFn: async () => {
+      const res = await client.api.analytics["recent-orders"].$get();
+      if (!res.ok) throw new Error("Failed to fetch recent orders");
+      return res.json();
+    },
+  });
+
+export const useLowStock = () =>
+  useQuery({
+    queryKey: ["low-stock"],
+    queryFn: async () => {
+      const res = await client.api.analytics["low-stock"].$get();
+      if (!res.ok) throw new Error("Failed to fetch low stock alerts");
+      return res.json();
+    },
+  });

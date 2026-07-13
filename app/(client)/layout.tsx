@@ -2,6 +2,7 @@
 
 import Footer from "@/components/footer";
 import Navbar from "@/components/nav-bar";
+import { TrafficTracker } from "@/components/traffic-tracker";
 import { CartProvider } from "@/provider/cart-provider";
 import { ReduxProvider } from "@/provider/redux-provider";
 import { usePathname } from "next/navigation";
@@ -34,6 +35,7 @@ function clientLayout({ children }: ClientLayoutProps) {
   return (
     <ReduxProvider>
       <CartProvider>
+        <TrafficTracker />
         <div className="flex flex-col min-h-screen">
           <React.Suspense fallback={null}>
             <Navbar />

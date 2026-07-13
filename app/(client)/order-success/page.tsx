@@ -13,6 +13,7 @@ import { InvoicePDF } from "@/features/checkout/components/invoice-pdf";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { usePixelTracking } from "@/lib/meta-pixel";
+import { trackEvent } from "@/lib/traffic-tracker";
 
 interface OrderItem {
   id: string;
@@ -96,6 +97,15 @@ function OrderSuccessContent() {
 
     if (typeof window !== "undefined") {
       sessionStorage.setItem(guardKey, "1");
+    }
+
+    const orderGuardKey = `traffic_order_tracked_${orderId}`;
+    if (typeof window !== "undefined" && !sessionStorage.getItem(orderGuardKey)) {
+      trackEvent("order_complete", `/order-success?orderId=${orderId}`, orderId, {
+        orderId,
+        totalAmount: order.totalAmount,
+      });
+      sessionStorage.setItem(orderGuardKey, "1");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.id, orderId]);

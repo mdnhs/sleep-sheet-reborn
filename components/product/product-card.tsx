@@ -12,6 +12,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePixelTracking } from "@/lib/meta-pixel";
+import { trackEvent } from "@/lib/traffic-tracker";
 
 interface ProductCardProps {
   product: Product & {
@@ -72,6 +73,11 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       currency: "BDT",
       quantity,
     });
+    trackEvent("add_to_cart", `/shop/${product.id}`, product.name, {
+      productId: product.id,
+      quantity,
+      price: displayPrice,
+    });
   };
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -89,6 +95,11 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         currency: "BDT",
         num_items: quantity,
         contents: [{ id: product.id, quantity, item_price: displayPrice }],
+      });
+      trackEvent("buy_now", `/shop/${product.id}`, product.name, {
+        productId: product.id,
+        quantity,
+        price: displayPrice,
       });
       toast.success("Added to cart successfully");
       router.push("/checkout");
@@ -134,6 +145,11 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       currency: "BDT",
       num_items: quantity,
       contents: [{ id: product.id, quantity, item_price: displayPrice }],
+    });
+    trackEvent("buy_now", `/shop/${product.id}`, product.name, {
+      productId: product.id,
+      quantity,
+      price: displayPrice,
     });
     toast.success("Added to cart successfully");
     setIsDrawerOpen(false);

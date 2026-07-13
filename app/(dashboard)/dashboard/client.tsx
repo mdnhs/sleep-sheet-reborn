@@ -8,6 +8,9 @@ import {
   IconCashRegister,
   IconTrendingUp,
   IconTrendingDown,
+  IconAlertTriangle,
+  IconBox,
+
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,7 +25,11 @@ import {
   useCustomerAcquisition,
   useMostPurchased,
   useMostWishlisted,
+  useRecentOrders,
+  useLowStock,
 } from "@/features/analytics/api/use-analytics";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,6 +87,9 @@ export default function DashBoardClientPage() {
     useMostPurchased();
   const { data: mostWishlisted, isLoading: loadingWishlisted } =
     useMostWishlisted();
+  const { data: recentOrders, isLoading: loadingRecentOrders } =
+    useRecentOrders();
+  const { data: lowStock, isLoading: loadingLowStock } = useLowStock();
 
   const formatBucketDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, {
@@ -103,17 +113,18 @@ export default function DashBoardClientPage() {
     <div className="container mx-auto px-4 space-y-6 py-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Business Analytics</h1>
-        <div className="flex flex-col sm:flex-row w-full sm:w-auto items-center gap-2">
-          <Link href="/dashboard/pos" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto gap-2 text-white">
-              <IconCashRegister className="h-4 w-4" />
-              Quick POS
-            </Button>
-          </Link>
+          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+            <Link href="/dashboard/pos">
+              <Button className="w-full sm:w-auto gap-2 text-white whitespace-nowrap">
+                <IconCashRegister className="h-4 w-4" />
+                POS
+              </Button>
+            </Link>
+          </div>
           <Tabs
             value={period}
             onValueChange={(value) => setPeriod(value as Period)}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto mt-2 sm:mt-0"
           >
             <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
               <TabsTrigger value="month">Month</TabsTrigger>
@@ -121,7 +132,6 @@ export default function DashBoardClientPage() {
             </TabsList>
           </Tabs>
         </div>
-      </div>
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -170,6 +180,116 @@ export default function DashBoardClientPage() {
           loading={loadingOverview}
           className="col-span-2 lg:col-span-1"
         />
+      </div>
+
+      {/* Operational Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="flex flex-col h-full">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Orders</CardTitle>
+              <Link href="/dashboard/orders" className="text-sm text-indigo-600 hover:underline">
+                View all
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1">
+            {loadingRecentOrders ? (
+              <Skeleton className="h-64 w-full" />
+            ) : !recentOrders?.length ? (
+              <EmptyState message="No recent orders" />
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead>Order #</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentOrders.map((order: any) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">
+                          <Link href={`/dashboard/orders/${order.id}`} className="hover:underline hover:text-indigo-600">
+                            {order.orderNumber}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="truncate max-w-[120px]" title={order.customerName}>{order.customerName}</TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {format(new Date(order.createdAt), "MMM d, h:mm a")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={order.status === "COMPLETED" ? "default" : order.status === "PENDING" ? "secondary" : "destructive"}>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          {currencySymbol}{Number(order.totalAmount).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col h-full">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <IconAlertTriangle className="h-5 w-5 text-amber-500" />
+              <CardTitle>Low Stock Alerts</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1">
+            {loadingLowStock ? (
+              <Skeleton className="h-64 w-full" />
+            ) : !lowStock?.length ? (
+              <div className="h-48 flex items-center justify-center border rounded-lg bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400">
+                <p>All products are well stocked!</p>
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">Stock Level</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lowStock.map((product: any) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium truncate max-w-[200px]">
+                          <Link href={`/dashboard/products/${product.id}/edit`} className="hover:underline flex items-center gap-2">
+                            {product.images && product.images[0] ? (
+                              <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                                <IconBox className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="truncate">{product.name}</span>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant={product.stock === 0 ? "destructive" : "outline"} className={product.stock > 0 ? "text-amber-600 border-amber-600" : ""}>
+                            {product.stock} left
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="sales">

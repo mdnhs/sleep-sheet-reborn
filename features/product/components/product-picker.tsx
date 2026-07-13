@@ -13,6 +13,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePixelTracking } from "@/lib/meta-pixel";
+import { trackEvent } from "@/lib/traffic-tracker";
 
 interface ProductPickerProps {
   product: Product;
@@ -107,6 +108,11 @@ function ProductPicker({ product }: ProductPickerProps) {
       currency: "BDT",
       quantity,
     });
+    trackEvent("add_to_cart", `/shop/${product.id}`, product.name, {
+      productId: product.id,
+      quantity,
+      price: displayPrice,
+    });
   };
 
   const handleBuyNow = () => {
@@ -147,6 +153,11 @@ function ProductPicker({ product }: ProductPickerProps) {
       currency: "BDT",
       num_items: quantity,
       contents: [{ id: product.id, quantity, item_price: displayPrice }],
+    });
+    trackEvent("buy_now", `/shop/${product.id}`, product.name, {
+      productId: product.id,
+      quantity,
+      price: displayPrice,
     });
 
     router.push("/checkout");
