@@ -131,6 +131,75 @@ const app = new Hono()
     }
   )
 
+  .get("/track/:orderId", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const orderId = c.req.param("orderId");
+    const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId) });
+    if (!order) return c.json({ error: "Order not found" }, 404);
+    if (!order.trackingNumber) return c.json({ error: "No tracking number" }, 400);
+
+    try {
+      const data = await getSteadfastStatusByInvoice(order.orderNumber);
+      return c.json({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        delivery_status: data.delivery_status,
+        consignment: data.consignment ?? null,
+      });
+    } catch (err) {
+      console.error("Steadfast track error:", err);
+      return c.json({ error: "Failed to fetch tracking status" }, 500);
+    }
+  })
+
+  .post(
+    "/track-batch",
+    sessionMiddleware,
+    zValidator(
+      "json",
+      z.object({
+        orderIds: z.array(z.string()).min(1).max(50),
+      })
+    ),
+    async (c) => {
+      const user = c.get("user");
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      const { orderIds } = c.req.valid("json");
+
+      const trackedOrders = await db.query.orders.findMany({
+        where: (o, { and, inArray, isNotNull }) =>
+          and(inArray(o.id, orderIds), isNotNull(o.trackingNumber)),
+        columns: { id: true, orderNumber: true, trackingNumber: true },
+      });
+
+      const results: Record<string, { delivery_status: string; consignment_id?: number; tracking_code?: string }> = {};
+
+      await Promise.allSettled(
+        trackedOrders.map(async (order) => {
+          try {
+            const data = await getSteadfastStatusByInvoice(order.orderNumber);
+            results[order.id] = {
+              delivery_status: data.delivery_status,
+              consignment_id: data.consignment?.consignment_id,
+              tracking_code: data.consignment?.tracking_code,
+            };
+          } catch {
+            // Skip failed fetches silently
+          }
+        })
+      );
+
+      return c.json({ statuses: results });
+    }
+  )
+
   .post("/sync/:orderId", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {

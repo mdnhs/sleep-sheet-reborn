@@ -9,6 +9,53 @@ type BookRequestType = InferRequestType<
   typeof client.api.steadfast.book["$post"]
 >;
 
+export interface SteadfastTrackingStatus {
+  delivery_status: string;
+  consignment_id?: number;
+  tracking_code?: string;
+}
+
+export function useSteadfastTrackingStatuses(orderIds: string[]) {
+  return useQuery({
+    queryKey: ["steadfast-tracking", ...orderIds.sort()],
+    queryFn: async () => {
+      if (orderIds.length === 0) return {} as Record<string, SteadfastTrackingStatus>;
+      const res = await client.api.steadfast["track-batch"]["$post"]({
+        json: { orderIds },
+      });
+      if (!res.ok) throw new Error("Failed to fetch tracking statuses");
+      const data = await res.json();
+      return data.statuses as Record<string, SteadfastTrackingStatus>;
+    },
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    enabled: orderIds.length > 0,
+  });
+}
+
+export function useTrackSingleOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await client.api.steadfast.track[":orderId"]["$get"]({
+        param: { orderId },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error("error" in err ? (err as { error: string }).error : "Tracking failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["steadfast-tracking"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to fetch tracking status");
+    },
+  });
+}
+
 export function useSteadfastBalance(enabled = true) {
   return useQuery({
     queryKey: ["steadfast-balance"],

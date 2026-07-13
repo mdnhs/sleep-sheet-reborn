@@ -31,7 +31,9 @@ import type { Order } from "@/features/order/types";
 import {
   useBookCourier,
   useSteadfastBalance,
+  useSteadfastTrackingStatuses,
   useSyncOrderStatus,
+  useTrackSingleOrder,
 } from "@/features/steadfast/api/use-steadfast";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
@@ -42,11 +44,15 @@ import { pdf } from "@react-pdf/renderer";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
+  Check,
+  Copy,
+  FileText,
   FilterX,
   Loader2,
   MoreVertical,
   Pointer,
   Printer,
+  RefreshCw,
   Search,
   Trash,
   Truck,
@@ -87,6 +93,42 @@ const STATUS_DOTS: Record<Order["status"], React.ReactNode> = {
   CANCELLED: <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />,
 };
 
+const STEADFAST_STATUS_LABELS: Record<string, string> = {
+  pending: "Pending Pickup",
+  in_review: "In Review",
+  hold: "On Hold",
+  cancelled: "Cancelled",
+  cancelled_approval_pending: "Cancellation Pending",
+  delivered: "Delivered",
+  partial_delivered: "Partially Delivered",
+  delivered_approval_pending: "Delivery Confirmed",
+  partial_delivered_approval_pending: "Partial Delivery Confirmed",
+  not_delivered: "Not Delivered",
+  returned: "Returned",
+  "fast-track": "Fast Track",
+  "hub-transfer": "Hub Transfer",
+  "office-delivery": "Out for Delivery",
+  "partial-return": "Partial Return",
+  "partial-not-delivered": "Partial Not Delivered",
+};
+
+const STEADFAST_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700",
+  in_review: "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
+  hold: "bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700",
+  cancelled: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  cancelled_approval_pending: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  delivered: "bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700",
+  partial_delivered: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
+  delivered_approval_pending: "bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700",
+  partial_delivered_approval_pending: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
+  not_delivered: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  returned: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  "fast-track": "bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700",
+  "hub-transfer": "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700",
+  "office-delivery": "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
+};
+
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Order["status"] | "ALL">(
@@ -123,6 +165,15 @@ export default function OrdersPage() {
   const { data: balanceData, isLoading: isBalanceLoading } =
     useSteadfastBalance(showBalance);
   const syncStatus = useSyncOrderStatus();
+  const trackSingleOrder = useTrackSingleOrder();
+  const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+
+  const orders = rawOrders as ShippingOrder[] | undefined;
+
+  const trackedOrderIds =
+    orders?.filter((o) => o.trackingNumber).map((o) => o.id) ?? [];
+  const { data: trackingStatuses } =
+    useSteadfastTrackingStatuses(trackedOrderIds);
 
   const handlePrint = async (
     order: Order,
@@ -299,7 +350,42 @@ export default function OrdersPage() {
     });
   };
 
-  const orders = rawOrders as ShippingOrder[] | undefined;
+  const handleCopyPhone = (phone: string) => {
+    navigator.clipboard.writeText(phone);
+    setCopiedPhone(phone);
+    toast.success("Phone number copied");
+    setTimeout(() => setCopiedPhone(null), 2000);
+  };
+
+  const handleQuickTrack = (order: ShippingOrder) => {
+    trackSingleOrder.mutate(order.id);
+  };
+
+  const getSteadfastDisplay = (order: ShippingOrder) => {
+    if (!order.trackingNumber) return null;
+    const tracking = trackingStatuses?.[order.id];
+    if (!tracking) return null;
+    return {
+      status: tracking.delivery_status,
+      label:
+        STEADFAST_STATUS_LABELS[tracking.delivery_status] ??
+        tracking.delivery_status,
+      color:
+        STEADFAST_STATUS_COLORS[tracking.delivery_status] ??
+        "bg-gray-500/20 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-700",
+    };
+  };
+
+  const getPhone = (order: ShippingOrder) =>
+    (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "");
+
+  const getProfit = (order: ShippingOrder) => {
+    const totalCost = order.items.reduce(
+      (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
+      0,
+    );
+    return order.subtotal - totalCost - order.shippingCost;
+  };
 
   const filtered =
     statusFilter === "ALL"
@@ -453,14 +539,37 @@ export default function OrdersPage() {
       header: "Customer",
       cell: ({ row }) => {
         const order = row.original;
+        const phone = getPhone(order);
+        const hasNotes = !!order.note;
         return (
           <div className="flex flex-col">
-            <span className="font-medium">
-              {order.user?.name ?? order.guestName ?? "Guest"}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {order.user?.email ?? order.guestPhone ?? "-"}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">
+                {order.user?.name ?? order.guestName ?? "Guest"}
+              </span>
+              {hasNotes && (
+                <span title={order.note ?? ""}>
+                  <FileText className="h-3 w-3 text-muted-foreground" />
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>{order.user?.email ?? order.guestPhone ?? "-"}</span>
+              {phone && phone.length >= 11 && (
+                <button
+                  type="button"
+                  onClick={() => handleCopyPhone(phone)}
+                  className="ml-0.5 hover:text-foreground transition-colors"
+                  title="Copy phone number"
+                >
+                  {copiedPhone === phone ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         );
       },
@@ -480,44 +589,127 @@ export default function OrdersPage() {
       cell: ({ row }) => <span>{formatAmount(row.original.totalAmount)}</span>,
     },
     {
-      accessorKey: "trackingNumber",
-      header: "Tracking #",
+      id: "profit",
+      header: "Profit",
       cell: ({ row }) => {
-        const trk = row.original.trackingNumber;
-        return trk ? (
-          <span className="font-mono text-sm text-green-600 dark:text-green-400">
-            {trk}
+        const profit = getProfit(row.original);
+        const hasCostData = row.original.items.some(
+          (i) => i.costPrice !== null && i.costPrice !== undefined,
+        );
+        if (!hasCostData) {
+          return <span className="text-muted-foreground text-xs">—</span>;
+        }
+        return (
+          <span
+            className={cn(
+              "font-medium text-sm",
+              profit >= 0
+                ? "text-green-600 dark:text-green-400"
+                : "text-red-600 dark:text-red-400",
+            )}
+          >
+            {profit >= 0 ? "+" : ""}
+            {formatAmount(profit)}
           </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
         );
       },
     },
     {
-      accessorKey: "paymentStatus",
-      header: "Payment",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="capitalize">
-          {row.original.paymentStatus.toLowerCase()}
-        </Badge>
-      ),
+      accessorKey: "trackingNumber",
+      header: "Tracking #",
+      cell: ({ row }) => {
+        const order = row.original;
+        const trk = order.trackingNumber;
+        const isTracking = trackSingleOrder.isPending;
+        if (!trk) {
+          return (
+            <span className="text-muted-foreground">—</span>
+          );
+        }
+        return (
+          <div className="flex items-center gap-1.5">
+            <a
+              href={`https://steadfast.com.bd/t/${trk}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm text-green-600 dark:text-green-400 hover:underline"
+              title="Open Steadfast tracking page"
+            >
+              {trk}
+            </a>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="h-6 w-6 shrink-0"
+              title="Refresh Steadfast status"
+              disabled={isTracking}
+              onClick={() => handleQuickTrack(order)}
+            >
+              <RefreshCw
+                className={cn(
+                  "h-3 w-3",
+                  isTracking && "animate-spin",
+                )}
+              />
+            </Button>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <Badge className={STATUS_COLORS[row.original.status]}>
-          {row.original.status}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const order = row.original;
+        const sfDisplay = getSteadfastDisplay(order);
+        if (sfDisplay) {
+          return (
+            <div className="flex flex-col gap-1">
+              <Badge
+                variant="outline"
+                className={cn("w-fit text-xs border", sfDisplay.color)}
+              >
+                <Truck className="h-3 w-3 mr-1 shrink-0" />
+                {sfDisplay.label}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">
+                Internal: {order.status}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <Badge className={STATUS_COLORS[order.status]}>
+            {order.status}
+          </Badge>
+        );
+      },
     },
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
         const order = row.original;
+        const canBook =
+          !order.trackingNumber &&
+          order.status !== "DELIVERED" &&
+          order.status !== "CANCELLED";
         return (
           <div className="flex items-center justify-end gap-2">
+            {canBook && (
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                onClick={() => setCourierOrder(order)}
+                className="gap-1.5 shrink-0"
+                title="Book Steadfast Courier"
+              >
+                <Truck className="h-3.5 w-3.5" />
+                Book
+              </Button>
+            )}
             <Button
               type="button"
               size="sm"
@@ -575,18 +767,17 @@ export default function OrdersPage() {
                 >
                   Download Invoice
                 </DropdownMenuItem>
-                {order.status !== "DELIVERED" &&
-                  order.status !== "CANCELLED" &&
-                  !order.trackingNumber && (
-                    <DropdownMenuItem onClick={() => setCourierOrder(order)}>
-                      Book Courier (Steadfast)
-                    </DropdownMenuItem>
-                  )}
+                {canBook && (
+                  <DropdownMenuItem onClick={() => setCourierOrder(order)}>
+                    Book Courier (Steadfast)
+                  </DropdownMenuItem>
+                )}
                 {order.trackingNumber && (
                   <DropdownMenuItem
                     disabled={syncStatus.isPending}
                     onClick={() => syncStatus.mutate(order.id)}
                   >
+                    <RefreshCw className={cn("h-4 w-4 mr-2", syncStatus.isPending && "animate-spin")} />
                     Sync Courier Status
                   </DropdownMenuItem>
                 )}
@@ -603,6 +794,18 @@ export default function OrdersPage() {
                 >
                   Edit Order Costs
                 </DropdownMenuItem>
+                {order.note && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      toast.info(order.note ?? "No notes", {
+                        description: `Note for ${order.orderNumber}`,
+                      });
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    View Note
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setDeleteOrderId(order.id)}
@@ -823,6 +1026,25 @@ export default function OrdersPage() {
                   Delete Selected ({selectedOrders.length})
                 </Button>
               )}
+              {selectedOrders.filter((o) => o.trackingNumber).length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const tracked = selectedOrders.filter((o) => o.trackingNumber);
+                    tracked.forEach((o) => syncStatus.mutate(o.id));
+                  }}
+                  disabled={syncStatus.isPending}
+                  className="rounded-xl gap-1 shrink-0 border-teal-200 text-teal-700 hover:bg-teal-50 hover:text-teal-800"
+                >
+                  {syncStatus.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Sync Tracked ({selectedOrders.filter((o) => o.trackingNumber).length})
+                </Button>
+              )}
             </div>
           }
         />
@@ -876,6 +1098,43 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
+                {selectedOrder.trackingNumber && (
+                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <Truck className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+                    <div className="text-sm">
+                      <span className="font-medium">Steadfast Tracking: </span>
+                      <span className="font-mono">{selectedOrder.trackingNumber}</span>
+                    </div>
+                    {trackingStatuses?.[selectedOrder.id] && (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "ml-auto text-xs border",
+                          STEADFAST_STATUS_COLORS[
+                            trackingStatuses[selectedOrder.id].delivery_status
+                          ] ?? "",
+                        )}
+                      >
+                        {STEADFAST_STATUS_LABELS[
+                          trackingStatuses[selectedOrder.id].delivery_status
+                        ] ?? trackingStatuses[selectedOrder.id].delivery_status}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {selectedOrder.note && (
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                      <FileText className="h-4 w-4" />
+                      Note
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedOrder.note}
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <h3 className="font-semibold">Order Items</h3>
                   <div className="space-y-4">
@@ -923,6 +1182,29 @@ export default function OrdersPage() {
                     <span>Total:</span>
                     <span>{formatAmount(selectedOrder.totalAmount)}</span>
                   </div>
+                  {(() => {
+                    const profit = getProfit(selectedOrder);
+                    const hasCostData = selectedOrder.items.some(
+                      (i) => i.costPrice !== null && i.costPrice !== undefined,
+                    );
+                    if (!hasCostData) return null;
+                    return (
+                      <div
+                        className={cn(
+                          "flex justify-between font-medium pt-1 border-t",
+                          profit >= 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400",
+                        )}
+                      >
+                        <span>Profit:</span>
+                        <span>
+                          {profit >= 0 ? "+" : ""}
+                          {formatAmount(profit)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </>
