@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { orders, orderItems, products, expenses } from "@/db/schema";
+import { orders, orderItems, products, expenses, expenseCategories } from "@/db/schema";
 import { eq, ne, and, gte, lte, desc, sum, count, isNotNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -61,7 +61,18 @@ const app = new Hono().get(
 
     const itemCost = sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))`;
 
-    const [orderTotals, costTotals, expenseTotals, monthlyOrders, monthlyCosts, monthlyExpenses, productCostBreakdown] =
+    const [
+      orderTotals, 
+      costTotals, 
+      expenseTotals, 
+      monthlyOrders, 
+      monthlyCosts, 
+      monthlyExpenses, 
+      productCostBreakdown,
+      revenueBreakdown,
+      shippingBreakdown,
+      expenseBreakdown
+    ] =
       await Promise.all([
         db.select({
             revenue: sum(orders.totalAmount),
@@ -115,6 +126,38 @@ const app = new Hono().get(
           .where(and(orderWhere, isNotNull(orderItems.costPrice)))
           .orderBy(desc(orders.createdAt))
           .limit(BREAKDOWN_LIMIT),
+        db.select({
+            orderId: orders.id,
+            orderNumber: orders.orderNumber,
+            date: orders.createdAt,
+            totalAmount: orders.totalAmount,
+          })
+          .from(orders)
+          .where(orderWhere)
+          .orderBy(desc(orders.createdAt))
+          .limit(BREAKDOWN_LIMIT),
+        db.select({
+            orderId: orders.id,
+            orderNumber: orders.orderNumber,
+            date: orders.createdAt,
+            shippingCost: orders.shippingCost,
+          })
+          .from(orders)
+          .where(and(orderWhere, sql`${orders.shippingCost} > 0`))
+          .orderBy(desc(orders.createdAt))
+          .limit(BREAKDOWN_LIMIT),
+        db.select({
+            id: expenses.id,
+            date: expenses.date,
+            amount: expenses.amount,
+            category: expenseCategories.name,
+            description: expenses.note,
+          })
+          .from(expenses)
+          .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+          .where(expenseWhere)
+          .orderBy(desc(expenses.date))
+          .limit(BREAKDOWN_LIMIT),
       ]);
 
     const totalRevenue = Number(orderTotals[0]?.revenue || 0);
@@ -163,7 +206,10 @@ const app = new Hono().get(
         costPrice: Number(item.costPrice || 0),
         totalItemCost: Number(item.totalItemCost || 0),
       })),
-      breakdownTruncated: productCostBreakdown.length === BREAKDOWN_LIMIT,
+      revenueBreakdown: revenueBreakdown.map(item => ({ ...item, totalAmount: Number(item.totalAmount) })),
+      shippingBreakdown: shippingBreakdown.map(item => ({ ...item, shippingCost: Number(item.shippingCost) })),
+      expenseBreakdown: expenseBreakdown.map(item => ({ ...item, amount: Number(item.amount) })),
+      breakdownTruncated: productCostBreakdown.length === BREAKDOWN_LIMIT || revenueBreakdown.length === BREAKDOWN_LIMIT || shippingBreakdown.length === BREAKDOWN_LIMIT || expenseBreakdown.length === BREAKDOWN_LIMIT,
     });
   }
 );

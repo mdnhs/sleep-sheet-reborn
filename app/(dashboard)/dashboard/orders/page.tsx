@@ -19,7 +19,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableFooter,
+} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BulkInvoicePDF,
@@ -56,6 +67,9 @@ import {
   Search,
   Trash,
   Truck,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -148,6 +162,8 @@ export default function OrdersPage() {
     useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
+  const [profitBreakdownOrder, setProfitBreakdownOrder] =
+    useState<ShippingOrder | null>(null);
 
   const queryClient = useQueryClient();
   const bookCourier = useBookCourier();
@@ -592,17 +608,20 @@ export default function OrdersPage() {
       id: "profit",
       header: "Profit",
       cell: ({ row }) => {
-        const profit = getProfit(row.original);
-        const hasCostData = row.original.items.some(
+        const order = row.original;
+        const profit = getProfit(order);
+        const hasCostData = order.items.some(
           (i) => i.costPrice !== null && i.costPrice !== undefined,
         );
         if (!hasCostData) {
           return <span className="text-muted-foreground text-xs">—</span>;
         }
         return (
-          <span
+          <button
+            type="button"
+            onClick={() => setProfitBreakdownOrder(order)}
             className={cn(
-              "font-medium text-sm",
+              "font-medium text-sm hover:underline cursor-pointer",
               profit >= 0
                 ? "text-green-600 dark:text-green-400"
                 : "text-red-600 dark:text-red-400",
@@ -610,7 +629,7 @@ export default function OrdersPage() {
           >
             {profit >= 0 ? "+" : ""}
             {formatAmount(profit)}
-          </span>
+          </button>
         );
       },
     },
@@ -1064,7 +1083,7 @@ export default function OrdersPage() {
               </DialogHeader>
 
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2">
                   <div className="space-y-2">
                     <h3 className="font-semibold">Shipping Information</h3>
                     <div className="text-sm space-y-0.5">
@@ -1325,6 +1344,138 @@ export default function OrdersPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!profitBreakdownOrder}
+        onOpenChange={(open) => !open && setProfitBreakdownOrder(null)}
+      >
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0 overflow-hidden flex flex-col gap-0 bg-background">
+          <DialogHeader className="px-6 py-5 border-b bg-muted/20">
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+              <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+              Profit Breakdown Invoice
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1">
+            {profitBreakdownOrder && (() => {
+              const order = profitBreakdownOrder;
+              const itemsRevenue = order.subtotal;
+              const itemsCost = order.items.reduce(
+                (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
+                0,
+              );
+              const shippingCost = order.shippingCost;
+              const totalCost = itemsCost + shippingCost;
+              const profit = itemsRevenue - totalCost;
+
+              return (
+                <div className="p-6">
+                  <div className="rounded-lg border shadow-sm overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-muted/30">
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="font-medium h-10">Product</TableHead>
+                          <TableHead className="text-right font-medium h-10">Qty</TableHead>
+                          <TableHead className="text-right font-medium h-10">Revenue</TableHead>
+                          <TableHead className="text-right font-medium h-10">Unit Cost</TableHead>
+                          <TableHead className="text-right font-medium h-10">Profit</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.items.map((item) => {
+                          const revenue = item.price * item.quantity;
+                          const cost = (item.costPrice ?? 0) * item.quantity;
+                          const itemProfit = revenue - cost;
+                          const productImage = item.images?.[0] || item.product.images?.[0];
+                          return (
+                            <TableRow key={item.id} className="group">
+                              <TableCell className="py-4">
+                                <div className="flex items-center gap-3">
+                                  {productImage ? (
+                                    <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                                      <Image
+                                        src={productImage}
+                                        alt={item.product.name}
+                                        width={48}
+                                        height={48}
+                                        className="object-cover w-full h-full"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                                      <span className="text-xs text-muted-foreground">No img</span>
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col max-w-[220px] sm:max-w-[300px]">
+                                    <span className="font-medium leading-tight truncate" title={item.product.name}>{item.product.name}</span>
+                                    <span className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                      {item.size ? `Size: ${item.size}` : ""}
+                                      {item.size && item.color ? " | " : ""}
+                                      {item.color ? `Color: ${item.color}` : ""}
+                                    </span>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right py-4 align-middle tabular-nums">{item.quantity}</TableCell>
+                              <TableCell className="text-right py-4 align-middle tabular-nums">{formatAmount(revenue)}</TableCell>
+                              <TableCell className="text-right py-4 align-middle tabular-nums text-red-600 dark:text-red-400">
+                                {item.costPrice != null ? formatAmount(item.costPrice) : "—"}
+                              </TableCell>
+                              <TableCell className="text-right py-4 align-middle">
+                                <span className={cn(
+                                  "font-semibold tabular-nums",
+                                  itemProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                                )}>
+                                  {itemProfit >= 0 ? "+" : ""}{formatAmount(itemProfit)}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                      <TableFooter className="bg-muted/10 border-t-2 border-border">
+                        <TableRow className="hover:bg-transparent border-0">
+                          <TableCell colSpan={4} className="text-right font-medium text-muted-foreground pt-6">
+                            Subtotal (Profit)
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums font-medium pt-6">
+                            <span className={cn(
+                                (itemsRevenue - itemsCost) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                            )}>
+                                {(itemsRevenue - itemsCost) >= 0 ? "+" : ""}{formatAmount(itemsRevenue - itemsCost)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="hover:bg-transparent border-0">
+                          <TableCell colSpan={4} className="text-right font-medium text-muted-foreground pb-4">
+                            Shipping Cost
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums font-medium text-red-600 dark:text-red-400 pb-4">
+                            -{formatAmount(shippingCost)}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="hover:bg-transparent border-t bg-muted/30">
+                          <TableCell colSpan={4} className="text-right font-bold text-base py-4">
+                            Net Profit
+                          </TableCell>
+                          <TableCell className="text-right py-4">
+                            <span className={cn(
+                              "text-lg font-bold tracking-tight tabular-nums",
+                              profit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                            )}>
+                              {profit >= 0 ? "+" : ""}{formatAmount(profit)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </TableFooter>
+                    </Table>
+                  </div>
+                </div>
+              );
+            })()}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

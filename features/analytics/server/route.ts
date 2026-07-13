@@ -27,7 +27,7 @@ const app = new Hono()
       and(notCancelled, gte(orders.createdAt, start), lte(orders.createdAt, end));
 
     const orderStats = (start: Date, end: Date) =>
-      db.select({ revenue: sum(orders.totalAmount), orders: count() })
+      db.select({ revenue: sum(orders.totalAmount), shipping: sum(orders.shippingCost), orders: count() })
         .from(orders)
         .where(inRange(start, end));
 
@@ -63,16 +63,18 @@ const app = new Hono()
       ]);
 
     const totalRevenue = Number(currRes[0]?.revenue || 0);
+    const totalShipping = Number(currRes[0]?.shipping || 0);
     const totalOrders = Number(currRes[0]?.orders || 0);
     const totalExpenses = Number(currExpenses[0]?.sum || 0);
     const totalCost = Number(currCost[0]?.sum || 0);
-    const netProfit = totalRevenue - totalCost - totalExpenses;
+    const netProfit = totalRevenue - totalCost - totalShipping - totalExpenses;
     const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     const prevRevenue = Number(prevRes[0]?.revenue || 0);
+    const prevShipping = Number(prevRes[0]?.shipping || 0);
     const prevOrders = Number(prevRes[0]?.orders || 0);
     const prevNetProfit =
-      prevRevenue - Number(prevCost[0]?.sum || 0) - Number(prevExpenses[0]?.sum || 0);
+      prevRevenue - Number(prevCost[0]?.sum || 0) - prevShipping - Number(prevExpenses[0]?.sum || 0);
     const prevAov = prevOrders > 0 ? prevRevenue / prevOrders : 0;
 
     const pctChange = (curr: number, prev: number) =>
