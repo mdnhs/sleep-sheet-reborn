@@ -99,6 +99,12 @@ export type AnyEventParams = Record<string, unknown>
 
 export interface TrackEventOptions {
   disableDeduplication?: boolean
+  /**
+   * Explicit event ID for browser↔server deduplication. When the same
+   * event is also sent via the Conversions API with this id, Meta collapses
+   * the two into one. For Purchase we pass the order id.
+   */
+  eventId?: string
 }
 
 export interface AttributionData {

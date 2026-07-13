@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
@@ -11,7 +12,24 @@ const app = new Hono()
   .get("/", async (c) => {
     const settings = await db.select().from(siteSettings);
     const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+    // Secret — never expose the raw CAPI token on this public endpoint.
+    // Return only whether it is configured so the admin UI can indicate state.
+    map.meta_capi_access_token_set = map.meta_capi_access_token ? "true" : "false";
+    delete map.meta_capi_access_token;
     return c.json(map);
+  })
+
+  // Admin-only: returns the raw CAPI token so a logged-in admin can view it.
+  // Kept off the public GET above.
+  .get("/secrets", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    const row = await db.query.siteSettings.findFirst({
+      where: eq(siteSettings.key, "meta_capi_access_token"),
+    });
+    return c.json({ meta_capi_access_token: row?.value ?? "" });
   })
 
   .patch(
@@ -31,6 +49,10 @@ const app = new Hono()
         meta_pixel_default_id: z.string().optional(),
         meta_pixel_debug: z.enum(["true", "false"]).optional(),
         meta_pixel_mappings: z.string().optional(),
+        meta_capi_enabled: z.enum(["true", "false"]).optional(),
+        meta_capi_pixel_id: z.string().optional(),
+        meta_capi_access_token: z.string().optional(),
+        meta_capi_test_event_code: z.string().optional(),
         seo_site_name: z.string().optional(),
         seo_default_title: z.string().optional(),
         seo_default_description: z.string().optional(),

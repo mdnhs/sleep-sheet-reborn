@@ -105,7 +105,7 @@ export function track<E extends MetaEventName>(
   const eventPayload: Record<string, unknown> = { ...params } as Record<string, unknown>
 
   if (!options?.disableDeduplication) {
-    eventPayload.eventID = generateEventId()
+    eventPayload.eventID = options?.eventId ?? generateEventId()
   }
 
   window.fbq("trackSingle", activePixelId, eventName, eventPayload)

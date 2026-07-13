@@ -16,6 +16,20 @@ export function useSettings() {
   });
 }
 
+// Admin-only: fetches secret values (e.g. the CAPI token) that the public
+// settings endpoint intentionally omits.
+export function useSettingsSecrets() {
+  return useQuery({
+    queryKey: ["settings", "secrets"],
+    queryFn: async () => {
+      const res = await client.api.settings.secrets.$get();
+      if (!res.ok) throw new Error("Failed to fetch settings secrets");
+      return res.json() as Promise<{ meta_capi_access_token: string }>;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -31,6 +45,10 @@ export function useUpdateSettings() {
       meta_pixel_default_id?: string;
       meta_pixel_debug?: "true" | "false";
       meta_pixel_mappings?: string;
+      meta_capi_enabled?: "true" | "false";
+      meta_capi_pixel_id?: string;
+      meta_capi_access_token?: string;
+      meta_capi_test_event_code?: string;
       seo_site_name?: string;
       seo_default_title?: string;
       seo_default_description?: string;

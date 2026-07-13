@@ -89,6 +89,9 @@ function OrderSuccessContent() {
         item_price: item.price,
       })),
       quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    }, {
+      // Dedup with the server-side CAPI Purchase (same event_id = order.id).
+      eventId: order.id,
     });
 
     if (typeof window !== "undefined") {

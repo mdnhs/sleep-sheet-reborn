@@ -3,6 +3,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings, carts, cartItems, products, orders, orderItems, payments, shippingMethods } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
+import { sendPurchaseEvent, capiContextFromHeaders } from "@/lib/meta-capi";
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
@@ -130,6 +131,29 @@ const app = new Hono()
       await db.delete(cartItems)
         .where(eq(cartItems.cartId, cart.id));
 
+      // Server-side Purchase (CAPI). Deduplicated against the browser Pixel
+      // via event_id = order.id. No-op unless CAPI env is configured.
+      await sendPurchaseEvent(
+        {
+          eventId: order.id,
+          value: totalAmount,
+          currency: "BDT",
+          orderId: order.id,
+          contents: cartItemsForOrder.map((i) => ({
+            id: i.productId,
+            quantity: i.quantity,
+            item_price: i.price,
+          })),
+          numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
+          customer: {
+            email: shippingInfo.email,
+            phone: shippingInfo.phone,
+            fullName: shippingInfo.fullName,
+          },
+        },
+        capiContextFromHeaders(c.req.raw.headers),
+      );
+
       return c.json({ message: "Order placed successfully", order: createdOrder });
     } catch (error) {
       console.error("Error placing order:", error);
@@ -219,6 +243,28 @@ const app = new Hono()
         .set({ stock: sql`${products.stock} - ${item.quantity}` })
         .where(eq(products.id, item.productId));
     }
+
+    // Server-side Purchase (CAPI), deduplicated via event_id = order.id.
+    await sendPurchaseEvent(
+      {
+        eventId: order.id,
+        value: totalAmount,
+        currency: "BDT",
+        orderId: order.id,
+        contents: cartItemsForOrder.map((i) => ({
+          id: i.productId,
+          quantity: i.quantity,
+          item_price: i.price,
+        })),
+        numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
+        customer: {
+          email: shippingInfo.email,
+          phone: shippingInfo.phone,
+          fullName: shippingInfo.fullName,
+        },
+      },
+      capiContextFromHeaders(c.req.raw.headers),
+    );
 
     return c.json({ message: "Order placed successfully", orderId: guestOrderId });
   } catch (error) {

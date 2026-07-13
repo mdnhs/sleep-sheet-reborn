@@ -18,9 +18,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useSettings, useUpdateSettings, useSettingsSecrets } from "@/features/settings/api/use-settings";
 import { isValidPixelId } from "@/lib/meta-pixel/pixel-mapping";
-import { Loader2, Eye, Plus, Trash2, AlertCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const pixelSchema = z.object({
@@ -30,6 +31,15 @@ const pixelSchema = z.object({
 });
 
 type PixelFormValues = z.infer<typeof pixelSchema>;
+
+const capiSchema = z.object({
+  meta_capi_enabled: z.enum(["true", "false"]),
+  meta_capi_pixel_id: z.string().optional(),
+  meta_capi_access_token: z.string().optional(),
+  meta_capi_test_event_code: z.string().optional(),
+});
+
+type CapiFormValues = z.infer<typeof capiSchema>;
 
 interface PageMapping {
   page: string;
@@ -64,11 +74,17 @@ function serializeMappings(mappings: PageMapping[]): string {
 
 export function PixelSettings() {
   const { data, isLoading } = useSettings();
-  const { mutate, isPending, variables } = useUpdateSettings();
+  const { data: secrets } = useSettingsSecrets();
+  // Separate mutation per section so each Save button has its own loading
+  // state and they don't spin together.
+  const generalMutation = useUpdateSettings();
+  const mappingsMutation = useUpdateSettings();
+  const capiMutation = useUpdateSettings();
 
   const [mappings, setMappings] = useState<PageMapping[]>([]);
   const [newPage, setNewPage] = useState("");
   const [newPixelId, setNewPixelId] = useState("");
+  const [showToken, setShowToken] = useState(false);
 
   const form = useForm<PixelFormValues>({
     resolver: zodResolver(pixelSchema),
@@ -79,6 +95,18 @@ export function PixelSettings() {
     },
   });
 
+  const capiForm = useForm<CapiFormValues>({
+    resolver: zodResolver(capiSchema),
+    defaultValues: {
+      meta_capi_enabled: "true",
+      meta_capi_pixel_id: "",
+      meta_capi_access_token: "",
+      meta_capi_test_event_code: "",
+    },
+  });
+
+  const tokenSet = data?.meta_capi_access_token_set === "true";
+
   useEffect(() => {
     if (data) {
       form.reset({
@@ -86,9 +114,35 @@ export function PixelSettings() {
         meta_pixel_default_id: data.meta_pixel_default_id || "",
         meta_pixel_debug: data.meta_pixel_debug === "true" ? "true" : "false",
       });
+      capiForm.reset({
+        meta_capi_enabled: data.meta_capi_enabled !== "false" ? "true" : "false",
+        meta_capi_pixel_id: data.meta_capi_pixel_id || "",
+        meta_capi_access_token: "",
+        meta_capi_test_event_code: data.meta_capi_test_event_code || "",
+      });
       setMappings(parseMappings(data.meta_pixel_mappings));
     }
-  }, [data, form]);
+  }, [data, form, capiForm]);
+
+  // Prefill the saved token (admin-only endpoint) once it loads, so it is
+  // visible/editable rather than blank.
+  useEffect(() => {
+    if (secrets?.meta_capi_access_token) {
+      capiForm.setValue("meta_capi_access_token", secrets.meta_capi_access_token);
+    }
+  }, [secrets, capiForm]);
+
+  const handleSaveCapi = useCallback(
+    (values: CapiFormValues) => {
+      const payload: CapiFormValues = { ...values };
+      // Don't overwrite the saved token with a blank field.
+      if (!payload.meta_capi_access_token?.trim()) {
+        delete payload.meta_capi_access_token;
+      }
+      capiMutation.mutate(payload);
+    },
+    [capiMutation],
+  );
 
   const handleAddMapping = useCallback(() => {
     const page = newPage.trim();
@@ -126,8 +180,8 @@ export function PixelSettings() {
       toast.error(`Invalid Pixel IDs: ${invalid.map((m) => m.page).join(", ")}`);
       return;
     }
-    mutate({ meta_pixel_mappings: serializeMappings(mappings) });
-  }, [mappings, mutate]);
+    mappingsMutation.mutate({ meta_pixel_mappings: serializeMappings(mappings) });
+  }, [mappings, mappingsMutation]);
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-2xl">
@@ -141,7 +195,14 @@ export function PixelSettings() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="mappings">Page Mappings</TabsTrigger>
+          <TabsTrigger value="capi">Conversions API</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
         <Card>
           <CardHeader>
             <CardTitle>General</CardTitle>
@@ -156,7 +217,7 @@ export function PixelSettings() {
             ) : (
               <Form {...form}>
                 <form
-                  onSubmit={form.handleSubmit((values) => mutate(values))}
+                  onSubmit={form.handleSubmit((values) => generalMutation.mutate(values))}
                   className="space-y-6"
                 >
                   <FormField
@@ -231,8 +292,8 @@ export function PixelSettings() {
                   />
 
                   <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={isPending} className="gap-2">
-                      {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <Button type="submit" disabled={generalMutation.isPending} className="gap-2">
+                      {generalMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       Save General Settings
                     </Button>
                   </div>
@@ -241,7 +302,9 @@ export function PixelSettings() {
             )}
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="mappings">
         <Card>
           <CardHeader>
             <CardTitle>Page Mappings</CardTitle>
@@ -318,16 +381,157 @@ export function PixelSettings() {
               <Button
                 type="button"
                 onClick={handleSaveMappings}
-                disabled={isPending}
+                disabled={mappingsMutation.isPending}
                 className="gap-2"
               >
-                {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {mappingsMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Save Mappings
               </Button>
             </div>
           </CardContent>
         </Card>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="capi">
+        <Card>
+          <CardHeader>
+            <CardTitle>Conversions API (Server-Side)</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Sends Purchase events server-side so Meta still receives them when
+              the browser Pixel is blocked (iOS, ad blockers). Deduplicated with
+              the Pixel automatically. Get the token in Events Manager &rarr;
+              Settings &rarr; Conversions API.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : (
+              <Form {...capiForm}>
+                <form
+                  onSubmit={capiForm.handleSubmit(handleSaveCapi)}
+                  className="space-y-6"
+                >
+                  <FormField
+                    name="meta_capi_enabled"
+                    control={capiForm.control}
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border px-4 py-3">
+                        <div className="flex flex-col">
+                          <FormLabel className="text-sm font-semibold">
+                            Conversions API
+                          </FormLabel>
+                          <FormDescription className="text-xs">
+                            Enable server-side Purchase events
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value === "true"}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked ? "true" : "false")
+                            }
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    name="meta_capi_pixel_id"
+                    control={capiForm.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">
+                          Dataset / Pixel ID
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          Leave blank to reuse the Default Pixel ID above
+                        </FormDescription>
+                        <FormControl>
+                          <Input placeholder="000000000000000" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    name="meta_capi_access_token"
+                    control={capiForm.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">
+                          Access Token
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          {tokenSet
+                            ? "A token is saved. Leave blank to keep it, or paste a new one to replace."
+                            : "Paste the Conversions API access token."}
+                        </FormDescription>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showToken ? "text" : "password"}
+                              autoComplete="off"
+                              placeholder={tokenSet ? "•••••••••• (saved)" : "EAAG..."}
+                              className="pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowToken((v) => !v)}
+                              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                              aria-label={showToken ? "Hide token" : "Show token"}
+                              tabIndex={-1}
+                            >
+                              {showToken ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    name="meta_capi_test_event_code"
+                    control={capiForm.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">
+                          Test Event Code (optional)
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          Set only while verifying in the Test Events tab. Clear it
+                          for production traffic.
+                        </FormDescription>
+                        <FormControl>
+                          <Input placeholder="TEST12345" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={capiMutation.isPending} className="gap-2">
+                      {capiMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                      Save Conversions API
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            )}
+          </CardContent>
+        </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
