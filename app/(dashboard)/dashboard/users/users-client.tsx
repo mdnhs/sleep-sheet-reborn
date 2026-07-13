@@ -26,6 +26,17 @@ import { useGetRoles } from "@/features/roles/api/use-get-roles";
 import { useUpdateUserRole } from "@/features/users/api/use-update-user-role";
 import { useCreateUser } from "@/features/users/api/use-create-user";
 
+interface StaffRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  roleId: string | null;
+  createdAt: string;
+  assignedRole?: { id: string; name: string } | null;
+}
+
 export function UsersClient() {
   const { data: users, isLoading: loadingUsers } = useGetUsers();
   const { data: roles, isLoading: loadingRoles } = useGetRoles();
@@ -41,11 +52,11 @@ export function UsersClient() {
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState("none");
 
-  const safeUsers = users ?? [];
+  const safeUsers = useMemo(() => (users ?? []) as StaffRow[], [users]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return safeUsers;
-    return safeUsers.filter((u: any) =>
+    return safeUsers.filter((u) =>
       u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -76,7 +87,7 @@ export function UsersClient() {
     );
   };
 
-  const columns: ColumnDef<any>[] = [
+  const columns: ColumnDef<StaffRow>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -111,19 +122,19 @@ export function UsersClient() {
         return (
           <Select
             defaultValue={user.roleId || "none"}
-            onValueChange={(val) => handleRoleChange(user.id, val)}
+            onValueChange={(val) => handleRoleChange(user.id, val || "none")}
             disabled={updateRole.isPending}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Select a role">
                 {user.roleId && user.roleId !== "none"
-                  ? roles?.find((r: any) => r.id === user.roleId)?.name || user.assignedRole?.name || user.roleId
+                  ? roles?.find((r) => r.id === user.roleId)?.name || user.assignedRole?.name || user.roleId
                   : "No Custom Role"}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Custom Role</SelectItem>
-              {roles?.map((r: any) => (
+              {roles?.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
                   {r.name}
                 </SelectItem>
@@ -147,9 +158,10 @@ export function UsersClient() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Users & Staff</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Staff</h2>
           <p className="text-muted-foreground">
-            Manage your team members and assign custom roles
+            Manage your team members and assign custom roles. Storefront
+            customers live on the Customers page.
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -227,7 +239,7 @@ export function UsersClient() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No Custom Role (Basic Access)</SelectItem>
-                  {roles?.map((r: any) => (
+                  {roles?.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.name}
                     </SelectItem>

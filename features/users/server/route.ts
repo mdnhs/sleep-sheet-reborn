@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, orders } from "@/db/schema";
+import { eq, ne, or, and, desc, isNull, isNotNull, sql } from "drizzle-orm";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -15,7 +15,10 @@ const app = new Hono()
       return c.json({ error: "Unauthorized" }, 401);
     }
 
+    // Staff only: system role above USER, or a custom role assigned.
+    // Plain USER accounts without a custom role are customers (see /customers).
     const allUsers = await db.query.users.findMany({
+      where: or(ne(users.role, "USER"), isNotNull(users.roleId)),
       orderBy: (users, { desc }) => [desc(users.createdAt)],
       with: { assignedRole: true },
       columns: {
@@ -30,6 +33,34 @@ const app = new Hono()
     });
 
     return c.json(allUsers);
+  })
+  .get("/customers", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const customers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        createdAt: users.createdAt,
+        orderCount: sql<number>`COUNT(${orders.id}) FILTER (WHERE ${orders.status} != 'CANCELLED')`,
+        totalSpent: sql<number>`COALESCE(SUM(${orders.totalAmount}) FILTER (WHERE ${orders.status} != 'CANCELLED'), 0)`,
+        lastOrderAt: sql<string | null>`MAX(${orders.createdAt}) FILTER (WHERE ${orders.status} != 'CANCELLED')`,
+      })
+      .from(users)
+      .leftJoin(orders, eq(orders.userId, users.id))
+      .where(and(eq(users.role, "USER"), isNull(users.roleId)))
+      .groupBy(users.id)
+      .orderBy(desc(users.createdAt));
+
+    return c.json(customers.map((cust) => ({
+      ...cust,
+      orderCount: Number(cust.orderCount || 0),
+      totalSpent: Number(cust.totalSpent || 0),
+    })));
   })
   .post(
     "/",

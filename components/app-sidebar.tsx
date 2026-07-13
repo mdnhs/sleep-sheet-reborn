@@ -7,7 +7,6 @@ import { NavMain } from "@/components/nav-main"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -27,6 +26,7 @@ import {
   IconChartBar,
   IconReceipt2,
   IconUsers,
+  IconUserHeart,
   IconShield
 } from "@tabler/icons-react"
 
@@ -92,7 +92,13 @@ const data = {
       items: [],
     },
     {
-      title: "Users / Staff",
+      title: "Customers",
+      url: "/dashboard/customers",
+      icon: <IconUserHeart />,
+      items: [],
+    },
+    {
+      title: "Staff",
       url: "/dashboard/users",
       icon: <IconUsers />,
       items: [],
