@@ -15,6 +15,7 @@ import { useCurrency } from "@/hooks/use-currency";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seoConfig, productSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { usePixelTracking } from "@/lib/meta-pixel";
 
 function ProductSkeleton() {
   return (
@@ -136,6 +137,20 @@ function ProductDetailPage() {
   const id = useProductId();
   const { data: product, isLoading } = useGetProduct({ id });
   const { formatAmount } = useCurrency();
+  const { track } = usePixelTracking();
+
+  React.useEffect(() => {
+    if (!product) return;
+    track("ViewContent", {
+      content_ids: [id],
+      content_type: "product",
+      content_name: product.name,
+      content_category: product.category,
+      value: product.price,
+      currency: "BDT",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
 
   if (isLoading) return <ProductSkeleton />;
   if (!product) return <div>Product not found</div>;

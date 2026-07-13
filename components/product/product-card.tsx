@@ -11,6 +11,7 @@ import { useWishlistToggle } from "@/lib/helpers";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePixelTracking } from "@/lib/meta-pixel";
 
 interface ProductCardProps {
   product: Product & {
@@ -28,6 +29,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const { formatAmount } = useCurrency();
   const addToCart = useCartStore((state) => state.addToCart);
   const router = useRouter();
+  const { track } = usePixelTracking();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [dialogAction, setDialogAction] = useState<"cart" | "buy" | null>(null);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
@@ -61,6 +63,15 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         description: product.description || "",
       },
     });
+
+    track("AddToCart", {
+      content_ids: [product.id],
+      content_type: "product",
+      content_name: product.name,
+      value: displayPrice * quantity,
+      currency: "BDT",
+      quantity,
+    });
   };
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -71,6 +82,14 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       setIsDrawerOpen(!isDrawerOpen);
     } else {
       dispatchAddToCart();
+      track("InitiateCheckout", {
+        content_ids: [product.id],
+        content_type: "product",
+        value: displayPrice * quantity,
+        currency: "BDT",
+        num_items: quantity,
+        contents: [{ id: product.id, quantity, item_price: displayPrice }],
+      });
       toast.success("Added to cart successfully");
       router.push("/checkout");
     }
@@ -108,6 +127,14 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
     }
     
     dispatchAddToCart();
+    track("InitiateCheckout", {
+      content_ids: [product.id],
+      content_type: "product",
+      value: displayPrice * quantity,
+      currency: "BDT",
+      num_items: quantity,
+      contents: [{ id: product.id, quantity, item_price: displayPrice }],
+    });
     toast.success("Added to cart successfully");
     setIsDrawerOpen(false);
     router.push("/checkout");

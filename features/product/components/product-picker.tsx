@@ -12,6 +12,7 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePixelTracking } from "@/lib/meta-pixel";
 
 interface ProductPickerProps {
   product: Product;
@@ -26,6 +27,7 @@ function ProductPicker({ product }: ProductPickerProps) {
   const addToCart = useCartStore((state) => state.addToCart);
   const router = useRouter();
   const { formatAmount } = useCurrency();
+  const { track } = usePixelTracking();
 
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || "");
@@ -96,6 +98,15 @@ function ProductPicker({ product }: ProductPickerProps) {
         description: product.description,
       },
     });
+
+    track("AddToCart", {
+      content_ids: [product.id],
+      content_type: "product",
+      content_name: product.name,
+      value: displayPrice * quantity,
+      currency: "BDT",
+      quantity,
+    });
   };
 
   const handleBuyNow = () => {
@@ -127,6 +138,15 @@ function ProductPicker({ product }: ProductPickerProps) {
         image: product.images[0] ?? "",
         description: product.description,
       },
+    });
+
+    track("InitiateCheckout", {
+      content_ids: [product.id],
+      content_type: "product",
+      value: displayPrice * quantity,
+      currency: "BDT",
+      num_items: quantity,
+      contents: [{ id: product.id, quantity, item_price: displayPrice }],
     });
 
     router.push("/checkout");

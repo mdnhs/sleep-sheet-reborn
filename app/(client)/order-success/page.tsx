@@ -12,6 +12,7 @@ import { pdf } from "@react-pdf/renderer";
 import { InvoicePDF } from "@/features/checkout/components/invoice-pdf";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { usePixelTracking } from "@/lib/meta-pixel";
 
 interface OrderItem {
   id: string;
@@ -19,7 +20,7 @@ interface OrderItem {
   price: number;
   size?: string | null;
   color?: string | null;
-  product: { name: string; images?: string[] };
+  product: { id: string; name: string; images?: string[] };
 }
 
 interface Order {
@@ -45,6 +46,7 @@ function OrderSuccessContent() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const { track } = usePixelTracking();
 
   useEffect(() => {
     if (!orderId) {
@@ -66,6 +68,34 @@ function OrderSuccessContent() {
     };
     fetchOrder();
   }, [orderId, router]);
+
+  // Fire Purchase once per order. Guarded via sessionStorage so a manual
+  // page refresh (or React StrictMode double-invoke in dev) doesn't send
+  // a duplicate Purchase event for the same order to Meta.
+  useEffect(() => {
+    if (!order || !orderId) return;
+    const guardKey = `fb_purchase_tracked_${orderId}`;
+    if (typeof window !== "undefined" && sessionStorage.getItem(guardKey)) return;
+
+    track("Purchase", {
+      value: order.totalAmount,
+      currency: "BDT",
+      order_id: order.id,
+      content_ids: order.items.map((item) => item.product.id),
+      content_type: "product",
+      contents: order.items.map((item) => ({
+        id: item.product.id,
+        quantity: item.quantity,
+        item_price: item.price,
+      })),
+      quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    });
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(guardKey, "1");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.id, orderId]);
 
   const handleDownloadInvoice = async () => {
     if (!order) {

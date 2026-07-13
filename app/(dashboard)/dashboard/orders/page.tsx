@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/conform-dialouge";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
-import { ColumnDef } from "@tanstack/react-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,46 +18,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ConfirmDialog } from "@/components/conform-dialouge";
-import { useQueryClient } from "@tanstack/react-query";
-import { useOrders } from "@/features/order/api/use-order";
+  BulkInvoicePDF,
+  InvoicePDF,
+} from "@/features/checkout/components/invoice-pdf";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
-import { useSteadfastBalance, useSyncOrderStatus, useBookCourier } from "@/features/steadfast/api/use-steadfast";
-import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
-import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
-import { formatDate } from "@/lib/utils";
-import { pdf } from "@react-pdf/renderer";
-import { InvoicePDF, BulkInvoicePDF } from "@/features/checkout/components/invoice-pdf";
-import { useWebsiteSettings } from "@/hooks/use-website-settings";
-import { useCurrency } from "@/hooks/use-currency";
-import { toast } from "sonner";
+import { useOrders } from "@/features/order/api/use-order";
+import type { Order } from "@/features/order/types";
 import {
+  useBookCourier,
+  useSteadfastBalance,
+  useSyncOrderStatus,
+} from "@/features/steadfast/api/use-steadfast";
+import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
+import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
+import { useCurrency } from "@/hooks/use-currency";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { cn, formatDate } from "@/lib/utils";
+import { pdf } from "@react-pdf/renderer";
+import { useQueryClient } from "@tanstack/react-query";
+import { ColumnDef } from "@tanstack/react-table";
+import {
+  FilterX,
   Loader2,
   MoreVertical,
+  Pointer,
   Printer,
-  RefreshCw,
   Search,
   Trash,
   Truck,
-  Wallet,
-  FilterX,
-  Download,
-  Eye,
-  Pointer,
 } from "lucide-react";
-import type { Order } from "@/features/order/types";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
@@ -75,17 +77,21 @@ const STATUS_COLORS: Record<Order["status"], string> = {
 
 const STATUS_DOTS: Record<Order["status"], React.ReactNode> = {
   PENDING: <span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" />,
-  PROCESSING: <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />,
+  PROCESSING: (
+    <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+  ),
   SHIPPED: <span className="h-2 w-2 rounded-full bg-purple-500 inline-block" />,
-  DELIVERED: <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />,
+  DELIVERED: (
+    <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
+  ),
   CANCELLED: <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />,
 };
 
-
-
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Order["status"] | "ALL">("PENDING");
+  const [statusFilter, setStatusFilter] = useState<Order["status"] | "ALL">(
+    "PENDING",
+  );
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [courierOrder, setCourierOrder] = useState<ShippingOrder | null>(null);
@@ -96,7 +102,8 @@ export default function OrdersPage() {
   const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
-  const [shippingCostOrder, setShippingCostOrder] = useState<ShippingOrder | null>(null);
+  const [shippingCostOrder, setShippingCostOrder] =
+    useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
 
@@ -113,10 +120,14 @@ export default function OrdersPage() {
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl } = useWebsiteSettings();
   const { updateOrder, deleteOrder, bulkDeleteOrders } = useOrderMutations();
-  const { data: balanceData, isLoading: isBalanceLoading } = useSteadfastBalance(showBalance);
+  const { data: balanceData, isLoading: isBalanceLoading } =
+    useSteadfastBalance(showBalance);
   const syncStatus = useSyncOrderStatus();
 
-  const handlePrint = async (order: Order, action: "print" | "download" = "print") => {
+  const handlePrint = async (
+    order: Order,
+    action: "print" | "download" = "print",
+  ) => {
     try {
       const placedOrderData: any = {
         orderNumber: order.orderNumber,
@@ -132,9 +143,9 @@ export default function OrdersPage() {
           size: i.size,
           color: i.color,
           image: i.product.images?.[0] || null,
-        }))
+        })),
       };
-      
+
       const shippingInfoData: any = {
         fullName: order.user?.name || order.guestName || "Customer",
         phone: order.user?.phone || order.guestPhone || "",
@@ -145,9 +156,11 @@ export default function OrdersPage() {
           order.shippingState,
           order.shippingPostalCode,
           order.shippingCountry,
-        ].filter(Boolean).join(", "),
+        ]
+          .filter(Boolean)
+          .join(", "),
         shippingZone: "inside_dhaka",
-        notes: order.note
+        notes: order.note,
       };
 
       const doc = (
@@ -159,11 +172,11 @@ export default function OrdersPage() {
           logoUrl={logoUrl}
         />
       );
-      
+
       const asPdf = pdf(doc);
       const blob = await asPdf.toBlob();
       const url = URL.createObjectURL(blob);
-      
+
       if (action === "download") {
         const link = document.createElement("a");
         link.href = url;
@@ -174,8 +187,8 @@ export default function OrdersPage() {
         URL.revokeObjectURL(url);
         toast.success("Invoice downloaded successfully");
       } else {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
         iframe.src = url;
         document.body.appendChild(iframe);
         iframe.onload = () => {
@@ -207,7 +220,7 @@ export default function OrdersPage() {
             size: i.size,
             color: i.color,
             image: i.product.images?.[0] || null,
-          }))
+          })),
         };
 
         const shippingInfoData: any = {
@@ -220,9 +233,11 @@ export default function OrdersPage() {
             order.shippingState,
             order.shippingPostalCode,
             order.shippingCountry,
-          ].filter(Boolean).join(", "),
+          ]
+            .filter(Boolean)
+            .join(", "),
           shippingZone: "inside_dhaka",
-          notes: order.note
+          notes: order.note,
         };
 
         return {
@@ -254,8 +269,8 @@ export default function OrdersPage() {
         URL.revokeObjectURL(url);
         toast.success("Bulk invoices downloaded successfully");
       } else {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
         iframe.src = url;
         document.body.appendChild(iframe);
         iframe.onload = () => {
@@ -291,7 +306,8 @@ export default function OrdersPage() {
       ? orders
       : orders?.filter((o) => o.status === statusFilter);
 
-  const selectedOrders = filtered?.filter((_, index) => rowSelection[index.toString()]) || [];
+  const selectedOrders =
+    filtered?.filter((_, index) => rowSelection[index.toString()]) || [];
 
   const handleBulkBook = () => {
     if (selectedOrders.length === 0) return;
@@ -300,7 +316,7 @@ export default function OrdersPage() {
 
   const handleConfirmBulkBook = async (
     costPrices: { orderItemId: string; costPrice: number }[],
-    shippingCosts: { orderId: string; shippingCost: number }[]
+    shippingCosts: { orderId: string; shippingCost: number }[],
   ) => {
     setIsBulkBooking(true);
     setIsBulkBookDialogOpen(false);
@@ -308,11 +324,18 @@ export default function OrdersPage() {
       let successCount = 0;
       for (const order of selectedOrders) {
         if (order.trackingNumber) continue;
-        const phone = (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "").slice(0, 11);
+        const phone = (order.user?.phone ?? order.guestPhone ?? "")
+          .replace(/\D/g, "")
+          .slice(0, 11);
         if (phone.length === 11) {
           // If this order's shipping cost was edited, update it in the DB first!
-          const orderShipCostObj = shippingCosts.find(s => s.orderId === order.id);
-          if (orderShipCostObj && orderShipCostObj.shippingCost !== order.shippingCost) {
+          const orderShipCostObj = shippingCosts.find(
+            (s) => s.orderId === order.id,
+          );
+          if (
+            orderShipCostObj &&
+            orderShipCostObj.shippingCost !== order.shippingCost
+          ) {
             await updateOrder.mutateAsync({
               id: order.id,
               shippingCost: orderShipCostObj.shippingCost,
@@ -321,12 +344,15 @@ export default function OrdersPage() {
 
           // filter the costPrices for this specific order
           const orderItemIds = order.items.map((i: any) => i.id);
-          const orderCostPrices = costPrices.filter(c => orderItemIds.includes(c.orderItemId));
+          const orderCostPrices = costPrices.filter((c) =>
+            orderItemIds.includes(c.orderItemId),
+          );
 
           await bookCourier.mutateAsync({
             orderId: order.id,
             recipient_phone: phone,
-            costPrices: orderCostPrices.length > 0 ? orderCostPrices : undefined,
+            costPrices:
+              orderCostPrices.length > 0 ? orderCostPrices : undefined,
           });
           successCount++;
         }
@@ -335,10 +361,14 @@ export default function OrdersPage() {
         toast.success(`Successfully booked ${successCount} orders`);
         setRowSelection({});
       } else {
-        toast.error("No selected orders could be booked (invalid phone or already booked)");
+        toast.error(
+          "No selected orders could be booked (invalid phone or already booked)",
+        );
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to complete booking for some orders");
+      toast.error(
+        error.message || "Failed to complete booking for some orders",
+      );
     } finally {
       setIsBulkBooking(false);
     }
@@ -349,7 +379,7 @@ export default function OrdersPage() {
       acc[s] = orders?.filter((o) => o.status === s).length ?? 0;
       return acc;
     },
-    {} as Record<Order["status"], number>
+    {} as Record<Order["status"], number>,
   );
 
   const columns: ColumnDef<ShippingOrder>[] = [
@@ -360,7 +390,9 @@ export default function OrdersPage() {
           type="checkbox"
           className="rounded border-input"
           checked={table.getIsAllPageRowsSelected()}
-          onChange={(value) => table.toggleAllPageRowsSelected(!!value.target.checked)}
+          onChange={(value) =>
+            table.toggleAllPageRowsSelected(!!value.target.checked)
+          }
           aria-label="Select all"
         />
       ),
@@ -380,7 +412,9 @@ export default function OrdersPage() {
       accessorKey: "orderNumber",
       header: "Order #",
       cell: ({ row }) => (
-        <span className="font-mono font-medium">{row.original.orderNumber}</span>
+        <span className="font-mono font-medium">
+          {row.original.orderNumber}
+        </span>
       ),
     },
     {
@@ -389,7 +423,14 @@ export default function OrdersPage() {
       cell: ({ row }) => {
         const type = row.original.saleType;
         return (
-          <Badge variant="outline" className={type === "POS" ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800" : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"}>
+          <Badge
+            variant="outline"
+            className={
+              type === "POS"
+                ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800"
+                : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"
+            }
+          >
             {type || "WEBSITE"}
           </Badge>
         );
@@ -428,7 +469,9 @@ export default function OrdersPage() {
       accessorKey: "createdAt",
       header: "Date",
       cell: ({ row }) => (
-        <span className="text-sm whitespace-nowrap">{formatDate(row.original.createdAt)}</span>
+        <span className="text-sm whitespace-nowrap">
+          {formatDate(row.original.createdAt)}
+        </span>
       ),
     },
     {
@@ -442,7 +485,9 @@ export default function OrdersPage() {
       cell: ({ row }) => {
         const trk = row.original.trackingNumber;
         return trk ? (
-          <span className="font-mono text-sm text-green-600 dark:text-green-400">{trk}</span>
+          <span className="font-mono text-sm text-green-600 dark:text-green-400">
+            {trk}
+          </span>
         ) : (
           <span className="text-muted-foreground">—</span>
         );
@@ -485,16 +530,18 @@ export default function OrdersPage() {
             </Button>
 
             <DropdownMenu>
-              <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}>
+              <DropdownMenuTrigger
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                )}
+              >
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {ALL_STATUSES.map((status) => (
                   <DropdownMenuItem
                     key={status}
-                    onClick={() =>
-                      updateOrderStatus(order, status)
-                    }
+                    onClick={() => updateOrderStatus(order, status)}
                     className="capitalize"
                   >
                     Mark as {status.toLowerCase()}
@@ -523,15 +570,15 @@ export default function OrdersPage() {
                 >
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handlePrint(order, "download")}>
+                <DropdownMenuItem
+                  onClick={() => handlePrint(order, "download")}
+                >
                   Download Invoice
                 </DropdownMenuItem>
                 {order.status !== "DELIVERED" &&
                   order.status !== "CANCELLED" &&
                   !order.trackingNumber && (
-                    <DropdownMenuItem
-                      onClick={() => setCourierOrder(order)}
-                    >
+                    <DropdownMenuItem onClick={() => setCourierOrder(order)}>
                       Book Courier (Steadfast)
                     </DropdownMenuItem>
                   )}
@@ -548,7 +595,7 @@ export default function OrdersPage() {
                     setShippingCostOrder(order);
                     setNewShippingCost(order.shippingCost.toString());
                     const costs: Record<string, string> = {};
-                    order.items.forEach(item => {
+                    order.items.forEach((item) => {
                       costs[item.id] = item.costPrice?.toString() || "";
                     });
                     setItemCosts(costs);
@@ -583,42 +630,52 @@ export default function OrdersPage() {
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        
-        <div 
+
+        <div
           onClick={() => setShowBalance(!showBalance)}
           className="relative flex items-center h-12 w-[240px] rounded-full border border-[#00bfa5] bg-white dark:bg-slate-900 select-none cursor-pointer transition-all duration-200"
         >
           {/* Sliding indicator */}
-          <div 
+          <div
             className={cn(
               "absolute top-[4px] left-[4px] h-[38px] w-[38px] rounded-full bg-white dark:bg-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center transition-all duration-300 ease-out z-10",
-              showBalance ? "translate-x-[194px]" : "translate-x-0"
+              showBalance ? "translate-x-[194px]" : "translate-x-0",
             )}
           >
             <Pointer className="h-[18px] w-[18px] text-[#00bfa5] -rotate-[15deg]" />
           </div>
 
           {/* Balance Amount (Slide in from left) */}
-          <div 
+          <div
             className={cn(
               "absolute left-[16px] transition-all duration-300 ease-out pr-[50px] truncate",
-              showBalance ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+              showBalance
+                ? "opacity-100 translate-x-0"
+                : "opacity-0 -translate-x-4 pointer-events-none",
             )}
           >
             {isBalanceLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-[#00bfa5]" />
             ) : (
               <span className="text-sm font-semibold text-[#00bfa5] tracking-wide">
-                {currencySymbol}{balanceData ? Number(balanceData.current_balance).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+                {currencySymbol}
+                {balanceData
+                  ? Number(balanceData.current_balance).toLocaleString(
+                      undefined,
+                      { minimumFractionDigits: 2 },
+                    )
+                  : "0.00"}
               </span>
             )}
           </div>
 
           {/* "Check Balance" label */}
-          <div 
+          <div
             className={cn(
               "absolute right-[24px] transition-all duration-300 ease-out",
-              showBalance ? "opacity-0 translate-x-4 pointer-events-none" : "opacity-100 translate-x-0"
+              showBalance
+                ? "opacity-0 translate-x-4 pointer-events-none"
+                : "opacity-100 translate-x-0",
             )}
           >
             <span className="text-sm font-semibold text-[#00bfa5] tracking-wide">
@@ -630,7 +687,9 @@ export default function OrdersPage() {
 
       <Tabs
         value={statusFilter}
-        onValueChange={(value) => setStatusFilter(value as Order["status"] | "ALL")}
+        onValueChange={(value) =>
+          setStatusFilter(value as Order["status"] | "ALL")
+        }
         className="w-full"
       >
         <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
@@ -769,7 +828,10 @@ export default function OrdersPage() {
         />
       )}
 
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+      <Dialog
+        open={!!selectedOrder}
+        onOpenChange={() => setSelectedOrder(null)}
+      >
         <DialogContent className="sm:max-w-3xl">
           {selectedOrder && (
             <>
@@ -784,9 +846,17 @@ export default function OrdersPage() {
                   <div className="space-y-2">
                     <h3 className="font-semibold">Shipping Information</h3>
                     <div className="text-sm space-y-0.5">
-                      <p className="font-medium">{selectedOrder.user?.name ?? selectedOrder.guestName ?? "Guest"}</p>
-                      {(selectedOrder.user?.phone ?? selectedOrder.guestPhone) && (
-                        <p className="text-muted-foreground">{selectedOrder.user?.phone ?? selectedOrder.guestPhone}</p>
+                      <p className="font-medium">
+                        {selectedOrder.user?.name ??
+                          selectedOrder.guestName ??
+                          "Guest"}
+                      </p>
+                      {(selectedOrder.user?.phone ??
+                        selectedOrder.guestPhone) && (
+                        <p className="text-muted-foreground">
+                          {selectedOrder.user?.phone ??
+                            selectedOrder.guestPhone}
+                        </p>
                       )}
                       <p>{selectedOrder.shippingAddress}</p>
                     </div>
@@ -888,15 +958,18 @@ export default function OrdersPage() {
         title="Delete Selected Orders"
         description={`Are you sure you want to delete ${selectedOrders.length} selected orders? This action cannot be undone.`}
       />
-      
-      <BulkBookCourierDialog 
+
+      <BulkBookCourierDialog
         open={isBulkBookDialogOpen}
         onOpenChange={setIsBulkBookDialogOpen}
         orders={selectedOrders}
         onConfirm={handleConfirmBulkBook}
         isBooking={isBulkBooking}
       />
-      <Dialog open={!!shippingCostOrder} onOpenChange={(open) => !open && setShippingCostOrder(null)}>
+      <Dialog
+        open={!!shippingCostOrder}
+        onOpenChange={(open) => !open && setShippingCostOrder(null)}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Order Costs</DialogTitle>
@@ -915,13 +988,15 @@ export default function OrdersPage() {
             {shippingCostOrder?.items.map((item) => (
               <div key={item.id} className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground truncate block">
-                  Bought Price (Cost) for: {item.product?.name || 'Item'}
+                  Bought Price (Cost) for: {item.product?.name || "Item"}
                 </label>
                 <Input
                   type="number"
                   min="0"
                   value={itemCosts[item.id] || ""}
-                  onChange={(e) => setItemCosts({ ...itemCosts, [item.id]: e.target.value })}
+                  onChange={(e) =>
+                    setItemCosts({ ...itemCosts, [item.id]: e.target.value })
+                  }
                   placeholder="Enter bought price"
                 />
               </div>
@@ -941,10 +1016,10 @@ export default function OrdersPage() {
                     toast.error("Please enter a valid shipping cost");
                     return;
                   }
-                  
-                  const itemsToUpdate = shippingCostOrder.items.map(item => ({
+
+                  const itemsToUpdate = shippingCostOrder.items.map((item) => ({
                     id: item.id,
-                    costPrice: parseFloat(itemCosts[item.id] || "0") || 0
+                    costPrice: parseFloat(itemCosts[item.id] || "0") || 0,
                   }));
 
                   try {

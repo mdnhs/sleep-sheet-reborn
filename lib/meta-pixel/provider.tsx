@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useEffect, useRef, useState, type ReactNode } from "react"
+import { usePathname } from "next/navigation"
 import { saveAttribution, getAttribution } from "./storage"
 import { parseAttributionFromUrl, debugLog } from "./utils"
 import { initPixel, track, getActivePixelId } from "./tracker"
@@ -89,7 +90,9 @@ export function PixelProvider({
       if (activePixelId) {
         setPixelId(activePixelId)
         await initPixel(activePixelId)
-        track("PageView")
+        // Note: PageView is fired by the pathname-aware effect below,
+        // not here, so it re-fires correctly on every client-side
+        // route change (SPA navigation) instead of just once per session.
       }
 
       setIsReady(true)
@@ -97,6 +100,20 @@ export function PixelProvider({
 
     initialize()
   }, [enabled, defaultPixelId, debug])
+
+  // Fire PageView on initial load AND on every subsequent client-side
+  // route change. Without this, Next.js client-side navigation (Link,
+  // router.push) never re-fires PageView, so Meta always attributes
+  // visitors to the entry URL (e.g. homepage) even after they've
+  // navigated deep into the site (e.g. /shop/[productId]). This breaks
+  // URL-based Custom Audiences and per-page conversion attribution.
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (!enabled || !isReady) return
+    track("PageView")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, enabled, isReady])
 
   const contextValue: PixelContextValue = {
     track: <E extends MetaEventName>(
