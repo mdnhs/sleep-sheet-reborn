@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { subDays, subWeeks, subMonths, startOfToday } from 'date-fns'
+import { subDays, subWeeks, subMonths, subYears, startOfToday } from 'date-fns'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -56,17 +56,32 @@ export const formatCurrency = (value: number) => {
 
 
 export const getDateRange = (period: string) => {
-  const now = startOfToday()
-  
+  // endDate must include today; rangeStart anchors to start of today so the
+  // window covers full days
+  const now = new Date()
+  const today = startOfToday()
+
   switch(period) {
-    case 'day': 
-      return { startDate: subDays(now, 1), endDate: now }
+    case 'day':
+      return { startDate: subDays(today, 1), endDate: now }
     case 'week':
-      return { startDate: subWeeks(now, 1), endDate: now }
+      return { startDate: subWeeks(today, 1), endDate: now }
     case 'month':
-      return { startDate: subMonths(now, 1), endDate: now }
+      return { startDate: subMonths(today, 1), endDate: now }
+    case 'year':
+      return { startDate: subYears(today, 1), endDate: now }
     default:
-      return { startDate: subMonths(now, 1), endDate: now }
+      return { startDate: subMonths(today, 1), endDate: now }
+  }
+}
+
+// Same-length window immediately before the current one, for period-over-period deltas
+export const getPreviousDateRange = (period: string) => {
+  const { startDate, endDate } = getDateRange(period)
+  const spanMs = endDate.getTime() - startDate.getTime()
+  return {
+    startDate: new Date(startDate.getTime() - spanMs),
+    endDate: startDate,
   }
 }
 

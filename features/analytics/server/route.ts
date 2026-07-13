@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { orders, orderItems, products, carts, users, wishlistItems, expenses } from "@/db/schema";
-import { eq, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
-import { getDateRange, getStartDate } from "@/lib/utils";
+import { orders, orderItems, products, carts, wishlistItems, expenses } from "@/db/schema";
+import { eq, ne, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
+import { getDateRange, getPreviousDateRange, getStartDate } from "@/lib/utils";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
@@ -18,44 +18,83 @@ const app = new Hono()
   try {
     const { period = "month" } = c.req.query();
     const { startDate, endDate } = getDateRange(period);
+    const { startDate: prevStart, endDate: prevEnd } = getPreviousDateRange(period);
+    // Daily buckets read badly over a year; roll up to months there
+    const trendUnit = period === "year" ? "month" : "day";
 
-    const [revenueRes, ordersRes, salesTrend, expensesRes, costRes] = await Promise.all([
-      db.select({ sum: sum(orders.totalAmount) })
+    const notCancelled = ne(orders.status, "CANCELLED");
+    const inRange = (start: Date, end: Date) =>
+      and(notCancelled, gte(orders.createdAt, start), lte(orders.createdAt, end));
+
+    const orderStats = (start: Date, end: Date) =>
+      db.select({ revenue: sum(orders.totalAmount), orders: count() })
         .from(orders)
-        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
-      db.select({ count: count() })
-        .from(orders)
-        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
-      db.select({ createdAt: orders.createdAt, totalAmount: orders.totalAmount })
-        .from(orders)
-        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate)))
-        .orderBy(asc(orders.createdAt)),
-      db.select({ sum: sum(expenses.amount) })
-        .from(expenses)
-        .where(and(gte(expenses.date, startDate), lte(expenses.date, endDate))),
-      db.select({ 
-          sum: sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))` 
+        .where(inRange(start, end));
+
+    const costStats = (start: Date, end: Date) =>
+      db.select({
+          sum: sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))`
         })
         .from(orderItems)
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
-        .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))),
-    ]);
+        .where(inRange(start, end));
 
-    const totalRevenue = Number(revenueRes[0]?.sum || 0);
-    const totalOrders = Number(ordersRes[0]?.count || 0);
-    const totalExpenses = Number(expensesRes[0]?.sum || 0);
-    const totalCost = Number(costRes[0]?.sum || 0);
+    const expenseStats = (start: Date, end: Date) =>
+      db.select({ sum: sum(expenses.amount) })
+        .from(expenses)
+        .where(and(gte(expenses.date, start), lte(expenses.date, end)));
+
+    const [currRes, prevRes, salesTrend, currExpenses, prevExpenses, currCost, prevCost] =
+      await Promise.all([
+        orderStats(startDate, endDate),
+        orderStats(prevStart, prevEnd),
+        db.select({
+            bucket: sql<string>`DATE_TRUNC(${sql.raw(`'${trendUnit}'`)}, ${orders.createdAt})`,
+            amount: sum(orders.totalAmount),
+          })
+          .from(orders)
+          .where(inRange(startDate, endDate))
+          .groupBy(sql`DATE_TRUNC(${sql.raw(`'${trendUnit}'`)}, ${orders.createdAt})`)
+          .orderBy(asc(sql`DATE_TRUNC(${sql.raw(`'${trendUnit}'`)}, ${orders.createdAt})`)),
+        expenseStats(startDate, endDate),
+        expenseStats(prevStart, prevEnd),
+        costStats(startDate, endDate),
+        costStats(prevStart, prevEnd),
+      ]);
+
+    const totalRevenue = Number(currRes[0]?.revenue || 0);
+    const totalOrders = Number(currRes[0]?.orders || 0);
+    const totalExpenses = Number(currExpenses[0]?.sum || 0);
+    const totalCost = Number(currCost[0]?.sum || 0);
     const netProfit = totalRevenue - totalCost - totalExpenses;
+    const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    const prevRevenue = Number(prevRes[0]?.revenue || 0);
+    const prevOrders = Number(prevRes[0]?.orders || 0);
+    const prevNetProfit =
+      prevRevenue - Number(prevCost[0]?.sum || 0) - Number(prevExpenses[0]?.sum || 0);
+    const prevAov = prevOrders > 0 ? prevRevenue / prevOrders : 0;
+
+    const pctChange = (curr: number, prev: number) =>
+      prev === 0 ? null : Number((((curr - prev) / Math.abs(prev)) * 100).toFixed(1));
 
     return c.json({
       totalRevenue,
       totalOrders,
       totalExpenses,
       netProfit,
-      aov: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      aov,
+      profitMargin: totalRevenue > 0 ? Number(((netProfit / totalRevenue) * 100).toFixed(1)) : 0,
+      changes: {
+        revenue: pctChange(totalRevenue, prevRevenue),
+        orders: pctChange(totalOrders, prevOrders),
+        aov: pctChange(aov, prevAov),
+        expenses: pctChange(totalExpenses, Number(prevExpenses[0]?.sum || 0)),
+        netProfit: pctChange(netProfit, prevNetProfit),
+      },
       trendData: salesTrend.map((item) => ({
-        date: item.createdAt.toISOString(),
-        amount: item.totalAmount,
+        date: new Date(item.bucket).toISOString(),
+        amount: Number(item.amount || 0),
       })),
     });
   } catch (error) {
@@ -77,7 +116,7 @@ const app = new Hono()
       totalAmount: sum(orders.totalAmount),
     })
     .from(orders)
-    .where(isNotNull(orders.userId))
+    .where(and(isNotNull(orders.userId), ne(orders.status, "CANCELLED")))
     .groupBy(orders.userId);
 
     const validResults = result.filter(r => r.totalAmount !== null && r.userId);
@@ -106,8 +145,10 @@ const app = new Hono()
       count: count(orders.id),
     })
     .from(orders)
-    .where(isNotNull(orders.shippingState))
-    .groupBy(orders.shippingState);
+    .where(and(isNotNull(orders.shippingState), ne(orders.status, "CANCELLED")))
+    .groupBy(orders.shippingState)
+    .orderBy(desc(sum(orders.totalAmount)))
+    .limit(10);
 
     return c.json(data.map(d => ({
       state: d.shippingState,
@@ -168,7 +209,11 @@ const app = new Hono()
       db.select({ count: count() }).from(carts),
       db.select({ count: count() })
         .from(carts)
-        .where(sql`exists (select 1 from ${orders} where ${orders.userId} = ${carts.userId})`)
+        .where(sql`exists (
+          select 1 from ${orders}
+          where ${orders.userId} = ${carts.userId}
+            and ${orders.createdAt} >= ${carts.createdAt}
+        )`)
     ]);
 
     const total = Number(totalCartsRes[0]?.count || 0);
@@ -264,17 +309,23 @@ const app = new Hono()
 })
 
 // Customer Acquisition
-.get('/acquisition', async (c) => {
+.get('/acquisition', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
+
   try {
     const { period = 'month' } = c.req.query();
-    const startDate = getStartDate(period);
-
     const allowedPeriods = ['day', 'week', 'month', 'year'];
     const selectedPeriod = allowedPeriods.includes(period) ? period : 'month';
+    const startDate = getStartDate(selectedPeriod);
+    // Bucket finer than the window itself, otherwise "year" collapses to one bar
+    const bucketUnit = selectedPeriod === 'year' ? 'month' : 'day';
 
     const usersRows = (await db.execute(sql.raw(`
-      SELECT 
-        DATE_TRUNC('${selectedPeriod}', "createdAt") as period,
+      SELECT
+        DATE_TRUNC('${bucketUnit}', "createdAt") as period,
         COUNT(*) as count
       FROM "User"
       WHERE "createdAt" >= '${startDate.toISOString()}'
@@ -306,6 +357,8 @@ const app = new Hono()
     })
     .from(orderItems)
     .innerJoin(products, eq(orderItems.productId, products.id))
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .where(ne(orders.status, "CANCELLED"))
     .groupBy(products.id, products.name, products.images)
     .orderBy(desc(sum(orderItems.quantity)))
     .limit(5);

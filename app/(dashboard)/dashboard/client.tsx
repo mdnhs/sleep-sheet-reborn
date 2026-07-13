@@ -4,8 +4,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCurrency } from "@/hooks/use-currency";
-import { IconCashRegister } from "@tabler/icons-react";
+import {
+  IconCashRegister,
+  IconTrendingUp,
+  IconTrendingDown,
+} from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   useSalesOverview,
   useCustomerLifetimeValue,
@@ -52,9 +57,11 @@ interface SpendingSegment {
   customers: number;
 }
 
+type Period = "month" | "year";
+
 export default function DashBoardClientPage() {
   const { symbol: currencySymbol } = useCurrency();
-  const [period, setPeriod] = useState<"month" | "year">("month");
+  const [period, setPeriod] = useState<Period>("month");
 
   const { data: overview, isLoading: loadingOverview } =
     useSalesOverview(period);
@@ -74,15 +81,23 @@ export default function DashBoardClientPage() {
   const { data: mostWishlisted, isLoading: loadingWishlisted } =
     useMostWishlisted();
 
+  const formatBucketDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, {
+      month: "short",
+      ...(period === "year" ? { year: "2-digit" } : { day: "numeric" }),
+    });
+
   const salesTrendData = (overview?.trendData || []).map((t: TrendData) => ({
-    name: new Date(t.date).toLocaleDateString(),
+    name: formatBucketDate(t.date),
     value: t.amount,
   }));
 
   const acquisitionData = (acquisition || []).map((a) => ({
-    name: new Date(a.date).toLocaleDateString(),
+    name: formatBucketDate(a.date),
     value: a.count,
   }));
+
+  const changes = overview?.changes;
 
   return (
     <div className="container mx-auto px-4 space-y-6 py-6">
@@ -97,7 +112,7 @@ export default function DashBoardClientPage() {
           </Link>
           <Tabs
             value={period}
-            onValueChange={(value) => setPeriod(value as "month" | "year")}
+            onValueChange={(value) => setPeriod(value as Period)}
             className="w-full sm:w-auto"
           >
             <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
@@ -115,11 +130,13 @@ export default function DashBoardClientPage() {
           value={overview?.totalRevenue}
           format="currency"
           currencySymbol={currencySymbol}
+          change={changes?.revenue}
           loading={loadingOverview}
         />
         <MetricCard
           title="Total Orders"
           value={overview?.totalOrders}
+          change={changes?.orders}
           loading={loadingOverview}
         />
         <MetricCard
@@ -127,6 +144,7 @@ export default function DashBoardClientPage() {
           value={overview?.aov}
           format="currency"
           currencySymbol={currencySymbol}
+          change={changes?.aov}
           loading={loadingOverview}
         />
         <MetricCard
@@ -134,6 +152,8 @@ export default function DashBoardClientPage() {
           value={overview?.totalExpenses}
           format="currency"
           currencySymbol={currencySymbol}
+          change={changes?.expenses}
+          invertChangeColor
           loading={loadingOverview}
         />
         <MetricCard
@@ -141,6 +161,12 @@ export default function DashBoardClientPage() {
           value={overview?.netProfit}
           format="currency"
           currencySymbol={currencySymbol}
+          change={changes?.netProfit}
+          subtitle={
+            typeof overview?.profitMargin === "number"
+              ? `${overview.profitMargin}% margin`
+              : undefined
+          }
           loading={loadingOverview}
           className="col-span-2 lg:col-span-1"
         />
@@ -161,6 +187,8 @@ export default function DashBoardClientPage() {
               <CardContent className="h-64">
                 {loadingOverview ? (
                   <Skeleton className="h-full w-full" />
+                ) : salesTrendData.length === 0 ? (
+                  <EmptyState message="No sales in this period" />
                 ) : (
                   <CustomLineChart data={salesTrendData} />
                 )}
@@ -174,6 +202,8 @@ export default function DashBoardClientPage() {
               <CardContent>
                 {loadingDistribution ? (
                   <Skeleton className="h-64 w-full" />
+                ) : !distribution?.length ? (
+                  <EmptyState message="No shipping data yet" />
                 ) : (
                   <Table>
                     <TableHeader>
@@ -188,7 +218,8 @@ export default function DashBoardClientPage() {
                         <TableRow key={item.state}>
                           <TableCell>{item.state}</TableCell>
                           <TableCell className="text-right">
-                            ${item.revenue?.toLocaleString()}
+                            {currencySymbol}
+                            {item.revenue?.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right">
                             {item.orders}
@@ -212,6 +243,8 @@ export default function DashBoardClientPage() {
               <CardContent className="h-64">
                 {loadingAcquisition ? (
                   <Skeleton className="h-full w-full" />
+                ) : acquisitionData.length === 0 ? (
+                  <EmptyState message="No new customers in this period" />
                 ) : (
                   <CustomBarChart data={acquisitionData} />
                 )}
@@ -225,6 +258,8 @@ export default function DashBoardClientPage() {
               <CardContent>
                 {loadingSegments ? (
                   <Skeleton className="h-64 w-full" />
+                ) : !segments?.length ? (
+                  <EmptyState message="No customer data yet" />
                 ) : (
                   <Table>
                     <TableHeader>
@@ -260,6 +295,8 @@ export default function DashBoardClientPage() {
           <CardContent className="h-80">
             {loadingCohort ? (
               <Skeleton className="h-full w-full" />
+            ) : !cohort?.length ? (
+              <EmptyState message="No cohort data yet" />
             ) : (
               <CohortChart
                 data={(cohort || []).map((c) => ({
@@ -273,87 +310,28 @@ export default function DashBoardClientPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Most Purchased Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingPurchased ? (
-                <Skeleton className="h-64 w-full" />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="text-right">Units Sold</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mostPurchased?.map((product) => (
-                      <TableRow key={product.productId}>
-                        <TableCell>
-                          <div className="flex items-center gap-4">
-                            {product.productImages[0] && (
-                              <img
-                                src={product.productImages[0]}
-                                className="h-12 w-12 rounded object-cover"
-                                alt={product.productName}
-                              />
-                            )}
-                            {product.productName}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {product.totalSold}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Most Wishlisted Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingWishlisted ? (
-                <Skeleton className="h-64 w-full" />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="text-right">Wishlists</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mostWishlisted?.map((product) => (
-                      <TableRow key={product.productId}>
-                        <TableCell>
-                          <div className="flex items-center gap-4">
-                            {product.productImages[0] && (
-                              <img
-                                src={product.productImages[0]}
-                                className="h-12 w-12 rounded object-cover"
-                                alt={product.productName}
-                              />
-                            )}
-                            {product.productName}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {product.wishlistCount}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <ProductRankCard
+            title="Most Purchased Products"
+            valueHeader="Units Sold"
+            loading={loadingPurchased}
+            rows={mostPurchased?.map((p) => ({
+              id: p.productId,
+              name: p.productName,
+              image: p.productImages[0],
+              value: p.totalSold,
+            }))}
+          />
+          <ProductRankCard
+            title="Most Wishlisted Products"
+            valueHeader="Wishlists"
+            loading={loadingWishlisted}
+            rows={mostWishlisted?.map((p) => ({
+              id: p.productId,
+              name: p.productName,
+              image: p.productImages[0],
+              value: p.wishlistCount,
+            }))}
+          />
         </div>
       </div>
 
@@ -369,17 +347,89 @@ export default function DashBoardClientPage() {
         <MetricCard
           title="Inventory Turnover"
           value={inventory?.turnoverRate}
-          // format="percentage"
           loading={loadingInventory}
         />
         <MetricCard
           title="Cart Abandonment"
           value={abandonment?.abandonmentRate}
           format="percentage"
+          invertChangeColor
           loading={loadingAbandonment}
         />
       </div>
     </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex h-full min-h-32 items-center justify-center text-sm text-muted-foreground">
+      {message}
+    </div>
+  );
+}
+
+interface ProductRankRow {
+  id: string;
+  name: string;
+  image?: string;
+  value: number;
+}
+
+function ProductRankCard({
+  title,
+  valueHeader,
+  rows,
+  loading,
+}: {
+  title: string;
+  valueHeader: string;
+  rows?: ProductRankRow[];
+  loading?: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-64 w-full" />
+        ) : !rows?.length ? (
+          <EmptyState message="No data yet" />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="text-right">{valueHeader}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-4">
+                      {row.image && (
+                        <img
+                          src={row.image}
+                          className="h-12 w-12 rounded object-cover"
+                          alt={row.name}
+                        />
+                      )}
+                      {row.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {row.value.toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -388,6 +438,10 @@ interface MetricCardProps {
   value?: number;
   format?: "currency" | "percentage" | "number";
   currencySymbol?: string;
+  change?: number | null;
+  // For metrics where an increase is bad (expenses, abandonment)
+  invertChangeColor?: boolean;
+  subtitle?: string;
   loading?: boolean;
   className?: string;
 }
@@ -397,6 +451,9 @@ function MetricCard({
   value,
   format = "number",
   currencySymbol = "$",
+  change,
+  invertChangeColor = false,
+  subtitle,
   loading,
   className,
 }: MetricCardProps) {
@@ -415,6 +472,10 @@ function MetricCard({
     }
   };
 
+  const hasChange = typeof change === "number";
+  const isGood = hasChange && (invertChangeColor ? change! < 0 : change! > 0);
+  const isFlat = hasChange && change === 0;
+
   return (
     <Card className={className}>
       <CardContent className="p-6">
@@ -423,7 +484,41 @@ function MetricCard({
           {loading ? (
             <Skeleton className="h-8 w-32" />
           ) : (
-            <p className="text-2xl font-bold">{formattedValue()}</p>
+            <>
+              <p className="text-2xl font-bold">{formattedValue()}</p>
+              {(hasChange || subtitle) && (
+                <div className="flex items-center gap-2 text-xs">
+                  {hasChange && (
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-0.5 font-medium",
+                        isFlat
+                          ? "text-muted-foreground"
+                          : isGood
+                            ? "text-green-600"
+                            : "text-red-600"
+                      )}
+                    >
+                      {change! >= 0 ? (
+                        <IconTrendingUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <IconTrendingDown className="h-3.5 w-3.5" />
+                      )}
+                      {change! > 0 ? "+" : ""}
+                      {change}%
+                    </span>
+                  )}
+                  {hasChange && (
+                    <span className="text-muted-foreground">
+                      vs prev period
+                    </span>
+                  )}
+                  {subtitle && (
+                    <span className="text-muted-foreground">{subtitle}</span>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </CardContent>
