@@ -9,9 +9,13 @@ import type { Product } from "@/lib/types";
  * client leaf so the product page itself can stay a Server Component.
  */
 export function ProductViewTracker({ product }: { product: Product }) {
-  const { track } = usePixelTracking();
+  const { track, isReady } = usePixelTracking();
 
   useEffect(() => {
+    // Wait until the Pixel SDK is initialized. On this server-rendered page
+    // the tracker mounts before the PixelProvider finishes init, so firing
+    // immediately would hit an uninitialized `fbq`.
+    if (!isReady) return;
     track("ViewContent", {
       content_ids: [product.id],
       content_type: "product",
@@ -21,7 +25,7 @@ export function ProductViewTracker({ product }: { product: Product }) {
       currency: "BDT",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id]);
+  }, [isReady, product.id]);
 
   return null;
 }
