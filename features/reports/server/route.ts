@@ -5,6 +5,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { orders, orderItems, products, expenses } from "@/db/schema";
 import { eq, ne, and, gte, lte, desc, sum, count, isNotNull, sql, type SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const BREAKDOWN_LIMIT = 200;
@@ -55,7 +56,7 @@ const app = new Hono().get(
     if (toDate) expenseConditions.push(lte(expenses.date, toDate));
     const expenseWhere = expenseConditions.length ? and(...expenseConditions) : undefined;
 
-    const monthOf = (column: SQL | typeof orders.createdAt) =>
+    const monthOf = (column: AnyPgColumn) =>
       sql<string>`TO_CHAR(DATE_TRUNC('month', ${column}), 'YYYY-MM')`;
 
     const itemCost = sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))`;

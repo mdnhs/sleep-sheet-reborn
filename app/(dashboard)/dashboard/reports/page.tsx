@@ -7,16 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt } from "lucide-react";
-import { subDays, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck } from "lucide-react";
+import { subDays, startOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+
+type FilterType = "all" | "today" | "week" | "month";
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [showProductCostBreakdown, setShowProductCostBreakdown] = useState(false);
   const { data, isLoading } = useGetReports(dateRange);
   const { formatAmount } = useCurrency();
 
-  const handleFilter = (type: "all" | "today" | "week" | "month") => {
+  const handleFilter = (type: FilterType) => {
+    setActiveFilter(type);
     const today = new Date();
     switch (type) {
       case "all":
@@ -24,13 +28,13 @@ export default function ReportsPage() {
         break;
       case "today":
         setDateRange({
-          from: today.toISOString(),
+          from: startOfDay(today).toISOString(),
           to: today.toISOString(),
         });
         break;
       case "week":
         setDateRange({
-          from: subDays(today, 7).toISOString(),
+          from: startOfDay(subDays(today, 7)).toISOString(),
           to: today.toISOString(),
         });
         break;
@@ -43,21 +47,39 @@ export default function ReportsPage() {
     }
   };
 
+  const filterButtons: { type: FilterType; label: string }[] = [
+    { type: "all", label: "All Time" },
+    { type: "today", label: "Today" },
+    { type: "week", label: "Last 7 Days" },
+    { type: "month", label: "This Month" },
+  ];
+
+  const profitMargin =
+    data && data.totalRevenue > 0
+      ? ((data.netProfit / data.totalRevenue) * 100).toFixed(1)
+      : null;
+
   return (
     <div className="flex-col">
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 space-y-0">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Reports & Profit/Loss</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleFilter("all")}>All Time</Button>
-            <Button variant="outline" size="sm" onClick={() => handleFilter("today")}>Today</Button>
-            <Button variant="outline" size="sm" onClick={() => handleFilter("week")}>Last 7 Days</Button>
-            <Button variant="outline" size="sm" onClick={() => handleFilter("month")}>This Month</Button>
+            {filterButtons.map(({ type, label }) => (
+              <Button
+                key={type}
+                variant={activeFilter === type ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFilter(type)}
+              >
+                {label}
+              </Button>
+            ))}
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex h-[300px] items-center justify-center">
+          <div className="flex h-75 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : data ? (
@@ -74,7 +96,7 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
 
-              <Card 
+              <Card
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setShowProductCostBreakdown(true)}
               >
@@ -91,7 +113,7 @@ export default function ReportsPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                   <CardTitle className="text-xs sm:text-sm font-medium">Shipping Cost</CardTitle>
-                  <TruckIcon className="h-4 w-4 text-muted-foreground" />
+                  <Truck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                   <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalShippingCost)}</div>
@@ -124,7 +146,7 @@ export default function ReportsPage() {
                     {formatAmount(data.netProfit)}
                   </div>
                   <p className="text-[10px] sm:text-xs text-muted-foreground">
-                    Rev - (Cost+Ship+Exp)
+                    {profitMargin !== null ? `${profitMargin}% margin · ` : ""}Rev - (Cost+Ship+Exp)
                   </p>
                 </CardContent>
               </Card>
@@ -150,7 +172,7 @@ export default function ReportsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {data.monthlyData.map((m: any) => (
+                        {data.monthlyData.map((m) => (
                           <TableRow key={m.month}>
                             <TableCell className="font-medium">
                               {format(parseISO(`${m.month}-01`), "MMMM yyyy")}
@@ -169,6 +191,21 @@ export default function ReportsPage() {
                             </TableCell>
                           </TableRow>
                         ))}
+                        <TableRow className="bg-muted/50 font-bold">
+                          <TableCell>Total</TableCell>
+                          <TableCell className="text-right text-green-600">
+                            {formatAmount(data.totalRevenue)}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatAmount(data.totalCost + data.totalShippingCost)}
+                          </TableCell>
+                          <TableCell className="text-right text-orange-600">
+                            {formatAmount(data.totalExpense)}
+                          </TableCell>
+                          <TableCell className={`text-right ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatAmount(data.netProfit)}
+                          </TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </div>
@@ -185,32 +222,39 @@ export default function ReportsPage() {
                   {!data.productCostBreakdown || data.productCostBreakdown.length === 0 ? (
                     <div className="text-sm text-muted-foreground">No product costs found for this period.</div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Order #</TableHead>
-                          <TableHead>Product</TableHead>
-                          <TableHead className="text-right">Qty</TableHead>
-                          <TableHead className="text-right">Unit Cost</TableHead>
-                          <TableHead className="text-right font-bold">Total Cost</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {data.productCostBreakdown.map((item: any, i: number) => (
-                          <TableRow key={i}>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {format(new Date(item.date), "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell className="font-medium text-xs">{item.orderNumber}</TableCell>
-                            <TableCell className="text-xs">{item.productName}</TableCell>
-                            <TableCell className="text-right text-xs">{item.quantity}</TableCell>
-                            <TableCell className="text-right text-xs">{formatAmount(item.costPrice)}</TableCell>
-                            <TableCell className="text-right font-bold text-xs">{formatAmount(item.totalItemCost)}</TableCell>
+                    <>
+                      {data.breakdownTruncated && (
+                        <p className="mb-2 text-xs text-muted-foreground">
+                          Showing the {data.productCostBreakdown.length} most recent entries. Narrow the date range to see older ones.
+                        </p>
+                      )}
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Order #</TableHead>
+                            <TableHead>Product</TableHead>
+                            <TableHead className="text-right">Qty</TableHead>
+                            <TableHead className="text-right">Unit Cost</TableHead>
+                            <TableHead className="text-right font-bold">Total Cost</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {data.productCostBreakdown.map((item, i) => (
+                            <TableRow key={`${item.orderId}-${i}`}>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {format(new Date(item.date), "MMM d, yyyy")}
+                              </TableCell>
+                              <TableCell className="font-medium text-xs">{item.orderNumber}</TableCell>
+                              <TableCell className="text-xs">{item.productName}</TableCell>
+                              <TableCell className="text-right text-xs">{item.quantity}</TableCell>
+                              <TableCell className="text-right text-xs">{formatAmount(item.costPrice)}</TableCell>
+                              <TableCell className="text-right font-bold text-xs">{formatAmount(item.totalItemCost)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
                   )}
                 </div>
               </DialogContent>
@@ -222,28 +266,5 @@ export default function ReportsPage() {
         )}
       </div>
     </div>
-  );
-}
-
-function TruckIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 17h4V5H2v12h3" />
-      <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" />
-      <path d="M14 17h1" />
-      <circle cx="7.5" cy="17.5" r="2.5" />
-      <circle cx="17.5" cy="17.5" r="2.5" />
-    </svg>
   );
 }

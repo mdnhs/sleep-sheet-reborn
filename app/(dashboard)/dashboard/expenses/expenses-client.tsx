@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useGetExpenses, useGetExpenseCategories, useCreateExpense, useCreateExpenseCategory, useDeleteExpense } from "@/features/expenses/api/use-expenses";
+import {
+  useGetExpenses,
+  useGetExpenseCategories,
+  useGetExpenseSummary,
+  useCreateExpense,
+  useCreateExpenseCategory,
+  useDeleteExpense,
+  type ExpenseFilters,
+} from "@/features/expenses/api/use-expenses";
+import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,14 +38,43 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { format } from "date-fns";
-import { Plus, Trash2, Loader2, DollarSign } from "lucide-react";
+import { format, startOfDay, startOfMonth, subDays } from "date-fns";
+import { Plus, Trash2, Loader2, DollarSign, CalendarDays, Tag } from "lucide-react";
 import { ConfirmDialog } from "@/components/conform-dialouge";
 
+type DateFilter = "all" | "today" | "week" | "month";
+
+const ALL_CATEGORIES = "all";
+
 export default function ExpensesClientPage() {
-  const { data: expenses, isLoading: expensesLoading } = useGetExpenses();
-  const { data: categories, isLoading: categoriesLoading } = useGetExpenseCategories();
-  
+  const { formatAmount } = useCurrency();
+
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
+
+  const buildDateRange = (type: DateFilter): Pick<ExpenseFilters, "from" | "to"> => {
+    const today = new Date();
+    switch (type) {
+      case "today":
+        return { from: startOfDay(today).toISOString(), to: today.toISOString() };
+      case "week":
+        return { from: startOfDay(subDays(today, 7)).toISOString(), to: today.toISOString() };
+      case "month":
+        return { from: startOfMonth(today).toISOString(), to: today.toISOString() };
+      default:
+        return {};
+    }
+  };
+
+  const filters: ExpenseFilters = {
+    ...buildDateRange(dateFilter),
+    ...(categoryFilter !== ALL_CATEGORIES ? { categoryId: categoryFilter } : {}),
+  };
+
+  const { data: expenseData, isLoading: expensesLoading } = useGetExpenses(filters);
+  const { data: categories } = useGetExpenseCategories();
+  const { data: summary, isLoading: summaryLoading } = useGetExpenseSummary();
+
   const createExpense = useCreateExpense();
   const createCategory = useCreateExpenseCategory();
   const deleteExpense = useDeleteExpense();
@@ -57,7 +95,7 @@ export default function ExpensesClientPage() {
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!expenseCategoryId || !expenseAmount) return;
-    
+
     createExpense.mutate(
       {
         categoryId: expenseCategoryId,
@@ -79,10 +117,10 @@ export default function ExpensesClientPage() {
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!categoryName) return;
+    if (!categoryName.trim()) return;
 
     createCategory.mutate(
-      { name: categoryName },
+      { name: categoryName.trim() },
       {
         onSuccess: () => {
           setIsCategoryDialogOpen(false);
@@ -100,7 +138,14 @@ export default function ExpensesClientPage() {
     }
   };
 
-  const totalExpenses = expenses?.reduce((acc: number, exp: any) => acc + exp.amount, 0) || 0;
+  const expenses = expenseData?.data;
+
+  const dateFilterButtons: { type: DateFilter; label: string }[] = [
+    { type: "all", label: "All Time" },
+    { type: "today", label: "Today" },
+    { type: "week", label: "Last 7 Days" },
+    { type: "month", label: "This Month" },
+  ];
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
@@ -122,8 +167,8 @@ export default function ExpensesClientPage() {
               <form onSubmit={handleAddCategory} className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label>Category Name</Label>
-                  <Input 
-                    placeholder="e.g., Packaging, Transport" 
+                  <Input
+                    placeholder="e.g., Packaging, Transport"
                     value={categoryName}
                     onChange={(e) => setCategoryName(e.target.value)}
                     required
@@ -151,11 +196,11 @@ export default function ExpensesClientPage() {
               <form onSubmit={handleAddExpense} className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label>Amount</Label>
-                  <Input 
+                  <Input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder="0.00" 
+                    placeholder="0.00"
                     value={expenseAmount}
                     onChange={(e) => setExpenseAmount(e.target.value)}
                     required
@@ -166,13 +211,13 @@ export default function ExpensesClientPage() {
                   <Select value={expenseCategoryId} onValueChange={(v) => setExpenseCategoryId(v || "")} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a category">
-                        {expenseCategoryId 
-                          ? categories?.find((c: any) => c.id === expenseCategoryId)?.name 
+                        {expenseCategoryId
+                          ? categories?.find((c) => c.id === expenseCategoryId)?.name
                           : "Select a category"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {categories?.map((cat: any) => (
+                      {categories?.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -180,17 +225,18 @@ export default function ExpensesClientPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Date</Label>
-                  <Input 
+                  <Input
                     type="date"
                     value={expenseDate}
+                    max={format(new Date(), "yyyy-MM-dd")}
                     onChange={(e) => setExpenseDate(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Note (Optional)</Label>
-                  <Input 
-                    placeholder="Brief description" 
+                  <Input
+                    placeholder="Brief description"
                     value={expenseNote}
                     onChange={(e) => setExpenseNote(e.target.value)}
                   />
@@ -207,27 +253,71 @@ export default function ExpensesClientPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{totalExpenses.toLocaleString()}</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+        <SummaryCard
+          title="All-Time Expenses"
+          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          value={summary ? formatAmount(summary.allTimeTotal) : undefined}
+          subtitle={summary ? `${summary.allTimeCount} records` : undefined}
+          loading={summaryLoading}
+        />
+        <SummaryCard
+          title="This Month"
+          icon={<CalendarDays className="h-4 w-4 text-muted-foreground" />}
+          value={summary ? formatAmount(summary.monthTotal) : undefined}
+          subtitle={summary ? `${summary.monthCount} records` : undefined}
+          loading={summaryLoading}
+        />
+        <SummaryCard
+          title="Top Category (Month)"
+          icon={<Tag className="h-4 w-4 text-muted-foreground" />}
+          value={summary?.topCategory?.name ?? "—"}
+          subtitle={summary?.topCategory ? formatAmount(summary.topCategory.total) : "No expenses yet"}
+          loading={summaryLoading}
+          className="col-span-2 md:col-span-1"
+        />
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Expenses</CardTitle>
+        <CardHeader className="space-y-4">
+          <CardTitle>Expense History</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {dateFilterButtons.map(({ type, label }) => (
+                <Button
+                  key={type}
+                  variant={dateFilter === type ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDateFilter(type)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <div className="sm:ml-auto w-full sm:w-52">
+              <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v || ALL_CATEGORIES)}>
+                <SelectTrigger>
+                  <SelectValue>
+                    {categoryFilter === ALL_CATEGORIES
+                      ? "All Categories"
+                      : categories?.find((c) => c.id === categoryFilter)?.name || "All Categories"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_CATEGORIES} label="All Categories">All Categories</SelectItem>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {expensesLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : !expenses || expenses.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No expenses recorded yet.</div>
+            <div className="text-center py-8 text-muted-foreground">No expenses match these filters.</div>
           ) : (
             <div className="rounded-md border">
               <Table>
@@ -237,11 +327,11 @@ export default function ExpensesClientPage() {
                     <TableHead>Category</TableHead>
                     <TableHead>Note</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="w-[80px]"></TableHead>
+                    <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {expenses.map((expense: any) => (
+                  {expenses.map((expense) => (
                     <TableRow key={expense.id}>
                       <TableCell>{format(new Date(expense.date), "MMM d, yyyy")}</TableCell>
                       <TableCell>
@@ -250,11 +340,11 @@ export default function ExpensesClientPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{expense.note || "-"}</TableCell>
-                      <TableCell className="text-right font-medium">৳{expense.amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">{formatAmount(expense.amount)}</TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           onClick={() => setDeleteExpenseId(expense.id)}
                         >
@@ -263,6 +353,15 @@ export default function ExpensesClientPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={3}>
+                      Total ({expenseData?.count ?? expenses.length} records)
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatAmount(expenseData?.total ?? 0)}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
                 </TableBody>
               </Table>
             </div>
@@ -270,7 +369,7 @@ export default function ExpensesClientPage() {
         </CardContent>
       </Card>
 
-      <ConfirmDialog 
+      <ConfirmDialog
         open={!!deleteExpenseId}
         onOpenChange={(open) => !open && setDeleteExpenseId(null)}
         title="Delete Expense"
@@ -278,5 +377,40 @@ export default function ExpensesClientPage() {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  icon,
+  value,
+  subtitle,
+  loading,
+  className,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  value?: string;
+  subtitle?: string;
+  loading?: boolean;
+  className?: string;
+}) {
+  return (
+    <Card className={className}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        ) : (
+          <>
+            <div className="text-2xl font-bold truncate">{value ?? "—"}</div>
+            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
