@@ -1,5 +1,6 @@
 import type { CatalogProduct, CatalogVariant } from "./types"
 import { escapeCsv } from "./utils"
+import { MetaCatalogConfig } from "./config"
 
 const HEADERS = [
   "id",
