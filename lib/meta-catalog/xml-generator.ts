@@ -4,6 +4,9 @@ import { escapeXml, formatDate } from "./utils"
 
 function xmlTag(name: string, value: string | null | undefined): string {
   if (!value) return ""
+  if (name === "title" || name === "description" || name === "link") {
+    return `    <${escapeXml(name)}>${escapeXml(String(value))}</${escapeXml(name)}>\n`
+  }
   return `    <g:${escapeXml(name)}>${escapeXml(String(value))}</g:${escapeXml(name)}>\n`
 }
 
