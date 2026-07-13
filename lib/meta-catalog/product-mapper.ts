@@ -49,11 +49,13 @@ export function mapProduct(product: RawProduct, categoryLabel: string): MapResul
     MetaCatalogConfig.titleMaxLength,
   )
 
-  const salePrice = product.discount > 0
-    ? product.price * (1 - product.discount / 100)
-    : null
+  const originalPrice = product.discount > 0
+    ? product.price / (1 - product.discount / 100)
+    : product.price
 
-  const priceStr = formatPrice(product.price)
+  const salePrice = product.discount > 0 ? product.price : null
+
+  const priceStr = formatPrice(originalPrice)
   const salePriceStr = salePrice !== null ? formatPrice(salePrice) : null
 
   const availability = mapAvailability(product.stock)
@@ -107,27 +109,60 @@ export function mapVariants(product: RawProduct): CatalogVariant[] {
   const basePrice = product.price
   const baseAvailability = mapAvailability(product.stock)
 
+  const spec = product.specifications || []
+  const brand = getSpec(spec, "brand") || MetaCatalogConfig.brandFallback
+  const description = truncate(
+    stripHtml(product.description || ""),
+    MetaCatalogConfig.descriptionMaxLength,
+  )
+  const link = buildProductLink(product.id)
+
   const hasOneVariant = product.variants.length <= 1 && product.sizes.length <= 1
 
   if (hasOneVariant) return variants
 
-  for (const variant of product.variants) {
-    for (const size of product.sizes) {
+  const safeVariants = product.variants.length > 0 ? product.variants : [{ name: "", price: null }]
+  const safeSizes = product.sizes.length > 0 ? product.sizes : [""]
+
+  for (let i = 0; i < safeVariants.length; i++) {
+    const variant = safeVariants[i]
+    for (let j = 0; j < safeSizes.length; j++) {
+      const size = safeSizes[j]
       const variantPrice = variant.price ?? basePrice
-      const salePrice = product.discount > 0 ? variantPrice * (1 - product.discount / 100) : null
+      const originalPrice = product.discount > 0 
+        ? variantPrice / (1 - product.discount / 100) 
+        : variantPrice
+
+      const salePrice = product.discount > 0 ? variantPrice : null
 
       variants.push({
-        id: `${product.id}-${variant.name}-${size}`,
+        id: `${product.id}-v${i}-s${j}`,
         itemGroupId: product.id,
-        title: `${product.name} - ${variant.name}${size ? ` (${size})` : ""}`,
-        price: formatPrice(variantPrice),
+        title: `${product.name}${variant.name ? ` - ${variant.name}` : ""}${size ? ` (${size})` : ""}`,
+        description,
+        price: formatPrice(originalPrice),
         salePrice: salePrice !== null ? formatPrice(salePrice) : null,
         availability: baseAvailability,
+        link,
         imageLink: buildImageLink(mainImage),
         additionalImageLinks: additionalImages.map(buildImageLink),
-        color: variant.name,
-        size,
-        material: "",
+        brand,
+        googleProductCategory: getGoogleCategory(spec),
+        productType: product.categoryLabel || "",
+        mpn: product.sku || product.id,
+        gtin: getGtin(spec),
+        color: variant.name || "",
+        size: size || "",
+        material: getMaterial(spec),
+        gender: getGender(spec),
+        ageGroup: getAgeGroup(spec),
+        customLabels: [
+          product.isFeatured ? "featured" : "",
+          product.tags[0] || "",
+          product.tags[1] || "",
+          product.defaultVariantName || "",
+          product.careInstruction || "",
+        ],
       })
     }
   }
@@ -140,14 +175,15 @@ export function mapToCatalogEntries(product: RawProduct, categoryLabel: string):
   errors: ValidationError[]
 } {
   const { data, errors } = mapProduct(product, categoryLabel)
+  const variantEntries = mapVariants(product)
+  
   const entries: (CatalogProduct | CatalogVariant)[] = []
 
-  if (data) {
+  if (variantEntries.length > 0) {
+    entries.push(...variantEntries)
+  } else if (data) {
     entries.push(data)
   }
-
-  const variantEntries = mapVariants(product)
-  entries.push(...variantEntries)
 
   return { entries, errors }
 }

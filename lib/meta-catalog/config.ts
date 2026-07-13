@@ -1,3 +1,5 @@
+import { seoConfig } from "@/lib/seo/config"
+
 export const MetaCatalogConfig = {
   feedUrl: "/facebook-feed",
   currency: "BDT",
@@ -7,8 +9,8 @@ export const MetaCatalogConfig = {
   cacheDuration: 300,
   titleMaxLength: 150,
   descriptionMaxLength: 5000,
-  linkBase: process.env.NEXT_PUBLIC_APP_URL || "https://sleepsheet.com",
-  imageBase: process.env.NEXT_PUBLIC_APP_URL || "https://sleepsheet.com",
+  linkBase: seoConfig.siteUrl,
+  imageBase: seoConfig.siteUrl,
   availabilityInStock: 1,
   availabilityOutOfStock: 0,
   availabilityPreorder: null,

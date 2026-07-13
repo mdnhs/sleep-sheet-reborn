@@ -28,14 +28,24 @@ export interface CatalogVariant {
   id: string
   itemGroupId: string
   title: string
+  description: string
   price: string
   salePrice: string | null
   availability: "in stock" | "out of stock" | "preorder" | "available for order"
+  link: string
   imageLink: string
   additionalImageLinks: string[]
+  brand: string
+  googleProductCategory: string
+  productType: string
+  mpn: string
+  gtin: string
   color: string
   size: string
   material: string
+  gender: "male" | "female" | "unisex"
+  ageGroup: "adult" | "kids" | "toddler" | "infant" | "newborn"
+  customLabels: [string, string, string, string, string]
 }
 
 export interface FeedMeta {

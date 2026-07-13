@@ -6,7 +6,7 @@ export function formatPrice(price: number): string {
 
 export function buildProductLink(productId: string): string {
   const base = MetaCatalogConfig.linkBase.replace(/\/+$/, "")
-  return `${base}/products/${productId}`
+  return `${base}/shop/${productId}`
 }
 
 export function buildImageLink(imageUrl: string): string {
