@@ -1,170 +1,63 @@
-"use client";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Link from "next/link";
 import FeaturedProduct from "@/components/home/featured-product";
-import { useGetProduct } from "@/features/product/api/use-get-product";
 import ProductPicker from "@/features/product/components/product-picker";
-import { ProductStatus } from "@/features/product/components/product-status";
 import { ProductAccordion } from "@/features/product/components/product-accordion";
 import { ProductReviews } from "@/features/product/components/product-reviews";
 import ProductTag from "@/features/product/components/product-tags";
 import { OrderCountdown } from "@/features/product/components/order-countdown";
 import SwitchImage from "@/features/product/components/switch-image";
-import { useProductId } from "@/features/product/hooks/use-product-id";
-import { RotateCw, Truck, Tag, Package, CalendarClock } from "lucide-react";
-import React from "react";
-import { useCurrency } from "@/hooks/use-currency";
-import Link from "next/link";
-import { Skeleton } from "@/components/ui/skeleton";
-import { seoConfig, productSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
-import { usePixelTracking } from "@/lib/meta-pixel";
+import { ProductViewTracker } from "@/features/product/components/product-view-tracker";
+import { getProductById } from "@/features/product/server/get-product";
+import {
+  seoConfig,
+  generateProductMetadata,
+  productSchema,
+  breadcrumbSchema,
+  structuredDataScript,
+} from "@/lib/seo";
 
-function ProductSkeleton() {
-  return (
-    <div className="bg-primary/5 dark:bg-primary/10 min-h-screen">
-      <div className="container mx-auto px-4 py-2 lg:py-8">
-        <div className="hidden lg:block mb-8">
-          <Skeleton className="h-4 w-32" />
-        </div>
+type Props = { params: Promise<{ productId: string }> };
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16">
-          <div className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] bg-secondary/20 overflow-hidden shadow-sm h-[280px] sm:h-[400px] lg:h-[550px]">
-            <Skeleton className="w-full h-full rounded-none" />
-            <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-2 sm:gap-3 px-4 z-10">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="aspect-[4/5] w-16 sm:w-24 md:w-28 rounded-lg sm:rounded-2xl" />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col pt-0 lg:pt-2">
-            <Skeleton className="h-10 w-full rounded-xl mb-3" />
-            <Skeleton className="h-8 w-72 rounded-full mb-6" />
-            <div className="space-y-3 mb-6">
-              <Skeleton className="h-4 w-16" />
-              <div className="flex gap-2">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-9 w-16 rounded-full" />
-                ))}
-              </div>
-            </div>
-            <div className="space-y-3 mb-6">
-              <Skeleton className="h-4 w-16" />
-              <div className="flex gap-2">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-9 w-16 rounded-full" />
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center justify-between py-4 border-y border-border/40 mb-4">
-              <Skeleton className="h-10 w-28 rounded-full" />
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-10 w-10 rounded-full" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <Skeleton className="h-14 w-full rounded-full" />
-              <Skeleton className="h-14 w-full rounded-full" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <Skeleton className="h-12 w-full rounded-full" />
-              <Skeleton className="h-12 w-full rounded-full" />
-            </div>
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className={`w-full rounded-2xl ${i === 0 ? 'h-28' : 'h-14'}`} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16 border-t border-border/60 pt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-8">
-            <div>
-              <Skeleton className="h-6 w-44 mb-4" />
-              <div className="space-y-2">
-                {[...Array(6)].map((_, i) => (
-                  <Skeleton key={i} className={`h-4 w-full ${i === 5 ? 'w-3/4' : ''}`} />
-                ))}
-              </div>
-            </div>
-            <div className="pt-6 border-t border-border/40">
-              <Skeleton className="h-6 w-44 mb-4" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-4 w-full" />
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="bg-secondary/10 border border-border/50 rounded-3xl p-6 md:p-8">
-            <Skeleton className="h-6 w-32 mb-4" />
-            <div className="space-y-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex gap-4">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16">
-          <Skeleton className="h-6 w-32 mb-6" />
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-20 pt-16 bg-white dark:bg-slate-900 border-t border-border/50">
-        <div className="container mx-auto px-4 mb-8">
-          <Skeleton className="h-8 w-64 mx-auto" />
-        </div>
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="aspect-square w-full rounded-3xl" />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function ProductDetailPage() {
-  const id = useProductId();
-  const { data: product, isLoading } = useGetProduct({ id });
-  const { formatAmount } = useCurrency();
-  const { track } = usePixelTracking();
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { productId } = await params;
+  const product = await getProductById(productId);
+  if (!product) return { title: "Product not found" };
 
-  React.useEffect(() => {
-    if (!product) return;
-    track("ViewContent", {
-      content_ids: [id],
-      content_type: "product",
-      content_name: product.name,
-      content_category: product.category,
-      value: product.price,
-      currency: "BDT",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.id]);
+  return generateProductMetadata({
+    name: product.name,
+    description: stripHtml(product.description || ""),
+    slug: product.id,
+    images: product.images,
+    price: product.price,
+    rating: product.rating,
+    reviewCount: product.reviewCount,
+  });
+}
 
-  if (isLoading) return <ProductSkeleton />;
-  if (!product) return <div>Product not found</div>;
+export default async function ProductDetailPage({ params }: Props) {
+  const { productId: id } = await params;
+  const product = await getProductById(id);
+  if (!product) notFound();
 
-  const categoryLabel = product.categoryLabel || product.category || "Products"
-  const categorySlug = product.category || "products"
+  const categoryLabel = product.categoryLabel || product.category || "Products";
   const productBreadcrumbs = [
     { name: "Home", url: "/" },
     { name: categoryLabel, url: `/shop?category=${encodeURIComponent(categoryLabel)}` },
     { name: product.name, url: `/shop/${id}` },
-  ]
+  ];
 
   return (
     <div className="bg-primary/5 dark:bg-primary/10 min-h-screen">
+      <ProductViewTracker product={product} />
       {structuredDataScript("product", productSchema({
         id,
         name: product.name,
@@ -182,16 +75,16 @@ function ProductDetailPage() {
       }))}
       {structuredDataScript("breadcrumbs", breadcrumbSchema(productBreadcrumbs))}
       <div className="container mx-auto px-4 py-2 lg:py-8">
-        <div className="hidden lg:flex items-center gap-0 mb-8 text-xs text-muted-foreground font-medium">
+        <nav aria-label="Breadcrumb" className="hidden lg:flex items-center gap-0 mb-8 text-xs text-muted-foreground font-medium">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6" /></svg>
           <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
           <span className="mx-2 text-border">•</span>
           <Link href={`/shop?category=${encodeURIComponent(categoryLabel)}`} className="hover:text-foreground transition-colors">{categoryLabel}</Link>
           <span className="mx-2 text-border">•</span>
-          <span className="text-foreground">{product.name}</span>
-        </div>
+          <span className="text-foreground" aria-current="page">{product.name}</span>
+        </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16">
+        <article className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16">
           {/* Left Column: Image Gallery */}
           <div>
             <SwitchImage product={product} />
@@ -214,19 +107,19 @@ function ProductDetailPage() {
               <ProductAccordion product={product} />
             </div>
           </div>
-        </div>
+        </article>
 
         {/* Full-width Details Section */}
         <div className="mt-16 border-t border-border/60 pt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
-            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-border/50 shadow-sm">
+            <section className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-border/50 shadow-sm">
               <h2 className="text-xl font-bold text-foreground mb-4">Description & Fit</h2>
-              <div 
-                className="prose prose-sm md:prose-base dark:prose-invert text-muted-foreground leading-relaxed max-w-none" 
-                dangerouslySetInnerHTML={{ __html: product.description || "" }} 
+              <div
+                className="prose prose-sm md:prose-base dark:prose-invert text-muted-foreground leading-relaxed max-w-none"
+                dangerouslySetInnerHTML={{ __html: product.description || "" }}
               />
-            </div>
+            </section>
 
             {/* Product Features */}
             {product.features && product.features.length > 0 && (
@@ -277,14 +170,12 @@ function ProductDetailPage() {
         <ProductReviews product={product} />
       </div>
 
-      <div className="mt-20 pt-16 bg-white dark:bg-slate-900 border-t border-border/50">
+      <section aria-label="Related products" className="mt-20 pt-16 bg-white dark:bg-slate-900 border-t border-border/50">
         <div className="container mx-auto px-4 mb-8">
           <h2 className="text-3xl md:text-4xl font-semibold text-center text-foreground tracking-tight">You might also like</h2>
         </div>
         <FeaturedProduct />
-      </div>
+      </section>
     </div>
   );
 }
-
-export default ProductDetailPage;

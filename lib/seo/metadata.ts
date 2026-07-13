@@ -55,7 +55,11 @@ export function generateMetadata({
           ]
         : [],
       locale: openGraph?.locale || seoConfig.defaultLocale,
-      type: (openGraph?.type || "website") as any,
+      // Coerce to a type Next's Metadata validator accepts; anything else
+      // (e.g. "product") throws "Invalid OpenGraph type" at runtime.
+      type: (["website", "article", "book", "profile"].includes(openGraph?.type as string)
+        ? openGraph?.type
+        : "website") as "website" | "article" | "book" | "profile",
     },
     twitter: {
       card: twitter?.card || "summary_large_image",
@@ -95,7 +99,11 @@ export function generateProductMetadata(product: {
       description: product.description?.slice(0, 200),
       image: product.images?.[0] || seoConfig.defaultImage,
       imageAlt: product.name,
-      type: "product",
+      // Next's Metadata OG `type` union does not include "product"
+      // (valid: website, article, book, profile, music.*, video.*).
+      // Product richness for Meta comes from the catalog feed + Pixel
+      // content_ids, so "website" is the correct value here.
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",

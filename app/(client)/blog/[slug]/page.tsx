@@ -1,22 +1,26 @@
-import React from 'react';
 import BlogPostClient from './blog-post-client';
 import { seoConfig } from "@/lib/seo";
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const title = slug.replace(/-/g, " ");
   return {
-    title: `${params.slug.replace(/-/g, " ")} | Blog | ${seoConfig.siteName}`,
-    description: `Read ${params.slug.replace(/-/g, " ")} on ${seoConfig.siteName}`,
+    title: `${title} | Blog | ${seoConfig.siteName}`,
+    description: `Read ${title} on ${seoConfig.siteName}`,
     openGraph: {
-      title: `${params.slug.replace(/-/g, " ")} | ${seoConfig.siteName}`,
-      description: `Read ${params.slug.replace(/-/g, " ")} on ${seoConfig.siteName}`,
+      title: `${title} | ${seoConfig.siteName}`,
+      description: `Read ${title} on ${seoConfig.siteName}`,
       type: "article",
     },
     alternates: {
-      canonical: `${seoConfig.siteUrl}/blog/${params.slug}`,
+      canonical: `${seoConfig.siteUrl}/blog/${slug}`,
     },
   };
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  return <BlogPostClient slug={params.slug} />;
+export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params;
+  return <BlogPostClient slug={slug} />;
 }

@@ -11,8 +11,10 @@ import {
 } from "@/lib/seo";
 
 async function Page() {
+  // No <main> here — the (client) layout already provides the single <main>
+  // landmark. A nested second <main> is invalid HTML and hurts a11y/SEO.
   return (
-    <main>
+    <>
       {structuredDataScript(
         "webpage",
         webpageSchema(
@@ -22,6 +24,11 @@ async function Page() {
         ),
       )}
       {structuredDataScript("local-business", localBusinessSchema())}
+
+      {/* Page-level H1. The hero is an image slider with no heading, so this
+          gives crawlers a single descriptive H1 in the server HTML. */}
+      <h1 className="sr-only">{seoConfig.defaultTitle}</h1>
+
       <Hero />
 
       {/* <Features /> */}
@@ -30,7 +37,7 @@ async function Page() {
       <NarrowBanner />
       <FeaturedProduct />
       <SubcategoryProducts />
-    </main>
+    </>
   );
 }
 
