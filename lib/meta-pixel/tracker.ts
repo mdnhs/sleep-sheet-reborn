@@ -104,15 +104,26 @@ export function track<E extends MetaEventName>(
 
   const eventPayload: Record<string, unknown> = { ...params } as Record<string, unknown>
 
-  if (!options?.disableDeduplication) {
-    eventPayload.eventID = options?.eventId ?? generateEventId()
-  }
+  // The dedup key MUST be passed as the 4th argument to fbq (the event
+  // options object) — NOT inside the custom-data payload. Meta only reads
+  // `eventID` from this options object when matching against a Conversions
+  // API event of the same name. Putting it in the payload (as we did before)
+  // means the browser sends no dedup key at all, so every event is counted
+  // twice. See: developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
+  const eventId = options?.disableDeduplication
+    ? undefined
+    : options?.eventId ?? generateEventId()
 
-  window.fbq("trackSingle", activePixelId, eventName, eventPayload)
+  if (eventId) {
+    window.fbq("trackSingle", activePixelId, eventName, eventPayload, { eventID: eventId })
+  } else {
+    window.fbq("trackSingle", activePixelId, eventName, eventPayload)
+  }
 
   debugLog("event", {
     event: eventName,
     pixelId: activePixelId,
+    eventId,
     payload: eventPayload,
   })
 }
