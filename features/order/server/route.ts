@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
 import { orders, orderItems, payments, orderTimelineEvents, users } from "@/db/schema";
-import { eq, and, or, ilike, inArray, desc, asc } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, desc, asc, gte, lte } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -9,8 +9,8 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 const app = new Hono()
 
 .get("/", async (c) => {
-  const { search } = c.req.query();
-  
+  const { search, from, to } = c.req.query();
+
   try {
     let matchingOrderIds: string[] = [];
     let hasSearched = false;
@@ -28,9 +28,16 @@ const app = new Hono()
       matchingOrderIds = matching.map(o => o.id);
     }
 
+    const conditions = [];
+    if (hasSearched) conditions.push(inArray(orders.id, matchingOrderIds));
+    const fromDate = from ? new Date(from) : null;
+    const toDate = to ? new Date(to) : null;
+    if (fromDate && !isNaN(fromDate.getTime())) conditions.push(gte(orders.createdAt, fromDate));
+    if (toDate && !isNaN(toDate.getTime())) conditions.push(lte(orders.createdAt, toDate));
+
     const ordersList = (!hasSearched || matchingOrderIds.length > 0)
       ? await db.query.orders.findMany({
-          where: hasSearched ? inArray(orders.id, matchingOrderIds) : undefined,
+          where: conditions.length > 0 ? and(...conditions) : undefined,
           with: {
             user: {
               columns: { id: true, name: true, email: true, phone: true }

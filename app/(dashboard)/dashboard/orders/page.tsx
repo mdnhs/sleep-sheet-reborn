@@ -4,6 +4,8 @@ import { ConfirmDialog } from "@/components/conform-dialouge";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { type DateRange } from "react-day-picker";
 import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
@@ -145,6 +147,7 @@ const STEADFAST_STATUS_COLORS: Record<string, string> = {
 
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [statusFilter, setStatusFilter] = useState<Order["status"] | "ALL">(
     "PENDING",
   );
@@ -174,7 +177,12 @@ export default function OrdersPage() {
     }
   }, [showBalance, queryClient]);
 
-  const { data: rawOrders, isLoading } = useOrders(search);
+  const rangeFilter =
+    dateRange?.from && dateRange?.to
+      ? { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() }
+      : undefined;
+
+  const { data: rawOrders, isLoading } = useOrders(search, rangeFilter);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl } = useWebsiteSettings();
   const { updateOrder, deleteOrder, bulkDeleteOrders } = useOrderMutations();
@@ -936,136 +944,116 @@ export default function OrdersPage() {
         </div>
       </Tabs>
 
-      {isLoading ? (
-        <div className="space-y-6">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="relative max-w-sm w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search orders..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            {statusFilter !== "ALL" && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setStatusFilter("ALL")}
-                className="gap-1.5"
-              >
-                <FilterX className="h-3.5 w-3.5" />
-                Clear filter
-              </Button>
-            )}
-          </div>
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full rounded-lg" />
-              ))}
-            </CardContent>
-          </Card>
+      {/* Rendered once, outside the loading/loaded branches below — otherwise
+          every filter change (search/date range) swaps between those two
+          branches while the new query has no cached data yet, unmounting
+          and remounting this toolbar (and resetting the DateRangePicker's
+          open state) on every click. */}
+      <div className="flex flex-wrap items-center gap-3 w-full">
+        <div className="relative max-w-sm w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search orders..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        {statusFilter !== "ALL" && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setStatusFilter("ALL")}
+            className="shrink-0 gap-1.5"
+          >
+            <FilterX className="h-3.5 w-3.5" />
+            Clear filter
+          </Button>
+        )}
+        {statusFilter === "PENDING" && selectedOrders.length > 0 && (
+          <Button
+            type="button"
+            onClick={handleBulkBook}
+            disabled={isBulkBooking}
+            className="gap-1.5 shrink-0 rounded-xl"
+          >
+            {isBulkBooking ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Truck className="h-3.5 w-3.5" />
+            )}
+            Book Selected ({selectedOrders.length})
+          </Button>
+        )}
+        {selectedOrders.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleBulkPrint("print")}
+            disabled={isBulkPrinting}
+            className="rounded-xl gap-1 shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
+          >
+            {isBulkPrinting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Printer className="h-3.5 w-3.5" />
+            )}
+            Print Selected ({selectedOrders.length})
+          </Button>
+        )}
+        {selectedOrders.length > 0 && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setConfirmBulkDelete(true)}
+            disabled={bulkDeleteOrders.isPending}
+            className="rounded-xl gap-1 shrink-0"
+          >
+            {bulkDeleteOrders.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash className="h-3.5 w-3.5" />
+            )}
+            Delete Selected ({selectedOrders.length})
+          </Button>
+        )}
+        {selectedOrders.filter((o) => o.trackingNumber).length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const tracked = selectedOrders.filter((o) => o.trackingNumber);
+              tracked.forEach((o) => syncStatus.mutate(o.id));
+            }}
+            disabled={syncStatus.isPending}
+            className="rounded-xl gap-1 shrink-0 border-teal-200 text-teal-700 hover:bg-teal-50 hover:text-teal-800"
+          >
+            {syncStatus.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Sync Tracked ({selectedOrders.filter((o) => o.trackingNumber).length})
+          </Button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </CardContent>
+        </Card>
       ) : (
         <DataTable
           columns={columns}
           data={filtered || []}
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
-          searchSlot={
-            <div className="flex flex-wrap items-center gap-3 w-full">
-              <div className="relative max-w-sm w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              {statusFilter !== "ALL" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setStatusFilter("ALL")}
-                  className="shrink-0 gap-1.5"
-                >
-                  <FilterX className="h-3.5 w-3.5" />
-                  Clear filter
-                </Button>
-              )}
-              {statusFilter === "PENDING" && selectedOrders.length > 0 && (
-                <Button
-                  type="button"
-                  onClick={handleBulkBook}
-                  disabled={isBulkBooking}
-                  className="gap-1.5 shrink-0 rounded-xl"
-                >
-                  {isBulkBooking ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Truck className="h-3.5 w-3.5" />
-                  )}
-                  Book Selected ({selectedOrders.length})
-                </Button>
-              )}
-              {selectedOrders.length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleBulkPrint("print")}
-                  disabled={isBulkPrinting}
-                  className="rounded-xl gap-1 shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
-                >
-                  {isBulkPrinting ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Printer className="h-3.5 w-3.5" />
-                  )}
-                  Print Selected ({selectedOrders.length})
-                </Button>
-              )}
-              {selectedOrders.length > 0 && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setConfirmBulkDelete(true)}
-                  disabled={bulkDeleteOrders.isPending}
-                  className="rounded-xl gap-1 shrink-0"
-                >
-                  {bulkDeleteOrders.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash className="h-3.5 w-3.5" />
-                  )}
-                  Delete Selected ({selectedOrders.length})
-                </Button>
-              )}
-              {selectedOrders.filter((o) => o.trackingNumber).length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const tracked = selectedOrders.filter((o) => o.trackingNumber);
-                    tracked.forEach((o) => syncStatus.mutate(o.id));
-                  }}
-                  disabled={syncStatus.isPending}
-                  className="rounded-xl gap-1 shrink-0 border-teal-200 text-teal-700 hover:bg-teal-50 hover:text-teal-800"
-                >
-                  {syncStatus.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
-                  Sync Tracked ({selectedOrders.filter((o) => o.trackingNumber).length})
-                </Button>
-              )}
-            </div>
-          }
         />
       )}
 

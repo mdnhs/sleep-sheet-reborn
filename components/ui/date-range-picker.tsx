@@ -66,17 +66,19 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
             mode="range"
             defaultMonth={value?.from}
             selected={value}
-            onSelect={(range) => {
-              onChange(range);
-              if (range?.from && range?.to) setOpen(false);
-            }}
+            onSelect={onChange}
             numberOfMonths={isMobile ? 1 : 2}
           />
           {hasValue && (
-            <div className="flex justify-end border-t p-2">
+            <div className="flex justify-end gap-2 border-t p-2">
               <Button variant="ghost" size="sm" onClick={handleClear}>
                 Clear
               </Button>
+              {value?.to && (
+                <Button size="sm" onClick={() => setOpen(false)}>
+                  Apply
+                </Button>
+              )}
             </div>
           )}
         </PopoverContent>
