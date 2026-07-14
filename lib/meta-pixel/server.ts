@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { isValidPixelId } from "./pixel-mapping";
+import { STATIC_FALLBACK_PIXEL_ID } from "./config";
 
 export interface PixelBootstrapConfig {
   enabled: boolean;
@@ -25,13 +26,16 @@ export async function getPixelBootstrapConfig(): Promise<PixelBootstrapConfig> {
 
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     const enabled = map.meta_pixel_enabled !== "false";
-    const rawPixelId = map.meta_pixel_default_id || process.env.NEXT_PUBLIC_DEFAULT_PIXEL_ID || "";
+    const rawPixelId =
+      map.meta_pixel_default_id ||
+      process.env.NEXT_PUBLIC_DEFAULT_PIXEL_ID ||
+      STATIC_FALLBACK_PIXEL_ID;
     const pixelId = isValidPixelId(rawPixelId) ? rawPixelId : null;
 
     return { enabled, pixelId };
   } catch {
-    // DB unreachable at build/request time — fail closed, client-side
-    // PixelProvider still initializes the pixel once settings load.
-    return { enabled: true, pixelId: null };
+    // DB unreachable at build/request time — still fall back to the
+    // hardcoded static ID so the pixel keeps firing.
+    return { enabled: true, pixelId: STATIC_FALLBACK_PIXEL_ID };
   }
 }
