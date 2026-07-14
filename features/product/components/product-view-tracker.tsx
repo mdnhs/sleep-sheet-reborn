@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 import type { Product } from "@/lib/types";
@@ -11,12 +11,17 @@ import type { Product } from "@/lib/types";
  */
 export function ProductViewTracker({ product }: { product: Product }) {
   const { track, isReady } = usePixelTracking();
+  const firedForProduct = useRef<string | null>(null);
 
   useEffect(() => {
     // Wait until the Pixel SDK is initialized. On this server-rendered page
     // the tracker mounts before the PixelProvider finishes init, so firing
     // immediately would hit an uninitialized `fbq`.
     if (!isReady) return;
+    // Guards against React StrictMode's dev-mode double-invoke of this
+    // effect, which otherwise fires ViewContent twice per page load.
+    if (firedForProduct.current === product.id) return;
+    firedForProduct.current = product.id;
     track("ViewContent", {
       content_ids: [product.id],
       content_type: "product",

@@ -118,7 +118,7 @@ export const translations = {
     noReviewsYet: "এখনও কোন রিভিউ নেই।",
     buyNow: "অর্ডার করুন",
     addToCart: "কার্টে যোগ করুন",
-    placeOrder: "অর্ডার করুন",
+    placeOrder: "অর্ডার কনফার্ম করুন",
     confirmAndPay: "নিশ্চিত ও পরিশোধ করুন",
     selectOption: "অপশন সিলেক্ট করুন",
     outOfStock: "স্টক আউট",

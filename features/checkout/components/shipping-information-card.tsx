@@ -314,7 +314,14 @@ function ShippingInformationCard() {
           )}
 
           <div className="flex justify-end pt-1">
-            <Button type="submit" disabled={isPending} className="w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
+            <Button
+              type="submit"
+              disabled={isPending}
+              id="checkout-purchase-button"
+              data-pixel-event="purchase"
+              data-testid="checkout-purchase-button"
+              className="w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
+            >
               {isPending ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>

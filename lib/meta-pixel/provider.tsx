@@ -108,9 +108,16 @@ export function PixelProvider({
   // navigated deep into the site (e.g. /shop/[productId]). This breaks
   // URL-based Custom Audiences and per-page conversion attribution.
   const pathname = usePathname()
+  const lastFiredPathname = useRef<string | null>(null)
 
   useEffect(() => {
     if (!enabled || !isReady) return
+    // Guards against firing the same PageView twice for one pathname —
+    // React StrictMode (dev) double-invokes this effect on mount, and
+    // without this guard Meta reports "PageView fired 2 times with
+    // identical data" for every page load.
+    if (lastFiredPathname.current === pathname) return
+    lastFiredPathname.current = pathname
     track("PageView")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, enabled, isReady])
