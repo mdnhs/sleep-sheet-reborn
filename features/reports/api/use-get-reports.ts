@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 
 interface UseGetReportsOptions {
@@ -23,5 +23,6 @@ export const useGetReports = ({ from, to }: UseGetReportsOptions = {}) => {
 
       return response.json();
     },
+    placeholderData: keepPreviousData,
   });
 };

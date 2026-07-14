@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { type DateRange } from "react-day-picker";
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { subDays, startOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 
-type FilterType = "all" | "today" | "week" | "month";
+type FilterType = "all" | "today" | "week" | "month" | "custom";
 
 function PaginatedTable<T>({
   data,
@@ -75,6 +77,7 @@ function PaginatedTable<T>({
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [showProductCostBreakdown, setShowProductCostBreakdown] = useState(false);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
@@ -85,6 +88,7 @@ export default function ReportsPage() {
 
   const handleFilter = (type: FilterType) => {
     setActiveFilter(type);
+    setCustomRange(undefined);
     const today = new Date();
     switch (type) {
       case "all":
@@ -108,6 +112,17 @@ export default function ReportsPage() {
           to: endOfMonth(today).toISOString(),
         });
         break;
+    }
+  };
+
+  const handleCustomRangeChange = (range: DateRange | undefined) => {
+    setCustomRange(range);
+    if (range?.from && range?.to) {
+      setActiveFilter("custom");
+      setDateRange({ from: range.from.toISOString(), to: range.to.toISOString() });
+    } else if (!range) {
+      setActiveFilter("all");
+      setDateRange({});
     }
   };
 
@@ -139,6 +154,7 @@ export default function ReportsPage() {
                 {label}
               </Button>
             ))}
+            <DateRangePicker value={customRange} onChange={handleCustomRangeChange} />
           </div>
         </div>
 
