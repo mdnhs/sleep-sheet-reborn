@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono, Figtree, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -10,7 +9,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { PixelTrackingProvider } from "@/provider/pixel-tracking-provider";
 import { seoConfig, websiteSchema, organizationSchema, structuredDataScript } from "@/lib/seo";
-import { getPixelBootstrapConfig } from "@/lib/meta-pixel/server";
 
 const spaceGroteskHeading = Space_Grotesk({
   subsets: ["latin"],
@@ -102,13 +100,11 @@ export const viewport = {
   maximumScale: 5,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { enabled: pixelEnabled, pixelId } = await getPixelBootstrapConfig();
-
   return (
     <html
       lang="bn"
@@ -124,39 +120,6 @@ export default async function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        {pixelEnabled && pixelId && (
-          <>
-            {/* Standard Meta base pixel code, rendered synchronously so it's
-                present in the initial HTML — Meta's "Check website" scanner
-                and non-JS crawlers can't see the client-only pixel that
-                PixelTrackingProvider injects after an async settings fetch. */}
-            <Script id="meta-pixel-base" strategy="beforeInteractive">
-              {`
-                !function(f,b,e,v,n,t,s)
-                {if(f.fbq)return;n=function(){n.callMethod?
-                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-                n.queue=[];t=b.createElement(e);t.async=!0;
-                t.src=v;s=b.getElementsByTagName(e)[0];
-                s.parentNode.insertBefore(t,s)}(window, document,'script',
-                'https://connect.facebook.net/en_US/fbevents.js');
-                fbq('init', '${pixelId}');
-                fbq('track', 'PageView');
-                window.__metaPixelBootstrapId = '${pixelId}';
-              `}
-            </Script>
-            <noscript>
-              {/* eslint-disable-next-line @next/next/no-img-element -- must be a plain <img>: next/image needs JS to render, which defeats a <noscript> pixel fallback */}
-              <img
-                height="1"
-                width="1"
-                style={{ display: "none" }}
-                src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-                alt=""
-              />
-            </noscript>
-          </>
-        )}
         {structuredDataScript("organization", organizationSchema())}
         {structuredDataScript("website", websiteSchema())}
         <ThemeProvider

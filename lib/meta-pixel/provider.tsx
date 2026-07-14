@@ -117,22 +117,7 @@ export function PixelProvider({
     // without this guard Meta reports "PageView fired 2 times with
     // identical data" for every page load.
     if (lastFiredPathname.current === pathname) return
-    const isFirstFire = lastFiredPathname.current === null
     lastFiredPathname.current = pathname
-
-    // The server-rendered base pixel script (app/layout.tsx) already fired
-    // an initial PageView synchronously for this pixel ID, before this
-    // effect could even run. Firing again here would duplicate it — only
-    // skip on the very first mount, subsequent route changes still track.
-    if (
-      isFirstFire &&
-      typeof window !== "undefined" &&
-      window.__metaPixelBootstrapId &&
-      window.__metaPixelBootstrapId === getActivePixelId()
-    ) {
-      return
-    }
-
     track("PageView")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, enabled, isReady])

@@ -13,10 +13,6 @@ declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void
     _fbq?: (...args: unknown[]) => void
-    // Set by the server-rendered base pixel script (see app/layout.tsx) to
-    // the pixel ID it already fired an initial PageView for, so the client
-    // provider doesn't fire a duplicate one for the same load.
-    __metaPixelBootstrapId?: string
   }
 }
 
