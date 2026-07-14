@@ -1,8 +1,3 @@
-// Hardcoded fallback so the pixel always fires even if the DB setting
-// (dashboard → Settings → Pixel) or NEXT_PUBLIC_DEFAULT_PIXEL_ID is unset.
-// TODO: remove once the dashboard/DB value is confirmed reliable in prod.
-export const STATIC_FALLBACK_PIXEL_ID = "1041069494713009"
-
 export interface PixelRuntimeConfig {
   debug: boolean
   defaultPixelId: string
@@ -23,7 +18,7 @@ export interface PixelRuntimeConfig {
 export const PIXEL_CONFIG: PixelRuntimeConfig = {
   debug: process.env.NODE_ENV === "development",
 
-  defaultPixelId: process.env.NEXT_PUBLIC_DEFAULT_PIXEL_ID || STATIC_FALLBACK_PIXEL_ID,
+  defaultPixelId: process.env.NEXT_PUBLIC_DEFAULT_PIXEL_ID || "",
 
   cookieName: "_mp_attr",
 
