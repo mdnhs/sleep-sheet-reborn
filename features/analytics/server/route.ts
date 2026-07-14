@@ -3,7 +3,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { orders, orderItems, products, carts, wishlistItems, expenses, users } from "@/db/schema";
 import { eq, ne, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
-import { getDateRange, getPreviousDateRange, getStartDate } from "@/lib/utils";
+import { getPreviousRange, getStartDate, getTrendBucketUnit, resolveDateRange } from "@/lib/utils";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
@@ -16,11 +16,11 @@ const app = new Hono()
   }
   
   try {
-    const { period = "month" } = c.req.query();
-    const { startDate, endDate } = getDateRange(period);
-    const { startDate: prevStart, endDate: prevEnd } = getPreviousDateRange(period);
-    // Daily buckets read badly over a year; roll up to months there
-    const trendUnit = period === "year" ? "month" : "day";
+    const { period = "month", from, to } = c.req.query();
+    const { startDate, endDate } = resolveDateRange(period, from, to);
+    const { startDate: prevStart, endDate: prevEnd } = getPreviousRange(startDate, endDate);
+    // Daily buckets read badly over a long range; roll up to a coarser unit
+    const trendUnit = getTrendBucketUnit(startDate, endDate);
 
     const notCancelled = ne(orders.status, "CANCELLED");
     const inRange = (start: Date, end: Date) =>
@@ -318,12 +318,15 @@ const app = new Hono()
   }
 
   try {
-    const { period = 'month' } = c.req.query();
+    const { period = 'month', from, to } = c.req.query();
     const allowedPeriods = ['day', 'week', 'month', 'year'];
     const selectedPeriod = allowedPeriods.includes(period) ? period : 'month';
-    const startDate = getStartDate(selectedPeriod);
-    // Bucket finer than the window itself, otherwise "year" collapses to one bar
-    const bucketUnit = selectedPeriod === 'year' ? 'month' : 'day';
+    const hasCustomRange = Boolean(from && to);
+    const customRange = hasCustomRange ? resolveDateRange(selectedPeriod, from, to) : null;
+    const startDate = customRange?.startDate ?? getStartDate(selectedPeriod);
+    const endDate = customRange?.endDate ?? null;
+    // Bucket finer than the window itself, otherwise a long range collapses to one bar
+    const bucketUnit = endDate ? getTrendBucketUnit(startDate, endDate) : (selectedPeriod === 'year' ? 'month' : 'day');
 
     const usersRows = (await db.execute(sql.raw(`
       SELECT
@@ -331,6 +334,7 @@ const app = new Hono()
         COUNT(*) as count
       FROM "User"
       WHERE "createdAt" >= '${startDate.toISOString()}'
+      ${endDate ? `AND "createdAt" <= '${endDate.toISOString()}'` : ""}
       GROUP BY period
       ORDER BY period ASC
     `))) as unknown as { rows: Array<{ period: string; count: string | number }> };

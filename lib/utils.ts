@@ -78,11 +78,36 @@ export const getDateRange = (period: string) => {
 // Same-length window immediately before the current one, for period-over-period deltas
 export const getPreviousDateRange = (period: string) => {
   const { startDate, endDate } = getDateRange(period)
+  return getPreviousRange(startDate, endDate)
+}
+
+// Same-length window immediately before an arbitrary [startDate, endDate) range
+export const getPreviousRange = (startDate: Date, endDate: Date) => {
   const spanMs = endDate.getTime() - startDate.getTime()
   return {
     startDate: new Date(startDate.getTime() - spanMs),
     endDate: startDate,
   }
+}
+
+// A custom "from"/"to" pair (query params) takes priority over a preset period.
+export const resolveDateRange = (period: string, from?: string, to?: string) => {
+  if (from && to) {
+    const startDate = new Date(from)
+    const endDate = new Date(to)
+    if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate < endDate) {
+      return { startDate, endDate }
+    }
+  }
+  return getDateRange(period)
+}
+
+// Daily buckets read badly over a long range; roll up to a coarser unit
+export const getTrendBucketUnit = (startDate: Date, endDate: Date): "day" | "week" | "month" => {
+  const spanDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+  if (spanDays > 120) return "month"
+  if (spanDays > 30) return "week"
+  return "day"
 }
 
 

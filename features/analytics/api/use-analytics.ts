@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 
-export const useSalesOverview = (period = "month") =>
+export interface DateRangeFilter {
+  from: string;
+  to: string;
+}
+
+export const useSalesOverview = (period = "month", range?: DateRangeFilter) =>
   useQuery({
-    queryKey: ["sales-overview", period],
+    queryKey: ["sales-overview", period, range],
     queryFn: async () => {
-      const res = await client.api.analytics["sales-overview"].$get({ query: { period } });
+      const res = await client.api.analytics["sales-overview"].$get({
+        query: range ? { period, from: range.from, to: range.to } : { period },
+      });
       if (!res.ok) throw new Error("Failed to fetch sales overview");
       return res.json();
     },
@@ -91,11 +98,13 @@ export const useSpendingClusters = () =>
     },
   });
 
-export const useCustomerAcquisition = (period = "month") =>
+export const useCustomerAcquisition = (period = "month", range?: DateRangeFilter) =>
   useQuery({
-    queryKey: ["acquisition", period],
+    queryKey: ["acquisition", period, range],
     queryFn: async () => {
-      const res = await client.api.analytics["acquisition"].$get({ query: { period } });
+      const res = await client.api.analytics["acquisition"].$get({
+        query: range ? { period, from: range.from, to: range.to } : { period },
+      });
       if (!res.ok) throw new Error("Failed to fetch acquisition data");
       return res.json();
     },

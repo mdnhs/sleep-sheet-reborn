@@ -13,6 +13,8 @@ import {
 
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { type DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import {
   useSalesOverview,
@@ -69,9 +71,20 @@ type Period = "month" | "year";
 export default function DashBoardClientPage() {
   const { symbol: currencySymbol } = useCurrency();
   const [period, setPeriod] = useState<Period>("month");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
+
+  const rangeFilter =
+    customRange?.from && customRange?.to
+      ? { from: customRange.from.toISOString(), to: customRange.to.toISOString() }
+      : undefined;
+
+  const handlePeriodChange = (value: Period) => {
+    setPeriod(value);
+    setCustomRange(undefined);
+  };
 
   const { data: overview, isLoading: loadingOverview } =
-    useSalesOverview(period);
+    useSalesOverview(period, rangeFilter);
   const { data: clv, isLoading: loadingCLV } = useCustomerLifetimeValue();
   const { data: distribution, isLoading: loadingDistribution } =
     useGeographicDistribution();
@@ -82,7 +95,7 @@ export default function DashBoardClientPage() {
   const { data: cohort, isLoading: loadingCohort } = useCohortRetention();
   const { data: segments, isLoading: loadingSegments } = useSpendingClusters();
   const { data: acquisition, isLoading: loadingAcquisition } =
-    useCustomerAcquisition(period);
+    useCustomerAcquisition(period, rangeFilter);
   const { data: mostPurchased, isLoading: loadingPurchased } =
     useMostPurchased();
   const { data: mostWishlisted, isLoading: loadingWishlisted } =
@@ -94,7 +107,7 @@ export default function DashBoardClientPage() {
   const formatBucketDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, {
       month: "short",
-      ...(period === "year" ? { year: "2-digit" } : { day: "numeric" }),
+      ...(period === "year" && !rangeFilter ? { year: "2-digit" } : { day: "numeric" }),
     });
 
   const salesTrendData = (overview?.trendData || []).map((t: TrendData) => ({
@@ -113,17 +126,23 @@ export default function DashBoardClientPage() {
     <div className="container mx-auto px-4 space-y-6 py-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Business Analytics</h1>
-          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+          <div className="hidden sm:flex justify-end gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
             <Link href="/dashboard/pos">
-              <Button className="w-full sm:w-auto gap-2 text-white whitespace-nowrap">
+              <Button className="gap-2 text-white whitespace-nowrap">
                 <IconCashRegister className="h-4 w-4" />
                 POS
               </Button>
             </Link>
           </div>
+          <DateRangePicker
+            value={customRange}
+            onChange={setCustomRange}
+            className="w-full sm:w-auto"
+          />
           <Tabs
             value={period}
-            onValueChange={(value) => setPeriod(value as Period)}
+            onValueChange={(value) => handlePeriodChange(value as Period)}
             className="w-full sm:w-auto mt-2 sm:mt-0"
           >
             <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
@@ -131,6 +150,7 @@ export default function DashBoardClientPage() {
               <TabsTrigger value="year">Year</TabsTrigger>
             </TabsList>
           </Tabs>
+        </div>
         </div>
 
       {/* Key Metrics Grid */}
