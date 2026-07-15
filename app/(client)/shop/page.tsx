@@ -5,7 +5,7 @@ import { seoConfig, generateMetadata, webpageSchema, structuredDataScript } from
 
 export const metadata = generateMetadata({
   title: "All Products",
-  description: `Browse our complete collection of premium bedding, mattresses, pillows, and sleep accessories at ${seoConfig.siteName}.`,
+  description: `Browse our complete collection of comforter sets, bed sheets, and pillow covers online in Bangladesh. 100% twill cotton fabric, cash on delivery at ${seoConfig.siteName}.`,
   canonical: `${seoConfig.siteUrl}/shop`,
 })
 

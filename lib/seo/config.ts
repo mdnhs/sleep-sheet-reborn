@@ -1,9 +1,9 @@
 export const seoConfig = {
   siteName: "Sleep Sheet",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://sleepsheetbd.com",
-  defaultTitle: "Sleep Sheet - Premium Bedding & Sleep Solutions",
+  defaultTitle: "Sleep Sheet - Premium Comforter & Bed Sheet Price in Bangladesh",
   defaultDescription:
-    "Discover premium bedding, comforters, mattresses, pillows, and sleep accessories. Shop the best sleep products for ultimate comfort and relaxation.",
+    "Shop premium comforter sets, bed sheets, and pillow covers online in Bangladesh. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh. Best comforter price in Bangladesh.",
   defaultImage: "/og-default.jpg",
   defaultLocale: "en_US",
   twitterHandle: "@sleepsheet2025",
@@ -12,7 +12,7 @@ export const seoConfig = {
     name: "Sleep Sheet",
     url: process.env.NEXT_PUBLIC_SITE_URL || "https://sleepsheetbd.com",
     logo: "/logo.png",
-    description: "Premium bedding and sleep solutions provider.",
+    description: "Premium bedding and comforter sets in Bangladesh, with cash on delivery nationwide.",
     foundingDate: "2024",
     founders: [],
     sameAs: [
@@ -22,15 +22,15 @@ export const seoConfig = {
     ],
   },
   address: {
-    streetAddress: "123 Sleep Street",
+    streetAddress: "Hope Market, Mirpur 10",
     addressLocality: "Dhaka",
     addressRegion: "Dhaka",
-    postalCode: "1205",
+    postalCode: "1216",
     addressCountry: "BD",
   },
   contact: {
-    telephone: "+880-1234-567890",
-    email: "hello@sleepsheet.com",
+    telephone: "+8801570241052",
+    email: "sleepsheet2025@gmail.com",
     contactType: "customer service",
   },
   socialLinks: {
