@@ -25,6 +25,7 @@ type CartState = {
   clearGuestCart: () => void;
   setShipping: (shipping: number) => void;
   addGuestItem: (item: CartItem) => void;
+  setGuestItems: (items: CartItem[]) => void;
   removeGuestItem: (id: string) => void;
   updateGuestItemQuantity: (payload: { id: string; quantity: number }) => void;
 };
@@ -154,6 +155,8 @@ export const useCartStore = create<CartState>((set, get) => ({
       return { guestItems: [...state.guestItems, item] };
     }
   }),
+
+  setGuestItems: (items) => set({ guestItems: items }),
 
   removeGuestItem: (id) => set((state) => ({
     guestItems: state.guestItems.filter(i => i.id !== id)

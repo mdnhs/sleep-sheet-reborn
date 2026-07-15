@@ -163,3 +163,19 @@
   animation: variant-shake 0.4s ease-in-out, border-glow-red 1s infinite ease-in-out;
   border-width: 2px !important;
 }
+
+/* Periodic attention-grabbing wiggle for Buy Now / Order Now CTAs — a brief
+   ~0.4s shake burst followed by a ~2s pause, looping continuously. */
+@keyframes cta-wiggle {
+  0%, 15%, 100% { transform: rotate(0deg); }
+  2% { transform: rotate(-4deg); }
+  5% { transform: rotate(4deg); }
+  8% { transform: rotate(-4deg); }
+  11% { transform: rotate(4deg); }
+  13% { transform: rotate(-2deg); }
+}
+
+.animate-cta-wiggle {
+  animation: cta-wiggle 2.4s ease-in-out infinite;
+  transform-origin: center;
+}

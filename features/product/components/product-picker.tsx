@@ -233,7 +233,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             )}
             {dialogAction === "buy" && (
               <Button
-                className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                className="animate-cta-wiggle flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                 onClick={() => {
                   if ((isSizeAvailable && !selectedSize) || (isColorAvailable && !selectedColor)) {
                     toast.error("Please select options before proceeding to checkout");
@@ -321,7 +321,7 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
 
           <Button
-            className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+            className="animate-cta-wiggle h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
             disabled={!isInStock}
             onClick={() => {
               if (hasVariants) {
@@ -336,7 +336,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             {t("buyNow")}
           </Button>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
           <a 
             href="tel:+8801700000000"
@@ -400,7 +400,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             </Button>
 
             <Button
-              className="flex-1 sm:w-40 h-12 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+              className="animate-cta-wiggle flex-1 sm:w-40 h-12 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
               disabled={!isInStock}
               onClick={() => {
                 if (hasVariants) {

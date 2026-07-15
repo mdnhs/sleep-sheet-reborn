@@ -1,11 +1,11 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   DeliveryAndPaymentFormValues,
-  deliveryAndPaymentSchema,
+  createDeliveryAndPaymentSchema,
   SHIPPING_ZONES,
   ShippingZone,
 } from "../schema";
@@ -29,6 +29,7 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { UseCheckout } from "../api/use-checkout";
 import { useLanguage } from "@/hooks/use-language";
+import { cn } from "@/lib/utils";
 
 function ShippingInformationCard() {
   const setShipping = useCartStore((state) => state.setShipping);
@@ -36,7 +37,10 @@ function ShippingInformationCard() {
   const { formatAmount } = useCurrency();
   const { data: currentUser } = useCurrent();
   const { mutate, isPending } = UseCheckout();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const deliveryAndPaymentSchema = useMemo(() => createDeliveryAndPaymentSchema(t), [language]);
 
   const cardEnabled = settings ? settings.payment_method_card !== "false" : true;
   const codEnabled = settings ? settings.payment_method_cod !== "false" : true;
@@ -50,6 +54,7 @@ function ShippingInformationCard() {
 
   const form = useForm<DeliveryAndPaymentFormValues>({
     resolver: zodResolver(deliveryAndPaymentSchema),
+    mode: "onChange",
     defaultValues: {
       fullName: currentUser?.name ?? "",
       phone: currentUser?.phone ?? "",
@@ -68,11 +73,22 @@ function ShippingInformationCard() {
   const selectedPaymentMethod = form.watch("paymentMethod");
 
   useEffect(() => {
+    const errorFields = Object.keys(form.formState.errors);
+    if (errorFields.length > 0) {
+      form.trigger(errorFields as (keyof DeliveryAndPaymentFormValues)[]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
+
+  useEffect(() => {
     if (!currentUser) return;
-    if (currentUser.name && !form.getValues("fullName")) form.setValue("fullName", currentUser.name);
-    if (currentUser.email && !form.getValues("email")) form.setValue("email", currentUser.email);
-    if (currentUser.phone && !form.getValues("phone")) form.setValue("phone", currentUser.phone);
-    if (currentUser.address && !form.getValues("address")) form.setValue("address", currentUser.address);
+    // shouldValidate: true — otherwise formState.isValid (which now gates the
+    // submit button) doesn't recompute when these fields are filled in
+    // programmatically instead of by the user typing.
+    if (currentUser.name && !form.getValues("fullName")) form.setValue("fullName", currentUser.name, { shouldValidate: true });
+    if (currentUser.email && !form.getValues("email")) form.setValue("email", currentUser.email, { shouldValidate: true });
+    if (currentUser.phone && !form.getValues("phone")) form.setValue("phone", currentUser.phone, { shouldValidate: true });
+    if (currentUser.address && !form.getValues("address")) form.setValue("address", currentUser.address, { shouldValidate: true });
   }, [currentUser, form]);
 
   useEffect(() => {
@@ -316,11 +332,14 @@ function ShippingInformationCard() {
           <div className="flex justify-end pt-1">
             <Button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || !form.formState.isValid}
               id="checkout-purchase-button"
               data-pixel-event="purchase"
               data-testid="checkout-purchase-button"
-              className="w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
+              className={cn(
+                "w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md",
+                !isPending && form.formState.isValid && "animate-cta-wiggle"
+              )}
             >
               {isPending ? (
                 <div className="flex items-center gap-2">

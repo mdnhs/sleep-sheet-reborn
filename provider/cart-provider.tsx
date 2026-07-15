@@ -10,16 +10,20 @@ const GUEST_CART_KEY = "guest-cart";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { data: user } = useCurrent();
   const guestItems = useCartStore((state) => state.guestItems);
-  const addGuestItem = useCartStore((state) => state.addGuestItem);
+  const setGuestItems = useCartStore((state) => state.setGuestItems);
   const fetchCart = useCartStore((state) => state.fetchCart);
 
-  // Restore guest cart from localStorage on mount
+  // Restore guest cart from localStorage on mount.
+  // Must replace state (not addGuestItem's additive merge) — merging here is
+  // not idempotent, so every remount (Strict Mode's dev double-invoke, Fast
+  // Refresh, layout remounts) would keep adding the persisted quantity on
+  // top of itself, compounding without any user action.
   useEffect(() => {
     try {
       const saved = localStorage.getItem(GUEST_CART_KEY);
       if (saved) {
         const items: CartItem[] = JSON.parse(saved);
-        items.forEach((item) => addGuestItem(item));
+        setGuestItems(items);
       }
     } catch {
       // ignore parse errors

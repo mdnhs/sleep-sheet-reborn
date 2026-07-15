@@ -1,4 +1,7 @@
 import { z } from "zod";
+import type { translations } from "@/hooks/use-language";
+
+type TranslateFn = (key: keyof typeof translations["en"]) => string;
 
 export const SHIPPING_ZONES = {
   inside_dhaka: { label: "Inside Dhaka", cost: 60 },
@@ -7,113 +10,80 @@ export const SHIPPING_ZONES = {
 
 export type ShippingZone = keyof typeof SHIPPING_ZONES;
 
-export const shippingInformationSchema = z.object({
-  fullName: z.string().trim().min(1, "Full name is required"),
-  phone: z.string().trim().min(1, "Phone number is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  address: z.string().trim().min(1, "Address is required"),
-  shippingZone: z.enum(["inside_dhaka", "outside_dhaka"], {
-    error: "Please select a delivery zone",
-  }),
-  notes: z.string().optional(),
-});
+export function createShippingInformationSchema(t: TranslateFn) {
+  return z.object({
+    fullName: z.string().trim().min(1, t("errorFullNameRequired")),
+    phone: z.string().trim().min(1, t("errorPhoneRequired")),
+    email: z.string().email(t("errorInvalidEmail")).optional().or(z.literal("")),
+    address: z.string().trim().min(1, t("errorAddressRequired")),
+    shippingZone: z.enum(["inside_dhaka", "outside_dhaka"], {
+      error: t("errorSelectZone"),
+    }),
+    notes: z.string().optional(),
+  });
+}
 
-export const paymentInformationSchema = z.object({
-  paymentMethod: z.enum(['card', 'cod']),
-  cardNumber: z.string().optional(),
-  expirationDate: z.string().optional(),
-  cvv: z.string().optional(),
-  nameOnCard: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.paymentMethod === 'card') {
-    if (!data.cardNumber || data.cardNumber.length !== 16) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Card number must be 16 digits",
-        path: ['cardNumber']
-      });
-    }
+function addPaymentIssues(data: { paymentMethod: string; cardNumber?: string; expirationDate?: string; cvv?: string; nameOnCard?: string }, ctx: z.RefinementCtx, t: TranslateFn) {
+  if (data.paymentMethod !== "card") return;
 
-    if (!data.expirationDate || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(data.expirationDate)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Invalid expiry format (MM/YY)",
-        path: ['expirationDate']
-      });
-    } else {
-      const [monthStr, yearStr] = data.expirationDate.split('/');
-      const expMonth = parseInt(monthStr, 10);
-      const expYear = parseInt(`20${yearStr}`, 10);
+  if (!data.cardNumber || data.cardNumber.length !== 16) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: t("errorCardNumberLength"), path: ["cardNumber"] });
+  }
 
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
+  if (!data.expirationDate || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(data.expirationDate)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: t("errorExpiryFormat"), path: ["expirationDate"] });
+  } else {
+    const [monthStr, yearStr] = data.expirationDate.split("/");
+    const expMonth = parseInt(monthStr, 10);
+    const expYear = parseInt(`20${yearStr}`, 10);
 
-      if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Card has expired",
-          path: ['expirationDate']
-        });
-      }
-    }
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
 
-    if (!data.cvv || data.cvv.length !== 3) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "CVV must be 3 digits",
-        path: ['cvv']
-      });
-    }
-
-    if (!data.nameOnCard || data.nameOnCard.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Name on card is required",
-        path: ['nameOnCard']
-      });
+    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t("errorCardExpired"), path: ["expirationDate"] });
     }
   }
-});
 
-export const confirmationInformationSchema = z.object({
-  agreedToTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
-});
+  if (!data.cvv || data.cvv.length !== 3) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: t("errorCvvLength"), path: ["cvv"] });
+  }
 
-export const deliveryAndPaymentSchema = shippingInformationSchema.and(
-  z.object({
+  if (!data.nameOnCard || data.nameOnCard.trim().length === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: t("errorNameOnCardRequired"), path: ["nameOnCard"] });
+  }
+}
+
+export function createPaymentInformationSchema(t: TranslateFn) {
+  return z.object({
     paymentMethod: z.enum(["card", "cod"]),
     cardNumber: z.string().optional(),
     expirationDate: z.string().optional(),
     cvv: z.string().optional(),
     nameOnCard: z.string().optional(),
-  }).superRefine((data, ctx) => {
-    if (data.paymentMethod === "card") {
-      if (!data.cardNumber || data.cardNumber.length !== 16) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Card number must be 16 digits", path: ["cardNumber"] });
-      }
-      if (!data.expirationDate || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(data.expirationDate)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid expiry format (MM/YY)", path: ["expirationDate"] });
-      } else {
-        const [monthStr, yearStr] = data.expirationDate.split("/");
-        const expMonth = parseInt(monthStr, 10);
-        const expYear = parseInt(`20${yearStr}`, 10);
-        const now = new Date();
-        if (expYear < now.getFullYear() || (expYear === now.getFullYear() && expMonth < now.getMonth() + 1)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Card has expired", path: ["expirationDate"] });
-        }
-      }
-      if (!data.cvv || data.cvv.length !== 3) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "CVV must be 3 digits", path: ["cvv"] });
-      }
-      if (!data.nameOnCard || data.nameOnCard.trim().length === 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Name on card is required", path: ["nameOnCard"] });
-      }
-    }
-  })
-);
+  }).superRefine((data, ctx) => addPaymentIssues(data, ctx, t));
+}
 
-export type ShippingInformationFormValues = z.infer<typeof shippingInformationSchema>;
-export type PaymentInformationFormValues = z.infer<typeof paymentInformationSchema>;
-export type DeliveryAndPaymentFormValues = z.infer<typeof deliveryAndPaymentSchema>;
-export type ConfirmationInformationSchemaFormValues = z.infer<typeof confirmationInformationSchema>;
+export function createConfirmationInformationSchema(t: TranslateFn) {
+  return z.object({
+    agreedToTerms: z.boolean().refine((val) => val === true, t("errorAgreeToTerms")),
+  });
+}
+
+export function createDeliveryAndPaymentSchema(t: TranslateFn) {
+  return createShippingInformationSchema(t).and(
+    z.object({
+      paymentMethod: z.enum(["card", "cod"]),
+      cardNumber: z.string().optional(),
+      expirationDate: z.string().optional(),
+      cvv: z.string().optional(),
+      nameOnCard: z.string().optional(),
+    }).superRefine((data, ctx) => addPaymentIssues(data, ctx, t))
+  );
+}
+
+export type ShippingInformationFormValues = z.infer<ReturnType<typeof createShippingInformationSchema>>;
+export type PaymentInformationFormValues = z.infer<ReturnType<typeof createPaymentInformationSchema>>;
+export type DeliveryAndPaymentFormValues = z.infer<ReturnType<typeof createDeliveryAndPaymentSchema>>;
+export type ConfirmationInformationSchemaFormValues = z.infer<ReturnType<typeof createConfirmationInformationSchema>>;
