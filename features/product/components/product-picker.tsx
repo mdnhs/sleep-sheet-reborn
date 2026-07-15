@@ -233,7 +233,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             )}
             {dialogAction === "buy" && (
               <Button
-                className="animate-cta-wiggle flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                className="animate-cta-wiggle flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-linear-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all"
                 onClick={() => {
                   if ((isSizeAvailable && !selectedSize) || (isColorAvailable && !selectedColor)) {
                     toast.error("Please select options before proceeding to checkout");
@@ -321,7 +321,7 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
 
           <Button
-            className="animate-cta-wiggle h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+            className="animate-cta-wiggle h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-linear-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all"
             disabled={!isInStock}
             onClick={() => {
               if (hasVariants) {
@@ -400,7 +400,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             </Button>
 
             <Button
-              className="animate-cta-wiggle flex-1 sm:w-40 h-12 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+              className="animate-cta-wiggle flex-1 sm:w-40 h-12 rounded-full font-semibold bg-linear-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all"
               disabled={!isInStock}
               onClick={() => {
                 if (hasVariants) {
