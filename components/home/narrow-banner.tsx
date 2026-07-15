@@ -8,21 +8,29 @@ const NarrowBanner = () => {
       <div className="container mx-auto px-4">
         <Link
           href="/track-order"
-          className="block relative overflow-hidden rounded-xl border border-primary/15 bg-primary/5 hover:bg-primary/10 transition-colors group"
+          className="block relative overflow-hidden rounded-2xl border border-primary/20 bg-primary/10 hover:bg-primary/15 shadow-sm hover:shadow-md transition-all group"
         >
-          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 px-4 md:px-6 min-h-[50px] gap-2 sm:gap-4">
-            <div className="flex items-start sm:items-center gap-2.5 sm:gap-3">
-              <span className="shrink-0 mt-0.5 sm:mt-0 flex items-center justify-center h-5 sm:h-6 px-1.5 sm:px-2 bg-primary text-primary-foreground text-[9px] sm:text-[10px] uppercase font-bold tracking-widest rounded-sm">
-                Track
+          {/* Decorative glow accents */}
+          <div className="absolute -top-8 -right-4 h-28 w-28 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-10 left-1/4 h-24 w-24 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 px-5 md:px-8 min-h-16 gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="shrink-0 flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 bg-white text-xl sm:text-2xl rounded-full shadow-md group-hover:scale-110 transition-transform duration-300">
+                🚚
               </span>
-              <h2 className="text-foreground text-xs sm:text-sm md:text-[15px] font-medium tracking-tight leading-snug">
-                Already placed an order? <span className="font-bold">Track its status</span> in real-time.
+              <h2 className="text-foreground text-sm sm:text-base md:text-lg font-semibold tracking-tight leading-snug">
+                Already placed an order?{" "}
+                <span className="font-extrabold text-primary underline decoration-2 underline-offset-4">
+                  Track its status
+                </span>{" "}
+                in real-time.
               </h2>
             </div>
 
-            <div className="shrink-0 flex items-center gap-1.5 text-primary text-[10px] sm:text-xs font-semibold uppercase tracking-wider group-hover:text-primary/80 transition-colors self-end sm:self-auto">
-              <span className="inline">Track Order</span>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transform group-hover:translate-x-1 transition-transform" />
+            <div className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground text-xs sm:text-sm font-bold uppercase tracking-wider px-4 py-2 sm:px-5 sm:py-2.5 rounded-full shadow-sm group-hover:gap-3 transition-all self-end sm:self-auto">
+              <span>Track Order</span>
+              <ArrowRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </Link>

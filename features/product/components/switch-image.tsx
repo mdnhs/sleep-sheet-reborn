@@ -25,7 +25,7 @@ function SwitchImage({ product }: SwitchImageProps) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   return (
-    <div className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] bg-secondary/20 overflow-hidden shadow-sm h-[280px] sm:h-[400px] lg:h-[550px]">
+    <div className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] bg-secondary/20 overflow-hidden shadow-sm h-50 sm:h-100 lg:h-137.5">
       <button
         type="button"
         onClick={() => setLightboxIndex(selectedImage)}
