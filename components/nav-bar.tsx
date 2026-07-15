@@ -312,6 +312,10 @@ function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hasMounted = useHasMounted();
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  // The dark logo is designed for dark backgrounds, so swap to it once
+  // mounted and dark mode is active (avoids an SSR/client theme mismatch).
+  const displayLogo = hasMounted && theme === "dark" ? "/dark-logo.png" : logoUrl;
 
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState("search", {
@@ -356,7 +360,7 @@ function Navbar() {
                   <Menu className="h-5 w-5" />
                 </Button>
                 <Link href="/" className="flex items-center gap-2 select-none">
-                  <img src={logoUrl} alt={siteName} className="h-9 w-auto object-contain" />
+                  <img src={displayLogo} alt={siteName} className="h-9 w-auto object-contain" />
                 </Link>
                 <div className="flex items-center gap-2">
                   <MobileThemeToggle hasMounted={hasMounted} />
@@ -383,7 +387,7 @@ function Navbar() {
             <div className="flex h-16 items-center justify-between gap-4">
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2 select-none shrink-0">
-                <img src={logoUrl} alt={siteName} className="h-12 w-auto object-contain" />
+                <img src={displayLogo} alt={siteName} className="h-12 w-auto object-contain" />
               </Link>
 
               {/* Links */}
@@ -421,7 +425,7 @@ function Navbar() {
           <MobileNavbarMenu
             isOpen={isMenuOpen}
             onOpenChange={setIsMenuOpen}
-            logoUrl={logoUrl}
+            logoUrl={displayLogo}
             siteName={siteName}
           />
         )}

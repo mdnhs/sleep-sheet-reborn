@@ -32,7 +32,7 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-4 space-y-5 md:space-y-6 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="flex items-center gap-2 mb-1 md:mb-2">
-              <img src="/logo.png" alt="SleepSheet Logo" className="h-9 md:h-10 w-auto object-contain" />
+              <img src="/dark-logo.png" alt="SleepSheet Logo" className="h-9 md:h-10 w-auto object-contain" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto md:mx-0">
               {footerBrandDesc}

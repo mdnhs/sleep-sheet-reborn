@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { ChevronUp, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { seoConfig } from "@/lib/seo/config";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import Testimonials from "@/components/home/testimonials";
 import Newsletter from "@/components/home/newsletter";
 import Link from "next/link";
@@ -21,6 +21,7 @@ interface ClientLayoutProps {
 function clientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { footerPhone } = useWebsiteSettings();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -50,7 +51,7 @@ function clientLayout({ children }: ClientLayoutProps) {
           <Footer />
         </div>
         <Link
-          href={`https://wa.me/${seoConfig.contact.telephone.replace(/\D/g, "")}`}
+          href={`https://wa.me/${footerPhone.replace(/\D/g, "")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="fixed bottom-24 sm:bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-all duration-300 hover:bg-green-600"

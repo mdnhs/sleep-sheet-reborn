@@ -65,9 +65,14 @@ const Categories = () => {
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500 rounded-full"></div>
                   </div>
-                  <span className="text-xs sm:text-[13px] font-medium tracking-wide text-foreground/80 group-hover:text-primary transition-colors duration-300 text-center">
-                    {category?.label}
-                  </span>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-xs sm:text-[13px] font-medium tracking-wide text-foreground/80 group-hover:text-primary transition-colors duration-300 text-center">
+                      {category?.label}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      ({category?.productCount ?? 0})
+                    </span>
+                  </div>
                 </Link>
               </CarouselItem>
             ))}

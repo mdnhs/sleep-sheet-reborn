@@ -164,10 +164,13 @@ export function ProductSidebarContent() {
           <div className="flex flex-col gap-4">
             {parentCategories.map((parent) => {
               const children = categories.filter(c => c.parentId === parent.id);
+              const parentCount =
+                (parent.productCount || 0) +
+                children.reduce((sum, child) => sum + (child.productCount || 0), 0);
               return (
                 <div key={parent.id} className="flex flex-col gap-3">
                   <label className="flex items-center gap-3 cursor-pointer group">
-                    <Checkbox 
+                    <Checkbox
                       checked={selectedCategories.includes(parent.label)}
                       onCheckedChange={() => toggleCategory(parent.label)}
                       className="border-muted-foreground/30 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500 rounded-sm"
@@ -175,13 +178,14 @@ export function ProductSidebarContent() {
                     <span className="text-sm font-medium text-foreground group-hover:text-rose-500 transition-colors">
                       {parent.label}
                     </span>
+                    <span className="text-xs text-muted-foreground">({parentCount})</span>
                   </label>
-                  
+
                   {children.length > 0 && (
                     <div className="flex flex-col gap-3 pl-7 border-l-2 border-muted/50 ml-2">
                       {children.map(child => (
                         <label key={child.id} className="flex items-center gap-3 cursor-pointer group">
-                          <Checkbox 
+                          <Checkbox
                             checked={selectedCategories.includes(child.label)}
                             onCheckedChange={() => toggleCategory(child.label)}
                             className="border-muted-foreground/30 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500 rounded-sm"
@@ -189,6 +193,7 @@ export function ProductSidebarContent() {
                           <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
                             {child.label}
                           </span>
+                          <span className="text-xs text-muted-foreground">({child.productCount || 0})</span>
                         </label>
                       ))}
                     </div>

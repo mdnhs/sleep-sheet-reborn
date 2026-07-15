@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { HeroSlidesManager } from "./hero-slides-manager";
 import { PromoBannersManager } from "./promo-banners-manager";
@@ -77,9 +78,56 @@ const FIELD_LABELS: Record<keyof WebsiteFormValues, string> = {
   footer_copyright: "Copyright Text",
 };
 
+const SECTION_FIELDS = {
+  header: ["site_name", "logo_url"],
+  hero: ["hero_slides"],
+  promo: ["promo_banners"],
+  features: [
+    "feature_1_title", "feature_1_desc",
+    "feature_2_title", "feature_2_desc",
+    "feature_3_title", "feature_3_desc",
+    "feature_4_title", "feature_4_desc",
+  ],
+  newsletter: ["newsletter_title", "newsletter_subtitle"],
+  footer: [
+    "footer_brand_desc", "footer_email", "footer_phone",
+    "social_facebook", "social_instagram", "social_twitter", "social_youtube",
+    "footer_copyright",
+  ],
+} as const satisfies Record<string, (keyof WebsiteFormValues)[]>;
+
+type SectionKey = keyof typeof SECTION_FIELDS;
+
+function SaveSectionButton({
+  form,
+  section,
+}: {
+  form: ReturnType<typeof useForm<WebsiteFormValues>>;
+  section: SectionKey;
+}) {
+  const { mutate, isPending } = useUpdateSettings();
+
+  const handleSave = async () => {
+    const fields = SECTION_FIELDS[section];
+    const valid = await form.trigger(fields);
+    if (!valid) return;
+    const values = form.getValues();
+    const payload = Object.fromEntries(fields.map((f) => [f, values[f]]));
+    mutate(payload);
+  };
+
+  return (
+    <div className="flex justify-end">
+      <Button type="button" onClick={handleSave} disabled={isPending} className="gap-2">
+        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+        Save Changes
+      </Button>
+    </div>
+  );
+}
+
 export function WebsiteForm() {
   const { data: settings, isLoading } = useSettings();
-  const { mutate, isPending } = useUpdateSettings();
 
   const form = useForm<WebsiteFormValues>({
     resolver: zodResolver(websiteSchema),
@@ -131,10 +179,6 @@ export function WebsiteForm() {
     }
   }, [settings, form]);
 
-  function onSubmit(values: WebsiteFormValues) {
-    mutate(values);
-  }
-
   if (isLoading) {
     return (
       <Card>
@@ -147,170 +191,192 @@ export function WebsiteForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Header</CardTitle>
-            <CardDescription>Site name and logo displayed in the navigation bar.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="site_name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.site_name}</FormLabel>
-                  <FormControl><Input placeholder="Sleep Sheet" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="logo_url" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.logo_url}</FormLabel>
-                  <FormControl><Input placeholder="/logo.png" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </CardContent>
-        </Card>
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+        <Tabs defaultValue="header">
+          <TabsList className="flex flex-wrap h-auto w-fit gap-1">
+            <TabsTrigger value="header">Header</TabsTrigger>
+            <TabsTrigger value="hero">Hero Slides</TabsTrigger>
+            <TabsTrigger value="promo">Promo Banners</TabsTrigger>
+            <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
+            <TabsTrigger value="footer">Footer</TabsTrigger>
+          </TabsList>
 
-        <HeroSlidesManager />
-
-        <PromoBannersManager />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Stats / Features</CardTitle>
-            <CardDescription>Feature cards shown below the hero section.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i}>
-                {i > 1 && <Separator className="mb-6" />}
-                <p className="text-sm font-medium text-muted-foreground mb-3">Feature {i}</p>
+          <TabsContent value="header" className="space-y-6 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Header</CardTitle>
+                <CardDescription>Site name and logo displayed in the navigation bar.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name={`feature_${i}_title` as keyof WebsiteFormValues} render={({ field }) => (
+                  <FormField control={form.control} name="site_name" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{FIELD_LABELS[`feature_${i}_title` as keyof WebsiteFormValues]}</FormLabel>
-                      <FormControl><Input placeholder="Payment only online" {...field} /></FormControl>
+                      <FormLabel>{FIELD_LABELS.site_name}</FormLabel>
+                      <FormControl><Input placeholder="Sleep Sheet" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name={`feature_${i}_desc` as keyof WebsiteFormValues} render={({ field }) => (
+                  <FormField control={form.control} name="logo_url" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{FIELD_LABELS[`feature_${i}_desc` as keyof WebsiteFormValues]}</FormLabel>
-                      <FormControl><Input placeholder="Secure & simple checkout" {...field} /></FormControl>
+                      <FormLabel>{FIELD_LABELS.logo_url}</FormLabel>
+                      <FormControl><Input placeholder="/logo.png" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+            <SaveSectionButton form={form} section="header" />
+          </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Newsletter</CardTitle>
-            <CardDescription>Subscription section text on the homepage.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="newsletter_title" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.newsletter_title}</FormLabel>
-                  <FormControl><Input placeholder="Join the inner circle" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="newsletter_subtitle" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.newsletter_subtitle}</FormLabel>
-                  <FormControl><Input placeholder="Subscribe for early access..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </CardContent>
-        </Card>
+          <TabsContent value="hero" className="space-y-6 mt-4">
+            <HeroSlidesManager />
+            <SaveSectionButton form={form} section="hero" />
+          </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Footer</CardTitle>
-            <CardDescription>Brand info, contact details, and social links displayed in the footer.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField control={form.control} name="footer_brand_desc" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{FIELD_LABELS.footer_brand_desc}</FormLabel>
-                <FormControl><Textarea rows={3} placeholder="Elevating your rest with premium..." {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="footer_email" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.footer_email}</FormLabel>
-                  <FormControl><Input placeholder="support@sleepsheet.com" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="footer_phone" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.footer_phone}</FormLabel>
-                  <FormControl><Input placeholder="+880 1700-000000" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-            <Separator />
-            <p className="text-sm font-medium text-muted-foreground">Social Links</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="social_facebook" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.social_facebook}</FormLabel>
-                  <FormControl><Input placeholder="https://facebook.com/..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="social_instagram" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.social_instagram}</FormLabel>
-                  <FormControl><Input placeholder="https://instagram.com/..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="social_twitter" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.social_twitter}</FormLabel>
-                  <FormControl><Input placeholder="https://twitter.com/..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="social_youtube" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{FIELD_LABELS.social_youtube}</FormLabel>
-                  <FormControl><Input placeholder="https://youtube.com/..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-            <Separator />
-            <FormField control={form.control} name="footer_copyright" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{FIELD_LABELS.footer_copyright}</FormLabel>
-                <FormControl><Input placeholder="© 2024 SLEEP SHEET. All rights reserved." {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </CardContent>
-        </Card>
+          <TabsContent value="promo" className="space-y-6 mt-4">
+            <PromoBannersManager />
+            <SaveSectionButton form={form} section="promo" />
+          </TabsContent>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isPending} size="lg" className="gap-2">
-            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save Website Settings
-          </Button>
-        </div>
+          <TabsContent value="features" className="space-y-6 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Stats / Features</CardTitle>
+                <CardDescription>Feature cards shown below the hero section.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i}>
+                    {i > 1 && <Separator className="mb-6" />}
+                    <p className="text-sm font-medium text-muted-foreground mb-3">Feature {i}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name={`feature_${i}_title` as keyof WebsiteFormValues} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{FIELD_LABELS[`feature_${i}_title` as keyof WebsiteFormValues]}</FormLabel>
+                          <FormControl><Input placeholder="Payment only online" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name={`feature_${i}_desc` as keyof WebsiteFormValues} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{FIELD_LABELS[`feature_${i}_desc` as keyof WebsiteFormValues]}</FormLabel>
+                          <FormControl><Input placeholder="Secure & simple checkout" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <SaveSectionButton form={form} section="features" />
+          </TabsContent>
+
+          <TabsContent value="newsletter" className="space-y-6 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Newsletter</CardTitle>
+                <CardDescription>Subscription section text on the homepage.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="newsletter_title" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.newsletter_title}</FormLabel>
+                      <FormControl><Input placeholder="Join the inner circle" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="newsletter_subtitle" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.newsletter_subtitle}</FormLabel>
+                      <FormControl><Input placeholder="Subscribe for early access..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+              </CardContent>
+            </Card>
+            <SaveSectionButton form={form} section="newsletter" />
+          </TabsContent>
+
+          <TabsContent value="footer" className="space-y-6 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer</CardTitle>
+                <CardDescription>Brand info, contact details, and social links displayed in the footer.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField control={form.control} name="footer_brand_desc" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{FIELD_LABELS.footer_brand_desc}</FormLabel>
+                    <FormControl><Textarea rows={3} placeholder="Elevating your rest with premium..." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="footer_email" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.footer_email}</FormLabel>
+                      <FormControl><Input placeholder="support@sleepsheet.com" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="footer_phone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.footer_phone}</FormLabel>
+                      <FormControl><Input placeholder="+880 1700-000000" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <Separator />
+                <p className="text-sm font-medium text-muted-foreground">Social Links</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="social_facebook" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.social_facebook}</FormLabel>
+                      <FormControl><Input placeholder="https://facebook.com/..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="social_instagram" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.social_instagram}</FormLabel>
+                      <FormControl><Input placeholder="https://instagram.com/..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="social_twitter" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.social_twitter}</FormLabel>
+                      <FormControl><Input placeholder="https://twitter.com/..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="social_youtube" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{FIELD_LABELS.social_youtube}</FormLabel>
+                      <FormControl><Input placeholder="https://youtube.com/..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <Separator />
+                <FormField control={form.control} name="footer_copyright" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{FIELD_LABELS.footer_copyright}</FormLabel>
+                    <FormControl><Input placeholder="© 2024 SLEEP SHEET. All rights reserved." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </CardContent>
+            </Card>
+            <SaveSectionButton form={form} section="footer" />
+          </TabsContent>
+        </Tabs>
       </form>
     </Form>
   );

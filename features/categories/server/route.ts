@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
-import { categories } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { categories, products } from '@/db/schema';
+import { eq, count } from 'drizzle-orm';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
@@ -12,15 +12,26 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 const app = new Hono()
 .get("/", async(c)=>{
    try{
-      const categoriesList = await db.select({
-        id: categories.id,
-        label: categories.label,
-        value: categories.value,
-        parentId: categories.parentId,
-        image: categories.image,
-      }).from(categories);
+      const [categoriesList, productCounts] = await Promise.all([
+        db.select({
+          id: categories.id,
+          label: categories.label,
+          value: categories.value,
+          parentId: categories.parentId,
+          image: categories.image,
+        }).from(categories),
+        db.select({ categoryId: products.categoryId, count: count() })
+          .from(products)
+          .groupBy(products.categoryId),
+      ]);
 
-      return c.json(categoriesList);
+      const countByCategoryId = new Map(productCounts.map((r) => [r.categoryId, Number(r.count)]));
+      const categoriesWithCounts = categoriesList.map((category) => ({
+        ...category,
+        productCount: countByCategoryId.get(category.id) || 0,
+      }));
+
+      return c.json(categoriesWithCounts);
    }catch(error){
      console.error("Failed to fetch Categories",error);
      return c.json({error: "failed to fetch Categories"},500)
@@ -250,12 +261,13 @@ const app = new Hono()
           label: category.label,
           value: category.value,
           image,
-          _productCount: validProducts.length, // internal only
+          productCount: category.products.length,
+          _sortWeight: validProducts.length, // internal only, favors categories with product photos
         };
       })
-      .filter((c): c is { label: string; value: string; image: string; _productCount: number } => !!c)
-     .sort((a, b) => b._productCount - a._productCount)
-     .map(({ _productCount, ...rest }) => rest);
+      .filter((c): c is { label: string; value: string; image: string; productCount: number; _sortWeight: number } => !!c)
+     .sort((a, b) => b._sortWeight - a._sortWeight)
+     .map(({ _sortWeight, ...rest }) => rest);
 
    return c.json({ success: true, categories: categoriesWithImages });
 });
