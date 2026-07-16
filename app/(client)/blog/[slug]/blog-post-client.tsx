@@ -3,6 +3,7 @@ import { useGetPost } from '@/features/blog/api/use-get-post';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 import { seoConfig, articleSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
 
@@ -71,8 +72,15 @@ export default function BlogPostClient({ slug }: { slug: string }) {
       </div>
 
       {post.coverImage && (
-        <div className="aspect-video w-full rounded-3xl overflow-hidden mb-12 shadow-lg">
-          <img src={post.coverImage} alt={post.title} className="object-cover w-full h-full" />
+        <div className="relative aspect-video w-full rounded-3xl overflow-hidden mb-12 shadow-lg">
+          <Image
+            src={post.coverImage}
+            alt={post.title}
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-cover"
+          />
         </div>
       )}
 

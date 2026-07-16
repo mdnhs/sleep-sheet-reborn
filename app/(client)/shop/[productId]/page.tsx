@@ -72,6 +72,7 @@ export default async function ProductDetailPage({ params }: Props) {
         reviewCount: product.reviewCount,
         availability: product.stock > 0 ? "InStock" : "OutOfStock",
         url: `${seoConfig.siteUrl}/shop/${id}`,
+        brand: seoConfig.siteName,
       }))}
       {structuredDataScript("breadcrumbs", breadcrumbSchema(productBreadcrumbs))}
       <div className="container mx-auto px-4 py-2 lg:py-8">

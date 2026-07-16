@@ -2,6 +2,7 @@
 import { useGetPosts } from '@/features/blog/api/use-get-posts';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from 'date-fns';
 
 export default function BlogClientPage() {
@@ -40,7 +41,13 @@ export default function BlogClientPage() {
             <Link href={`/blog/${post.slug}`} key={post.id} className="group flex flex-col gap-4">
               <div className="overflow-hidden rounded-2xl aspect-video bg-muted relative">
                 {post.coverImage ? (
-                  <img src={post.coverImage} alt={post.title} className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" />
+                  <Image
+                    src={post.coverImage}
+                    alt={post.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">No Image</div>
                 )}
