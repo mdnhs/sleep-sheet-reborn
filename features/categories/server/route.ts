@@ -19,6 +19,8 @@ const app = new Hono()
           value: categories.value,
           parentId: categories.parentId,
           image: categories.image,
+          seoTitle: categories.seoTitle,
+          seoDescription: categories.seoDescription,
         }).from(categories),
         db.select({ categoryId: products.categoryId, count: count() })
           .from(products)
@@ -43,11 +45,13 @@ const app = new Hono()
       value:z.string().min(2).max(50),
       parentId: z.string().optional().nullable(),
       image: z.string().url().optional().nullable(),
+      seoTitle: z.string().max(70).optional().nullable(),
+      seoDescription: z.string().max(160).optional().nullable(),
    })
 ), async(c)=>{
    try{
       const user = c.get("user");
-      const {label,value,parentId,image}=c.req.valid("json");
+      const {label,value,parentId,image,seoTitle,seoDescription}=c.req.valid("json");
 
       if(!user || !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS)){
          return c.json({ success: false, error: 'Unauthorized' }, 403);
@@ -73,6 +77,8 @@ const app = new Hono()
          value,
          parentId: parentId ?? null,
          image: image ?? null,
+         seoTitle: seoTitle ?? null,
+         seoDescription: seoDescription ?? null,
        });
 
        return c.json({
@@ -80,6 +86,8 @@ const app = new Hono()
          value,
          parentId: parentId ?? null,
          image: image ?? null,
+         seoTitle: seoTitle ?? null,
+         seoDescription: seoDescription ?? null,
        }, 201);
       } catch (error) {
          console.error("Failed to create category", error);
@@ -92,6 +100,8 @@ const app = new Hono()
       value: z.string().min(2).max(50).optional(),
       parentId: z.string().optional().nullable(),
       image: z.string().url().optional().nullable(),
+      seoTitle: z.string().max(70).optional().nullable(),
+      seoDescription: z.string().max(160).optional().nullable(),
    })
 ), async (c) => {
    const user = c.get("user");
@@ -130,6 +140,8 @@ const app = new Hono()
        }
        updates.image = body.image
      }
+     if (body.seoTitle !== undefined) updates.seoTitle = body.seoTitle
+     if (body.seoDescription !== undefined) updates.seoDescription = body.seoDescription
 
      await db.update(categories).set(updates).where(eq(categories.value, currentValue))
 

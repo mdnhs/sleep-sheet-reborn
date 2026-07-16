@@ -25,8 +25,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return { title: "Category not found" };
 
   return generateCategoryMetadata({
-    name: category.label,
-    description: categoryDescription(category.label),
+    // Custom copy (written per-category in the dashboard) wins over the
+    // generic auto-generated sentence, same idea as competitor category
+    // pages that hand-write unique title/description instead of templating.
+    name: category.seoTitle || category.label,
+    description: category.seoDescription || categoryDescription(category.label),
     slug: category.value,
   });
 }
@@ -40,7 +43,7 @@ export default async function CategoryPage({ params }: Props) {
   const previewProducts = await getCategoryProductsPreview(categoryIds);
 
   const categoryUrl = `${seoConfig.siteUrl}/categories/${category.value}`;
-  const description = categoryDescription(category.label);
+  const description = category.seoDescription || categoryDescription(category.label);
 
   const breadcrumbs = [
     { name: "Home", url: "/" },

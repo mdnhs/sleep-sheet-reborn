@@ -8,13 +8,15 @@ interface useUpdateCategoryProps {
   label?: string;
   parentId?: string | null;
   image?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
 }
 
 export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ currentValue, value, label, parentId, image }: useUpdateCategoryProps) => {
+    mutationFn: async ({ currentValue, value, label, parentId, image, seoTitle, seoDescription }: useUpdateCategoryProps) => {
       const response = await client.api.categories[":value"]["$patch"]({
         param: { value: currentValue },
         json: {
@@ -22,6 +24,8 @@ export const useUpdateCategory = () => {
           label,
           parentId: parentId ?? undefined,
           image: image ?? undefined,
+          seoTitle: seoTitle ?? undefined,
+          seoDescription: seoDescription ?? undefined,
         }
       });
       if (!response.ok) {

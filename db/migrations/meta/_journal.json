@@ -36,6 +36,13 @@
       "when": 1783971943594,
       "tag": "0004_thankful_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784222689794,
+      "tag": "0005_cooing_wasp",
+      "breakpoints": true
     }
   ]
 }

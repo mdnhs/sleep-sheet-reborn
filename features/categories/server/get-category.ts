@@ -8,6 +8,8 @@ export interface CategoryWithMeta {
   value: string;
   image: string | null;
   parentId: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
   productCount: number;
   children: { id: string; label: string; value: string }[];
 }
@@ -37,6 +39,8 @@ export async function getCategoryByValue(value: string): Promise<CategoryWithMet
     value: category.value,
     image: category.image,
     parentId: category.parentId,
+    seoTitle: category.seoTitle,
+    seoDescription: category.seoDescription,
     productCount: Number(productCount),
     children: category.children.map((c) => ({ id: c.id, label: c.label, value: c.value })),
   };

@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -53,6 +54,8 @@ type FlatCategory = {
   value: string
   parentId: string | null
   image: string | null
+  seoTitle?: string | null
+  seoDescription?: string | null
 }
 
 type CategoryRow = FlatCategory & {
@@ -79,6 +82,8 @@ function CategoriesClientPage() {
   const [categoryName, setCategoryName] = useState("")
   const [categoryValue, setCategoryValue] = useState("")
   const [selectedParentValue, setSelectedParentValue] = useState("none")
+  const [seoTitle, setSeoTitle] = useState("")
+  const [seoDescription, setSeoDescription] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState("")
@@ -153,12 +158,21 @@ function CategoriesClientPage() {
       ? categories.find((c) => c.value === selectedParentValue)
       : null
     createCategory(
-      { label: categoryName, value: categoryValue, parentId: parentCategory?.id ?? null, image: finalImage ?? null },
+      {
+        label: categoryName,
+        value: categoryValue,
+        parentId: parentCategory?.id ?? null,
+        image: finalImage ?? null,
+        seoTitle: seoTitle || null,
+        seoDescription: seoDescription || null,
+      },
       {
         onSuccess: () => {
           setCategoryName("")
           setCategoryValue("")
           setSelectedParentValue("none")
+          setSeoTitle("")
+          setSeoDescription("")
           setImageFile(null)
           setImagePreview("")
           setImageUrl("")
@@ -172,6 +186,8 @@ function CategoriesClientPage() {
     setCategoryName(category.label)
     setCategoryValue(category.value)
     setSelectedParentValue(category.parentId ? categories.find(c => c.id === category.parentId)?.value ?? "none" : "none")
+    setSeoTitle(category.seoTitle || "")
+    setSeoDescription(category.seoDescription || "")
     setImagePreview(category.image || "")
     setImageUrl(category.image || "")
     setImageFile(null)
@@ -191,18 +207,22 @@ function CategoriesClientPage() {
       : null
 
     updateCategory(
-      { 
-        currentValue: editTarget.value, 
-        value: categoryValue, 
-        label: categoryName, 
-        parentId: parentCategory?.id ?? null, 
-        image: finalImage ?? null 
+      {
+        currentValue: editTarget.value,
+        value: categoryValue,
+        label: categoryName,
+        parentId: parentCategory?.id ?? null,
+        image: finalImage ?? null,
+        seoTitle: seoTitle || null,
+        seoDescription: seoDescription || null,
       },
       {
         onSuccess: () => {
           setCategoryName("")
           setCategoryValue("")
           setSelectedParentValue("none")
+          setSeoTitle("")
+          setSeoDescription("")
           setImageFile(null)
           setImagePreview("")
           setImageUrl("")
@@ -406,6 +426,31 @@ function CategoriesClientPage() {
               </div>
 
               <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">
+                  SEO Title <span className="text-xs">(optional — shown in search results, falls back to Name)</span>
+                </label>
+                <Input
+                  placeholder={categoryName || "e.g. Best Comforter Price in Bangladesh"}
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  maxLength={70}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">
+                  SEO Description <span className="text-xs">(optional — falls back to a generic sentence)</span>
+                </label>
+                <Textarea
+                  placeholder="Shop premium comforter sets online in Bangladesh with cash on delivery..."
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  maxLength={160}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">Image</label>
                 <div className="flex items-start gap-3">
                   <input
@@ -470,6 +515,8 @@ function CategoriesClientPage() {
             setCategoryName("")
             setCategoryValue("")
             setSelectedParentValue("none")
+            setSeoTitle("")
+            setSeoDescription("")
             setImageFile(null)
             setImagePreview("")
             setImageUrl("")
@@ -517,6 +564,31 @@ function CategoriesClientPage() {
                   value={categoryValue}
                   onChange={(e) => setCategoryValue(e.target.value)}
                   required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">
+                  SEO Title <span className="text-xs">(optional — shown in search results, falls back to Name)</span>
+                </label>
+                <Input
+                  placeholder={categoryName || "e.g. Best Comforter Price in Bangladesh"}
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  maxLength={70}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-muted-foreground">
+                  SEO Description <span className="text-xs">(optional — falls back to a generic sentence)</span>
+                </label>
+                <Textarea
+                  placeholder="Shop premium comforter sets online in Bangladesh with cash on delivery..."
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  maxLength={160}
+                  rows={3}
                 />
               </div>
 

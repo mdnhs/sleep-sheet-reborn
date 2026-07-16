@@ -221,6 +221,8 @@ export const categories = pgTable("Category", {
   value: text("value").unique().notNull(),
   parentId: text("parentId").references((): AnyPgColumn => categories.id),
   image: text("image"),
+  seoTitle: text("seoTitle"),
+  seoDescription: text("seoDescription"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 
