@@ -1,6 +1,6 @@
 export const seoConfig = {
   siteName: "Sleep Sheet",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://sleepsheetbd.com",
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://www.sleepsheetbd.com",
   defaultTitle: "Sleep Sheet - Premium Comforter & Bed Sheet Price in Bangladesh",
   defaultDescription:
     "Shop premium comforter sets, bed sheets, and pillow covers online in Bangladesh. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh. Best comforter price in Bangladesh.",
@@ -10,7 +10,7 @@ export const seoConfig = {
   themeColor: "#0f172a",
   organization: {
     name: "Sleep Sheet",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://sleepsheetbd.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://www.sleepsheetbd.com",
     logo: "/logo.png",
     description: "Premium bedding and comforter sets in Bangladesh, with cash on delivery nationwide.",
     foundingDate: "2024",
