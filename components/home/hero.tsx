@@ -12,7 +12,7 @@ function HeroSkeleton() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-auto lg:h-[320px] xl:h-[400px]">
           {/* Left: Main Slider Skeleton */}
-          <div className="lg:col-span-2 relative w-full h-[320px] sm:h-[400px] lg:h-full rounded-2xl overflow-hidden bg-muted animate-pulse">
+          <div className="lg:col-span-2 relative w-full h-55 sm:h-100 lg:h-full rounded-2xl overflow-hidden bg-muted animate-pulse">
             <div className="absolute inset-0 bg-gradient-to-r from-muted-foreground/10 to-muted-foreground/5" />
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
               <div className="h-3 w-24 bg-muted-foreground/20 rounded-full" />
@@ -102,7 +102,7 @@ function Hero() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-auto lg:h-[320px] xl:h-[400px]">
           {/* Left: Main Slider (Carousel) */}
-          <div className="lg:col-span-2 relative w-full h-[320px] sm:h-[400px] lg:h-full rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group">
+          <div className="lg:col-span-2 relative w-full h-55 sm:h-100 lg:h-full rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] group">
             {/* Slides */}
             {slideData.map((slide, index) => (
               <div
