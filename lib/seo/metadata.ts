@@ -30,7 +30,10 @@ export function generateMetadata({
   const ogImage = openGraph?.image || seoConfig.defaultImage
 
   return {
-    title: fullTitle,
+    // { absolute } opts out of the root layout's `%s | ${siteName}` title
+    // template — fullTitle already has the site name appended, so applying
+    // the template on top would double it up ("X | Sleep Sheet | Sleep Sheet").
+    title: { absolute: fullTitle },
     description,
     keywords,
     robots: noIndex ? "noindex, nofollow" : robots || "index, follow, max-image-preview:large, max-snippet:-1",

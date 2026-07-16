@@ -81,7 +81,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue, categoryImage, isEven 
             </h2>
           </div>
           <Link
-            href={`/shop?category=${categoryLabel}`}
+            href={categoryValue ? `/categories/${categoryValue}` : `/shop?category=${categoryLabel}`}
             className="group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
           >
             <span className="hidden sm:inline">View All</span>

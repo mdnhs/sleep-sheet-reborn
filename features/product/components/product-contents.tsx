@@ -12,8 +12,15 @@ import { Loader2 } from "lucide-react";
 
 import { MobileFilterSheet } from "./products-sidebar";
 
-function ProductContents() {
-  const [category] = useQueryState("category", { defaultValue: "" });
+interface ProductContentsProps {
+  // Seeds the category filter for routes like /categories/[value] without
+  // putting it in the URL query string — the ?category= query param (set by
+  // the sidebar filters) still takes precedence once the user picks one.
+  initialCategory?: string;
+}
+
+function ProductContents({ initialCategory }: ProductContentsProps = {}) {
+  const [category] = useQueryState("category", { defaultValue: initialCategory || "" });
   const [minPrice] = useQueryState("minPrice", { defaultValue: "" });
   const [maxPrice] = useQueryState("maxPrice", { defaultValue: "" });
   const [search] = useQueryState("search", { defaultValue: "" });
@@ -58,7 +65,7 @@ function ProductContents() {
           Showing <span className="text-foreground">{allProducts.length}</span> of {totalCount} products
         </p>
 
-        <MobileFilterSheet />
+        <MobileFilterSheet initialCategory={initialCategory} />
       </div>
 
       {isLoading ? (

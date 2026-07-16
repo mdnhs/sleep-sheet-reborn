@@ -20,8 +20,8 @@ import {
 
 
 
-export function MobileFilterSheet({ side = "bottom" }: { side?: "bottom" | "left" | "right" }) {
-  const [category] = useQueryState("category", { defaultValue: "", shallow: false });
+export function MobileFilterSheet({ side = "bottom", initialCategory }: { side?: "bottom" | "left" | "right"; initialCategory?: string }) {
+  const [category] = useQueryState("category", { defaultValue: initialCategory || "", shallow: false });
   const [price] = useQueryState("price", { defaultValue: "", shallow: false });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const activeCategory = category || "All";
@@ -62,7 +62,7 @@ export function MobileFilterSheet({ side = "bottom" }: { side?: "bottom" | "left
             <SheetTitle className="font-heading text-2xl font-semibold">Filters</SheetTitle>
           </SheetHeader>
           <div className="overflow-y-auto h-full pb-0 no-scrollbar">
-            <ProductSidebarContent />
+            <ProductSidebarContent initialCategory={initialCategory} />
 
             <div className="sticky bottom-0 mt-8 pt-4 pb-8 bg-background border-t border-border/50">
               <Button
@@ -79,11 +79,11 @@ export function MobileFilterSheet({ side = "bottom" }: { side?: "bottom" | "left
   );
 }
 
-export function ProductSidebarContent() {
+export function ProductSidebarContent({ initialCategory }: { initialCategory?: string } = {}) {
   const { symbol } = useCurrency();
-  
+
   // URL States
-  const [categoryParam, setCategoryParam] = useQueryState("category", { defaultValue: "", shallow: false });
+  const [categoryParam, setCategoryParam] = useQueryState("category", { defaultValue: initialCategory || "", shallow: false });
   const [minPrice, setMinPrice] = useQueryState("minPrice", { defaultValue: "", shallow: false });
   const [maxPrice, setMaxPrice] = useQueryState("maxPrice", { defaultValue: "", shallow: false });
   
@@ -208,10 +208,10 @@ export function ProductSidebarContent() {
   );
 }
 
-function ProductSidebar() {
+function ProductSidebar({ initialCategory }: { initialCategory?: string } = {}) {
   return (
     <aside className="hidden lg:block w-64 shrink-0 space-y-8 sticky top-24 pr-6">
-      <ProductSidebarContent />
+      <ProductSidebarContent initialCategory={initialCategory} />
     </aside>
   );
 }

@@ -51,7 +51,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const categoryLabel = product.categoryLabel || product.category || "Products";
   const productBreadcrumbs = [
     { name: "Home", url: "/" },
-    { name: categoryLabel, url: `/shop?category=${encodeURIComponent(categoryLabel)}` },
+    { name: categoryLabel, url: `/categories/${product.category}` },
     { name: product.name, url: `/shop/${id}` },
   ];
 
@@ -79,7 +79,7 @@ export default async function ProductDetailPage({ params }: Props) {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6" /></svg>
           <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
           <span className="mx-2 text-border">•</span>
-          <Link href={`/shop?category=${encodeURIComponent(categoryLabel)}`} className="hover:text-foreground transition-colors">{categoryLabel}</Link>
+          <Link href={`/categories/${product.category}`} className="hover:text-foreground transition-colors">{categoryLabel}</Link>
           <span className="mx-2 text-border">•</span>
           <span className="text-foreground" aria-current="page">{product.name}</span>
         </nav>

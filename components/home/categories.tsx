@@ -55,7 +55,7 @@ const Categories = () => {
                 className="pl-2 md:pl-4 basis-auto"
               >
                 <Link
-                  href={`/shop?sort=newest&category=${category?.label}`}
+                  href={`/categories/${category?.value}`}
                   className="flex flex-col items-center gap-4 group shrink-0 w-[110px] sm:w-[130px] p-2"
                 >
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center relative overflow-hidden transition-all duration-500 shadow-sm group-hover:shadow-[0_10px_30px_rgba(0,0,0,0.12)] border-2 border-transparent group-hover:border-primary/10">
