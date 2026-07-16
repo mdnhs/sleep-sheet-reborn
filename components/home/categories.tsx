@@ -20,11 +20,14 @@ const Categories = () => {
 
   if (isLoading) {
     return (
-      <section className="py-10 bg-white dark:bg-slate-900 relative overflow-hidden">
+      <section className="py-5 md:py-10 bg-white dark:bg-slate-900 relative overflow-hidden">
         <div className="container mx-auto px-4 relative">
           <div className="flex gap-4 md:gap-8 overflow-hidden">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-4 w-[110px] sm:w-[130px] shrink-0 p-2">
+              <div
+                key={i}
+                className="flex flex-col items-center gap-4 w-[110px] sm:w-[130px] shrink-0 p-2"
+              >
                 <Skeleton className="w-24 h-24 sm:w-28 sm:h-28 rounded-full" />
                 <Skeleton className="h-4 w-16" />
               </div>
@@ -36,7 +39,7 @@ const Categories = () => {
   }
 
   return (
-    <section className="py-10 bg-white dark:bg-slate-900 relative overflow-hidden">
+    <section className="py-5 md:py-10 bg-white dark:bg-slate-900 relative overflow-hidden">
       <div className="container mx-auto px-4 relative">
         <Carousel
           opts={{
@@ -88,4 +91,3 @@ const Categories = () => {
 };
 
 export default Categories;
-

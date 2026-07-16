@@ -32,7 +32,7 @@ function HeroSkeleton() {
           </div>
 
           {/* Right: Stacked Banners Skeleton */}
-          <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
+          <div className="lg:col-span-1 hidden md:flex flex-col gap-4 h-full w-full">
             <div className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden bg-muted animate-pulse">
               <div className="absolute inset-0 bg-gradient-to-t from-muted-foreground/10 to-transparent" />
               <div className="absolute bottom-6 left-6 flex flex-col gap-2">
@@ -57,7 +57,15 @@ function HeroSkeleton() {
 }
 
 function Hero() {
-  const { heroTitle, heroSubtitle, heroCtaText, heroCtaLink, heroSlides, promoBanners, isLoading } = useWebsiteSettings();
+  const {
+    heroTitle,
+    heroSubtitle,
+    heroCtaText,
+    heroCtaLink,
+    heroSlides,
+    promoBanners,
+    isLoading,
+  } = useWebsiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   if (isLoading) {
@@ -77,7 +85,9 @@ function Hero() {
   }, [heroSlides.length]);
 
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+    setCurrentSlide(
+      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length,
+    );
   }, [heroSlides.length]);
 
   useEffect(() => {
@@ -92,10 +102,10 @@ function Hero() {
         title: heroTitle || slide.title,
         heading: heroSubtitle || slide.heading,
         link: heroCtaLink || slide.link,
-      }
+      };
     }
-    return slide
-  })
+    return slide;
+  });
 
   return (
     <section className="w-full bg-background py-4 relative overflow-hidden">
@@ -120,7 +130,6 @@ function Hero() {
                   priority={index < 2}
                   className="object-cover transition-transform duration-[15000ms] ease-linear scale-100 group-hover:scale-110"
                 />
-
               </div>
             ))}
 
@@ -147,7 +156,9 @@ function Hero() {
                   key={index}
                   onClick={() => setCurrentSlide(index)}
                   className={`h-1.5 transition-all duration-500 rounded-full ${
-                    currentSlide === index ? "w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" : "w-1.5 bg-white/40 hover:bg-white/80 hover:w-3"
+                    currentSlide === index
+                      ? "w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                      : "w-1.5 bg-white/40 hover:bg-white/80 hover:w-3"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -156,11 +167,11 @@ function Hero() {
           </div>
 
           {/* Right: Stacked Banners */}
-          <div className="lg:col-span-1 flex flex-col gap-4 h-full w-full">
+          <div className="lg:col-span-1 hidden md:flex flex-col gap-4 h-full w-full">
             {promoBanners.map((banner) => (
-              <Link 
+              <Link
                 key={banner.id}
-                href={banner.link} 
+                href={banner.link}
                 className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800"
               >
                 <Image
@@ -181,7 +192,8 @@ function Hero() {
                       {banner.title}
                     </h3>
                     <div className="flex items-center text-[11px] uppercase tracking-wider font-bold text-white group-hover:text-primary-foreground transition-colors">
-                      {banner.linkText} <ArrowRight className="h-3 w-3 ml-1.5 transform group-hover:translate-x-1 transition-transform" />
+                      {banner.linkText}{" "}
+                      <ArrowRight className="h-3 w-3 ml-1.5 transform group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
