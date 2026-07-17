@@ -41,6 +41,8 @@ export interface PlacedOrder {
   createdAt: string;
   paymentMethod: string;
   items: PlacedOrderItem[];
+  trackingNumber?: string | null;
+  consignmentId?: number | null;
 }
 
 export interface CheckoutState {

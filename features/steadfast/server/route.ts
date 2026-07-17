@@ -111,7 +111,7 @@ const app = new Hono()
 
         await db.update(orders)
           .set({
-            trackingNumber: result.consignment?.tracking_code ?? null,
+            trackingNumber: result.consignment?.consignment_id?.toString() || result.consignment?.tracking_code || null,
             status: "PROCESSING",
           })
           .where(eq(orders.id, orderId));

@@ -114,6 +114,14 @@ const styles = StyleSheet.create({
   infoCol: {
     width: "48%",
   },
+  infoColCourier: {
+    width: "28%",
+    alignItems: "center",
+    justifyContent: "center",
+    borderLeftWidth: 1,
+    borderLeftColor: "#e2e8f0",
+    paddingLeft: 8,
+  },
   table: {
     width: "100%",
     marginBottom: 10,
@@ -233,7 +241,7 @@ const getPdfFriendlyImageUrl = (url: string, isLogo = false) => {
       : friendlyUrl);
 };
 
-const clampText = (text: string, maxLength = 28) => {
+const clampText = (text: string, maxLength = 20) => {
   if (!text) return "";
   return text.length > maxLength ? text.slice(0, maxLength - 3) + "..." : text;
 };
@@ -251,6 +259,9 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
     return translations[language]?.[key as keyof typeof translations.en] || translations.en[key as keyof typeof translations.en] || key;
   };
 
+  const codeValue = order.consignmentId?.toString() || order.trackingNumber;
+  const isParcelId = !!order.consignmentId || (!!order.trackingNumber && /^\d+$/.test(order.trackingNumber));
+
   return (
     <Page size="A4" style={styles.page}>
       <View style={styles.contentContainer}>
@@ -260,7 +271,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             {logoUrl && (
               <Image
                 source={{ uri: getPdfFriendlyImageUrl(logoUrl, true) }}
-                style={{ width: 68, height: 68, marginRight: 15, objectFit: "contain" }}
+                style={{ width: 45, height: 45, marginRight: 15, objectFit: "contain" }}
               />
             )}
             <View>
@@ -286,17 +297,32 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
         {/* Customer Info */}
         <View style={styles.infoBox}>
           <View style={styles.infoRow}>
-            <View style={styles.infoCol}>
+            <View style={[styles.infoCol, codeValue ? { width: "34%" } : {}]}>
               <Text style={styles.label}>Customer / ক্রেতা</Text>
               <Text style={styles.value}>{shippingInfo?.fullName || "Customer"}</Text>
               {shippingInfo?.phone && (
                 <Text style={[styles.value, { marginTop: 2 }]}>{shippingInfo.phone}</Text>
               )}
             </View>
-            <View style={styles.infoCol}>
+            <View style={[styles.infoCol, codeValue ? { width: "34%" } : {}]}>
               <Text style={styles.label}>Shipping to / ঠিকানা</Text>
               <Text style={styles.value}>{shippingInfo?.address || ""}</Text>
             </View>
+            {codeValue && (
+              <View style={styles.infoColCourier}>
+                <Text style={[styles.value, { fontSize: 8, marginBottom: 4 }]}>
+                  #{codeValue}
+                </Text>
+                <Image
+                  source={{ uri: `https://bwipjs-api.metafloor.com/?bcid=code128&text=${codeValue}&scale=1&rotate=N` }}
+                  style={{ width: 80, height: 20, marginBottom: 4 }}
+                />
+                <Image
+                  source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${codeValue}` }}
+                  style={{ width: 30, height: 30 }}
+                />
+              </View>
+            )}
           </View>
           {shippingInfo?.notes && (
             <View style={[styles.metaItem, { marginTop: 10 }]}>

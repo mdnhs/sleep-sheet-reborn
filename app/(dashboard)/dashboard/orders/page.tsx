@@ -204,6 +204,9 @@ export default function OrdersPage() {
     action: "print" | "download" = "print",
   ) => {
     try {
+      const consignmentId = trackingStatuses?.[order.id]?.consignment_id ||
+        ((order.trackingNumber && /^\d+$/.test(order.trackingNumber)) ? Number(order.trackingNumber) : null);
+
       const placedOrderData: any = {
         orderNumber: order.orderNumber,
         subtotal: order.subtotal,
@@ -211,6 +214,8 @@ export default function OrdersPage() {
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,
         paymentMethod: order.paymentMethod || "COD",
+        trackingNumber: order.trackingNumber || trackingStatuses?.[order.id]?.tracking_code || null,
+        consignmentId: consignmentId,
         items: order.items.map((i: any) => ({
           name: i.product.name,
           price: i.price,
@@ -281,6 +286,9 @@ export default function OrdersPage() {
     setIsBulkPrinting(true);
     try {
       const ordersData = selectedOrders.map((order) => {
+        const consignmentId = trackingStatuses?.[order.id]?.consignment_id ||
+          ((order.trackingNumber && /^\d+$/.test(order.trackingNumber)) ? Number(order.trackingNumber) : null);
+
         const placedOrderData: any = {
           orderNumber: order.orderNumber,
           subtotal: order.subtotal,
@@ -288,6 +296,8 @@ export default function OrdersPage() {
           totalAmount: order.totalAmount,
           createdAt: order.createdAt,
           paymentMethod: order.paymentMethod || "COD",
+          trackingNumber: order.trackingNumber || trackingStatuses?.[order.id]?.tracking_code || null,
+          consignmentId: consignmentId,
           items: order.items.map((i: any) => ({
             name: i.product.name,
             price: i.price,
