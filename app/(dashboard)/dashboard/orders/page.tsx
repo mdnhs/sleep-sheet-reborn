@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
+import { isToday } from "date-fns";
 import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
@@ -143,9 +144,9 @@ const STEADFAST_STATUS_COLORS: Record<string, string> = {
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [statusFilter, setStatusFilter] = useState<Order["status"] | "ALL">(
-    "PENDING",
-  );
+  const [statusFilter, setStatusFilter] = useState<
+    Order["status"] | "ALL" | "TODAY"
+  >("PENDING");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [courierOrder, setCourierOrder] = useState<ShippingOrder | null>(null);
@@ -429,7 +430,9 @@ export default function OrdersPage() {
   const filtered =
     statusFilter === "ALL"
       ? orders
-      : orders?.filter((o) => o.status === statusFilter);
+      : statusFilter === "TODAY"
+        ? orders?.filter((o) => isToday(new Date(o.createdAt)))
+        : orders?.filter((o) => o.status === statusFilter);
 
   const selectedOrders =
     filtered?.filter((_, index) => rowSelection[index.toString()]) || [];
@@ -506,6 +509,9 @@ export default function OrdersPage() {
     },
     {} as Record<Order["status"], number>,
   );
+
+  const todayCount =
+    orders?.filter((o) => isToday(new Date(o.createdAt))).length ?? 0;
 
   const columns: ColumnDef<ShippingOrder>[] = [
     {
@@ -617,9 +623,16 @@ export default function OrdersPage() {
       accessorKey: "createdAt",
       header: "Date",
       cell: ({ row }) => (
-        <span className="text-sm whitespace-nowrap">
-          {formatDate(row.original.createdAt)}
-        </span>
+        <div className="whitespace-nowrap">
+          <div className="text-sm">{formatDate(row.original.createdAt)}</div>
+          <div className="text-xs text-muted-foreground">
+            {new Date(row.original.createdAt).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            })}
+          </div>
+        </div>
       ),
     },
     {
@@ -872,7 +885,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Order Management</h1>
 
@@ -933,7 +946,7 @@ export default function OrdersPage() {
       <Tabs
         value={statusFilter}
         onValueChange={(value) =>
-          setStatusFilter(value as Order["status"] | "ALL")
+          setStatusFilter(value as Order["status"] | "ALL" | "TODAY")
         }
         className="w-full"
       >
@@ -944,6 +957,12 @@ export default function OrdersPage() {
               className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               All ({orders?.length ?? 0})
+            </TabsTrigger>
+            <TabsTrigger
+              value="TODAY"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              Today ({todayCount})
             </TabsTrigger>
             {ALL_STATUSES.map((s) => (
               <TabsTrigger

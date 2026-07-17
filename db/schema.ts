@@ -612,3 +612,19 @@ export const trafficEvents = pgTable("traffic_events", {
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 
+
+export const activityLogs = pgTable("activity_logs", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  userId: text("userId"),
+  userName: text("userName").notNull(),
+  userEmail: text("userEmail").notNull(),
+  // Human-readable label derived from the request, e.g. "Created product".
+  action: text("action").notNull(),
+  method: text("method").notNull(),
+  path: text("path").notNull(),
+  status: integer("status").notNull(),
+  ip: text("ip").notNull(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+});

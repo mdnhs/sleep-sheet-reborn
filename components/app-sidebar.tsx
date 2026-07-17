@@ -28,7 +28,8 @@ import {
   IconReceipt2,
   IconUsers,
   IconUserHeart,
-  IconShield
+  IconShield,
+  IconHistory
 } from "@tabler/icons-react"
 
 const data = {
@@ -114,6 +115,12 @@ const data = {
       title: "Roles",
       url: "/dashboard/settings/roles",
       icon: <IconShield />,
+      items: [],
+    },
+    {
+      title: "Activity Log",
+      url: "/dashboard/activity",
+      icon: <IconHistory />,
       items: [],
     },
     {

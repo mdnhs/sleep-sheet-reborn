@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -41,6 +42,7 @@ interface DataTableProps<TData, TValue> {
   pageCount?: number
   pagination?: PaginationState
   onPaginationChange?: (updater: Updater<PaginationState>) => void
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData, TValue>({
@@ -53,6 +55,7 @@ export function DataTable<TData, TValue>({
   pageCount,
   pagination: externalPagination,
   onPaginationChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [internalPagination, setInternalPagination] = useState<PaginationState>({
@@ -116,7 +119,7 @@ export function DataTable<TData, TValue>({
         </DropdownMenu>
       </div>
 
-      <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full">
+      <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <Table>
           <TableHeader className="bg-secondary/20">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -158,7 +161,11 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted/30 transition-colors whitespace-nowrap"
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  className={cn(
+                    "hover:bg-muted/30 transition-colors whitespace-nowrap",
+                    onRowClick && "cursor-pointer"
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

@@ -23,10 +23,14 @@ import expenses from "@/features/expenses/server/route";
 import roles from "@/features/roles/server/route";
 import users from "@/features/users/server/route";
 import traffic from "@/features/traffic/server/route";
+import activity from "@/features/activity/server/route";
+import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 
 const app = new Hono().basePath("/api");
 app.use("*", cors());
+// Audit trail: records every mutating request made by a dashboard user.
+app.use("*", logActivity);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const routes =app
@@ -51,6 +55,7 @@ const routes =app
 .route("/roles",roles)
 .route("/users",users)
 .route("/traffic",traffic)
+.route("/activity",activity)
 
 export const GET = handle(app)
 export const POST = handle(app)

@@ -16,6 +16,9 @@ export const PERMISSIONS = {
   // Users & Roles
   MANAGE_USERS: "manage_users",
   MANAGE_ROLES: "manage_roles",
+
+  // Audit
+  VIEW_ACTIVITY_LOGS: "view_activity_logs",
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
@@ -47,6 +50,7 @@ export const PERMISSION_GROUPS = [
     permissions: [
       { id: PERMISSIONS.MANAGE_USERS, label: "Manage Users" },
       { id: PERMISSIONS.MANAGE_ROLES, label: "Manage Roles" },
+      { id: PERMISSIONS.VIEW_ACTIVITY_LOGS, label: "View Activity Logs" },
     ]
   }
 ];

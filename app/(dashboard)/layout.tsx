@@ -27,7 +27,11 @@ function DashBoardLayout({ children }: DashBoardLayoutProps) {
           {/* <DashboardBreadcrumb /> */}
           <DashboardHeaderActions />
         </header>
-        <main className="flex-1 pb-20 md:pb-0">{children}</main>
+        {/* min-w-0 overrides the flex default of min-width:auto — without it,
+            a wide child (e.g. a many-column table) forces this flex item,
+            and the whole page, wider than the viewport instead of scrolling
+            internally within its own overflow-x-auto wrapper. */}
+        <main className="flex-1 min-w-0 pb-20 md:pb-0">{children}</main>
         <BottomNav />
       </SidebarInset>
     </SidebarProvider>
