@@ -2,6 +2,7 @@ import Categories from "@/components/home/categories";
 import FeaturedProduct from "@/components/home/featured-product";
 import Hero from "@/components/home/hero";
 import NarrowBanner from "@/components/home/narrow-banner";
+import SeoContent from "@/components/home/seo-content";
 import SubcategoryProducts from "@/components/home/subcategory-products";
 import {
   localBusinessSchema,
@@ -37,6 +38,7 @@ async function Page() {
       <NarrowBanner />
       <FeaturedProduct />
       <SubcategoryProducts />
+      <SeoContent />
     </>
   );
 }

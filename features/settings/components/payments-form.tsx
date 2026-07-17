@@ -8,7 +8,6 @@ export function PaymentsForm() {
   const { data, isLoading } = useSettings();
   const { mutate, isPending } = useUpdateSettings();
 
-  const cardEnabled = data ? data.payment_method_card !== "false" : true;
   const codEnabled = data ? data.payment_method_cod !== "false" : true;
 
 
@@ -26,15 +25,12 @@ export function PaymentsForm() {
       <div className="flex items-center justify-between rounded-lg border px-4 py-3">
         <div className="flex flex-col">
           <span className="text-sm font-semibold">Credit / Debit Card</span>
-          <span className="text-xs text-muted-foreground">Online card payments</span>
+          <span className="text-xs text-muted-foreground">
+            Unavailable — no payment gateway is integrated yet. Enabling this
+            has no effect until one is wired up.
+          </span>
         </div>
-        <Switch
-          checked={cardEnabled}
-          disabled={isPending}
-          onCheckedChange={(checked) =>
-            mutate({ payment_method_card: checked ? "true" : "false" })
-          }
-        />
+        <Switch checked={false} disabled />
       </div>
       <div className="flex items-center justify-between rounded-lg border px-4 py-3">
         <div className="flex flex-col">

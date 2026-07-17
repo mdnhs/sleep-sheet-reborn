@@ -42,7 +42,10 @@ function ShippingInformationCard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const deliveryAndPaymentSchema = useMemo(() => createDeliveryAndPaymentSchema(t), [language]);
 
-  const cardEnabled = settings ? settings.payment_method_card !== "false" : true;
+  // Hard-disabled regardless of the payment_method_card setting: there is no
+  // real payment gateway integrated, so this option must not be offered
+  // until one is (see features/checkout/server/route.ts).
+  const cardEnabled = false;
   const codEnabled = settings ? settings.payment_method_cod !== "false" : true;
   const paymentMethodsCount = [cardEnabled, codEnabled].filter(Boolean).length;
   const defaultMethod = cardEnabled ? "card" : "cod";

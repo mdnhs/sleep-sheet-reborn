@@ -103,6 +103,26 @@ export const translations = {
     errorCvvLength: "CVV must be 3 digits",
     errorNameOnCardRequired: "Name on card is required",
     errorAgreeToTerms: "You must agree to the terms",
+    seoAboutHeading: "Premium Comforter & Bed Sheet Sets in Bangladesh",
+    seoAboutPara1:
+      "Sleep Sheet is an online bedding store in Bangladesh offering premium-quality comforters and bed sheets made from 100% twill cotton fabric. Our 5-piece comforter sets come with a matching bed sheet, pillow covers, and kolbalish cover — a complete bedroom makeover in one package.",
+    seoAboutPara2:
+      "Order with zero advance payment and pay cash on delivery anywhere in Bangladesh. Every product ships with a 7-day replacement guarantee, so you can shop with complete confidence.",
+    seoBrowseComforters: "Browse Comforters",
+    seoBrowseBedSheets: "Shop Bed Sheets",
+    seoFaqHeading: "Frequently Asked Questions",
+    faqQ1: "What is included in the Sleep Sheet 5-piece comforter set?",
+    faqA1:
+      "Each 5-piece comforter set includes 1 comforter, 1 bed sheet, 2 pillow covers, and 1 kolbalish (bolster) cover, made from premium twill cotton fabric.",
+    faqQ2: "Do you offer cash on delivery in Bangladesh?",
+    faqA2:
+      "Yes. You can order any comforter or bed sheet with zero advance payment and pay in cash when the product is delivered to your home, anywhere in Bangladesh.",
+    faqQ3: "How long does delivery take?",
+    faqA3:
+      "Delivery inside Dhaka takes 1 day (৳80 delivery charge). Outside Dhaka, delivery takes 3-4 days (৳150 delivery charge).",
+    faqQ4: "Is there a replacement guarantee?",
+    faqA4:
+      "Yes, every Sleep Sheet product comes with a 7-day replacement guarantee. If there is any defect, we will replace the product free of charge.",
   },
   bn: {
     home: "হোম",
@@ -203,6 +223,26 @@ export const translations = {
     errorCvvLength: "সিভিভি (CVV) অবশ্যই ৩ ডিজিটের হতে হবে",
     errorNameOnCardRequired: "কার্ডে থাকা নাম আবশ্যক",
     errorAgreeToTerms: "শর্তাবলীতে সম্মত হওয়া আবশ্যক",
+    seoAboutHeading: "বাংলাদেশে প্রিমিয়াম কমফোর্টার ও বেডশীট সেট",
+    seoAboutPara1:
+      "স্লিপ শীট বাংলাদেশের একটি অনলাইন বেডিং স্টোর, যেখানে ১০০% টুইল কটন ফেব্রিকে তৈরি প্রিমিয়াম মানের কমফোর্টার ও বেডশীট পাওয়া যায়। আমাদের ৫ পিস কমফোর্টার সেটে থাকছে ম্যাচিং বেডশীট, বালিশের কভার এবং কোলবালিশ কভার — এক প্যাকেজেই সম্পূর্ণ বেডরুম মেকওভার।",
+    seoAboutPara2:
+      "শূন্য অগ্রিম পেমেন্টে অর্ডার করুন এবং বাংলাদেশের যেকোনো জায়গায় ক্যাশ অন ডেলিভারিতে মূল্য পরিশোধ করুন। প্রতিটি পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি, তাই নিশ্চিন্তে কেনাকাটা করুন।",
+    seoBrowseComforters: "কমফোর্টার দেখুন",
+    seoBrowseBedSheets: "বেডশীট কিনুন",
+    seoFaqHeading: "সচরাচর জিজ্ঞাসিত প্রশ্ন",
+    faqQ1: "স্লিপ শীট ৫ পিস কমফোর্টার সেটে কী কী থাকে?",
+    faqA1:
+      "প্রতিটি ৫ পিস কমফোর্টার সেটে থাকছে ১টি কমফোর্টার, ১টি বেডশীট, ২টি বালিশের কভার এবং ১টি কোলবালিশ কভার, যা প্রিমিয়াম টুইল কটন ফেব্রিকে তৈরি।",
+    faqQ2: "আপনারা কি বাংলাদেশে ক্যাশ অন ডেলিভারি দিচ্ছেন?",
+    faqA2:
+      "হ্যাঁ। আপনি যেকোনো কমফোর্টার বা বেডশীট শূন্য অগ্রিম পেমেন্টে অর্ডার করতে পারবেন এবং বাংলাদেশের যেকোনো জায়গায় পণ্য হাতে পেয়ে ক্যাশে মূল্য পরিশোধ করতে পারবেন।",
+    faqQ3: "ডেলিভারি হতে কত সময় লাগে?",
+    faqA3:
+      "ঢাকার ভেতরে ডেলিভারি হতে ১ দিন সময় লাগে (ডেলিভারি চার্জ ৳৮০)। ঢাকার বাইরে ডেলিভারি হতে ৩-৪ দিন সময় লাগে (ডেলিভারি চার্জ ৳১৫০)।",
+    faqQ4: "রিপ্লেসমেন্ট গ্যারান্টি আছে কি?",
+    faqA4:
+      "হ্যাঁ, প্রতিটি স্লিপ শীট পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। কোনো ত্রুটি থাকলে আমরা বিনামূল্যে পণ্য পরিবর্তন করে দেব।",
   },
 };
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { siteSettings, carts, cartItems, products, orders, orderItems, payments, shippingMethods } from "@/db/schema";
+import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import { sendPurchaseEvent, capiContextFromHeaders } from "@/lib/meta-capi";
 
@@ -23,8 +23,13 @@ async function generateOrderNumber(): Promise<string> {
 }
 
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
-  const key = method === "card" ? "payment_method_card" : "payment_method_cod";
-  const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) });
+  // Card payments are hard-disabled here regardless of the
+  // payment_method_card setting: there is no real payment gateway wired up,
+  // so nothing should ever be able to create a "card" order. Re-enable only
+  // once a PCI-compliant processor (e.g. SSLCommerz, bKash, Stripe) is
+  // actually integrated — never re-add raw card storage.
+  if (method === "card") return false;
+  const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, "payment_method_cod") });
   return setting ? setting.value !== "false" : true;
 }
 
@@ -109,18 +114,6 @@ const app = new Hono()
           color: item.color || null,
         }))
       );
-
-      if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
-        await db.insert(payments).values({
-          orderId: order.id,
-          amount: totalAmount,
-          method: "CARD",
-          transactionId: paymentInfo.cardNumber,
-          last4Digits: paymentInfo.cardNumber.slice(-4),
-          expirationDate: paymentInfo.expirationDate,
-          status: "COMPLETED",
-        });
-      }
 
       for (const item of cartItemsForOrder) {
         await db.update(products)
@@ -225,18 +218,6 @@ const app = new Hono()
         color: item.color ?? null,
       }))
     );
-
-    if (paymentInfo.paymentMethod === "card" && paymentInfo.cardNumber) {
-      await db.insert(payments).values({
-        orderId: order.id,
-        amount: totalAmount,
-        method: "CARD",
-        transactionId: paymentInfo.cardNumber,
-        last4Digits: paymentInfo.cardNumber.slice(-4),
-        expirationDate: paymentInfo.expirationDate,
-        status: "COMPLETED",
-      });
-    }
 
     for (const item of cartItemsForOrder) {
       await db.update(products)

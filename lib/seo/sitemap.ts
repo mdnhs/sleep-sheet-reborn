@@ -66,20 +66,26 @@ export async function generateMainSitemap() {
 
 export async function generatePagesSitemap() {
   const now = new Date().toISOString()
+  // Legal pages carry a real "Last updated" date printed on the page itself
+  // (see app/(client)/terms-of-service, /privacy-policy, /shipping-returns) —
+  // the sitemap should say the same thing, not always claim "modified today".
+  const legalLastModified = new Date("2026-07-17").toISOString()
   const staticPages = [
-    { url: `${seoConfig.siteUrl}`, priority: 1.0, changeFrequency: "weekly" as const },
-    { url: `${seoConfig.siteUrl}/shop`, priority: 0.9, changeFrequency: "daily" as const },
-    { url: `${seoConfig.siteUrl}/blog`, priority: 0.8, changeFrequency: "daily" as const },
-    { url: `${seoConfig.siteUrl}/about`, priority: 0.5, changeFrequency: "monthly" as const },
-    { url: `${seoConfig.siteUrl}/contact`, priority: 0.5, changeFrequency: "monthly" as const },
-    { url: `${seoConfig.siteUrl}/shop`, priority: 0.7, changeFrequency: "daily" as const },
-    { url: `${seoConfig.siteUrl}/track-order`, priority: 0.3, changeFrequency: "monthly" as const },
+    { url: `${seoConfig.siteUrl}`, priority: 1.0, changeFrequency: "weekly" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/shop`, priority: 0.9, changeFrequency: "daily" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/blog`, priority: 0.8, changeFrequency: "daily" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/about`, priority: 0.5, changeFrequency: "yearly" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/contact`, priority: 0.5, changeFrequency: "yearly" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/track-order`, priority: 0.3, changeFrequency: "monthly" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/terms-of-service`, priority: 0.3, changeFrequency: "yearly" as const, lastModified: legalLastModified },
+    { url: `${seoConfig.siteUrl}/privacy-policy`, priority: 0.3, changeFrequency: "yearly" as const, lastModified: legalLastModified },
+    { url: `${seoConfig.siteUrl}/shipping-returns`, priority: 0.4, changeFrequency: "yearly" as const, lastModified: legalLastModified },
   ]
 
   return buildSitemap(
     staticPages.map((p) => ({
       url: p.url,
-      lastModified: now,
+      lastModified: p.lastModified,
       changeFrequency: p.changeFrequency,
       priority: p.priority,
     })),
@@ -103,13 +109,13 @@ export async function generateProductsSitemap() {
 
 export async function generateCategoriesSitemap() {
   const allItems = await db
-    .select({ id: categories.id, label: categories.label, value: categories.value })
+    .select({ id: categories.id, label: categories.label, value: categories.value, updatedAt: categories.updatedAt })
     .from(categories)
 
   return buildSitemap(
     allItems.map((c) => ({
       url: `${seoConfig.siteUrl}/categories/${c.value || c.id}`,
-      lastModified: new Date().toISOString(),
+      lastModified: c.updatedAt ? new Date(c.updatedAt).toISOString() : new Date().toISOString(),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),

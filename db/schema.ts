@@ -224,6 +224,7 @@ export const categories = pgTable("Category", {
   seoTitle: text("seoTitle"),
   seoDescription: text("seoDescription"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
 });
 
 export const orderTimelineEvents = pgTable("order_timeline_events", {

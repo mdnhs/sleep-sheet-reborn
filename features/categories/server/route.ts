@@ -142,6 +142,7 @@ const app = new Hono()
      }
      if (body.seoTitle !== undefined) updates.seoTitle = body.seoTitle
      if (body.seoDescription !== undefined) updates.seoDescription = body.seoDescription
+     updates.updatedAt = new Date()
 
      await db.update(categories).set(updates).where(eq(categories.value, currentValue))
 
