@@ -73,6 +73,7 @@ export async function generatePagesSitemap() {
   const staticPages = [
     { url: `${seoConfig.siteUrl}`, priority: 1.0, changeFrequency: "weekly" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/shop`, priority: 0.9, changeFrequency: "daily" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/new-arrivals`, priority: 0.8, changeFrequency: "daily" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/blog`, priority: 0.8, changeFrequency: "daily" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/about`, priority: 0.5, changeFrequency: "yearly" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/contact`, priority: 0.5, changeFrequency: "yearly" as const, lastModified: now },

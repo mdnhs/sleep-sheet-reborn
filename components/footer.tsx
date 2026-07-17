@@ -83,7 +83,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/collections/new-arrivals"
+                  href="/new-arrivals"
                   className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">
