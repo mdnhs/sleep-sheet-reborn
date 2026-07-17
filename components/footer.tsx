@@ -94,7 +94,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/collections/bestsellers"
+                  href="/bestsellers"
                   className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">

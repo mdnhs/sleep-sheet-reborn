@@ -1,9 +1,23 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
-import { products, categories, reviews, specifications, users } from '@/db/schema';
-import { eq, and, or, lte, gte, ilike, sql, desc, asc, inArray } from 'drizzle-orm';
+import { products, categories, reviews, specifications, users, orderItems, orders } from '@/db/schema';
+import { eq, and, or, lte, gte, ilike, sql, desc, asc, inArray, ne } from 'drizzle-orm';
 import { Product } from '@/lib/types';
 import { getProductById } from './get-product';
+
+// Total units sold per product, from real (non-cancelled) orders — used to
+// rank the bestselling sort. Products with zero sales don't appear here at
+// all (no matching orderItems rows), so callers must COALESCE to 0.
+const salesSubquery = db
+  .select({
+    productId: orderItems.productId,
+    totalSold: sql<number>`COALESCE(SUM(${orderItems.quantity}), 0)`.as("totalSold"),
+  })
+  .from(orderItems)
+  .innerJoin(orders, eq(orderItems.orderId, orders.id))
+  .where(ne(orders.status, "CANCELLED"))
+  .groupBy(orderItems.productId)
+  .as("sales");
 
 const app = new Hono()
 
@@ -112,6 +126,9 @@ const app = new Hono()
     case "featured":
       orderConditions.push(desc(products.updatedAt));
       break;
+    case "bestselling":
+      orderConditions.push(desc(sql`COALESCE(${salesSubquery.totalSold}, 0)`));
+      break;
   }
 
   try {
@@ -149,7 +166,8 @@ const app = new Hono()
       categoryLabel: categories.label,
     })
     .from(products)
-    .leftJoin(categories, eq(products.categoryId, categories.id));
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .leftJoin(salesSubquery, eq(products.id, salesSubquery.productId));
 
     if (filterConditions.length > 0) {
       mainQuery.where(and(...filterConditions));

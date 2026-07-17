@@ -17,14 +17,17 @@ interface ProductContentsProps {
   // putting it in the URL query string — the ?category= query param (set by
   // the sidebar filters) still takes precedence once the user picks one.
   initialCategory?: string;
+  // Same idea, for routes like /bestsellers that default to a specific sort
+  // without needing a ?sort= query string.
+  initialSort?: string;
 }
 
-function ProductContents({ initialCategory }: ProductContentsProps = {}) {
+function ProductContents({ initialCategory, initialSort }: ProductContentsProps = {}) {
   const [category] = useQueryState("category", { defaultValue: initialCategory || "" });
   const [minPrice] = useQueryState("minPrice", { defaultValue: "" });
   const [maxPrice] = useQueryState("maxPrice", { defaultValue: "" });
   const [search] = useQueryState("search", { defaultValue: "" });
-  const [sort, setSort] = useQueryState("sort", { defaultValue: "", shallow: false });
+  const [sort, setSort] = useQueryState("sort", { defaultValue: initialSort || "", shallow: false });
 
   const handleSortChange = (value: string | null) => {
     setSort(value || null);
@@ -69,7 +72,7 @@ function ProductContents({ initialCategory }: ProductContentsProps = {}) {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex flex-col gap-3">
               <Skeleton className="aspect-[3/4] w-full rounded-[1.5rem]" />
@@ -83,7 +86,7 @@ function ProductContents({ initialCategory }: ProductContentsProps = {}) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {allProducts.map((product: any, index: number) => (
               <ProductCard key={product.id} product={product} priority={index < 4} />
             ))}
