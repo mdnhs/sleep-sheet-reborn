@@ -45,7 +45,7 @@ export function OrderCountdown() {
   if (!isReady) return null;
 
   return (
-    <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 border border-border rounded-full px-3 py-1 sm:px-4 bg-background w-fit max-w-full">
+    <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 border border-border rounded-full px-2 py-1.5 bg-background w-fit max-w-full">
       <Clock className="text-muted-foreground shrink-0 h-3.5 w-3.5" />
       <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
         {t("orderIn")} <span className="font-semibold text-foreground">

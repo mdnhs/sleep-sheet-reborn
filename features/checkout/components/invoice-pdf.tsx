@@ -20,10 +20,10 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    paddingVertical: 15,
-    paddingHorizontal: 110,
+    paddingVertical: 5,
+    paddingHorizontal: 75,
     fontFamily: "Hind Siliguri",
-    fontSize: 9,
+    fontSize: 8,
     color: "#334155",
     backgroundColor: "#ffffff",
   },
@@ -36,8 +36,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-    paddingBottom: 8,
+    marginBottom: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1.5,
     borderBottomColor: "#e2e8f0",
   },
@@ -47,20 +47,20 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontFamily: "Space Grotesk",
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "bold",
     color: "#0f172a",
     letterSpacing: 2,
     textTransform: "uppercase",
   },
   brandDesc: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#64748b",
-    marginTop: 2,
+    marginTop: 0,
   },
   invoiceTitle: {
     fontFamily: "Space Grotesk",
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#cbd5e1",
     letterSpacing: 4,
@@ -71,41 +71,41 @@ const styles = StyleSheet.create({
   headerMetaItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 2,
+    marginTop: 0,
   },
   headerMetaLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#64748b",
     textTransform: "uppercase",
-    marginRight: 6,
+    marginRight: 4,
   },
   headerMetaValue: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: "bold",
     color: "#0f172a",
   },
   metaItem: {
-    marginBottom: 6,
+    marginBottom: 3,
   },
   label: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: "bold",
     color: "#94a3b8",
     textTransform: "uppercase",
-    marginBottom: 2,
+    marginBottom: 0,
   },
   value: {
-    fontSize: 10,
+    fontSize: 8.5,
     color: "#334155",
     fontWeight: "bold",
   },
   infoBox: {
     backgroundColor: "#f8fafc",
-    padding: 10,
+    padding: 6,
     borderRadius: 8,
     borderWidth: 1.5,
     borderColor: "#f1f5f9",
-    marginBottom: 10,
+    marginBottom: 6,
   },
   infoRow: {
     flexDirection: "row",
@@ -120,53 +120,53 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderLeftWidth: 1,
     borderLeftColor: "#e2e8f0",
-    paddingLeft: 8,
+    paddingLeft: 6,
   },
   table: {
     width: "100%",
-    marginBottom: 10,
+    marginBottom: 6,
   },
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#f1f5f9",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
     borderRadius: 6,
-    marginBottom: 6,
+    marginBottom: 3,
   },
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1.5,
     borderBottomColor: "#f1f5f9",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
     alignItems: "flex-start",
   },
-  thItem: { flex: 2.5, fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "bold", color: "#64748b", textTransform: "uppercase" },
-  thQty: { flex: 0.5, fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "bold", color: "#64748b", textAlign: "center", textTransform: "uppercase" },
-  thPrice: { flex: 1, fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
-  thTotal: { flex: 1, fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
-  
+  thItem: { flex: 2.5, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textTransform: "uppercase" },
+  thQty: { flex: 0.5, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "center", textTransform: "uppercase" },
+  thPrice: { flex: 1, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
+  thTotal: { flex: 1, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
+
   tdItem: { flex: 2.5, flexDirection: "row", alignItems: "flex-start" },
   tdItemTitle: {
-    fontSize: 10,
+    fontSize: 8.5,
     color: "#1e293b",
     fontWeight: "bold",
   },
-  tdItemDesc: { fontSize: 8, color: "#64748b", marginTop: 2 },
-  tdQty: { flex: 0.5, fontSize: 9, color: "#475569", textAlign: "center" },
-  tdPrice: { flex: 1, fontSize: 9, color: "#475569", textAlign: "right" },
-  tdTotal: { flex: 1, fontSize: 9, color: "#1e293b", fontWeight: "bold", textAlign: "right" },
-  
+  tdItemDesc: { fontSize: 7, color: "#64748b", marginTop: 0 },
+  tdQty: { flex: 0.5, fontSize: 8, color: "#475569", textAlign: "center" },
+  tdPrice: { flex: 1, fontSize: 8, color: "#475569", textAlign: "right" },
+  tdTotal: { flex: 1, fontSize: 8, color: "#1e293b", fontWeight: "bold", textAlign: "right" },
+
   totalsSection: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 8,
+    marginTop: 4,
   },
   totalsTable: {
-    width: 200,
+    width: 180,
     backgroundColor: "#f8fafc",
-    padding: 8,
+    padding: 6,
     borderRadius: 8,
     borderWidth: 1.5,
     borderColor: "#f1f5f9",
@@ -174,41 +174,41 @@ const styles = StyleSheet.create({
   totalsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 2,
+    paddingVertical: 1,
   },
   totalsLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#64748b",
   },
   totalsValue: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#334155",
     fontWeight: "bold",
   },
   grandTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 6,
-    marginTop: 2,
+    paddingTop: 4,
+    marginTop: 1,
     borderTopWidth: 1.5,
     borderTopColor: "#e2e8f0",
   },
   grandTotalLabel: {
-    fontSize: 10,
+    fontSize: 8.5,
     fontWeight: "bold",
     color: "#0f172a",
     textTransform: "uppercase",
   },
   grandTotalValue: {
-    fontSize: 11,
+    fontSize: 9.5,
     fontWeight: "bold",
     color: "#10b981", // elegant emerald for total
   },
   thankYou: {
     textAlign: "left",
-    fontSize: 9,
+    fontSize: 8,
     color: "#64748b",
-    marginTop: 15,
+    marginTop: 6,
     lineHeight: 1.5,
   }
 });
@@ -271,12 +271,12 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             {logoUrl && (
               <Image
                 source={{ uri: getPdfFriendlyImageUrl(logoUrl, true) }}
-                style={{ width: 45, height: 45, marginRight: 15, objectFit: "contain" }}
+                style={{ width: 45, height: 45, marginRight: 10, objectFit: "contain" }}
               />
             )}
             <View>
               <Text style={styles.brandName}>{siteName}</Text>
-              <Text style={styles.brandDesc}>Steadfast Merchant ID - 1661653</Text>
+              <Text style={styles.brandDesc}>Merchant ID - USH1CSYQ</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -301,7 +301,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
               <Text style={styles.label}>Customer / ক্রেতা</Text>
               <Text style={styles.value}>{shippingInfo?.fullName || "Customer"}</Text>
               {shippingInfo?.phone && (
-                <Text style={[styles.value, { marginTop: 2 }]}>{shippingInfo.phone}</Text>
+                <Text style={[styles.value, { marginTop: 0 }]}>{shippingInfo.phone}</Text>
               )}
             </View>
             <View style={[styles.infoCol, codeValue ? { width: "34%" } : {}]}>
@@ -310,12 +310,12 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             </View>
             {codeValue && (
               <View style={styles.infoColCourier}>
-                <Text style={[styles.value, { fontSize: 8, marginBottom: 4 }]}>
+                <Text style={[styles.value, { fontSize: 7, marginBottom: 2 }]}>
                   #{codeValue}
                 </Text>
                 <Image
                   source={{ uri: `https://bwipjs-api.metafloor.com/?bcid=code128&text=${codeValue}&scale=1&rotate=N` }}
-                  style={{ width: 80, height: 20, marginBottom: 4 }}
+                  style={{ width: 80, height: 20, marginBottom: 2 }}
                 />
                 <Image
                   source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${codeValue}` }}
@@ -325,7 +325,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             )}
           </View>
           {shippingInfo?.notes && (
-            <View style={[styles.metaItem, { marginTop: 10 }]}>
+            <View style={[styles.metaItem, { marginTop: 4 }]}>
               <Text style={styles.label}>Note / নোট</Text>
               <Text style={styles.value}>{shippingInfo.notes}</Text>
             </View>
@@ -347,7 +347,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
                 {item.image && (
                   <Image
                     source={{ uri: getPdfFriendlyImageUrl(item.image, false) }}
-                    style={{ width: 36, height: 36, marginRight: 15, borderRadius: 4, objectFit: "contain" }}
+                    style={{ width: 36, height: 36, marginRight: 10, borderRadius: 4, objectFit: "contain" }}
                   />
                 )}
                 <View style={{ flex: 1 }}>
@@ -367,6 +367,12 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
           ))}
         </View>
 
+        <View style={styles.thankYou}>
+          <Text style={{ fontWeight: "bold", color: "#475569", marginBottom: 2 }}>
+            {language === "bn" ? "অর্ডারের জন্য আপনাকে ধন্যবাদ!" : "Thank you for your order!"}
+          </Text>
+        </View>
+
         {/* Totals */}
         <View style={styles.totalsSection}>
           <View style={styles.totalsTable}>
@@ -383,10 +389,6 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
               <Text style={styles.grandTotalValue}>৳{order.totalAmount}</Text>
             </View>
           </View>
-        </View>
-
-        <View style={styles.thankYou}>
-          <Text style={{ fontWeight: "bold", color: "#475569", marginBottom: 4 }}>Thank you for your order!</Text>
         </View>
       </View>
     </Page>

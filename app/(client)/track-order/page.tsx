@@ -35,6 +35,7 @@ interface Order {
   createdAt: string;
   guestName?: string | null;
   items: OrderItem[];
+  trackingNumber?: string | null;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -119,6 +120,7 @@ function TrackOrderContent() {
         totalAmount: order.totalAmount,
         paymentMethod: order.paymentMethod,
         items,
+        trackingNumber: order.trackingNumber,
       };
       const shippingInfoData = {
         fullName: order.guestName || "Customer",

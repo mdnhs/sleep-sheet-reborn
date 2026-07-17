@@ -248,7 +248,7 @@ export default function OrdersPage() {
           order={placedOrderData}
           shippingInfo={shippingInfoData}
           siteName={siteName}
-          language="en"
+          language="bn"
           logoUrl={logoUrl}
         />
       );
@@ -335,7 +335,7 @@ export default function OrdersPage() {
         <BulkInvoicePDF
           orders={ordersData}
           siteName={siteName}
-          language="en"
+          language="bn"
           logoUrl={logoUrl}
         />
       );
