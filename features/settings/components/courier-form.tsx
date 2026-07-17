@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
+import { useSettingsSecrets, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,8 @@ const courierSchema = z.object({
 type CourierFormValues = z.infer<typeof courierSchema>;
 
 export function CourierForm() {
-  const { data: settings, isLoading } = useSettings();
+  // Raw credentials only exist on the admin-only secrets endpoint.
+  const { data: secrets, isLoading } = useSettingsSecrets();
   const { mutate, isPending } = useUpdateSettings();
   const [showApiKey, setShowApiKey] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState(false);
@@ -27,8 +28,8 @@ export function CourierForm() {
   const form = useForm<CourierFormValues>({
     resolver: zodResolver(courierSchema),
     values: {
-      steadfast_api_key: settings?.steadfast_api_key || "",
-      steadfast_secret_key: settings?.steadfast_secret_key || "",
+      steadfast_api_key: secrets?.steadfast_api_key || "",
+      steadfast_secret_key: secrets?.steadfast_secret_key || "",
     },
   });
 

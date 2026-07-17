@@ -34,10 +34,6 @@ import {
   TableFooter,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BulkInvoicePDF,
-  InvoicePDF,
-} from "@/features/checkout/components/invoice-pdf";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useOrders } from "@/features/order/api/use-order";
 import type { Order } from "@/features/order/types";
@@ -53,7 +49,6 @@ import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book
 import { useCurrency } from "@/hooks/use-currency";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { cn, formatDate } from "@/lib/utils";
-import { pdf } from "@react-pdf/renderer";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -204,6 +199,12 @@ export default function OrdersPage() {
     action: "print" | "download" = "print",
   ) => {
     try {
+      // Load the PDF renderer on demand — it is far too heavy to ship in the
+      // page bundle for a click-only feature.
+      const [{ pdf }, { InvoicePDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/checkout/components/invoice-pdf"),
+      ]);
       const consignmentId = trackingStatuses?.[order.id]?.consignment_id ||
         ((order.trackingNumber && /^\d+$/.test(order.trackingNumber)) ? Number(order.trackingNumber) : null);
 
@@ -285,6 +286,10 @@ export default function OrdersPage() {
     if (selectedOrders.length === 0) return;
     setIsBulkPrinting(true);
     try {
+      const [{ pdf }, { BulkInvoicePDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/checkout/components/invoice-pdf"),
+      ]);
       const ordersData = selectedOrders.map((order) => {
         const consignmentId = trackingStatuses?.[order.id]?.consignment_id ||
           ((order.trackingNumber && /^\d+$/.test(order.trackingNumber)) ? Number(order.trackingNumber) : null);

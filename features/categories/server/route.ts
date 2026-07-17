@@ -33,6 +33,7 @@ const app = new Hono()
         productCount: countByCategoryId.get(category.id) || 0,
       }));
 
+      c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
       return c.json(categoriesWithCounts);
    }catch(error){
      console.error("Failed to fetch Categories",error);
@@ -282,6 +283,7 @@ const app = new Hono()
      .sort((a, b) => b._sortWeight - a._sortWeight)
      .map(({ _sortWeight, ...rest }) => rest);
 
+   c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
    return c.json({ success: true, categories: categoriesWithImages });
 });
 

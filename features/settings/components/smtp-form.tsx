@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
+import { useSettingsSecrets, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,15 +19,16 @@ const smtpSchema = z.object({
 type SmtpFormValues = z.infer<typeof smtpSchema>;
 
 export function SmtpForm() {
-  const { data: settings, isLoading } = useSettings();
+  // Raw credentials only exist on the admin-only secrets endpoint.
+  const { data: secrets, isLoading } = useSettingsSecrets();
   const { mutate, isPending } = useUpdateSettings();
   const [showPass, setShowPass] = useState(false);
 
   const form = useForm<SmtpFormValues>({
     resolver: zodResolver(smtpSchema),
     values: {
-      smtp_email_user: settings?.smtp_email_user || "",
-      smtp_email_pass: settings?.smtp_email_pass || "",
+      smtp_email_user: secrets?.smtp_email_user || "",
+      smtp_email_pass: secrets?.smtp_email_pass || "",
     },
   });
 

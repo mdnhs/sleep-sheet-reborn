@@ -67,6 +67,22 @@ function Hero() {
     isLoading,
   } = useWebsiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const slideCount = heroSlides?.length ?? 0;
+
+  // Hooks must run on every render — keep them above the early returns.
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % slideCount);
+  }, [slideCount]);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + slideCount) % slideCount);
+  }, [slideCount]);
+
+  useEffect(() => {
+    if (slideCount === 0) return;
+    const timer = setInterval(nextSlide, 6000);
+    return () => clearInterval(timer);
+  }, [nextSlide, slideCount]);
 
   if (isLoading) {
     return <HeroSkeleton />;
@@ -79,21 +95,6 @@ function Hero() {
   if (!promoBanners || promoBanners.length === 0) {
     return null;
   }
-
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-  }, [heroSlides.length]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentSlide(
-      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length,
-    );
-  }, [heroSlides.length]);
-
-  useEffect(() => {
-    const timer = setInterval(nextSlide, 6000);
-    return () => clearInterval(timer);
-  }, [nextSlide]);
 
   const slideData = heroSlides.map((slide, index) => {
     if (index === 0) {

@@ -16,15 +16,23 @@ export function useSettings() {
   });
 }
 
-// Admin-only: fetches secret values (e.g. the CAPI token) that the public
-// settings endpoint intentionally omits.
+// Admin-only: fetches secret values (API keys, SMTP credentials, the CAPI
+// token) that the public settings endpoint intentionally omits.
 export function useSettingsSecrets() {
   return useQuery({
     queryKey: ["settings", "secrets"],
     queryFn: async () => {
       const res = await client.api.settings.secrets.$get();
       if (!res.ok) throw new Error("Failed to fetch settings secrets");
-      return res.json() as Promise<{ meta_capi_access_token: string }>;
+      return res.json() as Promise<{
+        meta_capi_access_token: string;
+        steadfast_api_key: string;
+        steadfast_secret_key: string;
+        cloudinary_api_key: string;
+        cloudinary_api_secret: string;
+        smtp_email_user: string;
+        smtp_email_pass: string;
+      }>;
     },
     staleTime: 5 * 60 * 1000,
   });

@@ -8,8 +8,6 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/hooks/use-language";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { pdf } from "@react-pdf/renderer";
-import { InvoicePDF } from "@/features/checkout/components/invoice-pdf";
 import { toast } from "sonner";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
@@ -103,6 +101,12 @@ function TrackOrderContent() {
 
   const handleDownloadInvoice = async (order: Order) => {
     try {
+      // Load the PDF renderer on demand — it is far too heavy to ship in the
+      // page bundle for a click-only feature.
+      const [{ pdf }, { InvoicePDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/checkout/components/invoice-pdf"),
+      ]);
       const items = order.items.map((item) => ({
         id: item.product.id,
         name: item.product.name,

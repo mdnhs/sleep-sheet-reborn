@@ -14,6 +14,8 @@ import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { seoConfig } from "@/lib/seo";
 
 interface ProductPickerProps {
   product: Product;
@@ -29,6 +31,13 @@ function ProductPicker({ product }: ProductPickerProps) {
   const router = useRouter();
   const { formatAmount } = useCurrency();
   const { track } = usePixelTracking();
+  // Same number as the floating WhatsApp button (footer_phone site setting).
+  const { footerPhone } = useWebsiteSettings();
+  // Prefill the WhatsApp chat with the product name and link so the seller
+  // immediately knows which product the customer wants to order.
+  const whatsappOrderHref = `https://wa.me/${footerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
+    `${t("whatsappOrderMessage")}\n${product.name}\n${seoConfig.siteUrl}/shop/${product.id}`,
+  )}`;
 
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || "");
@@ -338,15 +347,15 @@ function ProductPicker({ product }: ProductPickerProps) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-          <a 
-            href="tel:+8801700000000"
+          <a
+            href={`tel:${footerPhone.replace(/[^0-9+]/g, "")}`}
             className="flex items-center justify-center h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 transition-colors text-sm"
           >
             <Phone className="mr-2 h-4 w-4" fill="currentColor" />
             {t("phoneOrder")}
           </a>
-          <a 
-            href="https://wa.me/8801700000000" 
+          <a
+            href={whatsappOrderHref}
             target="_blank" 
             rel="noopener noreferrer"
             className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 bg-white dark:bg-slate-900 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors text-sm"

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContactForm } from "./contact-form";
-import { generateMetadata as buildMetadata } from "@/lib/seo";
+import { generateMetadata as buildMetadata, seoConfig } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
   title: "Contact Us",
@@ -53,18 +53,10 @@ const ContactPage = () => {
                   <h3 className="font-medium mb-1">Email Us</h3>
                   <p className="text-muted-foreground">
                     <a
-                      href="mailto:support@luxestore.com"
+                      href={`mailto:${seoConfig.contact.email}`}
                       className="hover:underline"
                     >
-                      support@luxestore.com
-                    </a>
-                  </p>
-                  <p className="text-muted-foreground">
-                    <a
-                      href="mailto:partnerships@luxestore.com"
-                      className="hover:underline"
-                    >
-                      partnerships@luxestore.com
+                      {seoConfig.contact.email}
                     </a>
                   </p>
                 </div>
@@ -75,12 +67,12 @@ const ContactPage = () => {
                 <div>
                   <h3 className="font-medium mb-1">Call Us</h3>
                   <p className="text-muted-foreground">
-                    <a href="tel:+15551234567" className="hover:underline">
-                      +1 (555) 123-4567
+                    <a href={`tel:${seoConfig.contact.telephone}`} className="hover:underline">
+                      {seoConfig.contact.telephone}
                     </a>
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Monday – Friday, 9am – 5pm PST
+                    Saturday – Thursday, 9am – 9pm (BST)
                   </p>
                 </div>
               </div>

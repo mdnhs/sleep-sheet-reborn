@@ -31,6 +31,7 @@ const app = new Hono()
       return c.json({ error: "Product Not Found" }, 404);
     }
 
+    c.header("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     return c.json({ formattedProduct }, 200);
   } catch (error) {
     console.error(error);
@@ -180,6 +181,12 @@ const app = new Hono()
     mainQuery.limit(limit).offset((page - 1) * limit);
 
     const productsList = await mainQuery;
+
+    // Cache public storefront listings at the CDN; the admin dashboard needs
+    // to see edits immediately, so its variant stays uncached.
+    if (admin !== "true") {
+      c.header("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    }
 
     return c.json({
       data: productsList.map(product => ({

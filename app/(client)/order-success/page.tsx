@@ -8,8 +8,6 @@ import { CheckCircle2, ChevronRight, ShoppingBag, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { pdf } from "@react-pdf/renderer";
-import { InvoicePDF } from "@/features/checkout/components/invoice-pdf";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { usePixelTracking } from "@/lib/meta-pixel";
@@ -116,6 +114,12 @@ function OrderSuccessContent() {
       return;
     }
     try {
+      // Load the PDF renderer on demand — it is far too heavy to ship in the
+      // page bundle for a click-only feature.
+      const [{ pdf }, { InvoicePDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/checkout/components/invoice-pdf"),
+      ]);
       const items = order.items.map((item) => ({
         name: item.product.name,
         price: item.price,

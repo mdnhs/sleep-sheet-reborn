@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
+import { useSettings, useSettingsSecrets, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,10 @@ const cdnSchema = z.object({
 type CdnFormValues = z.infer<typeof cdnSchema>;
 
 export function CdnForm() {
-  const { data: settings, isLoading } = useSettings();
+  const { data: settings, isLoading: isLoadingSettings } = useSettings();
+  // Raw credentials only exist on the admin-only secrets endpoint.
+  const { data: secrets, isLoading: isLoadingSecrets } = useSettingsSecrets();
+  const isLoading = isLoadingSettings || isLoadingSecrets;
   const { mutate, isPending } = useUpdateSettings();
   const [showSecret, setShowSecret] = useState(false);
 
@@ -28,8 +31,8 @@ export function CdnForm() {
     resolver: zodResolver(cdnSchema),
     values: {
       cloudinary_cloud_name: settings?.cloudinary_cloud_name || "",
-      cloudinary_api_key: settings?.cloudinary_api_key || "",
-      cloudinary_api_secret: settings?.cloudinary_api_secret || "",
+      cloudinary_api_key: secrets?.cloudinary_api_key || "",
+      cloudinary_api_secret: secrets?.cloudinary_api_secret || "",
     },
   });
 

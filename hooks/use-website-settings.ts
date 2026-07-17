@@ -74,7 +74,7 @@ export function useWebsiteSettings() {
       settings?.footer_brand_desc ||
       "Elevating your rest with premium, ethically crafted bedding for the modern sanctuary.",
     footerEmail: settings?.footer_email || "support@sleepsheet.com",
-    footerPhone: settings?.footer_phone || "+880 1700-000000",
+    footerPhone: settings?.footer_phone || "+8801570241052",
     socialFacebook: settings?.social_facebook || "",
     socialInstagram: settings?.social_instagram || "",
     socialTwitter: settings?.social_twitter || "",

@@ -4,32 +4,68 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+
+// Credentials that must never leave the server through the public GET.
+// The public endpoint exposes only a "<key>_set" flag for each so the admin
+// UI can show configured state; raw values are served by /secrets below.
+// (cloudinary_cloud_name stays public — it is visible in every image URL.)
+const SECRET_SETTING_KEYS = [
+  "meta_capi_access_token",
+  "steadfast_api_key",
+  "steadfast_secret_key",
+  "cloudinary_api_key",
+  "cloudinary_api_secret",
+  "smtp_email_user",
+  "smtp_email_pass",
+] as const;
+
+// Safety net for credential-shaped rows that aren't in the list above (the
+// DB contains orphaned logins like fraud_steadfast_* / fraud_pathao_* from
+// older versions). Anything matching this never leaves the public GET.
+const SECRET_KEY_PATTERN = /password|secret|api_key|token|_pass$|^fraud_/i;
+
+const isSecretKey = (key: string) =>
+  (SECRET_SETTING_KEYS as readonly string[]).includes(key) ||
+  SECRET_KEY_PATTERN.test(key);
 
 const app = new Hono()
 
   .get("/", async (c) => {
     const settings = await db.select().from(siteSettings);
-    const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
-    // Secret — never expose the raw CAPI token on this public endpoint.
-    // Return only whether it is configured so the admin UI can indicate state.
-    map.meta_capi_access_token_set = map.meta_capi_access_token ? "true" : "false";
-    delete map.meta_capi_access_token;
+    const map: Record<string, string> = {};
+    const secretValues: Record<string, string> = {};
+    for (const { key, value } of settings) {
+      if (isSecretKey(key)) secretValues[key] = value;
+      else map[key] = value;
+    }
+    // Configured-state flags so the admin UI can indicate presence without
+    // ever seeing the raw values on this public endpoint.
+    for (const key of SECRET_SETTING_KEYS) {
+      map[`${key}_set`] = secretValues[key] ? "true" : "false";
+    }
+    // Shared-cache only (s-maxage): the CDN absorbs repeat traffic while
+    // browsers always revalidate, so admin edits still show up quickly.
+    c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
     return c.json(map);
   })
 
-  // Admin-only: returns the raw CAPI token so a logged-in admin can view it.
-  // Kept off the public GET above.
+  // Admin-only: returns the raw credential values so a logged-in admin can
+  // view and edit them. Kept off the public GET above.
   .get("/secrets", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
       return c.json({ error: "Unauthorized" }, 401);
     }
-    const row = await db.query.siteSettings.findFirst({
-      where: eq(siteSettings.key, "meta_capi_access_token"),
+    const rows = await db.query.siteSettings.findMany({
+      where: inArray(siteSettings.key, [...SECRET_SETTING_KEYS]),
     });
-    return c.json({ meta_capi_access_token: row?.value ?? "" });
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const secrets = Object.fromEntries(
+      SECRET_SETTING_KEYS.map((key) => [key, byKey[key] ?? ""]),
+    ) as Record<(typeof SECRET_SETTING_KEYS)[number], string>;
+    return c.json(secrets);
   })
 
   .patch(
