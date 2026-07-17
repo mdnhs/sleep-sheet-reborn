@@ -12,6 +12,9 @@ export const metadata: Metadata = buildMetadata({
 const mainPages = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
+  { href: "/new-arrivals", label: "New Arrivals" },
+  { href: "/bestsellers", label: "Bestsellers" },
+  { href: "/sale", label: "Sale" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact Us" },
