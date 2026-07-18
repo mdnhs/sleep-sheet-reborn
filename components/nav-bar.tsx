@@ -259,12 +259,12 @@ function MobileBottomNav({
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-background border-t shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-between px-6 h-16 pb-safe">
       {/* Home */}
-      <Link href="/" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}>
+      <Link href="/" aria-label="Home" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}>
         <Home className="h-5 w-5" />
       </Link>
 
       {/* Wishlist */}
-      <Link href="/account" className={`relative flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/account' ? 'text-primary' : 'text-muted-foreground'}`}>
+      <Link href="/account" aria-label="Wishlist" className={`relative flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/account' ? 'text-primary' : 'text-muted-foreground'}`}>
         <Heart className="h-5 w-5" />
         {hasMounted && wishlistItemsCount > 0 && (
           <span className="absolute top-2 right-2 flex h-[14px] w-[14px] items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white">
@@ -276,13 +276,13 @@ function MobileBottomNav({
       {/* Center Shop Icon */}
       <div className="relative -top-5 flex items-center justify-center">
         <div className="absolute inset-0 bg-background rounded-full scale-110 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"></div>
-        <Link href="/shop" className="relative flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform z-10">
+        <Link href="/shop" aria-label="Shop" className="relative flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform z-10">
           <ShoppingBag className="h-6 w-6" />
         </Link>
       </div>
 
       {/* Cart */}
-      <button onClick={onCartOpen} className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full text-muted-foreground hover:text-primary">
+      <button onClick={onCartOpen} aria-label="View cart" className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full text-muted-foreground hover:text-primary">
         <ShoppingCart className="h-5 w-5" />
         {hasMounted && totalItems > 0 && (
           <span className="absolute top-2 right-2 flex h-[14px] w-[14px] items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white">
@@ -293,11 +293,11 @@ function MobileBottomNav({
 
       {/* Profile */}
       {!user ? (
-        <Link href="/signin" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/signin' ? 'text-primary' : 'text-muted-foreground'}`}>
+        <Link href="/signin" aria-label="Sign in" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/signin' ? 'text-primary' : 'text-muted-foreground'}`}>
           <User className="h-5 w-5" />
         </Link>
       ) : (
-        <Link href="/account" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/account' ? 'text-primary' : 'text-muted-foreground'}`}>
+        <Link href="/account" aria-label="My account" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/account' ? 'text-primary' : 'text-muted-foreground'}`}>
           <User className="h-5 w-5" />
         </Link>
       )}
@@ -377,6 +377,7 @@ function Navbar() {
                 />
                 <button
                   type="submit"
+                  aria-label="Search"
                   className="absolute right-4 top-[40%] -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
                 >
                   <Search className="h-4 w-4" />
@@ -406,6 +407,7 @@ function Navbar() {
                 />
                 <button
                   type="submit"
+                  aria-label="Search"
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
                 >
                   <Search className="h-[18px] w-[18px]" />

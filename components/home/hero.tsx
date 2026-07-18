@@ -128,10 +128,13 @@ function Hero() {
                   fill
                   sizes="(max-width: 1024px) 100vw, 66vw"
                   quality={75}
-                  // Only the first slide is the LCP candidate; preloading the
-                  // rest (they start at opacity 0) just steals bandwidth from it.
+                  // The first slide is the LCP. `priority` alone sets eager
+                  // loading + a preload + fetchpriority="high"; do NOT also pass
+                  // a `loading` prop — it silently strips fetchpriority="high"
+                  // and de-prioritizes the LCP image. The other slides start at
+                  // opacity 0, so leaving them non-priority (default lazy) keeps
+                  // bandwidth on the one that paints first.
                   priority={index === 0}
-                  loading={index === 0 ? "eager" : "lazy"}
                   className="object-cover transition-transform duration-[15000ms] ease-linear scale-100 group-hover:scale-110"
                 />
               </div>
