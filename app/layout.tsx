@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Figtree, Space_Grotesk } from "next/font/google";
+import { Geist_Mono, Figtree, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -10,21 +10,28 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { PixelTrackingProvider } from "@/provider/pixel-tracking-provider";
 import { seoConfig, websiteSchema, organizationSchema, structuredDataScript } from "@/lib/seo";
 
+// Only two fonts are on the storefront critical path: Figtree (body) and
+// Space Grotesk (headings). Both preload. Geist Sans was previously loaded but
+// its CSS variable is never referenced anywhere — removed entirely. Geist Mono
+// is used only on dashboard/checkout screens (the `font-mono` class), so it is
+// kept available but NOT preloaded, freeing bandwidth for the LCP image.
 const spaceGroteskHeading = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-heading",
+  display: "swap",
 });
 
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const figtree = Figtree({
   subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -123,7 +130,6 @@ export default function RootLayout({
       className={cn(
         "h-full",
         "antialiased",
-        geistSans.variable,
         geistMono.variable,
         "font-sans",
         figtree.variable,

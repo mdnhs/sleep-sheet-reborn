@@ -255,19 +255,20 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           {/* Quantity Selector */}
           <div className="flex-1 flex items-center justify-between bg-[#f4f4f5] dark:bg-slate-800 rounded-xl px-2 h-10 sm:h-12" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-            <button onClick={(e) => updateQuantity(e, -1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50" disabled={quantity <= 1}>
+            <button onClick={(e) => updateQuantity(e, -1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50" disabled={quantity <= 1} aria-label="Decrease quantity">
               <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
             <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">{quantity}</span>
-            <button onClick={(e) => updateQuantity(e, 1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+            <button onClick={(e) => updateQuantity(e, 1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" aria-label="Increase quantity">
               <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
 
           {/* Quick Add to Cart Button */}
-          <button 
+          <button
             onClick={handleQuickAdd}
             className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-[#2d2d2d] hover:bg-[#1a1a1a] rounded-xl flex items-center justify-center text-white transition-colors active:scale-95"
+            aria-label={`Add ${product.name} to cart`}
           >
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>

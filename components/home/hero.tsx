@@ -127,8 +127,11 @@ function Hero() {
                   alt={slide.heading}
                   fill
                   sizes="(max-width: 1024px) 100vw, 66vw"
-                  quality={90}
-                  priority={index < 2}
+                  quality={75}
+                  // Only the first slide is the LCP candidate; preloading the
+                  // rest (they start at opacity 0) just steals bandwidth from it.
+                  priority={index === 0}
+                  loading={index === 0 ? "eager" : "lazy"}
                   className="object-cover transition-transform duration-[15000ms] ease-linear scale-100 group-hover:scale-110"
                 />
               </div>
@@ -180,7 +183,8 @@ function Hero() {
                   alt={banner.title}
                   fill
                   sizes="(max-width: 1024px) 100vw, 33vw"
-                  quality={90}
+                  quality={75}
+                  loading="lazy"
                   className="object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end opacity-90 group-hover:opacity-100 transition-opacity">
