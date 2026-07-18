@@ -25,25 +25,50 @@ function loadSDK(): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") return resolve()
 
-    if (document.querySelector(`script[src="${PIXEL_CONFIG.sdkUrl}"]`)) {
-      sdkLoaded = true
-      return resolve()
-    }
+    const inject = () => {
+      if (
+        sdkLoaded ||
+        document.querySelector(`script[src="${PIXEL_CONFIG.sdkUrl}"]`)
+      ) {
+        sdkLoaded = true
+        return resolve()
+      }
 
-    const script = document.createElement("script")
-    script.async = true
-    script.defer = true
-    script.src = PIXEL_CONFIG.sdkUrl
-    script.onload = () => {
-      sdkLoaded = true
-      resolve()
-    }
-
-    const firstScript = document.getElementsByTagName("script")[0]
-    if (firstScript?.parentNode) {
-      firstScript.parentNode.insertBefore(script, firstScript)
-    } else {
+      const script = document.createElement("script")
+      script.async = true
+      script.defer = true
+      script.src = PIXEL_CONFIG.sdkUrl
+      script.onload = () => {
+        sdkLoaded = true
+        resolve()
+      }
       document.head.appendChild(script)
+    }
+
+    // Defer the heavy third-party SDK download (fbevents.js, ~mid-double-digit
+    // KB from connect.facebook.net) until the browser is idle after the page
+    // has loaded, so it stops competing with the LCP hero image and the main
+    // thread on slow mobile connections. This is safe: `ensureFbq()` has
+    // already installed window.fbq with a queue, so the init + PageView + any
+    // early conversion events buffer and flush the moment the SDK arrives — no
+    // tracking is lost, only the download is delayed a beat.
+    const schedule = () => {
+      const ric = (
+        window as Window & {
+          requestIdleCallback?: (
+            cb: () => void,
+            opts?: { timeout: number },
+          ) => void
+        }
+      ).requestIdleCallback
+      if (ric) ric(inject, { timeout: 3000 })
+      else setTimeout(inject, 1500)
+    }
+
+    if (document.readyState === "complete") {
+      schedule()
+    } else {
+      window.addEventListener("load", schedule, { once: true })
     }
   })
 }

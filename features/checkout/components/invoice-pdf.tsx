@@ -188,10 +188,6 @@ const styles = StyleSheet.create({
   grandTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 4,
-    marginTop: 1,
-    borderTopWidth: 1.5,
-    borderTopColor: "#e2e8f0",
   },
   grandTotalLabel: {
     fontSize: 8.5,
@@ -277,6 +273,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             <View>
               <Text style={styles.brandName}>{siteName}</Text>
               <Text style={styles.brandDesc}>Merchant ID - USH1CSYQ</Text>
+              <Text style={styles.brandDesc}>www.sleepsheetbd.com</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -376,14 +373,6 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
         {/* Totals */}
         <View style={styles.totalsSection}>
           <View style={styles.totalsTable}>
-            <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>{t("subtotal")}:</Text>
-              <Text style={styles.totalsValue}>৳{order.subtotal}</Text>
-            </View>
-            <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>{t("shipping")}:</Text>
-              <Text style={styles.totalsValue}>৳{order.shippingCost}</Text>
-            </View>
             <View style={styles.grandTotalRow}>
               <Text style={styles.grandTotalLabel}>{t("total")}:</Text>
               <Text style={styles.grandTotalValue}>৳{order.totalAmount}</Text>
