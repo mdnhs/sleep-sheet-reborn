@@ -57,7 +57,7 @@ const Newsletter = () => {
             </button>
           </form>
           
-          <p className="text-[10px] text-white/30 mt-6 uppercase tracking-widest">
+          <p className="text-[10px] text-white/60 mt-6 uppercase tracking-widest">
             Unsubscribe at any time.
           </p>
         </div>

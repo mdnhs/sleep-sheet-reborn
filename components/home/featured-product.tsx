@@ -66,6 +66,7 @@ const FeaturedProduct = () => {
           </div>
           <Link
             href="/shop?sort=newest"
+            aria-label="View all new arrivals"
             className="group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
           >
             <span className="hidden sm:inline">View All</span>

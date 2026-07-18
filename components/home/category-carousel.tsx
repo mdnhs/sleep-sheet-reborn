@@ -83,6 +83,7 @@ const CategoryCarousel = ({ categoryLabel, categoryValue, categoryImage, isEven 
           </div>
           <Link
             href={categoryValue ? `/categories/${categoryValue}` : `/shop?category=${categoryLabel}`}
+            aria-label={categoryLabel ? `View all ${categoryLabel}` : "View all"}
             className="group flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
           >
             <span className="hidden sm:inline">View All</span>

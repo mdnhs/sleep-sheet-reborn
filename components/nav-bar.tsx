@@ -367,7 +367,7 @@ function Navbar() {
                 </div>
               </div>
               {/* Search Input for Mobile Viewports */}
-              <form onSubmit={handleSearch} className="relative w-full pb-2">
+              <form onSubmit={handleSearch} className="relative w-full mb-2">
                 <input
                   type="text"
                   placeholder={t("searchPlaceholder")}
@@ -379,7 +379,7 @@ function Navbar() {
                 <button
                   type="submit"
                   aria-label="Search"
-                  className="absolute right-4 top-[40%] -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -410,7 +410,7 @@ function Navbar() {
                 <button
                   type="submit"
                   aria-label="Search"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
                 >
                   <Search className="h-[18px] w-[18px]" />
                 </button>
