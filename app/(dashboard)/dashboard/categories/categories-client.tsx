@@ -1,13 +1,5 @@
 "use client"
-import { useState, useMemo, useRef } from "react"
-import type { ColumnDef, Updater } from "@tanstack/react-table"
-import { DataTable } from "@/components/ui/data-table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { useMemo, useRef, useState } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -26,12 +18,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import {
-  MoreVertical,
   Plus,
   Search,
   Trash2,
@@ -39,6 +36,10 @@ import {
   FolderOpen,
   ImagePlus,
   X,
+  GripVertical,
+  MoreVertical,
+  ChevronDown,
+  ArrowUpDown,
 } from "lucide-react"
 import Image from "next/image"
 import { useGetCategories } from "@/features/categories/api/use-get-categories"
@@ -47,6 +48,24 @@ import { useUpdateCategory } from "@/features/categories/api/use-update-category
 import { useDeleteCategory } from "@/features/categories/api/use-delete-category"
 import { useBulkDeleteCategories } from "@/features/categories/api/use-bulk-delete-categories"
 import { toast } from "sonner"
+import {
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type UniqueIdentifier,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { useReorderCategories } from "@/features/categories/api/use-reorder-categories"
 
 type FlatCategory = {
   id: string
@@ -54,6 +73,7 @@ type FlatCategory = {
   value: string
   parentId: string | null
   image: string | null
+  order: number | null
   seoTitle?: string | null
   seoDescription?: string | null
 }
@@ -61,6 +81,108 @@ type FlatCategory = {
 type CategoryRow = FlatCategory & {
   parentLabel: string
   subCount: number
+}
+
+function DraggableRow({
+  row,
+  selected,
+  onSelect,
+  onEdit,
+  onDelete,
+  disabled,
+}: {
+  row: CategoryRow
+  selected: boolean
+  onSelect: (checked: boolean) => void
+  onEdit: () => void
+  onDelete: () => void
+  disabled: boolean
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.value,
+  })
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      data-state={isDragging ? "dragging" : selected ? "selected" : undefined}
+      className={cn(
+        "hover:bg-muted/30 transition-colors whitespace-nowrap",
+        isDragging && "opacity-60 shadow-lg"
+      )}
+    >
+      <td className="w-10 px-2 py-2 align-middle">
+        <button
+          type="button"
+          className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          aria-label="Drag to reorder"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </td>
+      <td className="px-2 py-2 align-middle">
+        <input
+          type="checkbox"
+          className="rounded border-input"
+          checked={selected}
+          onChange={(e) => onSelect(e.target.checked)}
+          aria-label={`Select ${row.label}`}
+        />
+      </td>
+      <td className="px-2 py-2 align-middle">
+        {row.image ? (
+          <img src={row.image} alt="" className="h-10 w-10 rounded object-cover" />
+        ) : (
+          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+            <FolderOpen className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+      </td>
+      <td className="px-2 py-2 align-middle">
+        <span className="font-medium">{row.label}</span>
+      </td>
+      <td className="px-2 py-2 align-middle">
+        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{row.value}</code>
+      </td>
+      <td className="px-2 py-2 align-middle">
+        {row.parentLabel !== "—" ? (
+          <span>{row.parentLabel}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </td>
+      <td className="px-2 py-2 align-middle">
+        {row.subCount > 0 ? (
+          <Badge variant="secondary">{row.subCount}</Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </td>
+      <td className="px-2 py-2 align-middle text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger className={buttonVariants({ variant: "ghost", size: "icon-sm" })}>
+            <MoreVertical className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={onEdit}>
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={!row.subCount ? "text-destructive focus:text-destructive" : ""}
+              disabled={!row.subCount || disabled}
+              onSelect={(e) => e.preventDefault()}
+              onClick={row.subCount === 0 ? onDelete : undefined}
+            >
+              {!row.subCount ? "Has subcategories" : "Delete"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+    </tr>
+  )
 }
 
 function CategoriesClientPage() {
@@ -78,7 +200,7 @@ function CategoriesClientPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CategoryRow | null>(null)
-  
+
   const [categoryName, setCategoryName] = useState("")
   const [categoryValue, setCategoryValue] = useState("")
   const [selectedParentValue, setSelectedParentValue] = useState("none")
@@ -90,35 +212,71 @@ function CategoriesClientPage() {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const categories = (rawCategories as FlatCategory[] | undefined) ?? []
+  const categories = useMemo(() => (rawCategories as FlatCategory[] | undefined) ?? [], [rawCategories])
+  const { mutate: reorderCategories, isPending: isReordering } = useReorderCategories()
+
+  const sortedCategories = useMemo(() =>
+    [...categories].sort((a, b) =>
+      (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.label.localeCompare(b.label)
+    ), [categories]
+  )
+
+  const [localOrder, setLocalOrder] = useState<FlatCategory[] | null>(null)
+  const displayCategories = localOrder ?? sortedCategories
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(KeyboardSensor)
+  )
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return
+
+    const previousOrder = displayCategories
+    const oldIndex = previousOrder.findIndex((c) => c.value === active.id)
+    const newIndex = previousOrder.findIndex((c) => c.value === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+
+    const nextOrder = arrayMove(previousOrder, oldIndex, newIndex)
+    setLocalOrder(nextOrder)
+    reorderCategories(
+      nextOrder.map((c, i) => ({ value: c.value, order: i })),
+      { onError: () => setLocalOrder(previousOrder) }
+    )
+  }
 
   const generateSlug = (name: string) =>
     name.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, "-").trim()
 
-  const rows: CategoryRow[] = useMemo(() => {
-    const parentMap = new Map(categories.map((c) => [c.value, c.label]))
-    const subCounts = new Map<string, number>()
+  const parentMap = useMemo(() => new Map(categories.map((c) => [c.value, c.label])), [categories])
+  const subCounts = useMemo(() => {
+    const counts = new Map<string, number>()
     for (const c of categories) {
       if (c.parentId) {
         const parent = categories.find((p) => p.id === c.parentId)
         if (parent) {
-          subCounts.set(parent.value, (subCounts.get(parent.value) || 0) + 1)
+          counts.set(parent.value, (counts.get(parent.value) || 0) + 1)
         }
       }
     }
+    return counts
+  }, [categories])
+
+  const rows: CategoryRow[] = useMemo(() => {
     const filtered = searchQuery
-      ? categories.filter(
+      ? displayCategories.filter(
           (c) =>
             c.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
             c.value.toLowerCase().includes(searchQuery.toLowerCase())
         )
-      : categories
+      : displayCategories
     return filtered.map((c) => ({
       ...c,
       parentLabel: c.parentId ? parentMap.get(categories.find((p) => p.id === c.parentId)?.value ?? "") ?? "—" : "—",
       subCount: subCounts.get(c.value) ?? 0,
     }))
-  }, [categories, searchQuery])
+  }, [categories, displayCategories, searchQuery, parentMap, subCounts])
 
   const handleImageSelect = (file: File) => {
     setImageFile(file)
@@ -236,119 +394,18 @@ function CategoriesClientPage() {
   const rootCategories = categories.filter((c) => !c.parentId)
   const selectedCount = Object.keys(rowSelection).length
 
-  const columns: ColumnDef<CategoryRow>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          className="rounded border-input"
-          checked={table.getIsAllPageRowsSelected()}
-          onChange={(value) => table.toggleAllPageRowsSelected(!!value.target.checked)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          className="rounded border-input"
-          checked={row.getIsSelected()}
-          onChange={(value) => row.toggleSelected(!!value.target.checked)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "image",
-      header: "Image",
-      enableHiding: false,
-      cell: ({ row }) =>
-        row.original.image ? (
-          <img
-            src={row.original.image}
-            alt={row.original.label}
-            className="h-10 w-10 object-cover rounded"
-          />
-        ) : (
-          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          </div>
-        ),
-    },
-    {
-      accessorKey: "label",
-      header: "Label",
-      cell: ({ row }) => (
-        <span className="font-medium">{row.original.label}</span>
-      ),
-    },
-    {
-      accessorKey: "value",
-      header: "Slug",
-      cell: ({ row }) => (
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{row.original.value}</code>
-      ),
-    },
-    {
-      accessorKey: "parentLabel",
-      header: "Parent",
-      cell: ({ row }) =>
-        row.original.parentLabel !== "—" ? (
-          <span>{row.original.parentLabel}</span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      accessorKey: "subCount",
-      header: "Subcategories",
-      cell: ({ row }) =>
-        row.original.subCount > 0 ? (
-          <Badge variant="secondary">{row.original.subCount}</Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      enableHiding: false,
-      cell: ({ row }) => {
-        const cat = row.original
-        const canDelete = cat.subCount === 0
-        return (
-          <div className="flex items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}>
-                <MoreVertical className="h-4 w-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  onClick={() => handleEdit(cat)}
-                >
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className={!canDelete ? "text-destructive focus:text-destructive" : ""}
-                  disabled={!canDelete || isDeleting}
-                  onSelect={(e) => e.preventDefault()}
-                  onClick={() => canDelete && setDeleteTarget(cat)}
-                >
-                  {!canDelete ? "Has subcategories" : "Delete"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )
-      },
-    },
-  ]
+  const toggleSelect = (value: string, checked: boolean) => {
+    setRowSelection((prev) => ({ ...prev, [value]: checked }))
+  }
+
+  const toggleSelectAll = (checked: boolean) => {
+    const next: Record<string, boolean> = {}
+    if (checked) rows.forEach((r) => (next[r.value] = true))
+    setRowSelection(next)
+  }
 
   const handleBulkDelete = () => {
-    const values = rows.filter((_, i) => rowSelection[i.toString()]).map((r) => r.value)
+    const values = rows.filter((r) => rowSelection[r.value]).map((r) => r.value)
     if (values.length === 0) return
     bulkDelete(values, {
       onSuccess: () => {
@@ -427,7 +484,7 @@ function CategoriesClientPage() {
 
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">
-                  SEO Title <span className="text-xs">(optional — shown in search results, falls back to Name)</span>
+                  SEO Title <span className="text-xs">(optional)</span>
                 </label>
                 <Input
                   placeholder={categoryName || "e.g. Best Comforter Price in Bangladesh"}
@@ -439,7 +496,7 @@ function CategoriesClientPage() {
 
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">
-                  SEO Description <span className="text-xs">(optional — falls back to a generic sentence)</span>
+                  SEO Description <span className="text-xs">(optional)</span>
                 </label>
                 <Textarea
                   placeholder="Shop premium comforter sets online in Bangladesh with cash on delivery..."
@@ -449,7 +506,6 @@ function CategoriesClientPage() {
                   rows={3}
                 />
               </div>
-
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">Image</label>
                 <div className="flex items-start gap-3">
@@ -569,7 +625,7 @@ function CategoriesClientPage() {
 
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">
-                  SEO Title <span className="text-xs">(optional — shown in search results, falls back to Name)</span>
+                  SEO Title <span className="text-xs">(optional)</span>
                 </label>
                 <Input
                   placeholder={categoryName || "e.g. Best Comforter Price in Bangladesh"}
@@ -581,7 +637,7 @@ function CategoriesClientPage() {
 
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">
-                  SEO Description <span className="text-xs">(optional — falls back to a generic sentence)</span>
+                  SEO Description <span className="text-xs">(optional)</span>
                 </label>
                 <Textarea
                   placeholder="Shop premium comforter sets online in Bangladesh with cash on delivery..."
@@ -591,7 +647,6 @@ function CategoriesClientPage() {
                   rows={3}
                 />
               </div>
-
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">Image</label>
                 <div className="flex items-start gap-3">
@@ -641,14 +696,8 @@ function CategoriesClientPage() {
         </Dialog>
       </div>
 
-      <DataTable<CategoryRow, unknown>
-        columns={columns}
-        data={rows}
-        rowSelection={rowSelection}
-        onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
-          setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
-        }}
-        searchSlot={
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-[240px]">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -674,8 +723,75 @@ function CategoriesClientPage() {
               </div>
             )}
           </div>
-        }
-      />
+        </div>
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={rows.map((r): UniqueIdentifier => r.value)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <table className="w-full">
+              <thead className="bg-secondary/20">
+                <tr className="hover:bg-transparent">
+                  <th className="w-10 px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap"></th>
+                  <th className="w-10 px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      className="rounded border-input"
+                      checked={rows.length > 0 && rows.every((r) => rowSelection[r.value])}
+                      onChange={(e) => toggleSelectAll(e.target.checked)}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Image</th>
+                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">
+                    <Button variant="ghost" className="-ml-4 h-8 data-[state=open]:bg-accent">
+                      Label <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </th>
+                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Slug</th>
+                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Parent</th>
+                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Subcategories</th>
+                  <th className="px-2 py-3 text-right font-semibold text-foreground text-sm whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length > 0 ? (
+                  rows.map((row) => (
+                    <DraggableRow
+                      key={row.value}
+                      row={row}
+                      selected={!!rowSelection[row.value]}
+                      onSelect={(checked) => toggleSelect(row.value, checked)}
+                      onEdit={() => handleEdit(row)}
+                      onDelete={() => setDeleteTarget(row)}
+                      disabled={isDeleting}
+                    />
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="h-24 text-center text-muted-foreground">
+                      {searchQuery ? "No results." : "No categories yet."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SortableContext>
+      </DndContext>
+      {isReordering && <p className="text-xs text-muted-foreground">Saving order...</p>}
+
+      <div className="flex items-center justify-between px-2 py-1">
+        <div className="text-xs text-muted-foreground">
+          {selectedCount} of {rows.length} row(s) selected.
+        </div>
+      </div>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

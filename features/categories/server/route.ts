@@ -19,6 +19,7 @@ const app = new Hono()
           value: categories.value,
           parentId: categories.parentId,
           image: categories.image,
+          order: categories.order,
           seoTitle: categories.seoTitle,
           seoDescription: categories.seoDescription,
         }).from(categories),
@@ -46,13 +47,14 @@ const app = new Hono()
       value:z.string().min(2).max(50),
       parentId: z.string().optional().nullable(),
       image: z.string().url().optional().nullable(),
+      order: z.number().int().min(0).optional().nullable(),
       seoTitle: z.string().max(70).optional().nullable(),
       seoDescription: z.string().max(160).optional().nullable(),
    })
 ), async(c)=>{
    try{
       const user = c.get("user");
-      const {label,value,parentId,image,seoTitle,seoDescription}=c.req.valid("json");
+      const {label,value,parentId,image,order,seoTitle,seoDescription}=c.req.valid("json");
 
       if(!user || !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS)){
          return c.json({ success: false, error: 'Unauthorized' }, 403);
@@ -78,15 +80,17 @@ const app = new Hono()
          value,
          parentId: parentId ?? null,
          image: image ?? null,
-         seoTitle: seoTitle ?? null,
-         seoDescription: seoDescription ?? null,
-       });
+          order: order ?? null,
+          seoTitle: seoTitle ?? null,
+          seoDescription: seoDescription ?? null,
+        });
 
-       return c.json({
-         label,
-         value,
-         parentId: parentId ?? null,
-         image: image ?? null,
+        return c.json({
+          label,
+          value,
+          parentId: parentId ?? null,
+          image: image ?? null,
+          order: order ?? null,
          seoTitle: seoTitle ?? null,
          seoDescription: seoDescription ?? null,
        }, 201);
@@ -95,12 +99,39 @@ const app = new Hono()
          return c.json({ error: "Failed to create category" }, 500);
        }
 })
+.post("/reorder", sessionMiddleware, zValidator("json",
+  z.object({
+    orders: z.array(z.object({
+      value: z.string().min(2).max(50),
+      order: z.number().int().min(0),
+    })).min(1),
+  })
+), async (c) => {
+  const user = c.get("user");
+  if (!user || user.role !== "ADMIN") {
+    return c.json({ success: false, error: "Unauthorized" }, 403);
+  }
+
+  const { orders } = c.req.valid("json");
+  try {
+    await Promise.all(orders.map(({ value, order }) =>
+      db.update(categories)
+        .set({ order, updatedAt: new Date() })
+        .where(eq(categories.value, value))
+    ));
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Failed to reorder categories", error);
+    return c.json({ error: "Failed to reorder categories" }, 500);
+  }
+})
 .patch("/:value", sessionMiddleware, zValidator('json',
    z.object({
       label: z.string().min(2).max(50).optional(),
       value: z.string().min(2).max(50).optional(),
       parentId: z.string().optional().nullable(),
       image: z.string().url().optional().nullable(),
+      order: z.number().int().min(0).optional().nullable(),
       seoTitle: z.string().max(70).optional().nullable(),
       seoDescription: z.string().max(160).optional().nullable(),
    })
@@ -141,6 +172,7 @@ const app = new Hono()
        }
        updates.image = body.image
      }
+      if (body.order !== undefined) updates.order = body.order
      if (body.seoTitle !== undefined) updates.seoTitle = body.seoTitle
      if (body.seoDescription !== undefined) updates.seoDescription = body.seoDescription
      updates.updatedAt = new Date()
@@ -276,12 +308,18 @@ const app = new Hono()
           value: category.value,
           image,
           productCount: category.products.length,
-          _sortWeight: validProducts.length, // internal only, favors categories with product photos
+          _order: category.order,
+          _sortWeight: validProducts.length,
         };
       })
-      .filter((c): c is { label: string; value: string; image: string; productCount: number; _sortWeight: number } => !!c)
-     .sort((a, b) => b._sortWeight - a._sortWeight)
-     .map(({ _sortWeight, ...rest }) => rest);
+      .filter((c): c is { label: string; value: string; image: string; productCount: number; _order: number | null; _sortWeight: number } => !!c)
+     .sort((a, b) => {
+        if (a._order !== null && b._order !== null) return a._order - b._order;
+        if (a._order !== null) return -1;
+        if (b._order !== null) return 1;
+        return b._sortWeight - a._sortWeight;
+      })
+      .map(({ _order, _sortWeight, ...rest }) => rest);
 
    c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
    return c.json({ success: true, categories: categoriesWithImages });
