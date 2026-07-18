@@ -43,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   pagination?: PaginationState
   onPaginationChange?: (updater: Updater<PaginationState>) => void
   onRowClick?: (row: TData) => void
+  columnVisibility?: VisibilityState
 }
 
 export function DataTable<TData, TValue>({
@@ -56,8 +57,9 @@ export function DataTable<TData, TValue>({
   pagination: externalPagination,
   onPaginationChange,
   onRowClick,
+  columnVisibility: initialColumnVisibility,
 }: DataTableProps<TData, TValue>) {
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {})
   const [internalPagination, setInternalPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,

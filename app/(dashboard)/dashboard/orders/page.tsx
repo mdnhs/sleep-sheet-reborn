@@ -54,6 +54,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Copy,
   FileText,
   FilterX,
@@ -125,20 +127,33 @@ const STEADFAST_STATUS_LABELS: Record<string, string> = {
 };
 
 const STEADFAST_STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700",
-  in_review: "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
+  pending:
+    "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700",
+  in_review:
+    "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
   hold: "bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700",
-  cancelled: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
-  cancelled_approval_pending: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
-  delivered: "bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700",
-  partial_delivered: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
-  delivered_approval_pending: "bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700",
-  partial_delivered_approval_pending: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
-  not_delivered: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
-  returned: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
-  "fast-track": "bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700",
-  "hub-transfer": "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700",
-  "office-delivery": "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
+  cancelled:
+    "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  cancelled_approval_pending:
+    "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  delivered:
+    "bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700",
+  partial_delivered:
+    "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
+  delivered_approval_pending:
+    "bg-green-500/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700",
+  partial_delivered_approval_pending:
+    "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
+  not_delivered:
+    "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  returned:
+    "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700",
+  "fast-track":
+    "bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700",
+  "hub-transfer":
+    "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700",
+  "office-delivery":
+    "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
 };
 
 export default function OrdersPage() {
@@ -148,6 +163,7 @@ export default function OrdersPage() {
     Order["status"] | "ALL" | "TODAY"
   >("PENDING");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showAllOrderItems, setShowAllOrderItems] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [courierOrder, setCourierOrder] = useState<ShippingOrder | null>(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -206,8 +222,11 @@ export default function OrdersPage() {
         import("@react-pdf/renderer"),
         import("@/features/checkout/components/invoice-pdf"),
       ]);
-      const consignmentId = trackingStatuses?.[order.id]?.consignment_id ||
-        ((order.trackingNumber && /^\d+$/.test(order.trackingNumber)) ? Number(order.trackingNumber) : null);
+      const consignmentId =
+        trackingStatuses?.[order.id]?.consignment_id ||
+        (order.trackingNumber && /^\d+$/.test(order.trackingNumber)
+          ? Number(order.trackingNumber)
+          : null);
 
       const placedOrderData: any = {
         orderNumber: order.orderNumber,
@@ -216,7 +235,10 @@ export default function OrdersPage() {
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,
         paymentMethod: order.paymentMethod || "COD",
-        trackingNumber: order.trackingNumber || trackingStatuses?.[order.id]?.tracking_code || null,
+        trackingNumber:
+          order.trackingNumber ||
+          trackingStatuses?.[order.id]?.tracking_code ||
+          null,
         consignmentId: consignmentId,
         items: order.items.map((i: any) => ({
           name: i.product.name,
@@ -292,8 +314,11 @@ export default function OrdersPage() {
         import("@/features/checkout/components/invoice-pdf"),
       ]);
       const ordersData = selectedOrders.map((order) => {
-        const consignmentId = trackingStatuses?.[order.id]?.consignment_id ||
-          ((order.trackingNumber && /^\d+$/.test(order.trackingNumber)) ? Number(order.trackingNumber) : null);
+        const consignmentId =
+          trackingStatuses?.[order.id]?.consignment_id ||
+          (order.trackingNumber && /^\d+$/.test(order.trackingNumber)
+            ? Number(order.trackingNumber)
+            : null);
 
         const placedOrderData: any = {
           orderNumber: order.orderNumber,
@@ -302,7 +327,10 @@ export default function OrdersPage() {
           totalAmount: order.totalAmount,
           createdAt: order.createdAt,
           paymentMethod: order.paymentMethod || "COD",
-          trackingNumber: order.trackingNumber || trackingStatuses?.[order.id]?.tracking_code || null,
+          trackingNumber:
+            order.trackingNumber ||
+            trackingStatuses?.[order.id]?.tracking_code ||
+            null,
           consignmentId: consignmentId,
           items: order.items.map((i: any) => ({
             name: i.product.name,
@@ -547,6 +575,7 @@ export default function OrdersPage() {
           {row.original.orderNumber}
         </span>
       ),
+      enableHiding: true,
     },
     {
       id: "saleType",
@@ -578,6 +607,7 @@ export default function OrdersPage() {
           <span className="text-muted-foreground">—</span>
         );
       },
+      enableHiding: true,
     },
     {
       id: "customer",
@@ -672,14 +702,13 @@ export default function OrdersPage() {
     {
       accessorKey: "trackingNumber",
       header: "Tracking #",
+      enableHiding: true,
       cell: ({ row }) => {
         const order = row.original;
         const trk = order.trackingNumber;
         const isTracking = trackSingleOrder.isPending;
         if (!trk) {
-          return (
-            <span className="text-muted-foreground">—</span>
-          );
+          return <span className="text-muted-foreground">—</span>;
         }
         return (
           <div className="flex items-center gap-1.5">
@@ -702,10 +731,7 @@ export default function OrdersPage() {
               onClick={() => handleQuickTrack(order)}
             >
               <RefreshCw
-                className={cn(
-                  "h-3 w-3",
-                  isTracking && "animate-spin",
-                )}
+                className={cn("h-3 w-3", isTracking && "animate-spin")}
               />
             </Button>
           </div>
@@ -735,9 +761,7 @@ export default function OrdersPage() {
           );
         }
         return (
-          <Badge className={STATUS_COLORS[order.status]}>
-            {order.status}
-          </Badge>
+          <Badge className={STATUS_COLORS[order.status]}>{order.status}</Badge>
         );
       },
     },
@@ -832,7 +856,12 @@ export default function OrdersPage() {
                     disabled={syncStatus.isPending}
                     onClick={() => syncStatus.mutate(order.id)}
                   >
-                    <RefreshCw className={cn("h-4 w-4 mr-2", syncStatus.isPending && "animate-spin")} />
+                    <RefreshCw
+                      className={cn(
+                        "h-4 w-4 mr-2",
+                        syncStatus.isPending && "animate-spin",
+                      )}
+                    />
                     Sync Courier Status
                   </DropdownMenuItem>
                 )}
@@ -1006,21 +1035,22 @@ export default function OrdersPage() {
             Clear filter
           </Button>
         )}
-        {statusFilter === "PENDING" && selectedOrders.length > 0 && (
-          <Button
-            type="button"
-            onClick={handleBulkBook}
-            disabled={isBulkBooking}
-            className="gap-1.5 shrink-0 rounded-xl"
-          >
-            {isBulkBooking ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Truck className="h-3.5 w-3.5" />
-            )}
-            Book Selected ({selectedOrders.length})
-          </Button>
-        )}
+        {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
+          selectedOrders.length > 0 && (
+            <Button
+              type="button"
+              onClick={handleBulkBook}
+              disabled={isBulkBooking}
+              className="gap-1.5 shrink-0 rounded-xl"
+            >
+              {isBulkBooking ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Truck className="h-3.5 w-3.5" />
+              )}
+              Book Selected ({selectedOrders.length})
+            </Button>
+          )}
         {selectedOrders.length > 0 && (
           <Button
             type="button"
@@ -1069,7 +1099,8 @@ export default function OrdersPage() {
             ) : (
               <RefreshCw className="h-3.5 w-3.5" />
             )}
-            Sync Tracked ({selectedOrders.filter((o) => o.trackingNumber).length})
+            Sync Tracked (
+            {selectedOrders.filter((o) => o.trackingNumber).length})
           </Button>
         )}
       </div>
@@ -1088,14 +1119,22 @@ export default function OrdersPage() {
           data={filtered || []}
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
+          columnVisibility={{
+            orderNumber: false,
+            reference: false,
+            trackingNumber: false,
+          }}
         />
       )}
 
       <Dialog
         open={!!selectedOrder}
-        onOpenChange={() => setSelectedOrder(null)}
+        onOpenChange={() => {
+          setSelectedOrder(null);
+          setShowAllOrderItems(false);
+        }}
       >
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           {selectedOrder && (
             <>
               <DialogHeader>
@@ -1104,7 +1143,7 @@ export default function OrdersPage() {
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-6">
+              <div className="space-y-6 shrink-0">
                 <div className="grid grid-cols-2">
                   <div className="space-y-2">
                     <h3 className="font-semibold">Shipping Information</h3>
@@ -1144,7 +1183,9 @@ export default function OrdersPage() {
                     <Truck className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
                     <div className="text-sm">
                       <span className="font-medium">Steadfast Tracking: </span>
-                      <span className="font-mono">{selectedOrder.trackingNumber}</span>
+                      <span className="font-mono">
+                        {selectedOrder.trackingNumber}
+                      </span>
                     </div>
                     {trackingStatuses?.[selectedOrder.id] && (
                       <Badge
@@ -1175,78 +1216,106 @@ export default function OrdersPage() {
                     </p>
                   </div>
                 )}
+              </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Order Items</h3>
-                  <div className="space-y-4">
-                    {selectedOrder.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex gap-4 items-start p-4 bg-muted/25 rounded-lg"
-                      >
-                        {item.product.images?.[0] && (
-                          <Image
-                            src={item.product.images[0]}
-                            alt={item.product.name}
-                            width={120}
-                            height={80}
-                            className="rounded-lg border"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <p className="font-medium">{item.product.name}</p>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            <p>Quantity: {item.quantity}</p>
-                            <p>Price: {formatAmount(item.price)}</p>
-                            {item.size && <p>Size: {item.size}</p>}
-                            {item.color && <p>Variant: {item.color}</p>}
-                          </div>
-                        </div>
-                        <div className="font-medium">
-                          {formatAmount(item.quantity * item.price)}
+              <div className="flex flex-col min-h-0 flex-1">
+                <h3 className="font-semibold shrink-0 mb-4">
+                  Order Items ({selectedOrder.items.length})
+                </h3>
+                <div className="space-y-4 min-h-0 flex-1 overflow-y-auto pr-1 -mr-1">
+                  {(showAllOrderItems
+                    ? selectedOrder.items
+                    : selectedOrder.items.slice(0, 1)
+                  ).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex gap-4 items-start p-4 bg-muted/25 rounded-lg"
+                    >
+                      {item.product.images?.[0] && (
+                        <Image
+                          src={item.product.images[0]}
+                          alt={item.product.name}
+                          width={120}
+                          height={80}
+                          className="rounded-lg border"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{item.product.name}</p>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          <p>Quantity: {item.quantity}</p>
+                          <p>Price: {formatAmount(item.price)}</p>
+                          {item.size && <p>Size: {item.size}</p>}
+                          {item.color && <p>Variant: {item.color}</p>}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-4 border-t">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{formatAmount(selectedOrder.subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping:</span>
-                    <span>{formatAmount(selectedOrder.shippingCost)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold">
-                    <span>Total:</span>
-                    <span>{formatAmount(selectedOrder.totalAmount)}</span>
-                  </div>
-                  {(() => {
-                    const profit = getProfit(selectedOrder);
-                    const hasCostData = selectedOrder.items.some(
-                      (i) => i.costPrice !== null && i.costPrice !== undefined,
-                    );
-                    if (!hasCostData) return null;
-                    return (
-                      <div
-                        className={cn(
-                          "flex justify-between font-medium pt-1 border-t",
-                          profit >= 0
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400",
-                        )}
-                      >
-                        <span>Profit:</span>
-                        <span>
-                          {profit >= 0 ? "+" : ""}
-                          {formatAmount(profit)}
-                        </span>
+                      <div className="font-medium">
+                        {formatAmount(item.quantity * item.price)}
                       </div>
-                    );
-                  })()}
+                    </div>
+                  ))}
                 </div>
+              </div>
+
+              {selectedOrder.items.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5"
+                  onClick={() => setShowAllOrderItems((prev) => !prev)}
+                >
+                  {showAllOrderItems ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      Show {selectedOrder.items.length - 1} more{" "}
+                      {selectedOrder.items.length - 1 === 1 ? "item" : "items"}
+                    </>
+                  )}
+                </Button>
+              )}
+
+              <div className="space-y-2 pt-4 border-t">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>{formatAmount(selectedOrder.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span>{formatAmount(selectedOrder.shippingCost)}</span>
+                </div>
+                <div className="flex justify-between font-bold">
+                  <span>Total:</span>
+                  <span>{formatAmount(selectedOrder.totalAmount)}</span>
+                </div>
+                {(() => {
+                  const profit = getProfit(selectedOrder);
+                  const hasCostData = selectedOrder.items.some(
+                    (i) => i.costPrice !== null && i.costPrice !== undefined,
+                  );
+                  if (!hasCostData) return null;
+                  return (
+                    <div
+                      className={cn(
+                        "flex justify-between font-medium pt-1 border-t",
+                        profit >= 0
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-600 dark:text-red-400",
+                      )}
+                    >
+                      <span>Profit:</span>
+                      <span>
+                        {profit >= 0 ? "+" : ""}
+                        {formatAmount(profit)}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}
@@ -1381,122 +1450,173 @@ export default function OrdersPage() {
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1">
-            {profitBreakdownOrder && (() => {
-              const order = profitBreakdownOrder;
-              const itemsRevenue = order.subtotal;
-              const itemsCost = order.items.reduce(
-                (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
-                0,
-              );
-              const shippingCost = order.shippingCost;
-              const totalCost = itemsCost + shippingCost;
-              const profit = itemsRevenue - totalCost;
+            {profitBreakdownOrder &&
+              (() => {
+                const order = profitBreakdownOrder;
+                const itemsRevenue = order.subtotal;
+                const itemsCost = order.items.reduce(
+                  (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
+                  0,
+                );
+                const shippingCost = order.shippingCost;
+                const totalCost = itemsCost + shippingCost;
+                const profit = itemsRevenue - totalCost;
 
-              return (
-                <div className="p-6">
-                  <div className="rounded-lg border shadow-sm overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead className="font-medium h-10">Product</TableHead>
-                          <TableHead className="text-right font-medium h-10">Qty</TableHead>
-                          <TableHead className="text-right font-medium h-10">Revenue</TableHead>
-                          <TableHead className="text-right font-medium h-10">Unit Cost</TableHead>
-                          <TableHead className="text-right font-medium h-10">Profit</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {order.items.map((item) => {
-                          const revenue = item.price * item.quantity;
-                          const cost = (item.costPrice ?? 0) * item.quantity;
-                          const itemProfit = revenue - cost;
-                          const productImage = item.images?.[0] || item.product.images?.[0];
-                          return (
-                            <TableRow key={item.id} className="group">
-                              <TableCell className="py-4">
-                                <div className="flex items-center gap-3">
-                                  {productImage ? (
-                                    <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                      <Image
-                                        src={productImage}
-                                        alt={item.product.name}
-                                        width={48}
-                                        height={48}
-                                        className="object-cover w-full h-full"
-                                      />
+                return (
+                  <div className="p-6">
+                    <div className="rounded-lg border shadow-sm overflow-hidden">
+                      <Table>
+                        <TableHeader className="bg-muted/30">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="font-medium h-10">
+                              Product
+                            </TableHead>
+                            <TableHead className="text-right font-medium h-10">
+                              Qty
+                            </TableHead>
+                            <TableHead className="text-right font-medium h-10">
+                              Revenue
+                            </TableHead>
+                            <TableHead className="text-right font-medium h-10">
+                              Unit Cost
+                            </TableHead>
+                            <TableHead className="text-right font-medium h-10">
+                              Profit
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {order.items.map((item) => {
+                            const revenue = item.price * item.quantity;
+                            const cost = (item.costPrice ?? 0) * item.quantity;
+                            const itemProfit = revenue - cost;
+                            const productImage =
+                              item.images?.[0] || item.product.images?.[0];
+                            return (
+                              <TableRow key={item.id} className="group">
+                                <TableCell className="py-4">
+                                  <div className="flex items-center gap-3">
+                                    {productImage ? (
+                                      <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                                        <Image
+                                          src={productImage}
+                                          alt={item.product.name}
+                                          width={48}
+                                          height={48}
+                                          className="object-cover w-full h-full"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                                        <span className="text-xs text-muted-foreground">
+                                          No img
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col max-w-[220px] sm:max-w-[300px]">
+                                      <span
+                                        className="font-medium leading-tight truncate"
+                                        title={item.product.name}
+                                      >
+                                        {item.product.name}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                        {item.size ? `Size: ${item.size}` : ""}
+                                        {item.size && item.color ? " | " : ""}
+                                        {item.color
+                                          ? `Color: ${item.color}`
+                                          : ""}
+                                      </span>
                                     </div>
-                                  ) : (
-                                    <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
-                                      <span className="text-xs text-muted-foreground">No img</span>
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col max-w-[220px] sm:max-w-[300px]">
-                                    <span className="font-medium leading-tight truncate" title={item.product.name}>{item.product.name}</span>
-                                    <span className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                      {item.size ? `Size: ${item.size}` : ""}
-                                      {item.size && item.color ? " | " : ""}
-                                      {item.color ? `Color: ${item.color}` : ""}
-                                    </span>
                                   </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right py-4 align-middle tabular-nums">{item.quantity}</TableCell>
-                              <TableCell className="text-right py-4 align-middle tabular-nums">{formatAmount(revenue)}</TableCell>
-                              <TableCell className="text-right py-4 align-middle tabular-nums text-red-600 dark:text-red-400">
-                                {item.costPrice != null ? formatAmount(item.costPrice) : "—"}
-                              </TableCell>
-                              <TableCell className="text-right py-4 align-middle">
-                                <span className={cn(
-                                  "font-semibold tabular-nums",
-                                  itemProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                                )}>
-                                  {itemProfit >= 0 ? "+" : ""}{formatAmount(itemProfit)}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                      <TableFooter className="bg-muted/10 border-t-2 border-border">
-                        <TableRow className="hover:bg-transparent border-0">
-                          <TableCell colSpan={4} className="text-right font-medium text-muted-foreground pt-6">
-                            Subtotal (Profit)
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums font-medium pt-6">
-                            <span className={cn(
-                                (itemsRevenue - itemsCost) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                            )}>
-                                {(itemsRevenue - itemsCost) >= 0 ? "+" : ""}{formatAmount(itemsRevenue - itemsCost)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="hover:bg-transparent border-0">
-                          <TableCell colSpan={4} className="text-right font-medium text-muted-foreground pb-4">
-                            Shipping Cost
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums font-medium text-red-600 dark:text-red-400 pb-4">
-                            -{formatAmount(shippingCost)}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="hover:bg-transparent border-t bg-muted/30">
-                          <TableCell colSpan={4} className="text-right font-bold text-base py-4">
-                            Net Profit
-                          </TableCell>
-                          <TableCell className="text-right py-4">
-                            <span className={cn(
-                              "text-lg font-bold tracking-tight tabular-nums",
-                              profit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                            )}>
-                              {profit >= 0 ? "+" : ""}{formatAmount(profit)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      </TableFooter>
-                    </Table>
+                                </TableCell>
+                                <TableCell className="text-right py-4 align-middle tabular-nums">
+                                  {item.quantity}
+                                </TableCell>
+                                <TableCell className="text-right py-4 align-middle tabular-nums">
+                                  {formatAmount(revenue)}
+                                </TableCell>
+                                <TableCell className="text-right py-4 align-middle tabular-nums text-red-600 dark:text-red-400">
+                                  {item.costPrice != null
+                                    ? formatAmount(item.costPrice)
+                                    : "—"}
+                                </TableCell>
+                                <TableCell className="text-right py-4 align-middle">
+                                  <span
+                                    className={cn(
+                                      "font-semibold tabular-nums",
+                                      itemProfit >= 0
+                                        ? "text-emerald-600 dark:text-emerald-400"
+                                        : "text-red-600 dark:text-red-400",
+                                    )}
+                                  >
+                                    {itemProfit >= 0 ? "+" : ""}
+                                    {formatAmount(itemProfit)}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                        <TableFooter className="bg-muted/10 border-t-2 border-border">
+                          <TableRow className="hover:bg-transparent border-0">
+                            <TableCell
+                              colSpan={4}
+                              className="text-right font-medium text-muted-foreground pt-6"
+                            >
+                              Subtotal (Profit)
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums font-medium pt-6">
+                              <span
+                                className={cn(
+                                  itemsRevenue - itemsCost >= 0
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-red-600 dark:text-red-400",
+                                )}
+                              >
+                                {itemsRevenue - itemsCost >= 0 ? "+" : ""}
+                                {formatAmount(itemsRevenue - itemsCost)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="hover:bg-transparent border-0">
+                            <TableCell
+                              colSpan={4}
+                              className="text-right font-medium text-muted-foreground pb-4"
+                            >
+                              Shipping Cost
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums font-medium text-red-600 dark:text-red-400 pb-4">
+                              -{formatAmount(shippingCost)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="hover:bg-transparent border-t bg-muted/30">
+                            <TableCell
+                              colSpan={4}
+                              className="text-right font-bold text-base py-4"
+                            >
+                              Net Profit
+                            </TableCell>
+                            <TableCell className="text-right py-4">
+                              <span
+                                className={cn(
+                                  "text-lg font-bold tracking-tight tabular-nums",
+                                  profit >= 0
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-red-600 dark:text-red-400",
+                                )}
+                              >
+                                {profit >= 0 ? "+" : ""}
+                                {formatAmount(profit)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        </TableFooter>
+                      </Table>
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
           </ScrollArea>
         </DialogContent>
       </Dialog>
