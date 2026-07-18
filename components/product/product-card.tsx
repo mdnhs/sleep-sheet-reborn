@@ -183,14 +183,13 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
     <div className="group relative w-full h-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 p-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       
       {/* Product Image */}
-      <Link
-        href={`/shop/${product.id}`}
-        className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0"
-        onClick={(e) => {
-          if (isDrawerOpen) e.preventDefault();
+      <div
+        onClick={() => {
+          if (!isDrawerOpen) {
+            router.push(`/shop/${product.id}`);
+          }
         }}
-        tabIndex={-1}
-        aria-hidden="true"
+        className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0 cursor-pointer"
       >
         <Image
           src={getOptimizedImageUrl(product.images?.[0], 400) || "/placeholder.jpg"}
@@ -203,7 +202,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         />
         
         {/* Top actions: Discount tag */}
-        <div className="absolute top-3 left-3 flex justify-between items-start z-10 w-[calc(100%-24px)]">
+        <div className="absolute top-3 left-3 flex justify-between items-start z-10 w-[calc(100%-24px)]" onClick={(e) => e.stopPropagation()}>
           {product.discount && product.discount > 0 ? (
             <div className="bg-[#1a1a1a] text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
               <Tag className="h-3 w-3 text-orange-400" /> {Math.round(product.discount)}% OFF
@@ -224,7 +223,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-slate-600 dark:text-slate-400 hover:text-red-500'}`} />
           </button>
         </div>
-      </Link>
+      </div>
 
       {/* Content */}
       <div className="flex flex-col px-1 flex-1 relative z-10 bg-white dark:bg-slate-900">
@@ -240,7 +239,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         <div className="flex justify-between items-center mb-3 sm:mb-4">
           <div className="flex items-baseline gap-2 flex-wrap">
             {product.discount > 0 && (
-              <span className="text-sm line-through text-slate-400 dark:text-slate-500 font-medium">
+              <span className="text-sm line-through text-slate-500 dark:text-slate-400 font-medium">
                 {formatAmount(displayPrice / (1 - product.discount / 100))}
               </span>
             )}

@@ -8,6 +8,7 @@ import {
 } from "@tabler/icons-react";
 import { Mail, Phone, ShieldCheck, Truck, ArrowRight, Globe } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { useLanguage } from "@/hooks/use-language";
 
@@ -32,7 +33,7 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-4 space-y-5 md:space-y-6 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="flex items-center gap-2 mb-1 md:mb-2">
-              <img src="/dark-logo.png" alt="SleepSheet Logo" className="h-9 md:h-10 w-auto object-contain" />
+              <Image src="/dark-logo.png" alt="SleepSheet Logo" width={160} height={40} className="h-9 md:h-10 w-auto object-contain" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto md:mx-0">
               {footerBrandDesc}

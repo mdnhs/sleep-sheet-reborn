@@ -230,7 +230,7 @@ function MobileNavbarMenu({
       <SheetContent side="left" className="flex w-full max-w-xs flex-col">
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex items-center gap-2">
-            <img src={logoUrl} alt={siteName} className="h-10 w-auto object-contain" />
+            <Image src={logoUrl} alt={siteName || "SleepSheet Logo"} width={160} height={40} className="h-10 w-auto object-contain" />
           </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-6 p-6">
@@ -360,7 +360,7 @@ function Navbar() {
                   <Menu className="h-5 w-5" />
                 </Button>
                 <Link href="/" aria-label={siteName || "SleepSheet Home"} className="flex items-center gap-2 select-none">
-                  <img src={displayLogo} alt={siteName || "SleepSheet Logo"} className="h-9 w-auto object-contain" />
+                  <Image src={displayLogo} alt={siteName || "SleepSheet Logo"} width={144} height={36} className="h-9 w-auto object-contain" />
                 </Link>
                 <div className="flex items-center gap-2">
                   <MobileThemeToggle hasMounted={hasMounted} />
@@ -389,7 +389,7 @@ function Navbar() {
             <div className="flex h-16 items-center justify-between gap-4">
               {/* Logo */}
               <Link href="/" aria-label={siteName || "SleepSheet Home"} className="flex items-center gap-2 select-none shrink-0">
-                <img src={displayLogo} alt={siteName || "SleepSheet Logo"} className="h-12 w-auto object-contain" />
+                <Image src={displayLogo} alt={siteName || "SleepSheet Logo"} width={192} height={48} className="h-12 w-auto object-contain" />
               </Link>
 
               {/* Links */}
