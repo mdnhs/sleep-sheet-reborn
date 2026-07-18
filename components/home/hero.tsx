@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 function HeroSkeleton() {
   return (
@@ -123,11 +124,11 @@ function Hero() {
                 }`}
               >
                 <Image
-                  src={slide.image}
+                  src={getOptimizedImageUrl(slide.image, 1200)}
                   alt={slide.heading}
                   fill
                   sizes="(max-width: 1024px) 100vw, 66vw"
-                  quality={75}
+                  quality={65}
                   // The first slide is the LCP. `priority` alone sets eager
                   // loading + a preload + fetchpriority="high"; do NOT also pass
                   // a `loading` prop — it silently strips fetchpriority="high"
@@ -157,18 +158,22 @@ function Hero() {
             </button>
 
             {/* Minimal Indicators */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center">
               {slideData.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
-                  className={`h-1.5 transition-all duration-500 rounded-full ${
-                    currentSlide === index
-                      ? "w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-                      : "w-1.5 bg-white/40 hover:bg-white/80 hover:w-3"
-                  }`}
+                  className="group flex h-10 w-10 items-center justify-center focus:outline-none"
                   aria-label={`Go to slide ${index + 1}`}
-                />
+                >
+                  <span
+                    className={`h-1.5 transition-all duration-500 rounded-full ${
+                      currentSlide === index
+                        ? "w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                        : "w-1.5 bg-white/40 group-hover:bg-white/80 group-hover:w-3"
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           </div>
@@ -182,11 +187,11 @@ function Hero() {
                 className="relative flex-1 h-[160px] lg:h-1/2 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group border border-slate-100 dark:border-slate-800"
               >
                 <Image
-                  src={banner.image}
+                  src={getOptimizedImageUrl(banner.image, 600)}
                   alt={banner.title}
                   fill
                   sizes="(max-width: 1024px) 100vw, 33vw"
-                  quality={75}
+                  quality={65}
                   loading="lazy"
                   className="object-cover group-hover:scale-110 transition-transform duration-700"
                 />
@@ -196,9 +201,9 @@ function Hero() {
                       <span className="h-px w-4 bg-white/90"></span>
                       {banner.subtitle}
                     </p>
-                    <h3 className="text-2xl font-heading font-medium text-white leading-tight mb-2">
+                    <p className="text-2xl font-heading font-medium text-white leading-tight mb-2">
                       {banner.title}
-                    </h3>
+                    </p>
                     <div className="flex items-center text-[11px] uppercase tracking-wider font-bold text-white group-hover:text-primary-foreground transition-colors">
                       {banner.linkText}{" "}
                       <ArrowRight className="h-3 w-3 ml-1.5 transform group-hover:translate-x-1 transition-transform" />

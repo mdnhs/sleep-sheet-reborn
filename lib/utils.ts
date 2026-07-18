@@ -129,3 +129,20 @@ export function getStartDate(period: string): Date {
       return new Date(now.getFullYear(), now.getMonth(), 1); // default to start of month
   }
 }
+
+export function getOptimizedImageUrl(url: string | null | undefined, width?: number): string {
+  if (!url) return "";
+  if (url.startsWith("https://res.cloudinary.com/")) {
+    const uploadIndex = url.indexOf("/image/upload/");
+    if (uploadIndex !== -1) {
+      const start = url.slice(0, uploadIndex + 14);
+      const rest = url.slice(uploadIndex + 14);
+      if (!rest.startsWith("c_") && !rest.startsWith("w_") && !rest.startsWith("f_") && !rest.startsWith("q_")) {
+        const transform = width ? `f_auto,q_auto,w_${width}/` : "f_auto,q_auto/";
+        return `${start}${transform}${rest}`;
+      }
+    }
+  }
+  return url;
+}
+

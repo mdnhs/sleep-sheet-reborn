@@ -8,7 +8,7 @@ const NarrowBanner = () => {
       <div className="container mx-auto px-4">
         <Link
           href="/track-order"
-          className="flex items-center justify-between gap-3 rounded-full bg-primary/8 hover:bg-primary/12 px-2 py-2 sm:px-2.5 sm:py-2.5 transition-colors group"
+          className="flex items-center justify-between gap-3 rounded-full bg-background border border-primary/20 hover:bg-primary/5 dark:bg-slate-900/40 px-2.5 py-2 sm:px-3 sm:py-2.5 transition-colors group"
         >
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <span className="shrink-0 flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 bg-primary/15 text-sm sm:text-base rounded-full">

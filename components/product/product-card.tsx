@@ -13,6 +13,7 @@ import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product & {
@@ -182,15 +183,22 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
     <div className="group relative w-full h-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 p-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       
       {/* Product Image */}
-      <Link href={`/shop/${product.id}`} className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0" onClick={(e) => {
-        if (isDrawerOpen) e.preventDefault();
-      }}>
+      <Link
+        href={`/shop/${product.id}`}
+        className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden bg-[#f4f4f5] dark:bg-slate-800 mb-4 shrink-0 z-0"
+        onClick={(e) => {
+          if (isDrawerOpen) e.preventDefault();
+        }}
+        tabIndex={-1}
+        aria-hidden="true"
+      >
         <Image
-          src={product.images?.[0] || "/placeholder.jpg"}
+          src={getOptimizedImageUrl(product.images?.[0], 400) || "/placeholder.jpg"}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           priority={priority}
+          quality={65}
           className={`w-full h-full object-cover transition-all duration-700 ${isDrawerOpen ? 'blur-md scale-110 opacity-40' : 'group-hover:scale-105'}`}
         />
         
@@ -210,7 +218,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
               e.stopPropagation();
               handleWishlistToggle(e);
             }}
-            className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full shadow-sm hover:bg-white dark:hover:bg-slate-700 hover:scale-110 transition-all duration-300 active:scale-95"
+            className="h-10 w-10 flex items-center justify-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full shadow-sm hover:bg-white dark:hover:bg-slate-700 hover:scale-110 transition-all duration-300 active:scale-95"
             aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
           >
             <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-slate-600 dark:text-slate-400 hover:text-red-500'}`} />
@@ -255,11 +263,11 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           {/* Quantity Selector */}
           <div className="flex-1 flex items-center justify-between bg-[#f4f4f5] dark:bg-slate-800 rounded-xl px-2 h-10 sm:h-12" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-            <button onClick={(e) => updateQuantity(e, -1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50" disabled={quantity <= 1} aria-label="Decrease quantity">
+            <button onClick={(e) => updateQuantity(e, -1)} className="h-full w-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50" disabled={quantity <= 1} aria-label="Decrease quantity">
               <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
             <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">{quantity}</span>
-            <button onClick={(e) => updateQuantity(e, 1)} className="p-1 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" aria-label="Increase quantity">
+            <button onClick={(e) => updateQuantity(e, 1)} className="h-full w-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" aria-label="Increase quantity">
               <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>

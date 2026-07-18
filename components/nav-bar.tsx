@@ -359,8 +359,8 @@ function Navbar() {
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
-                <Link href="/" className="flex items-center gap-2 select-none">
-                  <img src={displayLogo} alt={siteName} className="h-9 w-auto object-contain" />
+                <Link href="/" aria-label={siteName || "SleepSheet Home"} className="flex items-center gap-2 select-none">
+                  <img src={displayLogo} alt={siteName || "SleepSheet Logo"} className="h-9 w-auto object-contain" />
                 </Link>
                 <div className="flex items-center gap-2">
                   <MobileThemeToggle hasMounted={hasMounted} />
@@ -371,6 +371,7 @@ function Navbar() {
                 <input
                   type="text"
                   placeholder={t("searchPlaceholder")}
+                  aria-label={t("searchPlaceholder")}
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
@@ -387,8 +388,8 @@ function Navbar() {
           ) : (
             <div className="flex h-16 items-center justify-between gap-4">
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2 select-none shrink-0">
-                <img src={displayLogo} alt={siteName} className="h-12 w-auto object-contain" />
+              <Link href="/" aria-label={siteName || "SleepSheet Home"} className="flex items-center gap-2 select-none shrink-0">
+                <img src={displayLogo} alt={siteName || "SleepSheet Logo"} className="h-12 w-auto object-contain" />
               </Link>
 
               {/* Links */}
@@ -401,6 +402,7 @@ function Navbar() {
                 <input
                   type="text"
                   placeholder={t("searchPlaceholder")}
+                  aria-label={t("searchPlaceholder")}
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"

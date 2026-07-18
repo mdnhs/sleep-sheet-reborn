@@ -44,6 +44,7 @@ const Newsletter = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
+              aria-label="Email address"
               required
               className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-white/5 border border-white/10 rounded-full text-white placeholder:text-white/40 text-sm outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300 pr-28 sm:pr-32"
             />

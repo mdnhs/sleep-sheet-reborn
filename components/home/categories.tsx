@@ -4,6 +4,7 @@ import { useGetCategory } from "@/features/categories/api/use-get-category";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { getOptimizedImageUrl } from "@/lib/utils";
 import {
   Carousel,
   CarouselContent,
@@ -60,10 +61,11 @@ const Categories = () => {
                 >
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center relative overflow-hidden transition-all duration-500 shadow-sm group-hover:shadow-[0_10px_30px_rgba(0,0,0,0.12)] border-2 border-transparent group-hover:border-primary/10">
                     <Image
-                      src={category?.image || ""}
+                      src={getOptimizedImageUrl(category?.image, 120)}
                       alt={category?.label as string}
                       fill
                       sizes="112px"
+                      quality={60}
                       className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500 rounded-full"></div>

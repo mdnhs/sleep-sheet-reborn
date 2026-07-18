@@ -5,6 +5,7 @@ import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import Autoplay from "embla-carousel-autoplay";
+import { getOptimizedImageUrl } from "@/lib/utils";
 import {
   Carousel,
   CarouselContent,
@@ -46,10 +47,11 @@ const Testimonials = () => {
                   {testimonial.screenshot ? (
                     <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden border border-border/50 group cursor-grab active:cursor-grabbing bg-muted shadow-sm hover:shadow-md transition-shadow">
                       <Image
-                        src={testimonial.screenshot}
+                        src={getOptimizedImageUrl(testimonial.screenshot, 300)}
                         alt={`Review from ${testimonial.name}`}
                         fill
                         sizes="(max-width: 640px) 75vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        quality={65}
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
@@ -93,7 +95,7 @@ const Testimonials = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold truncate">{testimonial.name}</h4>
+                          <p className="text-sm font-semibold truncate">{testimonial.name}</p>
                           <div className="flex items-center gap-0.5 mt-0.5">
                             {Array.from({ length: testimonial.rating }).map((_, i) => (
                               <Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />

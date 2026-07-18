@@ -42,7 +42,7 @@ const Footer = () => {
                 <a
                   href={socialInstagram || "#"}
                   aria-label="Instagram"
-                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                  className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
                 >
                   <IconBrandInstagram className="h-5 w-5" />
                 </a>
@@ -51,7 +51,7 @@ const Footer = () => {
                 <a
                   href={socialFacebook || "#"}
                   aria-label="Facebook"
-                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                  className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
                 >
                   <IconBrandFacebook className="h-5 w-5" />
                 </a>
@@ -60,7 +60,7 @@ const Footer = () => {
                 <a
                   href={socialTwitter || "#"}
                   aria-label="Twitter"
-                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                  className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
                 >
                   <IconBrandTwitter className="h-5 w-5" />
                 </a>
@@ -69,7 +69,7 @@ const Footer = () => {
                 <a
                   href={socialYoutube || "#"}
                   aria-label="YouTube"
-                  className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/70 hover:bg-white hover:text-foreground transition-all duration-300"
+                  className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
                 >
                   <IconBrandYoutube className="h-5 w-5" />
                 </a>
@@ -79,12 +79,12 @@ const Footer = () => {
 
           {/* Shop Column */}
           <div className="col-span-1 lg:col-span-2 space-y-4 md:space-y-5">
-            <h4 className="font-semibold tracking-widest uppercase text-xs text-white/40">Shop</h4>
+            <p className="font-semibold tracking-widest uppercase text-xs text-white/70">Shop</p>
             <ul className="space-y-3">
               <li>
                 <Link
                   href="/new-arrivals"
-                  className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
+                  className="group flex items-center text-sm text-white/85 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">
                     <span className="block transition-transform duration-300 group-hover:-translate-y-full">New Arrivals</span>
@@ -95,7 +95,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/bestsellers"
-                  className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
+                  className="group flex items-center text-sm text-white/85 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">
                     <span className="block transition-transform duration-300 group-hover:-translate-y-full">Bestsellers</span>
@@ -106,7 +106,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/shop"
-                  className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
+                  className="group flex items-center text-sm text-white/85 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">
                     <span className="block transition-transform duration-300 group-hover:-translate-y-full">All Products</span>
@@ -117,7 +117,7 @@ const Footer = () => {
               <li>
                 <Link
                   href="/sale"
-                  className="group flex items-center text-sm text-white/70 hover:text-white transition-colors"
+                  className="group flex items-center text-sm text-white/85 hover:text-white transition-colors"
                 >
                   <span className="relative overflow-hidden">
                     <span className="block transition-transform duration-300 group-hover:-translate-y-full">Sale</span>
@@ -130,13 +130,13 @@ const Footer = () => {
 
           {/* Company Column */}
           <div className="col-span-1 lg:col-span-2 space-y-4 md:space-y-5">
-            <h4 className="font-semibold tracking-widest uppercase text-xs text-white/40">Company</h4>
+            <p className="font-semibold tracking-widest uppercase text-xs text-white/70">Company</p>
             <ul className="space-y-3">
               <li>
                 <Link
                   href="/about"
                   prefetch={false}
-                  className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Our Story
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
@@ -146,7 +146,7 @@ const Footer = () => {
                 <Link
                   href="/sustainability"
                   prefetch={false}
-                  className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Sustainability
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
@@ -156,7 +156,7 @@ const Footer = () => {
                 <Link
                   href="/careers"
                   prefetch={false}
-                  className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Careers
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
@@ -166,7 +166,7 @@ const Footer = () => {
                 <Link
                   href="/press"
                   prefetch={false}
-                  className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Press
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
@@ -176,7 +176,7 @@ const Footer = () => {
                 <Link
                   href="/sitemap.xml"
                   prefetch={false}
-                  className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   Web Sitemap
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
@@ -186,7 +186,7 @@ const Footer = () => {
                 <Link
                   href="/sitemap"
                   prefetch={false}
-                  className="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
                   User Sitemap
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
@@ -197,14 +197,14 @@ const Footer = () => {
 
           {/* Contact Column */}
           <div className="col-span-2 lg:col-span-4 space-y-4 md:space-y-5">
-            <h4 className="font-semibold tracking-widest uppercase text-xs text-white/40">Here to Help</h4>
+            <p className="font-semibold tracking-widest uppercase text-xs text-white/70">Here to Help</p>
             <div className="space-y-4 flex flex-col md:block">
               <a href={`mailto:${footerEmail}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer w-full md:w-fit md:pr-6">
                 <div className="flex shrink-0 items-center justify-center h-8 w-8 rounded-full bg-white/10 text-white group-hover:bg-white group-hover:text-foreground transition-colors">
                   <Mail className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-white/50 mb-0.5">Email Us</p>
+                  <p className="text-[10px] uppercase tracking-wider text-white/70 mb-0.5">Email Us</p>
                   <p className="text-sm text-white font-medium">{footerEmail}</p>
                 </div>
               </a>
@@ -214,7 +214,7 @@ const Footer = () => {
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-white/50 mb-0.5">Call Us</p>
+                  <p className="text-[10px] uppercase tracking-wider text-white/70 mb-0.5">Call Us</p>
                   <p className="text-sm text-white font-medium">{footerPhone}</p>
                 </div>
               </a>
@@ -224,7 +224,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-12 md:mt-16 flex flex-col gap-6 border-t border-white/10 pt-8 md:flex-row md:items-center md:justify-between">
-          <p className="text-center text-xs text-white/40 md:text-left">
+          <p className="text-center text-xs text-white/70 md:text-left">
             {footerCopyright}
           </p>
 
@@ -232,45 +232,45 @@ const Footer = () => {
             <Link
               href="/privacy-policy"
               prefetch={false}
-              className="text-xs text-white/40 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
+              className="text-xs text-white/70 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms-of-service"
               prefetch={false}
-              className="text-xs text-white/40 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
+              className="text-xs text-white/70 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
             >
               Terms of Service
             </Link>
             <Link
               href="/shipping-returns"
               prefetch={false}
-              className="text-xs text-white/40 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
+              className="text-xs text-white/70 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-300"
             >
               Shipping & Returns
             </Link>
             <div className="flex items-center gap-2 ml-4">
-              <span className="text-xs font-semibold text-white/40 flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-white/70 flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5" /> {t("language")}
               </span>
               <div className="flex gap-0.5 bg-white/5 p-0.5 rounded-lg border border-white/10">
                 <button
                   onClick={() => setLanguage("bn")}
-                  className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-all ${
+                  className={`text-[11px] font-bold px-4 py-2 rounded-md cursor-pointer transition-all ${
                     language === "bn"
                       ? "bg-white text-slate-950 shadow-sm"
-                      : "text-white/40 hover:text-white"
+                      : "text-white/70 hover:text-white"
                   }`}
                 >
                   BN
                 </button>
                 <button
                   onClick={() => setLanguage("en")}
-                  className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer transition-all ${
+                  className={`text-[11px] font-bold px-4 py-2 rounded-md cursor-pointer transition-all ${
                     language === "en"
                       ? "bg-white text-slate-950 shadow-sm"
-                      : "text-white/40 hover:text-white"
+                      : "text-white/70 hover:text-white"
                   }`}
                 >
                   EN
