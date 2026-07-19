@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
-import { orders, orderItems, payments, orderTimelineEvents, users } from "@/db/schema";
-import { eq, and, or, ilike, inArray, desc, asc, gte, lte } from "drizzle-orm";
+import { orders, orderItems, payments, orderTimelineEvents, users, products } from "@/db/schema";
+import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -60,8 +60,8 @@ const app = new Hono()
 })
 
 .patch("/:id", zValidator("json", z.object({
-  status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]).optional(),
-  paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED"]).optional(),
+  status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]).optional(),
+  paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]).optional(),
   shippingCost: z.number().min(0).optional(),
   items: z.array(z.object({
     id: z.string(),
@@ -131,6 +131,101 @@ const app = new Hono()
   } catch (error) {
     console.error("Failed to update order:", error);
     return c.json({ error: "Failed to update order" }, 500);
+  }
+})
+
+.post("/:id/refund", zValidator("json", z.object({
+  amount: z.number().positive(),
+  reason: z.string().max(500).optional(),
+  restock: z.boolean().optional().default(true),
+})), async (c) => {
+  const id = c.req.param("id");
+  const { amount, reason, restock } = c.req.valid("json");
+
+  // Round to 2dp throughout so float noise never blocks a valid full refund
+  // or lets a refund creep a cent over the total.
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const EPS = 0.005;
+
+  try {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: { items: true },
+    });
+
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+    if (order.status === "CANCELLED") {
+      return c.json({ error: "A cancelled order cannot be refunded" }, 400);
+    }
+
+    const alreadyRefunded = order.refundedAmount ?? 0;
+    const refundable = round2(order.totalAmount - alreadyRefunded);
+    if (refundable <= 0) {
+      return c.json({ error: "Order is already fully refunded" }, 400);
+    }
+
+    const refundAmount = round2(amount);
+    if (refundAmount > refundable + EPS) {
+      return c.json(
+        { error: `Refund exceeds the refundable amount (${refundable})` },
+        400,
+      );
+    }
+
+    const newRefunded = round2(alreadyRefunded + refundAmount);
+    const isFull = newRefunded >= order.totalAmount - EPS;
+    // True only on the single transition into a fully-refunded state, so we
+    // never restock the same order twice across repeated partial refunds.
+    const becameFull = isFull && alreadyRefunded < order.totalAmount - EPS;
+
+    const updateFields: any = {
+      refundedAmount: newRefunded,
+      refundReason: reason ?? order.refundReason ?? null,
+      refundedAt: new Date(),
+      paymentStatus: isFull ? "REFUNDED" : "PARTIALLY_REFUNDED",
+      updatedAt: new Date(),
+    };
+    // A full refund also moves the order itself to REFUNDED; partial refunds
+    // leave the fulfilment status (e.g. DELIVERED) untouched.
+    if (isFull) updateFields.status = "REFUNDED";
+
+    await db.update(orders).set(updateFields).where(eq(orders.id, id));
+
+    // Restock the returned goods only when the order becomes fully refunded —
+    // an amount-based partial refund doesn't identify which items came back.
+    if (restock && becameFull) {
+      await Promise.all(
+        order.items
+          .filter((item) => item.productId)
+          .map((item) =>
+            db.update(products)
+              .set({ stock: sql`${products.stock} + ${item.quantity}` })
+              .where(eq(products.id, item.productId as string)),
+          ),
+      );
+    }
+
+    await db.insert(orderTimelineEvents).values({
+      orderId: id,
+      status: isFull ? "REFUNDED" : order.status,
+      message:
+        `Refund of ${refundAmount} processed` +
+        (reason ? ` — ${reason}` : "") +
+        `. Total refunded ${newRefunded} of ${order.totalAmount}` +
+        (isFull ? " (fully refunded)." : "."),
+    });
+
+    const updatedOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: { user: true, items: true },
+    });
+
+    return c.json(updatedOrder);
+  } catch (error) {
+    console.error("Failed to refund order:", error);
+    return c.json({ error: "Failed to refund order" }, 500);
   }
 })
 

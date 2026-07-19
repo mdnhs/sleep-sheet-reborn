@@ -28,6 +28,26 @@ export const useOrderMutations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
+  const refundOrder = useMutation({
+    mutationFn: async (data: {
+      id: string;
+      amount: number;
+      reason?: string;
+      restock?: boolean;
+    }) => {
+      const response = await client.api.orders[":id"].refund.$post({
+        param: { id: data.id },
+        json: { amount: data.amount, reason: data.reason, restock: data.restock },
+      });
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string };
+        throw new Error(body.error || "Failed to refund order");
+      }
+      return response.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+  });
+
   const deleteOrder = useMutation({
     mutationFn: async (id: string) => {
       await client.api.orders[":id"].$delete({ param: { id } });
@@ -44,5 +64,5 @@ export const useOrderMutations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
-  return { updateOrder, deleteOrder, bulkDeleteOrders };
+  return { updateOrder, refundOrder, deleteOrder, bulkDeleteOrders };
 };

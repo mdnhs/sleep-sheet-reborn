@@ -1,6 +1,6 @@
 // types/order.ts
-export type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
-export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED";
+export type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 export type PaymentMethod = string;
 export type SaleType = "POS" | "WEBSITE";
 
@@ -66,6 +66,9 @@ export interface OrderItem {
     shippingCountry?: string | null;
     trackingNumber?: string | null;
     cancellationReason?: string | null;
+    refundedAmount?: number | null;
+    refundReason?: string | null;
+    refundedAt?: string | null;
     saleType?: SaleType | null;
     reference?: string | null;
     note?: string | null;

@@ -42,6 +42,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   SHIPPED: { label: "Shipped", color: "text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400 border border-purple-200/30" },
   DELIVERED: { label: "Delivered", color: "text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 border border-green-200/30" },
   CANCELLED: { label: "Cancelled", color: "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200/30" },
+  REFUNDED: { label: "Refunded", color: "text-rose-600 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-400 border border-rose-200/30" },
 };
 
 function TrackOrderContent() {

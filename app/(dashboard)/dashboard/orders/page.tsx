@@ -22,6 +22,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -64,6 +67,7 @@ import {
   Pointer,
   Printer,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash,
   Truck,
@@ -93,6 +97,7 @@ const STATUS_COLORS: Record<Order["status"], string> = {
   SHIPPED: "bg-purple-500/20 text-purple-700 dark:text-purple-400",
   DELIVERED: "bg-green-500/20 text-green-700 dark:text-green-400",
   CANCELLED: "bg-red-500/20 text-red-700 dark:text-red-400",
+  REFUNDED: "bg-rose-500/20 text-rose-700 dark:text-rose-400",
 };
 
 const STATUS_DOTS: Record<Order["status"], React.ReactNode> = {
@@ -105,6 +110,7 @@ const STATUS_DOTS: Record<Order["status"], React.ReactNode> = {
     <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
   ),
   CANCELLED: <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />,
+  REFUNDED: <span className="h-2 w-2 rounded-full bg-rose-500 inline-block" />,
 };
 
 const STEADFAST_STATUS_LABELS: Record<string, string> = {
@@ -179,6 +185,11 @@ export default function OrdersPage() {
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
   const [profitBreakdownOrder, setProfitBreakdownOrder] =
     useState<ShippingOrder | null>(null);
+  const [refundTarget, setRefundTarget] = useState<ShippingOrder | null>(null);
+  const [refundMode, setRefundMode] = useState<"full" | "partial">("full");
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundRestock, setRefundRestock] = useState(true);
 
   const queryClient = useQueryClient();
   const bookCourier = useBookCourier();
@@ -197,7 +208,8 @@ export default function OrdersPage() {
   const { data: rawOrders, isLoading } = useOrders(search, rangeFilter);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl } = useWebsiteSettings();
-  const { updateOrder, deleteOrder, bulkDeleteOrders } = useOrderMutations();
+  const { updateOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
+    useOrderMutations();
   const { data: balanceData, isLoading: isBalanceLoading } =
     useSteadfastBalance(showBalance);
   const syncStatus = useSyncOrderStatus();
@@ -890,6 +902,15 @@ export default function OrdersPage() {
                     View Note
                   </DropdownMenuItem>
                 )}
+                {order.status !== "CANCELLED" &&
+                  (order.refundedAmount ?? 0) < order.totalAmount && (
+                    <DropdownMenuItem onClick={() => openRefundDialog(order)}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      {(order.refundedAmount ?? 0) > 0
+                        ? "Refund More"
+                        : "Refund Order"}
+                    </DropdownMenuItem>
+                  )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setDeleteOrderId(order.id)}
@@ -911,6 +932,51 @@ export default function OrdersPage() {
       status,
       paymentStatus: status === "DELIVERED" ? "COMPLETED" : order.paymentStatus,
     });
+  };
+
+  const refundRemaining = (order: ShippingOrder) =>
+    Math.round((order.totalAmount - (order.refundedAmount ?? 0)) * 100) / 100;
+
+  const openRefundDialog = (order: ShippingOrder) => {
+    setRefundTarget(order);
+    setRefundMode("full");
+    setRefundAmount(refundRemaining(order).toString());
+    setRefundReason("");
+    setRefundRestock(true);
+  };
+
+  const handleRefund = () => {
+    if (!refundTarget) return;
+    const remaining = refundRemaining(refundTarget);
+    const amount =
+      refundMode === "full" ? remaining : parseFloat(refundAmount);
+
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Enter a valid refund amount");
+      return;
+    }
+    if (amount > remaining + 0.005) {
+      toast.error(`Refund cannot exceed ${formatAmount(remaining)}`);
+      return;
+    }
+
+    refundOrder.mutate(
+      {
+        id: refundTarget.id,
+        amount,
+        reason: refundReason.trim() || undefined,
+        restock: refundRestock,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Refund processed successfully");
+          setRefundTarget(null);
+        },
+        onError: (err: Error) => {
+          toast.error(err.message || "Failed to process refund");
+        },
+      },
+    );
   };
 
   return (
@@ -1293,6 +1359,31 @@ export default function OrdersPage() {
                   <span>Total:</span>
                   <span>{formatAmount(selectedOrder.totalAmount)}</span>
                 </div>
+                {(selectedOrder.refundedAmount ?? 0) > 0 && (
+                  <>
+                    <div className="flex justify-between text-rose-600 dark:text-rose-400">
+                      <span>
+                        Refunded
+                        {selectedOrder.refundReason
+                          ? ` — ${selectedOrder.refundReason}`
+                          : ""}
+                        :
+                      </span>
+                      <span>
+                        -{formatAmount(selectedOrder.refundedAmount ?? 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-semibold pt-1 border-t">
+                      <span>Net received:</span>
+                      <span>
+                        {formatAmount(
+                          selectedOrder.totalAmount -
+                            (selectedOrder.refundedAmount ?? 0),
+                        )}
+                      </span>
+                    </div>
+                  </>
+                )}
                 {(() => {
                   const profit = getProfit(selectedOrder);
                   const hasCostData = selectedOrder.items.some(
@@ -1618,6 +1709,130 @@ export default function OrdersPage() {
                 );
               })()}
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!refundTarget}
+        onOpenChange={(open) => !open && setRefundTarget(null)}
+      >
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Refund Order</DialogTitle>
+          </DialogHeader>
+          {refundTarget && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order</span>
+                  <span className="font-mono font-medium">
+                    {refundTarget.orderNumber}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order total</span>
+                  <span>{formatAmount(refundTarget.totalAmount)}</span>
+                </div>
+                {(refundTarget.refundedAmount ?? 0) > 0 && (
+                  <div className="flex justify-between text-rose-600 dark:text-rose-400">
+                    <span>Already refunded</span>
+                    <span>-{formatAmount(refundTarget.refundedAmount ?? 0)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold pt-1 border-t">
+                  <span>Refundable now</span>
+                  <span>{formatAmount(refundRemaining(refundTarget))}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={refundMode === "full" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setRefundMode("full");
+                    setRefundAmount(refundRemaining(refundTarget).toString());
+                  }}
+                >
+                  Full refund
+                </Button>
+                <Button
+                  type="button"
+                  variant={refundMode === "partial" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setRefundMode("partial")}
+                >
+                  Partial
+                </Button>
+              </div>
+
+              {refundMode === "partial" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Refund amount ({currencySymbol})
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    max={refundRemaining(refundTarget)}
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Reason (optional)</Label>
+                <Textarea
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="e.g. Customer returned the item"
+                  rows={2}
+                  maxLength={500}
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={refundRestock}
+                  onCheckedChange={(v) => setRefundRestock(v === true)}
+                />
+                <span>
+                  Restock items
+                  <span className="text-muted-foreground">
+                    {" "}
+                    (applied when the order becomes fully refunded)
+                  </span>
+                </span>
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setRefundTarget(null)}
+                  disabled={refundOrder.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRefund}
+                  disabled={refundOrder.isPending}
+                  className="gap-1.5"
+                >
+                  {refundOrder.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" />
+                  )}
+                  Process Refund
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -79,6 +79,7 @@ export const orderStatusEnum = pgEnum("OrderStatus", [
   "SHIPPED",
   "DELIVERED",
   "CANCELLED",
+  "REFUNDED",
 ]);
 export const paymentMethodEnum = pgEnum("PaymentMethod", ["COD", "CARD", "DUE"]);
 export const saleTypeEnum = pgEnum("SaleType", ["POS", "WEBSITE"]);
@@ -86,6 +87,8 @@ export const paymentStatusEnum = pgEnum("PaymentStatus", [
   "PENDING",
   "COMPLETED",
   "FAILED",
+  "REFUNDED",
+  "PARTIALLY_REFUNDED",
 ]);
 export const testimonialUserRoleEnum = pgEnum("TestimonialUserRole", [
   "FASHION_ENTHUSIAST",
@@ -274,6 +277,12 @@ export const orders = pgTable("orders", {
   // this order, so re-running the creation path (retries, re-processing, or
   // any future status-change hook) can never double-count the conversion.
   metaPurchaseEventSentAt: timestamp("metaPurchaseEventSentAt", { precision: 3 }),
+  // Refunds. `refundedAmount` accumulates across partial refunds (0 = none).
+  // When it reaches `totalAmount` the order is fully refunded. `refundReason`
+  // holds the most recent reason; per-refund history lives in the timeline.
+  refundedAmount: doublePrecision("refundedAmount").default(0).notNull(),
+  refundReason: text("refundReason"),
+  refundedAt: timestamp("refundedAt", { precision: 3 }),
 });
 
 export const orderItems = pgTable("order_items", {
