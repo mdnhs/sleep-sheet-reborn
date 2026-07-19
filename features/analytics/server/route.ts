@@ -22,12 +22,16 @@ const app = new Hono()
     // Daily buckets read badly over a long range; roll up to a coarser unit
     const trendUnit = getTrendBucketUnit(startDate, endDate);
 
-    const notCancelled = ne(orders.status, "CANCELLED");
+    const validOrders = and(ne(orders.status, "CANCELLED"), ne(orders.status, "REFUNDED"));
     const inRange = (start: Date, end: Date) =>
-      and(notCancelled, gte(orders.createdAt, start), lte(orders.createdAt, end));
+      and(validOrders, gte(orders.createdAt, start), lte(orders.createdAt, end));
 
     const orderStats = (start: Date, end: Date) =>
-      db.select({ revenue: sum(orders.totalAmount), shipping: sum(orders.shippingCost), orders: count() })
+      db.select({
+          revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
+          shipping: sum(orders.shippingCost),
+          orders: count(),
+        })
         .from(orders)
         .where(inRange(start, end));
 

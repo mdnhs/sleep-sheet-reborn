@@ -46,10 +46,25 @@ const app = new Hono().get(
       }
     }
 
-    const orderConditions: SQL[] = [ne(orders.status, "CANCELLED")];
+    const orderConditions: SQL[] = [
+      ne(orders.status, "CANCELLED"),
+      ne(orders.status, "REFUNDED"),
+    ];
     if (fromDate) orderConditions.push(gte(orders.createdAt, fromDate));
     if (toDate) orderConditions.push(lte(orders.createdAt, toDate));
     const orderWhere = and(...orderConditions);
+
+    const cancelledConditions: SQL[] = [eq(orders.status, "CANCELLED")];
+    if (fromDate) cancelledConditions.push(gte(orders.createdAt, fromDate));
+    if (toDate) cancelledConditions.push(lte(orders.createdAt, toDate));
+    const cancelledWhere = and(...cancelledConditions);
+
+    const returnedConditions: SQL[] = [
+      sql`(${orders.status} = 'REFUNDED' OR (${orders.refundedAmount} IS NOT NULL AND ${orders.refundedAmount} > 0))`,
+    ];
+    if (fromDate) returnedConditions.push(gte(orders.createdAt, fromDate));
+    if (toDate) returnedConditions.push(lte(orders.createdAt, toDate));
+    const returnedWhere = and(...returnedConditions);
 
     const expenseConditions: SQL[] = [];
     if (fromDate) expenseConditions.push(gte(expenses.date, fromDate));
@@ -65,17 +80,23 @@ const app = new Hono().get(
       orderTotals, 
       costTotals, 
       expenseTotals, 
+      cancelledTotals,
+      returnedTotals,
+      allOrdersTotals,
+      allCostsTotals,
       monthlyOrders, 
       monthlyCosts, 
       monthlyExpenses, 
       productCostBreakdown,
       revenueBreakdown,
       shippingBreakdown,
-      expenseBreakdown
+      expenseBreakdown,
+      cancelledBreakdown,
+      returnedBreakdown,
     ] =
       await Promise.all([
         db.select({
-            revenue: sum(orders.totalAmount),
+            revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
             shipping: sum(orders.shippingCost),
             orders: count(),
           })
@@ -89,8 +110,26 @@ const app = new Hono().get(
           .from(expenses)
           .where(expenseWhere),
         db.select({
+            count: count(),
+            amount: sum(orders.totalAmount),
+          })
+          .from(orders)
+          .where(cancelledWhere),
+        db.select({
+            count: count(),
+            amount: sum(sql<number>`COALESCE(${orders.refundedAmount}, ${orders.totalAmount})`),
+          })
+          .from(orders)
+          .where(returnedWhere),
+        db.select({
+            amount: sum(orders.totalAmount),
+          })
+          .from(orders),
+        db.select({ cost: itemCost })
+          .from(orderItems),
+        db.select({
             month: monthOf(orders.createdAt),
-            revenue: sum(orders.totalAmount),
+            revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
             shippingCost: sum(orders.shippingCost),
           })
           .from(orders)
@@ -130,7 +169,7 @@ const app = new Hono().get(
             orderId: orders.id,
             orderNumber: orders.orderNumber,
             date: orders.createdAt,
-            totalAmount: orders.totalAmount,
+            totalAmount: sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`,
           })
           .from(orders)
           .where(orderWhere)
@@ -158,6 +197,28 @@ const app = new Hono().get(
           .where(expenseWhere)
           .orderBy(desc(expenses.date))
           .limit(BREAKDOWN_LIMIT),
+        db.select({
+            orderId: orders.id,
+            orderNumber: orders.orderNumber,
+            date: orders.createdAt,
+            totalAmount: orders.totalAmount,
+            reason: orders.cancellationReason,
+          })
+          .from(orders)
+          .where(cancelledWhere)
+          .orderBy(desc(orders.createdAt))
+          .limit(BREAKDOWN_LIMIT),
+        db.select({
+            orderId: orders.id,
+            orderNumber: orders.orderNumber,
+            date: orders.createdAt,
+            refundedAmount: sql<number>`COALESCE(${orders.refundedAmount}, ${orders.totalAmount})`,
+            reason: orders.refundReason,
+          })
+          .from(orders)
+          .where(returnedWhere)
+          .orderBy(desc(orders.createdAt))
+          .limit(BREAKDOWN_LIMIT),
       ]);
 
     const totalRevenue = Number(orderTotals[0]?.revenue || 0);
@@ -165,9 +226,18 @@ const app = new Hono().get(
     const orderCount = Number(orderTotals[0]?.orders || 0);
     const totalCost = Number(costTotals[0]?.cost || 0);
     const totalExpenseAmount = Number(expenseTotals[0]?.sum || 0);
-    const netProfit = totalRevenue - (totalCost + totalShippingCost + totalExpenseAmount);
+    const cancelledCount = Number(cancelledTotals[0]?.count || 0);
+    const cancelledAmount = Number(cancelledTotals[0]?.amount || 0);
+    const returnedCount = Number(returnedTotals[0]?.count || 0);
+    const returnedAmount = Number(returnedTotals[0]?.amount || 0);
+    const grossSales = Number(allOrdersTotals[0]?.amount || 0);
+    const grossCost = Number(allCostsTotals[0]?.cost || 0);
+    const cancelledCost = grossCost - totalCost;
 
-    // Merge the three monthly result sets on 'YYYY-MM'
+    const grossProfit = totalRevenue - (totalCost + totalShippingCost);
+    const netProfit = grossProfit - totalExpenseAmount;
+
+    // Merge the monthly result sets on 'YYYY-MM'
     const monthlyMap: Record<string, { month: string; revenue: number; cost: number; shippingCost: number; expense: number; profit: number }> = {};
     const initMonth = (month: string) => {
       if (!monthlyMap[month]) {
@@ -194,11 +264,19 @@ const app = new Hono().get(
 
     return c.json({
       totalRevenue,
+      grossSales,
       totalCost,
+      grossCost,
+      cancelledCost,
       totalShippingCost,
+      grossProfit,
       totalExpense: totalExpenseAmount,
       netProfit,
       orderCount,
+      cancelledCount,
+      cancelledAmount,
+      returnedCount,
+      returnedAmount,
       monthlyData,
       productCostBreakdown: productCostBreakdown.map((item) => ({
         ...item,
@@ -206,9 +284,11 @@ const app = new Hono().get(
         costPrice: Number(item.costPrice || 0),
         totalItemCost: Number(item.totalItemCost || 0),
       })),
-      revenueBreakdown: revenueBreakdown.map(item => ({ ...item, totalAmount: Number(item.totalAmount) })),
-      shippingBreakdown: shippingBreakdown.map(item => ({ ...item, shippingCost: Number(item.shippingCost) })),
-      expenseBreakdown: expenseBreakdown.map(item => ({ ...item, amount: Number(item.amount) })),
+      revenueBreakdown: revenueBreakdown.map(item => ({ ...item, totalAmount: Number(item.totalAmount || 0) })),
+      shippingBreakdown: shippingBreakdown.map(item => ({ ...item, shippingCost: Number(item.shippingCost || 0) })),
+      expenseBreakdown: expenseBreakdown.map(item => ({ ...item, amount: Number(item.amount || 0) })),
+      cancelledBreakdown: cancelledBreakdown.map(item => ({ ...item, totalAmount: Number(item.totalAmount || 0) })),
+      returnedBreakdown: returnedBreakdown.map(item => ({ ...item, refundedAmount: Number(item.refundedAmount || 0) })),
       breakdownTruncated: productCostBreakdown.length === BREAKDOWN_LIMIT || revenueBreakdown.length === BREAKDOWN_LIMIT || shippingBreakdown.length === BREAKDOWN_LIMIT || expenseBreakdown.length === BREAKDOWN_LIMIT,
     });
   }

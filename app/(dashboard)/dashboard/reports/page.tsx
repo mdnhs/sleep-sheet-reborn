@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
-import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, ChevronLeft, ChevronRight } from "lucide-react";
 import { subDays, startOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 
 type FilterType = "all" | "today" | "week" | "month" | "custom";
@@ -122,7 +122,7 @@ export default function ReportsPage() {
       setDateRange({ from: range.from.toISOString(), to: range.to.toISOString() });
     } else if (!range) {
       setActiveFilter("all");
-      setDateRange({});
+      setDateRange({})
     }
   };
 
@@ -164,18 +164,20 @@ export default function ReportsPage() {
           </div>
         ) : data ? (
           <div className="space-y-6">
-            <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
               <Card 
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setShowRevenueBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Net Sale</CardTitle>
+                  <DollarSign className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalRevenue)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">From {data.orderCount} orders (Click to view)</p>
+                  <div className="text-lg sm:text-2xl font-bold truncate text-green-600">{formatAmount(data.totalRevenue)}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                    Gross ({formatAmount(data.grossSales || 0)}) - Cancelled ({formatAmount(data.cancelledAmount || 0)})
+                  </p>
                 </CardContent>
               </Card>
 
@@ -184,12 +186,14 @@ export default function ReportsPage() {
                 onClick={() => setShowProductCostBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Product Cost</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium">Product Bought Cost</CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                   <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalCost)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Bought prices (Click to view)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                    Gross ({formatAmount(data.grossCost || 0)}) - Cancelled ({formatAmount(data.cancelledCost || 0)})
+                  </p>
                 </CardContent>
               </Card>
 
@@ -198,12 +202,12 @@ export default function ReportsPage() {
                 onClick={() => setShowShippingBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Shipping Cost</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium">Delivery Charge</CardTitle>
                   <Truck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                   <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalShippingCost)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Courier fees (Click to view)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Courier delivery fees</p>
                 </CardContent>
               </Card>
 
@@ -217,13 +221,13 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                   <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalExpense || 0)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Misc costs (Click to view)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Misc operational expenses</p>
                 </CardContent>
               </Card>
 
-              <Card className={`col-span-2 lg:col-span-1 ${data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20" : "bg-red-50 dark:bg-red-950/20"}`}>
+              <Card className={`col-span-1 sm:col-span-2 lg:col-span-1 ${data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Net Profit / Loss</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-semibold">Net Profit / Loss</CardTitle>
                   {data.netProfit >= 0 ? (
                     <TrendingUp className="h-4 w-4 text-green-600" />
                   ) : (
@@ -234,8 +238,8 @@ export default function ReportsPage() {
                   <div className={`text-lg sm:text-2xl font-bold ${data.netProfit >= 0 ? "text-green-600" : "text-red-600"} truncate`}>
                     {formatAmount(data.netProfit)}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">
-                    {profitMargin !== null ? `${profitMargin}% margin · ` : ""}Rev - (Cost+Ship+Exp)
+                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                    {profitMargin !== null ? `${profitMargin}% margin · ` : ""}Net Sale - (Cost + Delivery + Expense)
                   </p>
                 </CardContent>
               </Card>
@@ -254,10 +258,10 @@ export default function ReportsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Month</TableHead>
-                          <TableHead className="text-right">Revenue</TableHead>
-                          <TableHead className="text-right">Costs (Prod+Ship)</TableHead>
+                          <TableHead className="text-right">Sales (Net)</TableHead>
+                          <TableHead className="text-right">Costs (Product + Delivery)</TableHead>
                           <TableHead className="text-right">Expenses</TableHead>
-                          <TableHead className="text-right font-bold">Profit/Loss</TableHead>
+                          <TableHead className="text-right font-bold">Net Profit/Loss</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -302,12 +306,13 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
+            {/* Product Cost Breakdown Dialog */}
             <Dialog open={showProductCostBreakdown} onOpenChange={setShowProductCostBreakdown}>
               <DialogContent className="sm:max-w-4xl h-[85vh] p-0 overflow-hidden flex flex-col gap-0 bg-background">
                 <DialogHeader className="px-6 py-5 border-b bg-muted/20">
                   <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
                     <Package className="w-5 h-5 text-indigo-600 dark:text-indigo-500" />
-                    Product Cost Breakdown
+                    Product Bought Cost Breakdown
                   </DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="flex-1">
@@ -331,7 +336,7 @@ export default function ReportsPage() {
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
                               <TableHead className="font-medium h-10">Product</TableHead>
                               <TableHead className="text-right font-medium h-10">Qty</TableHead>
-                              <TableHead className="text-right font-medium h-10">Unit Cost</TableHead>
+                              <TableHead className="text-right font-medium h-10">Bought Cost</TableHead>
                               <TableHead className="text-right font-medium h-10">Total Cost</TableHead>
                             </TableRow>
                           )}
@@ -365,12 +370,13 @@ export default function ReportsPage() {
               </DialogContent>
             </Dialog>
 
+            {/* Revenue Breakdown Dialog */}
             <Dialog open={showRevenueBreakdown} onOpenChange={setShowRevenueBreakdown}>
               <DialogContent className="sm:max-w-3xl h-[85vh] p-0 overflow-hidden flex flex-col gap-0 bg-background">
                 <DialogHeader className="px-6 py-5 border-b bg-muted/20">
                   <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
                     <DollarSign className="w-5 h-5 text-green-600 dark:text-green-500" />
-                    Revenue Breakdown
+                    Net Revenue Breakdown
                   </DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="flex-1">
@@ -392,7 +398,7 @@ export default function ReportsPage() {
                             <TableRow className="hover:bg-transparent">
                               <TableHead className="font-medium h-10 w-[120px]">Date</TableHead>
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
-                              <TableHead className="text-right font-medium h-10">Revenue</TableHead>
+                              <TableHead className="text-right font-medium h-10">Net Sale Amount</TableHead>
                             </TableRow>
                           )}
                           renderRow={(item: any, i: number) => (
@@ -416,19 +422,20 @@ export default function ReportsPage() {
               </DialogContent>
             </Dialog>
 
+            {/* Shipping Breakdown Dialog */}
             <Dialog open={showShippingBreakdown} onOpenChange={setShowShippingBreakdown}>
               <DialogContent className="sm:max-w-3xl h-[85vh] p-0 overflow-hidden flex flex-col gap-0 bg-background">
                 <DialogHeader className="px-6 py-5 border-b bg-muted/20">
                   <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
                     <Truck className="w-5 h-5 text-blue-600 dark:text-blue-500" />
-                    Shipping Cost Breakdown
+                    Delivery Charge Breakdown
                   </DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="flex-1">
                   <div className="p-6">
                     {!data.shippingBreakdown || data.shippingBreakdown.length === 0 ? (
                       <div className="text-sm text-muted-foreground flex items-center justify-center h-24 bg-muted/20 rounded-lg border border-dashed">
-                        No shipping costs found for this period.
+                        No delivery charges found for this period.
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -443,7 +450,7 @@ export default function ReportsPage() {
                             <TableRow className="hover:bg-transparent">
                               <TableHead className="font-medium h-10 w-[120px]">Date</TableHead>
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
-                              <TableHead className="text-right font-medium h-10">Shipping Cost</TableHead>
+                              <TableHead className="text-right font-medium h-10">Delivery Charge</TableHead>
                             </TableRow>
                           )}
                           renderRow={(item: any, i: number) => (
@@ -467,6 +474,7 @@ export default function ReportsPage() {
               </DialogContent>
             </Dialog>
 
+            {/* Expense Breakdown Dialog */}
             <Dialog open={showExpenseBreakdown} onOpenChange={setShowExpenseBreakdown}>
               <DialogContent className="sm:max-w-3xl h-[85vh] p-0 overflow-hidden flex flex-col gap-0 bg-background">
                 <DialogHeader className="px-6 py-5 border-b bg-muted/20">
