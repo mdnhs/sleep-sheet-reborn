@@ -1131,50 +1131,50 @@ export default function OrdersPage() {
         className="w-full"
       >
         <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
-          <TabsList className="flex flex-nowrap h-auto w-max sm:w-fit gap-1 bg-muted p-1 rounded-xl">
+          <TabsList className="flex flex-nowrap items-center h-9 w-max sm:w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full">
             <TabsTrigger
               value="ALL"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
             >
               All ({orders?.length ?? 0})
             </TabsTrigger>
             <TabsTrigger
               value="TODAY"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
             >
               Today ({todayCount})
             </TabsTrigger>
             <TabsTrigger
               value="PENDING"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
             >
               {STATUS_DOTS.PENDING}
               Pending ({pendingCount})
             </TabsTrigger>
             <TabsTrigger
               value="CONFIRMED"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
             >
               {STATUS_DOTS.PROCESSING}
               Confirmed ({confirmedCount})
             </TabsTrigger>
             <TabsTrigger
               value="DELIVERED"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
             >
               {STATUS_DOTS.DELIVERED}
               Delivered ({deliveredCount})
             </TabsTrigger>
             <TabsTrigger
               value="CANCELLED"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
             >
               {STATUS_DOTS.CANCELLED}
               Cancelled ({cancelledCount})
             </TabsTrigger>
             <TabsTrigger
               value="RETURNED"
-              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+              className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
             >
               {STATUS_DOTS.REFUNDED}
               Returned ({returnedCount})
@@ -1183,141 +1183,136 @@ export default function OrdersPage() {
         </div>
       </Tabs>
 
-      {/* Rendered once, outside the loading/loaded branches below — otherwise
-          every filter change (search/date range) swaps between those two
-          branches while the new query has no cached data yet, unmounting
-          and remounting this toolbar (and resetting the DateRangePicker's
-          open state) on every click. */}
-      <div className="flex flex-wrap items-center gap-3 w-full">
-        <div className="relative max-w-sm w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search orders..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
-        {statusFilter !== "ALL" && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setStatusFilter("ALL")}
-            className="shrink-0 gap-1.5"
-          >
-            <FilterX className="h-3.5 w-3.5" />
-            Clear filter
-          </Button>
-        )}
-        {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
-          selectedOrders.length > 0 && (
-            <Button
-              type="button"
-              onClick={handleBulkBook}
-              disabled={isBulkBooking}
-              className="gap-1.5 shrink-0 rounded-xl"
-            >
-              {isBulkBooking ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Truck className="h-3.5 w-3.5" />
-              )}
-              Book Selected ({selectedOrders.length})
-            </Button>
-          )}
-        {selectedOrders.length > 0 && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleBulkPrint("print")}
-            disabled={isBulkPrinting}
-            className="rounded-xl gap-1 shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
-          >
-            {isBulkPrinting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Printer className="h-3.5 w-3.5" />
-            )}
-            Print Selected ({selectedOrders.length})
-          </Button>
-        )}
-        {selectedOrders.length > 0 && (
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setConfirmBulkDelete(true)}
-            disabled={bulkDeleteOrders.isPending}
-            className="rounded-xl gap-1 shrink-0"
-          >
-            {bulkDeleteOrders.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash className="h-3.5 w-3.5" />
-            )}
-            Delete Selected ({selectedOrders.length})
-          </Button>
-        )}
-        {selectedOrders.filter((o) => o.trackingNumber).length > 0 && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const tracked = selectedOrders.filter((o) => o.trackingNumber);
-              tracked.forEach((o) => syncStatus.mutate(o.id));
-            }}
-            disabled={syncStatus.isPending}
-            className="rounded-xl gap-1 shrink-0 border-teal-200 text-teal-700 hover:bg-teal-50 hover:text-teal-800"
-          >
-            {syncStatus.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            Sync Tracked (
-            {selectedOrders.filter((o) => o.trackingNumber).length})
-          </Button>
-        )}
-      </div>
-
-      {isLoading ? (
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
-            ))}
-          </CardContent>
-        </Card>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={filtered || []}
-          actionSlot={
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <div className="flex flex-wrap items-center gap-3 w-full">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search orders..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
+            />
+          </div>
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          {statusFilter !== "ALL" && (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleRefreshAllSteadfast}
-              disabled={isRefetchingSteadfast}
-              className="rounded-xl gap-1.5 shrink-0"
-              title="Re-fetch Steadfast Status"
+              onClick={() => setStatusFilter("ALL")}
+              className="shrink-0 gap-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none"
             >
-              <RefreshCw
-                className={cn("h-3.5 w-3.5", isRefetchingSteadfast && "animate-spin")}
-              />
-              <span>Refresh Steadfast</span>
+              <FilterX className="h-3.5 w-3.5" />
+              Clear filter
             </Button>
-          }
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
-          columnVisibility={{
-            orderNumber: false,
-            reference: false,
-            trackingNumber: false,
-          }}
-        />
-      )}
+          )}
+          {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
+            selectedOrders.length > 0 && (
+              <Button
+                type="button"
+                onClick={handleBulkBook}
+                disabled={isBulkBooking}
+                className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700"
+              >
+                {isBulkBooking ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Truck className="h-3.5 w-3.5" />
+                )}
+                Book Selected ({selectedOrders.length})
+              </Button>
+            )}
+          {selectedOrders.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleBulkPrint("print")}
+              disabled={isBulkPrinting}
+              className="rounded-full gap-1 shrink-0 text-xs font-semibold border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+            >
+              {isBulkPrinting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Printer className="h-3.5 w-3.5" />
+              )}
+              Print Selected ({selectedOrders.length})
+            </Button>
+          )}
+          {selectedOrders.length > 0 && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setConfirmBulkDelete(true)}
+              disabled={bulkDeleteOrders.isPending}
+              className="rounded-full gap-1 shrink-0 text-xs font-semibold"
+            >
+              {bulkDeleteOrders.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash className="h-3.5 w-3.5" />
+              )}
+              Delete Selected ({selectedOrders.length})
+            </Button>
+          )}
+          {selectedOrders.filter((o) => o.trackingNumber).length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const tracked = selectedOrders.filter((o) => o.trackingNumber);
+                tracked.forEach((o) => syncStatus.mutate(o.id));
+              }}
+              disabled={syncStatus.isPending}
+              className="rounded-full gap-1 shrink-0 text-xs font-semibold border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800"
+            >
+              {syncStatus.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Sync Tracked (
+              {selectedOrders.filter((o) => o.trackingNumber).length})
+            </Button>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="p-6 space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={filtered || []}
+            actionSlot={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshAllSteadfast}
+                disabled={isRefetchingSteadfast}
+                className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border bg-slate-50 dark:bg-muted/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                title="Re-fetch Steadfast Status"
+              >
+                <RefreshCw
+                  className={cn("h-3.5 w-3.5", isRefetchingSteadfast && "animate-spin")}
+                />
+                <span>Refresh Steadfast</span>
+              </Button>
+            }
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            columnVisibility={{
+              orderNumber: false,
+              reference: false,
+              trackingNumber: false,
+            }}
+          />
+        )}
+      </div>
 
       <Dialog
         open={!!selectedOrder}

@@ -238,79 +238,84 @@ export default function ProductsClientPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-4 py-4 px-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Products</h1>
-        <Button nativeButton={false} render={<Link href="/dashboard/products/create" />}>
-          <Plus />
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <p className="text-muted-foreground text-sm">Manage your product catalog and inventory</p>
+        </div>
+        <Button nativeButton={false} render={<Link href="/dashboard/products/create" />} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
+          <Plus className="h-4 w-4" />
           Add New
         </Button>
       </div>
 
-      <DataTable<ProductColumn, unknown>
-        columns={columns}
-        data={products?.data ?? []}
-        manualPagination
-        pageCount={products?.totalPages ?? -1}
-        pagination={pagination}
-        onPaginationChange={(updater: Updater<PaginationState>) => {
-          setPagination(typeof updater === "function" ? updater(pagination) : updater)
-        }}
-        rowSelection={rowSelection}
-        onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
-          setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
-        }}
-        searchSlot={
-          <div className="flex flex-wrap items-center gap-3 w-full">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="pl-9 w-full rounded-xl"
-              />
-            </div>
-            <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
-              <SelectTrigger className="w-[180px] rounded-xl">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories?.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.label}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={featuredFilter} onValueChange={(val) => setFeaturedFilter(val || "all")}>
-              <SelectTrigger className="w-[150px] rounded-xl">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="true">Featured</SelectItem>
-                <SelectItem value="false">Standard</SelectItem>
-              </SelectContent>
-            </Select>
-            {selectedCount > 0 && (
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setConfirmBulkDelete(true)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <DataTable<ProductColumn, unknown>
+          columns={columns}
+          data={products?.data ?? []}
+          manualPagination
+          pageCount={products?.totalPages ?? -1}
+          pagination={pagination}
+          onPaginationChange={(updater: Updater<PaginationState>) => {
+            setPagination(typeof updater === "function" ? updater(pagination) : updater)
+          }}
+          rowSelection={rowSelection}
+          onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
+            setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
+          }}
+          searchSlot={
+            <div className="flex flex-wrap items-center gap-3 w-full">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
+                />
               </div>
-            )}
-          </div>
-        }
-      />
+              <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
+                <SelectTrigger className="w-[180px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.label}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={featuredFilter} onValueChange={(val) => setFeaturedFilter(val || "all")}>
+                <SelectTrigger className="w-[150px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="true">Featured</SelectItem>
+                  <SelectItem value="false">Standard</SelectItem>
+                </SelectContent>
+              </Select>
+              {selectedCount > 0 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1.5 rounded-full text-xs font-semibold"
+                    onClick={() => setConfirmBulkDelete(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
+              )}
+            </div>
+          }
+        />
+      </div>
 
       <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
         <AlertDialogContent>

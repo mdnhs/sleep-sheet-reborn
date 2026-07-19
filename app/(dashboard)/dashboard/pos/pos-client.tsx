@@ -491,13 +491,13 @@ export default function PosClientPage() {
   )
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)] gap-0 relative">
+    <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-4rem)] p-4 md:p-6 gap-6 relative">
       {/* Left Panel - Product Browser */}
-      <div className="flex-1 flex flex-col lg:border-r overflow-hidden pb-16 lg:pb-0">
+      <div className="flex-1 flex flex-col rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none overflow-hidden pb-16 lg:pb-0">
         {/* Search & Filter Bar */}
-        <div className="p-4 border-b bg-background space-y-3 shrink-0">
+        <div className="pb-4 border-b space-y-3 shrink-0">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Point of Sale</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Point of Sale</h1>
           </div>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -506,7 +506,7 @@ export default function PosClientPage() {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 rounded-xl"
+                className="pl-9 rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
               />
             </div>
             <MobileFilterSheet side="left" />
@@ -514,12 +514,12 @@ export default function PosClientPage() {
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto pt-4">
           {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="space-y-2">
-                  <Skeleton className="aspect-square rounded-xl" />
+                  <Skeleton className="aspect-square rounded-2xl" />
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </div>
@@ -564,7 +564,7 @@ export default function PosClientPage() {
       </div>
 
       {/* Desktop Right Panel - Cart */}
-      <div className="hidden lg:flex w-[400px] flex-col bg-background shrink-0">
+      <div className="hidden lg:flex w-[400px] flex-col rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none shrink-0">
         {renderCartContents()}
       </div>
 

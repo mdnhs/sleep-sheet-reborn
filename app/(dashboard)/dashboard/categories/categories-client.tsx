@@ -108,11 +108,11 @@ function DraggableRow({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       data-state={isDragging ? "dragging" : selected ? "selected" : undefined}
       className={cn(
-        "hover:bg-muted/30 transition-colors whitespace-nowrap",
+        "hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors whitespace-nowrap border-b border-slate-100 dark:border-slate-800/60",
         isDragging && "opacity-60 shadow-lg"
       )}
     >
-      <td className="w-10 px-2 py-2 align-middle">
+      <td className="w-10 px-3 py-2.5 align-middle">
         <button
           type="button"
           className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
@@ -123,7 +123,7 @@ function DraggableRow({
           <GripVertical className="h-4 w-4" />
         </button>
       </td>
-      <td className="px-2 py-2 align-middle">
+      <td className="px-3 py-2.5 align-middle">
         <input
           type="checkbox"
           className="rounded border-input"
@@ -132,31 +132,31 @@ function DraggableRow({
           aria-label={`Select ${row.label}`}
         />
       </td>
-      <td className="px-2 py-2 align-middle">
+      <td className="px-3 py-2.5 align-middle">
         {row.image ? (
-          <img src={row.image} alt="" className="h-10 w-10 rounded object-cover" />
+          <img src={row.image} alt="" className="h-10 w-10 rounded-xl object-cover" />
         ) : (
-          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
             <FolderOpen className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
       </td>
-      <td className="px-2 py-2 align-middle">
-        <span className="font-medium">{row.label}</span>
+      <td className="px-3 py-2.5 align-middle">
+        <span className="font-semibold">{row.label}</span>
       </td>
-      <td className="px-2 py-2 align-middle">
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{row.value}</code>
+      <td className="px-3 py-2.5 align-middle">
+        <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-slate-700 dark:text-slate-300 font-mono">{row.value}</code>
       </td>
-      <td className="px-2 py-2 align-middle">
+      <td className="px-3 py-2.5 align-middle">
         {row.parentLabel !== "—" ? (
-          <span>{row.parentLabel}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{row.parentLabel}</span>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
       </td>
-      <td className="px-2 py-2 align-middle">
+      <td className="px-3 py-2.5 align-middle">
         {row.subCount > 0 ? (
-          <Badge variant="secondary">{row.subCount}</Badge>
+          <Badge variant="secondary" className="rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none">{row.subCount}</Badge>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
@@ -428,12 +428,15 @@ function CategoriesClientPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Categories</h1>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+          <p className="text-muted-foreground text-sm">Organize products into categories and subcategories</p>
+        </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className={buttonVariants()}>
-            <Plus />
+          <DialogTrigger className={cn(buttonVariants(), "gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold")}>
+            <Plus className="h-4 w-4" />
             Add Category
           </DialogTrigger>
           <DialogContent>
@@ -696,70 +699,71 @@ function CategoriesClientPage() {
         </Dialog>
       </div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex-1 min-w-[240px]">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 max-w-sm rounded-xl"
-              />
-            </div>
-            {selectedCount > 0 && (
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setConfirmBulkDelete(true)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex-1 min-w-[240px]">
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
+                />
               </div>
-            )}
+              {selectedCount > 0 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1.5 rounded-full text-xs font-semibold"
+                    onClick={() => setConfirmBulkDelete(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <DndContext
-        sensors={sensors}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={rows.map((r): UniqueIdentifier => r.value)}
-          strategy={verticalListSortingStrategy}
+        <DndContext
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
         >
-          <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <table className="w-full">
-              <thead className="bg-secondary/20">
-                <tr className="hover:bg-transparent">
-                  <th className="w-10 px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap"></th>
-                  <th className="w-10 px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      className="rounded border-input"
-                      checked={rows.length > 0 && rows.every((r) => rowSelection[r.value])}
-                      onChange={(e) => toggleSelectAll(e.target.checked)}
-                      aria-label="Select all"
-                    />
-                  </th>
-                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Image</th>
-                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">
-                    <Button variant="ghost" className="-ml-4 h-8 data-[state=open]:bg-accent">
-                      Label <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </th>
-                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Slug</th>
-                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Parent</th>
-                  <th className="px-2 py-3 text-left font-semibold text-foreground text-sm whitespace-nowrap">Subcategories</th>
-                  <th className="px-2 py-3 text-right font-semibold text-foreground text-sm whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
+          <SortableContext
+            items={rows.map((r): UniqueIdentifier => r.value)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50/70 dark:bg-muted/30">
+                  <tr className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
+                    <th className="w-10 px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap"></th>
+                    <th className="w-10 px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        className="rounded border-input"
+                        checked={rows.length > 0 && rows.every((r) => rowSelection[r.value])}
+                        onChange={(e) => toggleSelectAll(e.target.checked)}
+                        aria-label="Select all"
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">Image</th>
+                    <th className="px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">
+                      <Button variant="ghost" className="-ml-4 h-8 data-[state=open]:bg-accent font-bold">
+                        Label <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </th>
+                    <th className="px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">Slug</th>
+                    <th className="px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">Parent</th>
+                    <th className="px-3 py-3 text-left font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">Subcategories</th>
+                    <th className="px-3 py-3 text-right font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {rows.length > 0 ? (
                   rows.map((row) => (
@@ -791,6 +795,7 @@ function CategoriesClientPage() {
         <div className="text-xs text-muted-foreground">
           {selectedCount} of {rows.length} row(s) selected.
         </div>
+      </div>
       </div>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

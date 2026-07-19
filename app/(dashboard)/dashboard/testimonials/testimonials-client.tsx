@@ -338,12 +338,15 @@ export default function TestimonialsClientPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-4 py-4 px-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Testimonials</h1>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Testimonials</h1>
+          <p className="text-muted-foreground text-sm">Manage customer feedback, reviews, and testimonials</p>
+        </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className={buttonVariants()}>
-            <Plus className="mr-2 h-4 w-4" />
+          <DialogTrigger className={cn(buttonVariants(), "gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold")}>
+            <Plus className="h-4 w-4" />
             Add Testimonial
           </DialogTrigger>
           <DialogContent>
@@ -387,7 +390,7 @@ export default function TestimonialsClientPage() {
                   <select
                     value={testimonialRole}
                     onChange={(e) => setTestimonialRole(e.target.value)}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                    className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   >
                     <option value="CUSTOMER">Customer</option>
                     <option value="FASHION_ENTHUSIAST">Fashion Enthusiast</option>
@@ -398,7 +401,7 @@ export default function TestimonialsClientPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm text-muted-foreground">Image</label>
+                <label className="text-sm text-muted-foreground">Screenshot / Image</label>
                 <div className="flex items-start gap-3">
                   <input
                     ref={fileInputRef}
@@ -436,7 +439,7 @@ export default function TestimonialsClientPage() {
 
               <Button type="submit" className="w-full" disabled={isCreating || isUploading}>
                 {(isCreating || isUploading) ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {isUploading ? "Uploading..." : "Creating..."}</>
+                  <><Loader2 className="h-4 w-4 animate-spin" /> {isUploading ? "Uploading..." : "Creating..."}</>
                 ) : (
                   "Create Testimonial"
                 )}
@@ -446,47 +449,49 @@ export default function TestimonialsClientPage() {
         </Dialog>
       </div>
 
-      <DataTable<TestimonialColumn, unknown>
-        columns={columns}
-        data={testimonials?.data ?? []}
-        manualPagination
-        pageCount={testimonials?.totalPages ?? -1}
-        pagination={pagination}
-        onPaginationChange={(updater: Updater<PaginationState>) => {
-          setPagination(typeof updater === "function" ? updater(pagination) : updater)
-        }}
-        rowSelection={rowSelection}
-        onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
-          setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
-        }}
-        searchSlot={
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search testimonials..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="pl-9 max-w-sm rounded-xl"
-              />
-            </div>
-            {selectedCount > 0 && (
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setConfirmBulkDelete(true)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <DataTable<TestimonialColumn, unknown>
+          columns={columns}
+          data={testimonials?.data ?? []}
+          manualPagination
+          pageCount={testimonials?.totalPages ?? -1}
+          pagination={pagination}
+          onPaginationChange={(updater: Updater<PaginationState>) => {
+            setPagination(typeof updater === "function" ? updater(pagination) : updater)
+          }}
+          rowSelection={rowSelection}
+          onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
+            setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
+          }}
+          searchSlot={
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search testimonials..."
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
+                />
               </div>
-            )}
-          </div>
-        }
-      />
+              {selectedCount > 0 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1.5 rounded-full text-xs font-semibold"
+                    onClick={() => setConfirmBulkDelete(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
+              )}
+            </div>
+          }
+        />
+      </div>
 
       <AlertDialog open={!!testimonialToDelete} onOpenChange={(open) => !open && setTestimonialToDelete(null)}>
         <AlertDialogContent>

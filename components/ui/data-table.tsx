@@ -126,19 +126,19 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <Table>
-          <TableHeader className="bg-secondary/20">
+          <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-semibold text-foreground whitespace-nowrap">
+                    <TableHead key={header.id} className="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                       {header.isPlaceholder ? null : (
                         header.column.getCanSort() && header.id !== "select" && header.id !== "actions" ? (
                           <Button
                             variant="ghost"
-                            className="-ml-4 h-8 data-[state=open]:bg-accent"
+                            className="-ml-4 h-8 data-[state=open]:bg-accent font-bold"
                             onClick={() => header.column.toggleSorting(header.column.getIsSorted() === "asc")}
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -170,7 +170,7 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                   className={cn(
-                    "hover:bg-muted/30 transition-colors whitespace-nowrap",
+                    "hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors whitespace-nowrap border-b border-slate-100 dark:border-slate-800/60",
                     onRowClick && "cursor-pointer"
                   )}
                 >
