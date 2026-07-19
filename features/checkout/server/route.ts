@@ -148,7 +148,25 @@ const app = new Hono()
         capiContextFromHeaders(c.req.raw.headers),
       );
 
-      return c.json({ message: "Order placed successfully", order: createdOrder });
+      return c.json({
+        message: "Order placed successfully",
+        order: createdOrder,
+        orderId: order.id,
+        // Everything the browser Pixel needs to fire a matching Purchase.
+        // Same event_id (purchase_<orderId>) as the CAPI event so Meta
+        // deduplicates the browser + server events into one conversion.
+        purchase: {
+          value: totalAmount,
+          currency: "BDT",
+          orderId: order.id,
+          contents: cartItemsForOrder.map((i) => ({
+            id: i.productId,
+            quantity: i.quantity,
+            item_price: i.price,
+          })),
+          numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
+        },
+      });
     } catch (error) {
       console.error("Error placing order:", error);
       return c.json({ message: "Error placing order" }, 500);
@@ -249,7 +267,21 @@ const app = new Hono()
       capiContextFromHeaders(c.req.raw.headers),
     );
 
-    return c.json({ message: "Order placed successfully", orderId: guestOrderId });
+    return c.json({
+      message: "Order placed successfully",
+      orderId: guestOrderId,
+      purchase: {
+        value: totalAmount,
+        currency: "BDT",
+        orderId: order.id,
+        contents: cartItemsForOrder.map((i) => ({
+          id: i.productId,
+          quantity: i.quantity,
+          item_price: i.price,
+        })),
+        numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
+      },
+    });
   } catch (error) {
     console.error("Error placing guest order:", error);
     return c.json({ message: "Error placing order" }, 500);

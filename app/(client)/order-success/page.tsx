@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
-import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 
 interface OrderItem {
@@ -45,7 +44,6 @@ function OrderSuccessContent() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const { track } = usePixelTracking();
 
   useEffect(() => {
     if (!orderId) {
@@ -68,38 +66,13 @@ function OrderSuccessContent() {
     fetchOrder();
   }, [orderId, router]);
 
-  // Fire Purchase once per order. Guarded via localStorage (NOT sessionStorage)
-  // so a page refresh, a new tab, or a revisit of the success URL within the
-  // same browser can't re-fire — sessionStorage is scoped to a single tab and
-  // is empty in a new tab/incognito, which let the same order fire again.
-  // As a cross-browser/device safety net, the event carries the same
-  // deterministic, namespaced event_id as the server CAPI Purchase
-  // (`purchase_${order.id}`) so Meta deduplicates any residual duplicates.
+  // NOTE: The Meta Pixel Purchase event is intentionally NOT fired here.
+  // Purchase is tracked earlier in the funnel (on the checkout page) plus
+  // server-side via the Conversions API at order creation, so firing it again
+  // on this success page double-counted the conversion in Meta. This effect
+  // only records the internal `order_complete` traffic event.
   useEffect(() => {
     if (!order || !orderId) return;
-    const guardKey = `fb_purchase_tracked_${order.id}`;
-    if (typeof window !== "undefined" && localStorage.getItem(guardKey)) return;
-
-    track("Purchase", {
-      value: order.totalAmount,
-      currency: "BDT",
-      order_id: order.id,
-      content_ids: order.items.map((item) => item.product.id),
-      content_type: "product",
-      contents: order.items.map((item) => ({
-        id: item.product.id,
-        quantity: item.quantity,
-        item_price: item.price,
-      })),
-      quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    }, {
-      // Must match the server CAPI event_id exactly for cross-channel dedup.
-      eventId: `purchase_${order.id}`,
-    });
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem(guardKey, "1");
-    }
 
     const orderGuardKey = `traffic_order_tracked_${orderId}`;
     if (typeof window !== "undefined" && !sessionStorage.getItem(orderGuardKey)) {
