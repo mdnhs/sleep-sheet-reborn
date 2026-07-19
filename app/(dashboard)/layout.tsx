@@ -17,8 +17,8 @@ function DashBoardLayout({ children }: DashBoardLayoutProps) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <SidebarInset className="bg-[#F6F6F4] dark:bg-background">
+        <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-2 border-b bg-white/95 dark:bg-card/95 backdrop-blur-md px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
@@ -27,7 +27,7 @@ function DashBoardLayout({ children }: DashBoardLayoutProps) {
           {/* <DashboardBreadcrumb /> */}
           <DashboardHeaderActions />
         </header>
-        <main className="flex-1 min-w-0 pb-20 md:pb-0">{children}</main>
+        <main className="flex-1 min-w-0 bg-[#F6F6F4] dark:bg-background pb-20 md:pb-0">{children}</main>
         <BottomNav />
       </SidebarInset>
     </SidebarProvider>

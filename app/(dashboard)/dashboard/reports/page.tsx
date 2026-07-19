@@ -166,7 +166,7 @@ export default function ReportsPage() {
           <div className="space-y-6">
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
               <Card 
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
                 onClick={() => setShowRevenueBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
@@ -182,7 +182,7 @@ export default function ReportsPage() {
               </Card>
 
               <Card
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
                 onClick={() => setShowProductCostBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
@@ -198,7 +198,7 @@ export default function ReportsPage() {
               </Card>
 
               <Card
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
                 onClick={() => setShowShippingBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
@@ -212,7 +212,7 @@ export default function ReportsPage() {
               </Card>
 
               <Card
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
                 onClick={() => setShowExpenseBreakdown(true)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
@@ -225,7 +225,7 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
 
-              <Card className={`col-span-1 sm:col-span-2 lg:col-span-1 ${data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"}`}>
+              <Card className={`col-span-1 sm:col-span-2 lg:col-span-1 rounded-3xl border-none shadow-none ${data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                   <CardTitle className="text-xs sm:text-sm font-semibold">Net Profit / Loss</CardTitle>
                   {data.netProfit >= 0 ? (

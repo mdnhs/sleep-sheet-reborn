@@ -48,7 +48,26 @@ const app = new Hono()
         .from(expenses)
         .where(and(gte(expenses.date, start), lte(expenses.date, end)));
 
-    const [currRes, prevRes, salesTrend, currExpenses, prevExpenses, currCost, prevCost] =
+    const cancelledStats = (start: Date, end: Date) =>
+      db.select({
+          count: count(),
+          amount: sum(orders.totalAmount),
+        })
+        .from(orders)
+        .where(and(eq(orders.status, "CANCELLED"), gte(orders.createdAt, start), lte(orders.createdAt, end)));
+
+    const returnedStats = (start: Date, end: Date) =>
+      db.select({
+          count: count(),
+          amount: sum(sql<number>`COALESCE(${orders.refundedAmount}, ${orders.totalAmount})`),
+        })
+        .from(orders)
+        .where(and(sql`(${orders.status} = 'REFUNDED' OR (${orders.refundedAmount} IS NOT NULL AND ${orders.refundedAmount} > 0))`, gte(orders.createdAt, start), lte(orders.createdAt, end)));
+
+    const [
+      currRes, prevRes, salesTrend, currExpenses, prevExpenses, currCost, prevCost,
+      currCancelled, prevCancelled, currReturned, prevReturned
+    ] =
       await Promise.all([
         orderStats(startDate, endDate),
         orderStats(prevStart, prevEnd),
@@ -64,6 +83,10 @@ const app = new Hono()
         expenseStats(prevStart, prevEnd),
         costStats(startDate, endDate),
         costStats(prevStart, prevEnd),
+        cancelledStats(startDate, endDate),
+        cancelledStats(prevStart, prevEnd),
+        returnedStats(startDate, endDate),
+        returnedStats(prevStart, prevEnd),
       ]);
 
     const totalRevenue = Number(currRes[0]?.revenue || 0);
@@ -74,9 +97,18 @@ const app = new Hono()
     const netProfit = totalRevenue - totalCost - totalShipping - totalExpenses;
     const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+    const totalCancelledOrders = Number(currCancelled[0]?.count || 0);
+    const cancelledAmount = Number(currCancelled[0]?.amount || 0);
+    const totalReturnedOrders = Number(currReturned[0]?.count || 0);
+    const returnedAmount = Number(currReturned[0]?.amount || 0);
+    const grossSales = totalRevenue + cancelledAmount + returnedAmount;
+
     const prevRevenue = Number(prevRes[0]?.revenue || 0);
     const prevShipping = Number(prevRes[0]?.shipping || 0);
     const prevOrders = Number(prevRes[0]?.orders || 0);
+    const prevCancelledAmount = Number(prevCancelled[0]?.amount || 0);
+    const prevReturnedAmount = Number(prevReturned[0]?.amount || 0);
+    const prevGrossSales = prevRevenue + prevCancelledAmount + prevReturnedAmount;
     const prevNetProfit =
       prevRevenue - Number(prevCost[0]?.sum || 0) - prevShipping - Number(prevExpenses[0]?.sum || 0);
     const prevAov = prevOrders > 0 ? prevRevenue / prevOrders : 0;
@@ -84,24 +116,78 @@ const app = new Hono()
     const pctChange = (curr: number, prev: number) =>
       prev === 0 ? null : Number((((curr - prev) / Math.abs(prev)) * 100).toFixed(1));
 
+    // Populate all buckets in range (day vs month)
+    const bucketMap = new Map<string, number>();
+
+    if (trendUnit === "month") {
+      const curr = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      while (curr <= end) {
+        const key = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, "0")}-01`;
+        bucketMap.set(key, 0);
+        curr.setMonth(curr.getMonth() + 1);
+      }
+
+      salesTrend.forEach((item) => {
+        if (item.bucket) {
+          const d = new Date(item.bucket);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+          bucketMap.set(key, (bucketMap.get(key) || 0) + Number(item.amount || 0));
+        }
+      });
+    } else {
+      const currDate = new Date(startDate);
+      const lastDate = new Date(endDate);
+
+      while (currDate <= lastDate) {
+        const dateKey = currDate.toISOString().split("T")[0];
+        bucketMap.set(dateKey, 0);
+        currDate.setUTCDate(currDate.getUTCDate() + 1);
+      }
+
+      salesTrend.forEach((item) => {
+        if (item.bucket) {
+          const itemDateKey = new Date(item.bucket).toISOString().split("T")[0];
+          if (bucketMap.has(itemDateKey)) {
+            bucketMap.set(itemDateKey, (bucketMap.get(itemDateKey) || 0) + Number(item.amount || 0));
+          } else {
+            bucketMap.set(itemDateKey, Number(item.amount || 0));
+          }
+        }
+      });
+    }
+
+    const trendData = Array.from(bucketMap.entries()).map(([dateStr, amount]) => ({
+      date: new Date(dateStr).toISOString(),
+      amount,
+    }));
+
     return c.json({
+      grossSales,
       totalRevenue,
       totalOrders,
+      totalCost,
+      totalShipping,
       totalExpenses,
       netProfit,
       aov,
       profitMargin: totalRevenue > 0 ? Number(((netProfit / totalRevenue) * 100).toFixed(1)) : 0,
+      totalCancelledOrders,
+      cancelledAmount,
+      totalReturnedOrders,
+      returnedAmount,
       changes: {
+        grossSales: pctChange(grossSales, prevGrossSales),
         revenue: pctChange(totalRevenue, prevRevenue),
         orders: pctChange(totalOrders, prevOrders),
-        aov: pctChange(aov, prevAov),
+        cost: pctChange(totalCost, Number(prevCost[0]?.sum || 0)),
+        shipping: pctChange(totalShipping, prevShipping),
         expenses: pctChange(totalExpenses, Number(prevExpenses[0]?.sum || 0)),
         netProfit: pctChange(netProfit, prevNetProfit),
+        cancelledOrders: pctChange(totalCancelledOrders, Number(prevCancelled[0]?.count || 0)),
+        returnedOrders: pctChange(totalReturnedOrders, Number(prevReturned[0]?.count || 0)),
       },
-      trendData: salesTrend.map((item) => ({
-        date: new Date(item.bucket).toISOString(),
-        amount: Number(item.amount || 0),
-      })),
+      trendData,
     });
   } catch (error) {
     console.error("Sales overview error:", error);

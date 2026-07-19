@@ -56,24 +56,46 @@ export const formatCurrency = (value: number) => {
 
 
 export const getDateRange = (period: string) => {
-  // endDate must include today; rangeStart anchors to start of today so the
-  // window covers full days
-  const now = new Date()
-  const today = startOfToday()
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
 
-  switch(period) {
-    case 'day':
-      return { startDate: subDays(today, 1), endDate: now }
-    case 'week':
-      return { startDate: subWeeks(today, 1), endDate: now }
-    case 'month':
-      return { startDate: subMonths(today, 1), endDate: now }
-    case 'year':
-      return { startDate: subYears(today, 1), endDate: now }
-    default:
-      return { startDate: subMonths(today, 1), endDate: now }
+  switch (period) {
+    case "this-month":
+    case "month": {
+      const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+      return { startDate, endDate };
+    }
+    case "last-month": {
+      const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+      return { startDate, endDate };
+    }
+    case "3-months": {
+      const startDate = new Date(Date.UTC(year, month - 2, 1, 0, 0, 0, 0));
+      return { startDate, endDate: now };
+    }
+    case "6-months": {
+      const startDate = new Date(Date.UTC(year, month - 5, 1, 0, 0, 0, 0));
+      return { startDate, endDate: now };
+    }
+    case "12-months":
+    case "year": {
+      const startDate = new Date(Date.UTC(year, month - 11, 1, 0, 0, 0, 0));
+      return { startDate, endDate: now };
+    }
+    case "day":
+      return { startDate: subDays(now, 1), endDate: now };
+    case "week":
+      return { startDate: subWeeks(now, 1), endDate: now };
+    default: {
+      const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      const endDate = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+      return { startDate, endDate };
+    }
   }
-}
+};
 
 // Same-length window immediately before the current one, for period-over-period deltas
 export const getPreviousDateRange = (period: string) => {
@@ -103,12 +125,11 @@ export const resolveDateRange = (period: string, from?: string, to?: string) => 
 }
 
 // Daily buckets read badly over a long range; roll up to a coarser unit
-export const getTrendBucketUnit = (startDate: Date, endDate: Date): "day" | "week" | "month" => {
-  const spanDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-  if (spanDays > 120) return "month"
-  if (spanDays > 30) return "week"
-  return "day"
-}
+export const getTrendBucketUnit = (startDate: Date, endDate: Date): "day" | "month" => {
+  const spanDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  if (spanDays > 45) return "month";
+  return "day";
+};
 
 
 export function getStartDate(period: string): Date {

@@ -25,7 +25,7 @@ export function CustomLineChart({ data }: { data: SimpleChartData[] }) {
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
         <Tooltip />
-        <Line type="monotone" dataKey="value" stroke="#6366f1" dot={false} />
+        <Line type="monotone" dataKey="value" stroke="var(--secondary)" dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -39,7 +39,7 @@ export function CustomBarChart({ data }: { data: SimpleChartData[] }) {
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
         <Tooltip />
-        <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="value" fill="var(--secondary)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -96,5 +96,100 @@ export function CohortChart({ data }: { data: CohortRow[] }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+export function RevenueAnalyticsBarChart({ data, currencySymbol = "$" }: { data: SimpleChartData[]; currencySymbol?: string }) {
+  const formatYAxis = (val: number) => {
+    if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
+    return `${val}`;
+  };
+
+  return (
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+      <BarChart data={data} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+        <XAxis
+          dataKey="name"
+          axisLine={false}
+          tickLine={false}
+          tick={{ fontSize: 12, fill: "#888888" }}
+        />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={formatYAxis}
+          tick={{ fontSize: 12, fill: "#888888" }}
+        />
+        <Tooltip
+          formatter={(value: any) => [`${currencySymbol}${Number(value).toLocaleString()}`, "Revenue"]}
+          cursor={{ fill: "rgba(0, 0, 0, 0.04)" }}
+          contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+        />
+        <Bar
+          dataKey="value"
+          fill="var(--secondary)"
+          radius={[16, 16, 16, 16]}
+          maxBarSize={48}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export interface ProfitLossChartData {
+  name: string;
+  profit: number;
+  cost: number;
+}
+
+export function ProfitLossStackedChart({ data, currencySymbol = "$" }: { data: ProfitLossChartData[]; currencySymbol?: string }) {
+  const formatYAxis = (val: number) => {
+    if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
+    return `${val}`;
+  };
+
+  return (
+    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+      <BarChart data={data} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+        <XAxis
+          dataKey="name"
+          axisLine={false}
+          tickLine={false}
+          tick={{ fontSize: 12, fill: "#888888" }}
+        />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={formatYAxis}
+          tick={{ fontSize: 12, fill: "#888888" }}
+        />
+        <Tooltip
+          formatter={(value: any, name: any) => [
+            `${currencySymbol}${Number(value).toLocaleString()}`,
+            name === "cost" ? "Cost / Loss" : "Net Profit",
+          ]}
+          cursor={{ fill: "rgba(0, 0, 0, 0.04)" }}
+          contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+        />
+        <Bar
+          dataKey="cost"
+          name="cost"
+          stackId="a"
+          fill="#1E1E1E"
+          radius={[0, 0, 8, 8]}
+          maxBarSize={32}
+        />
+        <Bar
+          dataKey="profit"
+          name="profit"
+          stackId="a"
+          fill="var(--secondary)"
+          radius={[8, 8, 0, 0]}
+          maxBarSize={32}
+        />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
