@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { siteSettings } from "@/db/schema";
+import { orders, siteSettings } from "@/db/schema";
 
 /**
  * Meta Conversions API (server-side) sender.
@@ -215,4 +215,73 @@ export async function sendPurchaseEvent(
     console.error("[MetaCAPI] Purchase error", err);
     return false;
   }
+}
+
+/**
+ * Deterministic, namespaced dedup key for an order's Purchase event. BOTH the
+ * browser Pixel and this server CAPI must use this exact value so Meta merges
+ * the two channels into one conversion. Namespaced with a `purchase_` prefix
+ * so it never collides with other order-keyed events.
+ */
+export function purchaseEventId(orderId: string): string {
+  return `purchase_${orderId}`;
+}
+
+/**
+ * Send a server-side Purchase exactly once per order.
+ *
+ * The real fix for over-counting: before sending, we atomically claim the
+ * right to send by stamping `orders.metaPurchaseEventSentAt` only if it is
+ * still null (a single conditional UPDATE, so it is race-safe even under
+ * concurrent requests). If the claim returns no row, a Purchase was already
+ * sent for this order and we skip — so retries, re-processing, or any future
+ * status-change hook can never fire a second CAPI Purchase. If the send fails
+ * we release the claim so a later attempt can retry.
+ *
+ * `input.eventId` is ignored here — the dedup key is always
+ * `purchaseEventId(orderId)` so it is guaranteed identical to the browser
+ * Pixel's `eventID`.
+ */
+export async function sendPurchaseEventOnce(
+  input: CapiPurchaseInput,
+  ctx: CapiRequestContext = {},
+): Promise<boolean> {
+  let claimed: { id: string }[] = [];
+  try {
+    claimed = await db
+      .update(orders)
+      .set({ metaPurchaseEventSentAt: new Date() })
+      .where(
+        and(
+          eq(orders.id, input.orderId),
+          isNull(orders.metaPurchaseEventSentAt),
+        ),
+      )
+      .returning({ id: orders.id });
+  } catch (err) {
+    console.error("[MetaCAPI] Purchase claim failed", err);
+    return false;
+  }
+
+  // Someone already sent (or is sending) the Purchase for this order.
+  if (claimed.length === 0) return false;
+
+  const ok = await sendPurchaseEvent(
+    { ...input, eventId: purchaseEventId(input.orderId) },
+    ctx,
+  );
+
+  if (!ok) {
+    // Release the claim so a subsequent attempt can retry the send.
+    try {
+      await db
+        .update(orders)
+        .set({ metaPurchaseEventSentAt: null })
+        .where(eq(orders.id, input.orderId));
+    } catch (err) {
+      console.error("[MetaCAPI] Purchase claim release failed", err);
+    }
+  }
+
+  return ok;
 }

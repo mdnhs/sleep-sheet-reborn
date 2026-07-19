@@ -269,6 +269,11 @@ export const orders = pgTable("orders", {
   reference: text("reference"),
   note: text("note"),
   saleType: saleTypeEnum("saleType").default("WEBSITE").notNull(),
+  // Idempotency guard for the Meta Conversions API Purchase event. Set the
+  // first (and only) time a server-side Purchase is successfully sent for
+  // this order, so re-running the creation path (retries, re-processing, or
+  // any future status-change hook) can never double-count the conversion.
+  metaPurchaseEventSentAt: timestamp("metaPurchaseEventSentAt", { precision: 3 }),
 });
 
 export const orderItems = pgTable("order_items", {

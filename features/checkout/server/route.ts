@@ -3,7 +3,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
-import { sendPurchaseEvent, capiContextFromHeaders } from "@/lib/meta-capi";
+import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
@@ -124,9 +124,10 @@ const app = new Hono()
       await db.delete(cartItems)
         .where(eq(cartItems.cartId, cart.id));
 
-      // Server-side Purchase (CAPI). Deduplicated against the browser Pixel
-      // via event_id = order.id. No-op unless CAPI env is configured.
-      await sendPurchaseEvent(
+      // Server-side Purchase (CAPI). Fires at most once per order (guarded by
+      // orders.metaPurchaseEventSentAt) and is deduplicated against the browser
+      // Pixel via a shared event_id. No-op unless CAPI env is configured.
+      await sendPurchaseEventOnce(
         {
           eventId: order.id,
           value: totalAmount,
@@ -225,8 +226,9 @@ const app = new Hono()
         .where(eq(products.id, item.productId));
     }
 
-    // Server-side Purchase (CAPI), deduplicated via event_id = order.id.
-    await sendPurchaseEvent(
+    // Server-side Purchase (CAPI). Fires at most once per order (guarded by
+    // orders.metaPurchaseEventSentAt) and deduplicated against the browser Pixel.
+    await sendPurchaseEventOnce(
       {
         eventId: order.id,
         value: totalAmount,

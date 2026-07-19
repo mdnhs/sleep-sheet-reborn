@@ -68,13 +68,17 @@ function OrderSuccessContent() {
     fetchOrder();
   }, [orderId, router]);
 
-  // Fire Purchase once per order. Guarded via sessionStorage so a manual
-  // page refresh (or React StrictMode double-invoke in dev) doesn't send
-  // a duplicate Purchase event for the same order to Meta.
+  // Fire Purchase once per order. Guarded via localStorage (NOT sessionStorage)
+  // so a page refresh, a new tab, or a revisit of the success URL within the
+  // same browser can't re-fire — sessionStorage is scoped to a single tab and
+  // is empty in a new tab/incognito, which let the same order fire again.
+  // As a cross-browser/device safety net, the event carries the same
+  // deterministic, namespaced event_id as the server CAPI Purchase
+  // (`purchase_${order.id}`) so Meta deduplicates any residual duplicates.
   useEffect(() => {
     if (!order || !orderId) return;
-    const guardKey = `fb_purchase_tracked_${orderId}`;
-    if (typeof window !== "undefined" && sessionStorage.getItem(guardKey)) return;
+    const guardKey = `fb_purchase_tracked_${order.id}`;
+    if (typeof window !== "undefined" && localStorage.getItem(guardKey)) return;
 
     track("Purchase", {
       value: order.totalAmount,
@@ -89,12 +93,12 @@ function OrderSuccessContent() {
       })),
       quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
     }, {
-      // Dedup with the server-side CAPI Purchase (same event_id = order.id).
-      eventId: order.id,
+      // Must match the server CAPI event_id exactly for cross-channel dedup.
+      eventId: `purchase_${order.id}`,
     });
 
     if (typeof window !== "undefined") {
-      sessionStorage.setItem(guardKey, "1");
+      localStorage.setItem(guardKey, "1");
     }
 
     const orderGuardKey = `traffic_order_tracked_${orderId}`;
