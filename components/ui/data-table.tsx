@@ -36,6 +36,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   searchSlot?: React.ReactNode
+  actionSlot?: React.ReactNode
   rowSelection?: Record<string, boolean>
   onRowSelectionChange?: (updater: Updater<Record<string, boolean>>) => void
   manualPagination?: boolean
@@ -50,6 +51,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchSlot,
+  actionSlot,
   rowSelection,
   onRowSelectionChange,
   manualPagination = false,
@@ -97,28 +99,31 @@ export function DataTable<TData, TValue>({
         <div className="flex-1 min-w-[240px]">
           {searchSlot}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger className={buttonVariants({ variant: "outline", className: "rounded-xl gap-1 shrink-0" })}>
-            Columns <ChevronDown className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-xl">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          {actionSlot}
+          <DropdownMenu>
+            <DropdownMenuTrigger className={buttonVariants({ variant: "outline", className: "rounded-xl gap-1 shrink-0" })}>
+              Columns <ChevronDown className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-xl">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border/80 bg-background overflow-hidden overflow-x-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">

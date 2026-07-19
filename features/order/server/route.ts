@@ -134,6 +134,69 @@ const app = new Hono()
   }
 })
 
+.post("/:id/cancel", zValidator("json", z.object({
+  reason: z.string().max(500).optional(),
+  restock: z.boolean().optional().default(true),
+})), async (c) => {
+  const id = c.req.param("id");
+  const { reason, restock } = c.req.valid("json");
+
+  try {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: { items: true },
+    });
+
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+    // Guard against re-cancelling, which would restock the same order twice.
+    if (order.status === "CANCELLED") {
+      return c.json({ error: "Order is already cancelled" }, 400);
+    }
+
+    await db.update(orders)
+      .set({
+        status: "CANCELLED",
+        cancellationReason: reason ?? order.cancellationReason ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, id));
+
+    // Return the reserved goods to inventory.
+    if (restock) {
+      await Promise.all(
+        order.items
+          .filter((item) => item.productId)
+          .map((item) =>
+            db.update(products)
+              .set({ stock: sql`${products.stock} + ${item.quantity}` })
+              .where(eq(products.id, item.productId as string)),
+          ),
+      );
+    }
+
+    await db.insert(orderTimelineEvents).values({
+      orderId: id,
+      status: "CANCELLED",
+      message:
+        `Order cancelled` +
+        (reason ? ` — ${reason}` : "") +
+        (restock ? ". Items restocked." : "."),
+    });
+
+    const updatedOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: { user: true, items: true },
+    });
+
+    return c.json(updatedOrder);
+  } catch (error) {
+    console.error("Failed to cancel order:", error);
+    return c.json({ error: "Failed to cancel order" }, 500);
+  }
+})
+
 .post("/:id/refund", zValidator("json", z.object({
   amount: z.number().positive(),
   reason: z.string().max(500).optional(),

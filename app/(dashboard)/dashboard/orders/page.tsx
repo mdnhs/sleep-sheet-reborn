@@ -56,6 +56,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
+  Ban,
   Check,
   ChevronDown,
   ChevronUp,
@@ -82,14 +83,6 @@ import { toast } from "sonner";
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
 };
-
-const ALL_STATUSES: Order["status"][] = [
-  "PENDING",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-];
 
 const STATUS_COLORS: Record<Order["status"], string> = {
   PENDING: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
@@ -162,12 +155,19 @@ const STEADFAST_STATUS_COLORS: Record<string, string> = {
     "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700",
 };
 
+type StatusFilter =
+  | "ALL"
+  | "TODAY"
+  | "PENDING"
+  | "CONFIRMED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "RETURNED";
+
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [statusFilter, setStatusFilter] = useState<
-    Order["status"] | "ALL" | "TODAY"
-  >("PENDING");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("PENDING");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showAllOrderItems, setShowAllOrderItems] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
@@ -185,6 +185,7 @@ export default function OrdersPage() {
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
   const [profitBreakdownOrder, setProfitBreakdownOrder] =
     useState<ShippingOrder | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<ShippingOrder | null>(null);
   const [refundTarget, setRefundTarget] = useState<ShippingOrder | null>(null);
   const [refundMode, setRefundMode] = useState<"full" | "partial">("full");
   const [refundAmount, setRefundAmount] = useState("");
@@ -208,13 +209,36 @@ export default function OrdersPage() {
   const { data: rawOrders, isLoading } = useOrders(search, rangeFilter);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl } = useWebsiteSettings();
-  const { updateOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
+  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
     useOrderMutations();
   const { data: balanceData, isLoading: isBalanceLoading } =
     useSteadfastBalance(showBalance);
   const syncStatus = useSyncOrderStatus();
   const trackSingleOrder = useTrackSingleOrder();
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+  const [isRefetchingSteadfast, setIsRefetchingSteadfast] = useState(false);
+
+  const handleRefreshAllSteadfast = async () => {
+    setIsRefetchingSteadfast(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["steadfast-tracking-statuses"] }),
+        queryClient.invalidateQueries({ queryKey: ["steadfast-balance"] }),
+      ]);
+      const trackedOrders = orders?.filter((o) => o.trackingNumber) ?? [];
+      if (trackedOrders.length > 0) {
+        await Promise.allSettled(
+          trackedOrders.map((o) => syncStatus.mutateAsync(o.id)),
+        );
+      }
+      toast.success("Steadfast statuses re-fetched successfully");
+    } catch (err) {
+      toast.error("Failed to re-fetch status");
+    } finally {
+      setIsRefetchingSteadfast(false);
+    }
+  };
 
   const orders = rawOrders as ShippingOrder[] | undefined;
 
@@ -467,12 +491,89 @@ export default function OrdersPage() {
     return order.subtotal - totalCost - order.shippingCost;
   };
 
+  const isCancelled = (o: ShippingOrder) => {
+    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    return (
+      o.status === "CANCELLED" ||
+      sfStatus === "cancelled" ||
+      sfStatus === "cancelled_approval_pending"
+    );
+  };
+
+  const isReturned = (o: ShippingOrder) => {
+    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    return (
+      o.status === "REFUNDED" ||
+      (o.refundedAmount ?? 0) > 0 ||
+      sfStatus === "returned" ||
+      sfStatus === "partial-return" ||
+      sfStatus === "not_delivered" ||
+      sfStatus === "partial-not-delivered"
+    );
+  };
+
+  const isDelivered = (o: ShippingOrder) => {
+    if (isCancelled(o) || isReturned(o)) return false;
+    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    return (
+      o.status === "DELIVERED" ||
+      sfStatus === "delivered" ||
+      sfStatus === "partial_delivered" ||
+      sfStatus === "delivered_approval_pending" ||
+      sfStatus === "partial_delivered_approval_pending"
+    );
+  };
+
+  const isConfirmed = (o: ShippingOrder) => {
+    if (isCancelled(o) || isReturned(o)) return false;
+
+    const isPosShowroom =
+      o.saleType === "POS" &&
+      (o.status === "DELIVERED" || o.shippingAddress?.includes("In-store pickup"));
+
+    if (isPosShowroom) return true;
+
+    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    const isBookedInSteadfast = Boolean(o.trackingNumber);
+    const isProcessingOrShipped =
+      o.status === "PROCESSING" || o.status === "SHIPPED";
+    const hasActiveSteadfastStatus = Boolean(
+      sfStatus &&
+        [
+          "pending",
+          "in_review",
+          "hold",
+          "fast-track",
+          "hub-transfer",
+          "office-delivery",
+        ].includes(sfStatus),
+    );
+
+    return isBookedInSteadfast || isProcessingOrShipped || hasActiveSteadfastStatus;
+  };
+
+  const isPending = (o: ShippingOrder) => {
+    if (isCancelled(o) || isReturned(o)) return false;
+    if (isConfirmed(o) || isDelivered(o)) return false;
+    return o.status === "PENDING";
+  };
+
   const filtered =
     statusFilter === "ALL"
       ? orders
       : statusFilter === "TODAY"
         ? orders?.filter((o) => isToday(new Date(o.createdAt)))
-        : orders?.filter((o) => o.status === statusFilter);
+        : statusFilter === "PENDING"
+          ? orders?.filter((o) => isPending(o))
+          : statusFilter === "CONFIRMED"
+            ? orders?.filter((o) => isConfirmed(o))
+            : statusFilter === "DELIVERED"
+              ? orders?.filter((o) => isDelivered(o))
+              : statusFilter === "CANCELLED"
+                ? orders?.filter((o) => isCancelled(o))
+                : statusFilter === "RETURNED"
+                  ? orders?.filter((o) => isReturned(o))
+                  : orders;
 
   const selectedOrders =
     filtered?.filter((_, index) => rowSelection[index.toString()]) || [];
@@ -542,16 +643,13 @@ export default function OrdersPage() {
     }
   };
 
-  const counts = ALL_STATUSES.reduce(
-    (acc, s) => {
-      acc[s] = orders?.filter((o) => o.status === s).length ?? 0;
-      return acc;
-    },
-    {} as Record<Order["status"], number>,
-  );
-
   const todayCount =
     orders?.filter((o) => isToday(new Date(o.createdAt))).length ?? 0;
+  const pendingCount = orders?.filter((o) => isPending(o)).length ?? 0;
+  const confirmedCount = orders?.filter((o) => isConfirmed(o)).length ?? 0;
+  const deliveredCount = orders?.filter((o) => isDelivered(o)).length ?? 0;
+  const cancelledCount = orders?.filter((o) => isCancelled(o)).length ?? 0;
+  const returnedCount = orders?.filter((o) => isReturned(o)).length ?? 0;
 
   const columns: ColumnDef<ShippingOrder>[] = [
     {
@@ -718,35 +816,19 @@ export default function OrdersPage() {
       cell: ({ row }) => {
         const order = row.original;
         const trk = order.trackingNumber;
-        const isTracking = trackSingleOrder.isPending;
         if (!trk) {
           return <span className="text-muted-foreground">—</span>;
         }
         return (
-          <div className="flex items-center gap-1.5">
-            <a
-              href={`https://steadfast.com.bd/t/${trk}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-sm text-green-600 dark:text-green-400 hover:underline"
-              title="Open Steadfast tracking page"
-            >
-              {trk}
-            </a>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="h-6 w-6 shrink-0"
-              title="Refresh Steadfast status"
-              disabled={isTracking}
-              onClick={() => handleQuickTrack(order)}
-            >
-              <RefreshCw
-                className={cn("h-3 w-3", isTracking && "animate-spin")}
-              />
-            </Button>
-          </div>
+          <a
+            href={`https://steadfast.com.bd/t/${trk}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-sm text-green-600 dark:text-green-400 hover:underline"
+            title="Open Steadfast tracking page"
+          >
+            {trk}
+          </a>
         );
       },
     },
@@ -758,18 +840,13 @@ export default function OrdersPage() {
         const sfDisplay = getSteadfastDisplay(order);
         if (sfDisplay) {
           return (
-            <div className="flex flex-col gap-1">
-              <Badge
-                variant="outline"
-                className={cn("w-fit text-xs border", sfDisplay.color)}
-              >
-                <Truck className="h-3 w-3 mr-1 shrink-0" />
-                {sfDisplay.label}
-              </Badge>
-              <span className="text-[10px] text-muted-foreground">
-                Internal: {order.status}
-              </span>
-            </div>
+            <Badge
+              variant="outline"
+              className={cn("w-fit text-xs border", sfDisplay.color)}
+            >
+              <Truck className="h-3 w-3 mr-1 shrink-0" />
+              {sfDisplay.label}
+            </Badge>
           );
         }
         return (
@@ -782,10 +859,27 @@ export default function OrdersPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
         const order = row.original;
+        const orderIsCancelled = isCancelled(order);
+        const orderIsReturned = isReturned(order);
+        const orderIsDelivered = isDelivered(order);
+        const orderIsConfirmed = isConfirmed(order);
+        const orderIsPending = isPending(order);
+
         const canBook =
           !order.trackingNumber &&
-          order.status !== "DELIVERED" &&
-          order.status !== "CANCELLED";
+          orderIsPending &&
+          !(
+            order.saleType === "POS" &&
+            order.shippingAddress?.includes("In-store pickup")
+          );
+
+        const canCancel =
+          !orderIsCancelled && !orderIsReturned && !orderIsDelivered;
+
+        const canRefund =
+          orderIsDelivered &&
+          (order.refundedAmount ?? 0) < order.totalAmount;
+
         return (
           <div className="flex items-center justify-end gap-2">
             {canBook && (
@@ -821,16 +915,6 @@ export default function OrdersPage() {
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {ALL_STATUSES.map((status) => (
-                  <DropdownMenuItem
-                    key={status}
-                    onClick={() => updateOrderStatus(order, status)}
-                    className="capitalize"
-                  >
-                    Mark as {status.toLowerCase()}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() =>
                     setSelectedOrder({
@@ -863,20 +947,6 @@ export default function OrdersPage() {
                     Book Courier (Steadfast)
                   </DropdownMenuItem>
                 )}
-                {order.trackingNumber && (
-                  <DropdownMenuItem
-                    disabled={syncStatus.isPending}
-                    onClick={() => syncStatus.mutate(order.id)}
-                  >
-                    <RefreshCw
-                      className={cn(
-                        "h-4 w-4 mr-2",
-                        syncStatus.isPending && "animate-spin",
-                      )}
-                    />
-                    Sync Courier Status
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem
                   onClick={() => {
                     setShippingCostOrder(order);
@@ -902,15 +972,24 @@ export default function OrdersPage() {
                     View Note
                   </DropdownMenuItem>
                 )}
-                {order.status !== "CANCELLED" &&
-                  (order.refundedAmount ?? 0) < order.totalAmount && (
-                    <DropdownMenuItem onClick={() => openRefundDialog(order)}>
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      {(order.refundedAmount ?? 0) > 0
-                        ? "Refund More"
-                        : "Refund Order"}
-                    </DropdownMenuItem>
-                  )}
+                <DropdownMenuSeparator />
+                {canCancel && (
+                  <DropdownMenuItem
+                    onClick={() => setCancelTarget(order)}
+                    className="text-orange-600 focus:text-orange-600"
+                  >
+                    <Ban className="h-4 w-4 mr-2" />
+                    Cancel Order
+                  </DropdownMenuItem>
+                )}
+                {canRefund && (
+                  <DropdownMenuItem onClick={() => openRefundDialog(order)}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {(order.refundedAmount ?? 0) > 0
+                      ? "Refund More"
+                      : "Refund Order"}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setDeleteOrderId(order.id)}
@@ -926,12 +1005,20 @@ export default function OrdersPage() {
     },
   ];
 
-  const updateOrderStatus = (order: ShippingOrder, status: Order["status"]) => {
-    updateOrder.mutate({
-      id: order.id,
-      status,
-      paymentStatus: status === "DELIVERED" ? "COMPLETED" : order.paymentStatus,
-    });
+  const handleCancel = () => {
+    if (!cancelTarget) return;
+    cancelOrder.mutate(
+      { id: cancelTarget.id, restock: true },
+      {
+        onSuccess: () => {
+          toast.success("Order cancelled and items restocked");
+          setCancelTarget(null);
+        },
+        onError: (err: Error) => {
+          toast.error(err.message || "Failed to cancel order");
+        },
+      },
+    );
   };
 
   const refundRemaining = (order: ShippingOrder) =>
@@ -1040,9 +1127,7 @@ export default function OrdersPage() {
 
       <Tabs
         value={statusFilter}
-        onValueChange={(value) =>
-          setStatusFilter(value as Order["status"] | "ALL" | "TODAY")
-        }
+        onValueChange={(value) => setStatusFilter(value as StatusFilter)}
         className="w-full"
       >
         <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
@@ -1059,16 +1144,41 @@ export default function OrdersPage() {
             >
               Today ({todayCount})
             </TabsTrigger>
-            {ALL_STATUSES.map((s) => (
-              <TabsTrigger
-                key={s}
-                value={s}
-                className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
-              >
-                {STATUS_DOTS[s]}
-                {s.toLowerCase()} ({counts[s]})
-              </TabsTrigger>
-            ))}
+            <TabsTrigger
+              value="PENDING"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+            >
+              {STATUS_DOTS.PENDING}
+              Pending ({pendingCount})
+            </TabsTrigger>
+            <TabsTrigger
+              value="CONFIRMED"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+            >
+              {STATUS_DOTS.PROCESSING}
+              Confirmed ({confirmedCount})
+            </TabsTrigger>
+            <TabsTrigger
+              value="DELIVERED"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+            >
+              {STATUS_DOTS.DELIVERED}
+              Delivered ({deliveredCount})
+            </TabsTrigger>
+            <TabsTrigger
+              value="CANCELLED"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+            >
+              {STATUS_DOTS.CANCELLED}
+              Cancelled ({cancelledCount})
+            </TabsTrigger>
+            <TabsTrigger
+              value="RETURNED"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold capitalize data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
+            >
+              {STATUS_DOTS.REFUNDED}
+              Returned ({returnedCount})
+            </TabsTrigger>
           </TabsList>
         </div>
       </Tabs>
@@ -1183,6 +1293,22 @@ export default function OrdersPage() {
         <DataTable
           columns={columns}
           data={filtered || []}
+          actionSlot={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshAllSteadfast}
+              disabled={isRefetchingSteadfast}
+              className="rounded-xl gap-1.5 shrink-0"
+              title="Re-fetch Steadfast Status"
+            >
+              <RefreshCw
+                className={cn("h-3.5 w-3.5", isRefetchingSteadfast && "animate-spin")}
+              />
+              <span>Refresh Steadfast</span>
+            </Button>
+          }
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
           columnVisibility={{
@@ -1408,6 +1534,57 @@ export default function OrdersPage() {
                   );
                 })()}
               </div>
+
+              {selectedOrder && (() => {
+                const target = selectedOrder as ShippingOrder;
+                const orderIsCancelled = isCancelled(target);
+                const orderIsReturned = isReturned(target);
+                const orderIsDelivered = isDelivered(target);
+
+                const canCancel =
+                  !orderIsCancelled && !orderIsReturned && !orderIsDelivered;
+
+                const canRefund =
+                  orderIsDelivered &&
+                  (target.refundedAmount ?? 0) < target.totalAmount;
+
+                if (!canCancel && !canRefund) return null;
+
+                return (
+                  <div className="flex gap-2 pt-2">
+                    {canCancel && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-900 dark:text-orange-400 dark:hover:bg-orange-950/40"
+                        onClick={() => {
+                          setSelectedOrder(null);
+                          setShowAllOrderItems(false);
+                          setCancelTarget(target);
+                        }}
+                      >
+                        <Ban className="h-4 w-4" />
+                        Cancel Order
+                      </Button>
+                    )}
+                    {canRefund && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                        onClick={() => {
+                          setSelectedOrder(null);
+                          setShowAllOrderItems(false);
+                          openRefundDialog(target);
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        {(target.refundedAmount ?? 0) > 0
+                          ? "Refund More"
+                          : "Refund Order"}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
             </>
           )}
         </DialogContent>
@@ -1432,6 +1609,14 @@ export default function OrdersPage() {
         }}
         title="Delete Order"
         description="Are you sure you want to delete this order? This action cannot be undone."
+      />
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        onOpenChange={(open) => !open && setCancelTarget(null)}
+        onConfirm={handleCancel}
+        title="Cancel Order"
+        description={`Cancel order ${cancelTarget?.orderNumber ?? ""}? All items will be restocked to inventory. This action cannot be undone.`}
       />
 
       <ConfirmDialog
