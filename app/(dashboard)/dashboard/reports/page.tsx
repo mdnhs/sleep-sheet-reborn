@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useGetReports } from "@/features/reports/api/use-get-reports";
 import { useCurrency } from "@/hooks/use-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,7 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, ChevronLeft, ChevronRight } from "lucide-react";
-import { subDays, startOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+import { subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+import React from "react";
 
 type FilterType = "all" | "today" | "week" | "month" | "custom";
 
@@ -19,54 +21,55 @@ function PaginatedTable<T>({
   data,
   renderHeader,
   renderRow,
+  pageSize = 10,
 }: {
   data: T[];
   renderHeader: () => React.ReactNode;
   renderRow: (item: T, index: number) => React.ReactNode;
+  pageSize?: number;
 }) {
-  const [page, setPage] = useState(1);
-  const perPage = 10;
-  const totalPages = Math.ceil(data.length / perPage);
-  const paginatedData = data.slice((page - 1) * perPage, page * perPage);
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(data.length / pageSize);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const currentData = data.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border shadow-sm overflow-hidden">
+      <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-muted/30">
-            {renderHeader()}
-          </TableHeader>
+          <TableHeader>{renderHeader()}</TableHeader>
           <TableBody>
-            {paginatedData.map((item, i) => renderRow(item, (page - 1) * perPage + i))}
+            {currentData.map((item, index) => (
+              <React.Fragment key={index}>{renderRow(item, startIndex + index)}</React.Fragment>
+            ))}
           </TableBody>
         </Table>
       </div>
+
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
-          <div className="text-sm text-muted-foreground">
-            Showing {((page - 1) * perPage) + 1} to {Math.min(page * perPage, data.length)} of {data.length} entries
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages} ({data.length} total)
+          </p>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
             >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous</span>
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
             </Button>
-            <div className="text-sm font-medium">
-              Page {page} of {totalPages}
-            </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
             >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next</span>
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
         </div>
@@ -76,15 +79,17 @@ function PaginatedTable<T>({
 }
 
 export default function ReportsPage() {
-  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
-  const [customRange, setCustomRange] = useState<DateRange | undefined>();
+  const { formatAmount } = useCurrency();
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
+
   const [showProductCostBreakdown, setShowProductCostBreakdown] = useState(false);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
   const [showShippingBreakdown, setShowShippingBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
+
   const { data, isLoading } = useGetReports(dateRange);
-  const { formatAmount } = useCurrency();
 
   const handleFilter = (type: FilterType) => {
     setActiveFilter(type);
@@ -97,13 +102,13 @@ export default function ReportsPage() {
       case "today":
         setDateRange({
           from: startOfDay(today).toISOString(),
-          to: today.toISOString(),
+          to: endOfDay(today).toISOString(),
         });
         break;
       case "week":
         setDateRange({
-          from: startOfDay(subDays(today, 7)).toISOString(),
-          to: today.toISOString(),
+          from: startOfDay(subDays(today, 6)).toISOString(),
+          to: endOfDay(today).toISOString(),
         });
         break;
       case "month":
@@ -145,14 +150,19 @@ export default function ReportsPage() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Reports & Profit/Loss</h2>
           <div className="flex flex-wrap items-center gap-2">
             {filterButtons.map(({ type, label }) => (
-              <Button
+              <button
                 key={type}
-                variant={activeFilter === type ? "default" : "outline"}
-                size="sm"
+                type="button"
                 onClick={() => handleFilter(type)}
+                className={cn(
+                  "rounded-full text-xs font-semibold px-4 h-8 transition-colors cursor-pointer flex items-center justify-center select-none",
+                  activeFilter === type
+                    ? "bg-slate-900 text-white hover:bg-slate-800 hover:text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 dark:hover:text-slate-900"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                )}
               >
                 {label}
-              </Button>
+              </button>
             ))}
             <DateRangePicker value={customRange} onChange={handleCustomRangeChange} />
           </div>
@@ -165,137 +175,153 @@ export default function ReportsPage() {
         ) : data ? (
           <div className="space-y-6">
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-              <Card 
-                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
+              <div 
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowRevenueBreakdown(true)}
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Net Sale</CardTitle>
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <div className="text-lg sm:text-2xl font-bold truncate text-green-600">{formatAmount(data.totalRevenue)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">
-                    Gross ({formatAmount(data.grossSales || 0)}) - Cancelled ({formatAmount(data.cancelledAmount || 0)})
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Net Sale</span>
+                  <div className="w-10 h-10 rounded-full bg-[#EBF7EE] dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </div>
+                <div className="mt-3 mb-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 truncate">
+                    {formatAmount(data.totalRevenue)}
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium mt-1 truncate">
+                    Gross ({formatAmount(data.grossSales || 0)}) - Cancel ({formatAmount(data.cancelledAmount || 0)})
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card
-                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
+              <div
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowProductCostBreakdown(true)}
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Product Bought Cost</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalCost)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">
-                    Gross ({formatAmount(data.grossCost || 0)}) - Cancelled ({formatAmount(data.cancelledCost || 0)})
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Product Bought Cost</span>
+                  <div className="w-10 h-10 rounded-full bg-[#F3EFEF] dark:bg-purple-950/40 flex items-center justify-center shrink-0">
+                    <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+                <div className="mt-3 mb-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-purple-600 dark:text-purple-400 truncate">
+                    {formatAmount(data.totalCost)}
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium mt-1 truncate">
+                    Gross ({formatAmount(data.grossCost || 0)}) - Cancel ({formatAmount(data.cancelledCost || 0)})
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card
-                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
+              <div
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowShippingBreakdown(true)}
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Delivery Charge</CardTitle>
-                  <Truck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalShippingCost)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Courier delivery fees</p>
-                </CardContent>
-              </Card>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Delivery Charge</span>
+                  <div className="w-10 h-10 rounded-full bg-[#EFF6FF] dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                    <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <div className="mt-3 mb-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400 truncate">
+                    {formatAmount(data.totalShippingCost)}
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Courier shipping costs</p>
+                </div>
+              </div>
 
-              <Card
-                className="cursor-pointer hover:bg-muted/50 transition-colors rounded-3xl bg-white dark:bg-card border-none shadow-none"
+              <div
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowExpenseBreakdown(true)}
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Expenses</CardTitle>
-                  <Receipt className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <div className="text-lg sm:text-2xl font-bold truncate">{formatAmount(data.totalExpense || 0)}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Misc operational expenses</p>
-                </CardContent>
-              </Card>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Expense</span>
+                  <div className="w-10 h-10 rounded-full bg-[#FFF7ED] dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+                    <Receipt className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </div>
+                <div className="mt-3 mb-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-orange-600 dark:text-orange-400 truncate">
+                    {formatAmount(data.totalExpense || 0)}
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Operating expenses</p>
+                </div>
+              </div>
 
-              <Card className={`col-span-1 sm:col-span-2 lg:col-span-1 rounded-3xl border-none shadow-none ${data.netProfit >= 0 ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm font-semibold">Net Profit / Loss</CardTitle>
-                  {data.netProfit >= 0 ? (
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 text-red-600" />
-                  )}
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <div className={`text-lg sm:text-2xl font-bold ${data.netProfit >= 0 ? "text-green-600" : "text-red-600"} truncate`}>
+              <div className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] col-span-1 sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Profit / Loss</span>
+                  <div className={`w-10 h-10 rounded-full ${data.netProfit >= 0 ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-rose-50 dark:bg-rose-950/40"} flex items-center justify-center shrink-0`}>
+                    {data.netProfit >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 mb-1">
+                  <div className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${data.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} truncate`}>
                     {formatAmount(data.netProfit)}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                    {profitMargin !== null ? `${profitMargin}% margin · ` : ""}Net Sale - (Cost + Delivery + Expense)
+                  <p className="text-xs text-slate-400 font-medium mt-1 truncate">
+                    {profitMargin !== null ? `${profitMargin}% margin · ` : ""}Net Sales - Costs
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Month-wise Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Month-wise Breakdown</h3>
+              <div>
                 {!data.monthlyData || data.monthlyData.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No data available for this period.</div>
                 ) : (
-                  <div className="overflow-x-auto rounded-md border">
+                  <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
                         <TableRow>
-                          <TableHead>Month</TableHead>
-                          <TableHead className="text-right">Sales (Net)</TableHead>
-                          <TableHead className="text-right">Costs (Product + Delivery)</TableHead>
-                          <TableHead className="text-right">Expenses</TableHead>
-                          <TableHead className="text-right font-bold">Net Profit/Loss</TableHead>
+                          <TableHead className="font-bold text-slate-700 dark:text-slate-300">Month</TableHead>
+                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Sales (Net)</TableHead>
+                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Costs (Product + Delivery)</TableHead>
+                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Expenses</TableHead>
+                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Net Profit/Loss</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {data.monthlyData.map((m) => (
-                          <TableRow key={m.month}>
+                          <TableRow key={m.month} className="hover:bg-slate-50/50 dark:hover:bg-muted/40">
                             <TableCell className="font-medium">
                               {format(parseISO(`${m.month}-01`), "MMMM yyyy")}
                             </TableCell>
-                            <TableCell className="text-right text-green-600 font-medium">
+                            <TableCell className="text-right text-emerald-600 dark:text-emerald-400 font-semibold">
                               {formatAmount(m.revenue)}
                             </TableCell>
-                            <TableCell className="text-right text-muted-foreground">
+                            <TableCell className="text-right text-muted-foreground font-semibold">
                               {formatAmount(m.cost + m.shippingCost)}
                             </TableCell>
-                            <TableCell className="text-right text-orange-600">
+                            <TableCell className="text-right text-orange-600 dark:text-orange-400 font-semibold">
                               {formatAmount(m.expense)}
                             </TableCell>
-                            <TableCell className={`text-right font-bold ${m.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <TableCell className={`text-right font-bold ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                               {formatAmount(m.profit)}
                             </TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="bg-muted/50 font-bold">
+                        <TableRow className="bg-slate-50 dark:bg-muted/30 font-bold">
                           <TableCell>Total</TableCell>
-                          <TableCell className="text-right text-green-600">
+                          <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
                             {formatAmount(data.totalRevenue)}
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground">
                             {formatAmount(data.totalCost + data.totalShippingCost)}
                           </TableCell>
-                          <TableCell className="text-right text-orange-600">
+                          <TableCell className="text-right text-orange-600 dark:text-orange-400">
                             {formatAmount(data.totalExpense)}
                           </TableCell>
-                          <TableCell className={`text-right ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <TableCell className={`text-right ${data.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                             {formatAmount(data.netProfit)}
                           </TableCell>
                         </TableRow>
@@ -303,8 +329,8 @@ export default function ReportsPage() {
                     </Table>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Product Cost Breakdown Dialog */}
             <Dialog open={showProductCostBreakdown} onOpenChange={setShowProductCostBreakdown}>

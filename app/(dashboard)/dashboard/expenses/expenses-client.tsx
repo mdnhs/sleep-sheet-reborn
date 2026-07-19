@@ -11,10 +11,10 @@ import {
   type ExpenseFilters,
 } from "@/features/expenses/api/use-expenses";
 import { useCurrency } from "@/hooks/use-currency";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { format, startOfDay, startOfMonth, subDays } from "date-fns";
-import { Plus, Trash2, Loader2, DollarSign, CalendarDays, Tag } from "lucide-react";
+import { format, startOfDay, endOfDay, startOfMonth, subDays } from "date-fns";
+import { Plus, Trash2, Loader2, CalendarDays, Tag, Receipt } from "lucide-react";
 import { ConfirmDialog } from "@/components/conform-dialouge";
 
 type DateFilter = "all" | "today" | "week" | "month";
@@ -56,11 +56,20 @@ export default function ExpensesClientPage() {
     const today = new Date();
     switch (type) {
       case "today":
-        return { from: startOfDay(today).toISOString(), to: today.toISOString() };
+        return {
+          from: startOfDay(today).toISOString(),
+          to: endOfDay(today).toISOString(),
+        };
       case "week":
-        return { from: startOfDay(subDays(today, 7)).toISOString(), to: today.toISOString() };
+        return {
+          from: startOfDay(subDays(today, 6)).toISOString(),
+          to: endOfDay(today).toISOString(),
+        };
       case "month":
-        return { from: startOfMonth(today).toISOString(), to: today.toISOString() };
+        return {
+          from: startOfMonth(today).toISOString(),
+          to: endOfDay(today).toISOString(),
+        };
       default:
         return {};
     }
@@ -156,7 +165,7 @@ export default function ExpensesClientPage() {
         </div>
         <div className="flex gap-2">
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-            <DialogTrigger render={<Button variant="outline" className="gap-2" />}>
+            <DialogTrigger render={<Button variant="outline" className="gap-2 rounded-full border bg-slate-50 dark:bg-muted/40 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-colors h-9 px-4" />}>
               <Plus className="h-4 w-4" />
               Add Category
             </DialogTrigger>
@@ -185,7 +194,7 @@ export default function ExpensesClientPage() {
           </Dialog>
 
           <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
-            <DialogTrigger render={<Button className="gap-2" />}>
+            <DialogTrigger render={<Button className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold" />}>
               <Plus className="h-4 w-4" />
               Log Expense
             </DialogTrigger>
@@ -253,57 +262,61 @@ export default function ExpensesClientPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <SummaryCard
           title="All-Time Expenses"
-          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          icon={<Receipt className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
           value={summary ? formatAmount(summary.allTimeTotal) : undefined}
           subtitle={summary ? `${summary.allTimeCount} records` : undefined}
           loading={summaryLoading}
         />
         <SummaryCard
           title="This Month"
-          icon={<CalendarDays className="h-4 w-4 text-muted-foreground" />}
+          icon={<CalendarDays className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
           value={summary ? formatAmount(summary.monthTotal) : undefined}
           subtitle={summary ? `${summary.monthCount} records` : undefined}
           loading={summaryLoading}
         />
         <SummaryCard
           title="Top Category (Month)"
-          icon={<Tag className="h-4 w-4 text-muted-foreground" />}
+          icon={<Tag className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
           value={summary?.topCategory?.name ?? "—"}
           subtitle={summary?.topCategory ? formatAmount(summary.topCategory.total) : "No expenses yet"}
           loading={summaryLoading}
-          className="col-span-2 md:col-span-1"
         />
       </div>
 
-      <Card>
-        <CardHeader className="space-y-4">
-          <CardTitle>Expense History</CardTitle>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Expense History</h3>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="flex flex-wrap items-center gap-2">
               {dateFilterButtons.map(({ type, label }) => (
-                <Button
+                <button
                   key={type}
-                  variant={dateFilter === type ? "default" : "outline"}
-                  size="sm"
+                  type="button"
                   onClick={() => setDateFilter(type)}
+                  className={cn(
+                    "rounded-full text-xs font-semibold px-4 h-8 transition-colors cursor-pointer flex items-center justify-center select-none",
+                    dateFilter === type
+                      ? "bg-slate-900 text-white hover:bg-slate-800 hover:text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 dark:hover:text-slate-900"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  )}
                 >
                   {label}
-                </Button>
+                </button>
               ))}
             </div>
             <div className="sm:ml-auto w-full sm:w-52">
               <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v || ALL_CATEGORIES)}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8">
                   <SelectValue>
                     {categoryFilter === ALL_CATEGORIES
                       ? "All Categories"
                       : categories?.find((c) => c.id === categoryFilter)?.name || "All Categories"}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-2xl">
                   <SelectItem value={ALL_CATEGORIES} label="All Categories">All Categories</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id} label={cat.name}>{cat.name}</SelectItem>
@@ -312,35 +325,36 @@ export default function ExpensesClientPage() {
               </Select>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <div>
           {expensesLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : !expenses || expenses.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No expenses match these filters.</div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Note</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Date</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Category</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Note</TableHead>
+                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Amount</TableHead>
                     <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {expenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell>{format(new Date(expense.date), "MMM d, yyyy")}</TableCell>
+                    <TableRow key={expense.id} className="hover:bg-slate-50/50 dark:hover:bg-muted/40">
+                      <TableCell className="font-medium text-xs">{format(new Date(expense.date), "MMM d, yyyy")}</TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-slate-50 dark:bg-muted/40">
                           {expense.category?.name}
                         </span>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{expense.note || "-"}</TableCell>
-                      <TableCell className="text-right font-medium">{formatAmount(expense.amount)}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{expense.note || "-"}</TableCell>
+                      <TableCell className="text-right font-bold text-xs text-orange-600 dark:text-orange-400">{formatAmount(expense.amount)}</TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
@@ -353,28 +367,19 @@ export default function ExpensesClientPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold">
-                    <TableCell colSpan={3}>
-                      Total ({expenseData?.count ?? expenses.length} records)
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatAmount(expenseData?.total ?? 0)}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
                 </TableBody>
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <ConfirmDialog
         open={!!deleteExpenseId}
         onOpenChange={(open) => !open && setDeleteExpenseId(null)}
-        title="Delete Expense"
-        description="Are you sure you want to delete this expense record? This cannot be undone."
         onConfirm={handleDelete}
+        title="Delete Expense"
+        description="Are you sure you want to delete this expense? This action cannot be undone."
       />
     </div>
   );
@@ -396,21 +401,25 @@ function SummaryCard({
   className?: string;
 }) {
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
+    <div className={cn("rounded-3xl bg-white dark:bg-card border-none p-6 shadow-none flex flex-col justify-between min-h-[136px]", className)}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</span>
+        <div className="w-10 h-10 rounded-full bg-[#FFF7ED] dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+      </div>
+      <div className="mt-3 mb-1">
         {loading ? (
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         ) : (
           <>
-            <div className="text-2xl font-bold truncate">{value ?? "—"}</div>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-orange-600 dark:text-orange-400 truncate">
+              {value ?? "—"}
+            </div>
+            {subtitle && <p className="text-xs text-slate-400 font-medium mt-1">{subtitle}</p>}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

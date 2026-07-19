@@ -336,10 +336,9 @@ export function productGroupSchema(
 
 export function structuredDataScript(id: string, schema: string) {
   return (
-    <Script
-      id={id}
+    <script
+      key={id}
       type="application/ld+json"
-      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: schema }}
     />
   )
