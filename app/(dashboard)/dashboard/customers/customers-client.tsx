@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Loader2, Users, ShoppingBag, UserPlus } from "lucide-react";
@@ -60,37 +61,38 @@ export function CustomersClient() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+      cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
     },
     {
       accessorKey: "email",
       header: "Email",
+      cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.email}</span>,
     },
     {
       accessorKey: "phone",
       header: "Phone",
-      cell: ({ row }) => row.original.phone || <span className="text-muted-foreground">-</span>,
+      cell: ({ row }) => <span className="text-xs">{row.original.phone || <span className="text-muted-foreground">-</span>}</span>,
     },
     {
       accessorKey: "createdAt",
       header: "Joined",
-      cell: ({ row }) => format(new Date(row.original.createdAt), "MMM d, yyyy"),
+      cell: ({ row }) => <span className="text-xs whitespace-nowrap">{format(new Date(row.original.createdAt), "MMM d, yyyy")}</span>,
     },
     {
       accessorKey: "orderCount",
       header: "Orders",
       cell: ({ row }) =>
         row.original.orderCount > 0 ? (
-          <Badge variant="secondary">{row.original.orderCount}</Badge>
+          <Badge variant="secondary" className="rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none">{row.original.orderCount}</Badge>
         ) : (
-          <span className="text-muted-foreground">0</span>
+          <span className="text-muted-foreground text-xs">0</span>
         ),
     },
     {
       accessorKey: "totalSpent",
       header: "Total Spent",
       cell: ({ row }) => (
-        <span className="font-medium">{formatAmount(row.original.totalSpent)}</span>
+        <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">{formatAmount(row.original.totalSpent)}</span>
       ),
     },
     {
@@ -98,76 +100,106 @@ export function CustomersClient() {
       header: "Last Order",
       cell: ({ row }) =>
         row.original.lastOrderAt ? (
-          format(new Date(row.original.lastOrderAt), "MMM d, yyyy")
+          <span className="text-xs whitespace-nowrap">{format(new Date(row.original.lastOrderAt), "MMM d, yyyy")}</span>
         ) : (
-          <span className="text-muted-foreground">Never</span>
+          <span className="text-muted-foreground text-xs">Never</span>
         ),
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+        <div>
+          <Skeleton className="h-8 w-40 rounded-xl mb-2" />
+          <Skeleton className="h-4 w-64 rounded-xl" />
+        </div>
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-28 rounded-3xl" />
+          <Skeleton className="h-28 rounded-3xl" />
+          <Skeleton className="h-28 rounded-3xl col-span-2 lg:col-span-1" />
+        </div>
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Customers</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm">
           Shoppers who registered on your storefront
         </p>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Made a Purchase</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.buyers.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">
+              Total Customers
+            </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-blue-50 dark:bg-blue-950/40 shrink-0">
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <div className="mt-2.5 mb-1">
+            <p className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight">{stats.total.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">
+              Made a Purchase
+            </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-green-50 dark:bg-green-950/40 shrink-0">
+              <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+          <div className="mt-2.5 mb-1">
+            <p className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight">{stats.buyers.toLocaleString()}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">
               {stats.total > 0 ? `${((stats.buyers / stats.total) * 100).toFixed(0)}% of customers` : "No customers yet"}
             </p>
-          </CardContent>
-        </Card>
-        <Card className="col-span-2 md:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.newThisMonth.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
-      <div className="flex items-center space-x-2 py-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or phone..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px] col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">
+              New This Month
+            </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-purple-50 dark:bg-purple-950/40 shrink-0">
+              <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+          <div className="mt-2.5 mb-1">
+            <p className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight">{stats.newThisMonth.toLocaleString()}</p>
+          </div>
         </div>
       </div>
 
-      <DataTable columns={columns} data={filteredCustomers} />
+      <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+        <DataTable
+          columns={columns}
+          data={filteredCustomers}
+          searchSlot={
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or phone..."
+                className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          }
+        />
+      </div>
     </div>
   );
 }

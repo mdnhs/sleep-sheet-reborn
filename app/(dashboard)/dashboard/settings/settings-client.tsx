@@ -64,37 +64,35 @@ const sections = [
 
 export function SettingsOverview() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Settings className="h-7 w-7 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your store configuration
-          </p>
-        </div>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your store configuration, integrations, and preferences
+        </p>
       </div>
-      <div className="grid gap-4">
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {sections.map((section) => {
           const Icon = section.icon;
           return (
             <Link key={section.href} href={section.href}>
-              <Card className="transition-colors hover:bg-muted/50 cursor-pointer">
-                <CardHeader className="flex flex-row items-center gap-4 pb-3">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
+              <div className="group rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex items-center justify-between gap-4 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer h-full">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                    <Icon className="h-6 w-6" />
                   </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{section.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
+                  <div>
+                    <h3 className="font-bold text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {section.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                       {section.description}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="shrink-0">
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-              </Card>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-1 transition-all shrink-0" />
+              </div>
             </Link>
           );
         })}

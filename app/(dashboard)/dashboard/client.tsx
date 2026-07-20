@@ -153,11 +153,11 @@ export default function DashBoardClientPage() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Sales Overview
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <Link href="/dashboard/pos">
             <Button className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5">
               <IconCashRegister className="h-4 w-4" />
@@ -168,7 +168,7 @@ export default function DashBoardClientPage() {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard
           title="Total Gross Sale"
           value={overview?.grossSales}
@@ -811,28 +811,28 @@ function MetricCard({
   const isGood = hasChange && (invertChangeColor ? change! < 0 : change! > 0);
 
   return (
-    <div className={cn("rounded-3xl bg-white dark:bg-card border-none p-6 shadow-none flex flex-col justify-between min-h-[136px]", className)}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</span>
+    <div className={cn("rounded-3xl bg-white dark:bg-card border-none p-4 sm:p-6 shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]", className)}>
+      <div className="flex items-center justify-between gap-1.5">
+        <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight">{title}</span>
         {icon && (
-          <div className="w-10 h-10 rounded-full bg-[#F4F4F2] dark:bg-slate-800/80 flex items-center justify-center text-slate-800 dark:text-slate-200 shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#F4F4F2] dark:bg-slate-800/80 flex items-center justify-center text-slate-800 dark:text-slate-200 shrink-0">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-3 mb-1 flex items-baseline flex-wrap gap-2.5">
+      <div className="mt-2.5 mb-1 flex items-baseline flex-wrap gap-1.5 sm:gap-2.5">
         {loading ? (
-          <Skeleton className="h-8 w-28 rounded-xl" />
+          <Skeleton className="h-7 sm:h-8 w-24 sm:w-28 rounded-xl" />
         ) : (
           <>
-            <span className={cn("text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white", valueClassName)}>
+            <span className={cn("text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white break-all", valueClassName)}>
               {formattedValue()}
             </span>
             {hasChange && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold shrink-0",
+                  "inline-flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold shrink-0",
                   isGood
                     ? "bg-[#EAF8ED] text-[#1E8A37] dark:bg-emerald-950/60 dark:text-emerald-400"
                     : "bg-[#FCEBEB] text-[#D92D20] dark:bg-rose-950/60 dark:text-rose-400"
@@ -846,7 +846,7 @@ function MetricCard({
       </div>
 
       {subtitle && (
-        <div className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 truncate">
+        <div className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 truncate">
           {subtitle}
         </div>
       )}

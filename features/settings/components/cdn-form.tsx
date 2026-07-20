@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useSettings, useSettingsSecrets, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -42,21 +43,21 @@ export function CdnForm() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <Skeleton className="h-6 w-40 rounded-xl" />
+        <Skeleton className="h-4 w-64 rounded-xl" />
+        <Skeleton className="h-10 w-full rounded-2xl" />
+        <Skeleton className="h-10 w-full rounded-2xl" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Cloudinary CDN</CardTitle>
-        <CardDescription>Manage your Cloudinary API credentials for image uploads.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+      <div>
+        <h2 className="text-base font-bold tracking-tight">Cloudinary CDN</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">Manage your Cloudinary API credentials for image uploads.</p>
+      </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -106,13 +107,12 @@ export function CdnForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="rounded-full text-xs font-semibold">
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

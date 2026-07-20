@@ -184,35 +184,29 @@ export function PixelSettings() {
   }, [mappings, mappingsMutation]);
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Eye className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Meta Pixel</h1>
-          <p className="text-sm text-muted-foreground">
-            Track conversions from multiple Facebook Pages with per-pixel attribution
-          </p>
-        </div>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Meta Pixel</h1>
+        <p className="text-muted-foreground text-sm">
+          Track conversions from multiple Facebook Pages with per-pixel attribution
+        </p>
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="mappings">Page Mappings</TabsTrigger>
-          <TabsTrigger value="capi">Conversions API</TabsTrigger>
+        <TabsList className="flex flex-nowrap items-center h-9 w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full">
+          <TabsTrigger value="general" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">General</TabsTrigger>
+          <TabsTrigger value="mappings" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Page Mappings</TabsTrigger>
+          <TabsTrigger value="capi" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Conversions API</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
-        <Card>
-          <CardHeader>
-            <CardTitle>General</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+            <h2 className="text-base font-bold tracking-tight">General Settings</h2>
             {isLoading ? (
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full rounded-2xl" />
+                <Skeleton className="h-10 w-full rounded-2xl" />
+                <Skeleton className="h-10 w-full rounded-2xl" />
               </div>
             ) : (
               <Form {...form}>
@@ -224,7 +218,7 @@ export function PixelSettings() {
                     name="meta_pixel_enabled"
                     control={form.control}
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border px-4 py-3">
+                      <FormItem className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4">
                         <div className="flex flex-col">
                           <FormLabel className="text-sm font-semibold">
                             Pixel Tracking
@@ -249,7 +243,7 @@ export function PixelSettings() {
                     name="meta_pixel_debug"
                     control={form.control}
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border px-4 py-3">
+                      <FormItem className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4">
                         <div className="flex flex-col">
                           <FormLabel className="text-sm font-semibold">
                             Debug Mode
@@ -292,7 +286,7 @@ export function PixelSettings() {
                   />
 
                   <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={generalMutation.isPending} className="gap-2">
+                    <Button type="submit" disabled={generalMutation.isPending} className="gap-2 rounded-full text-xs font-semibold">
                       {generalMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       Save General Settings
                     </Button>
@@ -300,115 +294,113 @@ export function PixelSettings() {
                 </form>
               </Form>
             )}
-          </CardContent>
-        </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="mappings">
-        <Card>
-          <CardHeader>
-            <CardTitle>Page Mappings</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Map Facebook Page names to Meta Pixel IDs. Visitors from ads with{" "}
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">?page=&lt;name&gt;</code>{" "}
-              will be attributed to the mapped Pixel.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {mappings.length > 0 && (
-              <div className="space-y-2">
-                {mappings.map((m) => (
-                  <div
-                    key={m.page}
-                    className="flex items-center gap-3 rounded-lg border px-4 py-3"
-                  >
-                    <code className="text-sm font-medium min-w-[100px]">{m.page}</code>
-                    <span className="text-muted-foreground">&rarr;</span>
-                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono flex-1">
-                      {m.pixelId}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleRemoveMapping(m.page)}
-                      className="text-destructive hover:text-destructive"
+          <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+            <div>
+              <h2 className="text-base font-bold tracking-tight">Page Mappings</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Map Facebook Page names to Meta Pixel IDs. Visitors from ads with{" "}
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">?page=&lt;name&gt;</code>{" "}
+                will be attributed to the mapped Pixel.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {mappings.length > 0 && (
+                <div className="space-y-2">
+                  {mappings.map((m) => (
+                    <div
+                      key={m.page}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 px-4 py-3"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <code className="text-xs font-semibold min-w-[100px]">{m.page}</code>
+                      <span className="text-muted-foreground">&rarr;</span>
+                      <code className="text-xs bg-slate-200/60 dark:bg-slate-800 px-2 py-1 rounded-full font-mono flex-1 text-slate-800 dark:text-slate-200 border-none">
+                        {m.pixelId}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveMapping(m.page)}
+                        className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {mappings.length === 0 && (
-              <div className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground justify-center">
-                <AlertCircle className="h-4 w-4" />
-                No page mappings configured. Add one below.
-              </div>
-            )}
+              {mappings.length === 0 && (
+                <div className="flex items-center gap-2 rounded-2xl border border-dashed py-8 text-xs font-medium text-muted-foreground justify-center">
+                  <AlertCircle className="h-4 w-4" />
+                  No page mappings configured. Add one below.
+                </div>
+              )}
 
-            <div className="flex items-end gap-3 pt-2 border-t">
-              <div className="flex-1 space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Page Name</label>
-                <Input
-                  placeholder="page_a"
-                  value={newPage}
-                  onChange={(e) => setNewPage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMapping())}
-                />
+              <div className="flex items-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Page Name</label>
+                  <Input
+                    placeholder="page_a"
+                    value={newPage}
+                    onChange={(e) => setNewPage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMapping())}
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Pixel ID</label>
+                  <Input
+                    placeholder="000000000000000"
+                    value={newPixelId}
+                    onChange={(e) => setNewPixelId(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMapping())}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddMapping}
+                  className="gap-1.5 shrink-0 rounded-full text-xs font-semibold border bg-slate-50 dark:bg-muted/40"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
               </div>
-              <div className="flex-1 space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Pixel ID</label>
-                <Input
-                  placeholder="000000000000000"
-                  value={newPixelId}
-                  onChange={(e) => setNewPixelId(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMapping())}
-                />
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="button"
+                  onClick={handleSaveMappings}
+                  disabled={mappingsMutation.isPending}
+                  className="gap-2 rounded-full text-xs font-semibold"
+                >
+                  {mappingsMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Save Mappings
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddMapping}
-                className="gap-1.5 shrink-0"
-              >
-                <Plus className="h-4 w-4" />
-                Add
-              </Button>
             </div>
-
-            <div className="flex justify-end pt-2">
-              <Button
-                type="button"
-                onClick={handleSaveMappings}
-                disabled={mappingsMutation.isPending}
-                className="gap-2"
-              >
-                {mappingsMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save Mappings
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="capi">
-        <Card>
-          <CardHeader>
-            <CardTitle>Conversions API (Server-Side)</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Sends Purchase events server-side so Meta still receives them when
-              the browser Pixel is blocked (iOS, ad blockers). Deduplicated with
-              the Pixel automatically. Get the token in Events Manager &rarr;
-              Settings &rarr; Conversions API.
-            </p>
-          </CardHeader>
-          <CardContent>
+          <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+            <div>
+              <h2 className="text-base font-bold tracking-tight">Conversions API (Server-Side)</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Sends Purchase events server-side so Meta still receives them when
+                the browser Pixel is blocked (iOS, ad blockers). Deduplicated with
+                the Pixel automatically. Get the token in Events Manager &rarr;
+                Settings &rarr; Conversions API.
+              </p>
+            </div>
             {isLoading ? (
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full rounded-2xl" />
+                <Skeleton className="h-10 w-full rounded-2xl" />
+                <Skeleton className="h-10 w-full rounded-2xl" />
               </div>
             ) : (
               <Form {...capiForm}>
@@ -420,7 +412,7 @@ export function PixelSettings() {
                     name="meta_capi_enabled"
                     control={capiForm.control}
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border px-4 py-3">
+                      <FormItem className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4">
                         <div className="flex flex-col">
                           <FormLabel className="text-sm font-semibold">
                             Conversions API
@@ -520,7 +512,7 @@ export function PixelSettings() {
                   />
 
                   <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={capiMutation.isPending} className="gap-2">
+                    <Button type="submit" disabled={capiMutation.isPending} className="gap-2 rounded-full text-xs font-semibold">
                       {capiMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       Save Conversions API
                     </Button>
@@ -528,8 +520,7 @@ export function PixelSettings() {
                 </form>
               </Form>
             )}
-          </CardContent>
-        </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

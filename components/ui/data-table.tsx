@@ -95,17 +95,17 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex-1 min-w-[240px]">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex-1 w-full min-w-0">
           {searchSlot}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 shrink-0">
           {actionSlot}
           <DropdownMenu>
-            <DropdownMenuTrigger className={buttonVariants({ variant: "outline", className: "rounded-xl gap-1 shrink-0" })}>
-              Columns <ChevronDown className="h-4 w-4" />
+            <DropdownMenuTrigger className={buttonVariants({ variant: "outline", className: "rounded-full text-xs font-semibold h-8 px-3 bg-slate-50 dark:bg-muted/40 border-none shadow-none gap-1 shrink-0 text-slate-700 dark:text-slate-200" })}>
+              Columns <ChevronDown className="h-3.5 w-3.5" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl">
+            <DropdownMenuContent align="end" className="rounded-2xl">
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
@@ -113,7 +113,7 @@ export function DataTable<TData, TValue>({
                   return (
                     <DropdownMenuCheckboxItem
                       key={column.id}
-                      className="capitalize"
+                      className="capitalize text-xs font-medium"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >

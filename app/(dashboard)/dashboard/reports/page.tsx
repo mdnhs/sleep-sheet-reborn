@@ -15,6 +15,8 @@ import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck,
 import { subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 import React from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 type FilterType = "all" | "today" | "week" | "month" | "custom";
 
 function PaginatedTable<T>({
@@ -145,9 +147,9 @@ export default function ReportsPage() {
 
   return (
     <div className="flex-col">
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 space-y-0">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Reports & Profit/Loss</h2>
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Reports & Profit/Loss</h2>
           <div className="flex flex-wrap items-center gap-2">
             {filterButtons.map(({ type, label }) => (
               <button
@@ -155,7 +157,7 @@ export default function ReportsPage() {
                 type="button"
                 onClick={() => handleFilter(type)}
                 className={cn(
-                  "rounded-full text-xs font-semibold px-4 h-8 transition-colors cursor-pointer flex items-center justify-center select-none",
+                  "rounded-full text-xs font-semibold px-3.5 h-8 transition-colors cursor-pointer flex items-center justify-center select-none",
                   activeFilter === type
                     ? "bg-slate-900 text-white hover:bg-slate-800 hover:text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 dark:hover:text-slate-900"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
@@ -169,111 +171,121 @@ export default function ReportsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex h-75 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="space-y-6">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
+              <Skeleton className="h-28 rounded-3xl" />
+              <Skeleton className="h-28 rounded-3xl" />
+              <Skeleton className="h-28 rounded-3xl" />
+              <Skeleton className="h-28 rounded-3xl" />
+              <Skeleton className="h-28 rounded-3xl col-span-2 lg:col-span-1" />
+            </div>
+            <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+              <Skeleton className="h-6 w-48 rounded-xl" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+            </div>
           </div>
         ) : data ? (
           <div className="space-y-6">
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
               <div 
-                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowRevenueBreakdown(true)}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Net Sale</span>
-                  <div className="w-10 h-10 rounded-full bg-[#EBF7EE] dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
-                    <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Total Net Sale</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#EBF7EE] dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
-                <div className="mt-3 mb-1">
-                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 truncate">
+                <div className="mt-2.5 mb-1">
+                  <div className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 truncate">
                     {formatAmount(data.totalRevenue)}
                   </div>
-                  <p className="text-xs text-slate-400 font-medium mt-1 truncate">
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">
                     Gross ({formatAmount(data.grossSales || 0)}) - Cancel ({formatAmount(data.cancelledAmount || 0)})
                   </p>
                 </div>
               </div>
 
               <div
-                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowProductCostBreakdown(true)}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Product Bought Cost</span>
-                  <div className="w-10 h-10 rounded-full bg-[#F3EFEF] dark:bg-purple-950/40 flex items-center justify-center shrink-0">
-                    <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Product Bought Cost</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#F3EFEF] dark:bg-purple-950/40 flex items-center justify-center shrink-0">
+                    <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
-                <div className="mt-3 mb-1">
-                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-purple-600 dark:text-purple-400 truncate">
+                <div className="mt-2.5 mb-1">
+                  <div className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-purple-600 dark:text-purple-400 truncate">
                     {formatAmount(data.totalCost)}
                   </div>
-                  <p className="text-xs text-slate-400 font-medium mt-1 truncate">
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">
                     Gross ({formatAmount(data.grossCost || 0)}) - Cancel ({formatAmount(data.cancelledCost || 0)})
                   </p>
                 </div>
               </div>
 
               <div
-                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowShippingBreakdown(true)}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Delivery Charge</span>
-                  <div className="w-10 h-10 rounded-full bg-[#EFF6FF] dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-                    <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Delivery Charge</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#EFF6FF] dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                    <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
-                <div className="mt-3 mb-1">
-                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400 truncate">
+                <div className="mt-2.5 mb-1">
+                  <div className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400 truncate">
                     {formatAmount(data.totalShippingCost)}
                   </div>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Courier shipping costs</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">Courier shipping costs</p>
                 </div>
               </div>
 
               <div
-                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowExpenseBreakdown(true)}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Expense</span>
-                  <div className="w-10 h-10 rounded-full bg-[#FFF7ED] dark:bg-orange-950/40 flex items-center justify-center shrink-0">
-                    <Receipt className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Total Expense</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FFF7ED] dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+                    <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
                   </div>
                 </div>
-                <div className="mt-3 mb-1">
-                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-orange-600 dark:text-orange-400 truncate">
+                <div className="mt-2.5 mb-1">
+                  <div className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-orange-600 dark:text-orange-400 truncate">
                     {formatAmount(data.totalExpense || 0)}
                   </div>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Operating expenses</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">Operating expenses</p>
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-6 flex flex-col justify-between min-h-[136px] col-span-1 sm:col-span-2 lg:col-span-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Profit / Loss</span>
-                  <div className={`w-10 h-10 rounded-full ${data.netProfit >= 0 ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-rose-50 dark:bg-rose-950/40"} flex items-center justify-center shrink-0`}>
+              <div className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] col-span-2 lg:col-span-1">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Net Profit / Loss</span>
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${data.netProfit >= 0 ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-rose-50 dark:bg-rose-950/40"} flex items-center justify-center shrink-0`}>
                     {data.netProfit >= 0 ? (
-                      <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                      <TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600 dark:text-rose-400" />
                     )}
                   </div>
                 </div>
-                <div className="mt-3 mb-1">
-                  <div className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${data.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} truncate`}>
+                <div className="mt-2.5 mb-1">
+                  <div className={`text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight ${data.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} truncate`}>
                     {formatAmount(data.netProfit)}
                   </div>
-                  <p className="text-xs text-slate-400 font-medium mt-1 truncate">
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">
                     {profitMargin !== null ? `${profitMargin}% margin · ` : ""}Net Sales - Costs
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+            <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Month-wise Breakdown</h3>
               <div>
                 {!data.monthlyData || data.monthlyData.length === 0 ? (

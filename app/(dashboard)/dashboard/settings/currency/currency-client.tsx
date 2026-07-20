@@ -6,24 +6,17 @@ import { DollarSign } from "lucide-react";
 
 export function CurrencySettings() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <DollarSign className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Currency</h1>
-          <p className="text-sm text-muted-foreground">
-            Applied across all prices, orders, and receipts
-          </p>
-        </div>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Currency</h1>
+        <p className="text-muted-foreground text-sm">
+          Applied across all prices, orders, and receipts
+        </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Store Currency</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CurrencyForm />
-        </CardContent>
-      </Card>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <h2 className="text-base font-bold tracking-tight">Store Currency</h2>
+        <CurrencyForm />
+      </div>
     </div>
   );
 }

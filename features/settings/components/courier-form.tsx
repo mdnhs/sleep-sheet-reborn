@@ -39,21 +39,18 @@ export function CourierForm() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Steadfast Courier</CardTitle>
-        <CardDescription>Manage your Steadfast courier API credentials for order shipping.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+      <div>
+        <h2 className="text-base font-bold tracking-tight">Steadfast Courier</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">Manage your Steadfast courier API credentials for order shipping.</p>
+      </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -92,13 +89,12 @@ export function CourierForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="rounded-full text-xs font-semibold">
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

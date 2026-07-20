@@ -69,69 +69,71 @@ export function RolesClient() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
-      <div className="flex items-center justify-between space-y-2">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Roles & Permissions</h2>
-          <p className="text-muted-foreground mt-1">
-            Manage custom roles and configure their access levels.
+          <h1 className="text-3xl font-bold tracking-tight">Roles & Permissions</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage custom roles and configure their access levels
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={handleOpenNew}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Role
-          </Button>
-        </div>
+        <Button onClick={handleOpenNew} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
+          <Plus className="h-4 w-4" />
+          Create Role
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* System Admin Role Card */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm relative overflow-hidden">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex flex-col justify-between space-y-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <ShieldAlert className="w-24 h-24" />
           </div>
-          <h3 className="font-semibold text-xl mb-2 flex items-center gap-2">
-            Administrator
-            <CheckCircle2 className="w-5 h-5 text-primary" />
-          </h3>
-          <p className="text-sm text-muted-foreground mb-6">
-            System-level role with unrestricted access to all features.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">All Permissions</span>
+          <div>
+            <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
+              Administrator
+              <CheckCircle2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              System-level role with unrestricted access to all features.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-none">All Permissions</span>
           </div>
         </div>
 
         {/* Custom Roles */}
         {roles?.map((role: any) => (
-          <div key={role.id} className="rounded-xl border bg-card p-6 shadow-sm flex flex-col">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-xl">{role.name}</h3>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEdit(role)}>
-                  <Edit className="h-4 w-4 text-muted-foreground" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive hover:bg-destructive/10" onClick={() => {
-                  if (confirm("Are you sure you want to delete this role?")) {
-                    deleteRole.mutate(role.id);
-                  }
-                }}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+          <div key={role.id} className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex justify-between items-start mb-1">
+                <h3 className="font-bold text-xl">{role.name}</h3>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOpenEdit(role)}>
+                    <Edit className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:text-destructive hover:bg-destructive/10" onClick={() => {
+                    if (confirm("Are you sure you want to delete this role?")) {
+                      deleteRole.mutate(role.id);
+                    }
+                  }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Custom role with specific access.
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Custom role with specific access.
-            </p>
-            <div className="flex flex-wrap gap-2 mt-auto">
+            <div className="flex flex-wrap gap-2 pt-2">
               {role.permissions?.slice(0, 3).map((p: string) => (
-                <span key={p} className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-secondary text-secondary-foreground border border-border/50">
+                <span key={p} className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none">
                   {p.replace(/_/g, " ")}
                 </span>
               ))}
               {role.permissions?.length > 3 && (
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 border-none">
                   +{role.permissions.length - 3} more
                 </span>
               )}

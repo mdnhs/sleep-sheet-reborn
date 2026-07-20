@@ -239,18 +239,18 @@ export default function ProductsClientPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-          <p className="text-muted-foreground text-sm">Manage your product catalog and inventory</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Products</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Manage your product catalog and inventory</p>
         </div>
-        <Button nativeButton={false} render={<Link href="/dashboard/products/create" />} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
+        <Button nativeButton={false} render={<Link href="/dashboard/products/create" />} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-4 sm:px-5 h-9 text-xs font-semibold shrink-0">
           <Plus className="h-4 w-4" />
           Add New
         </Button>
       </div>
 
-      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+      <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
         <DataTable<ProductColumn, unknown>
           columns={columns}
           data={products?.data ?? []}
@@ -265,8 +265,8 @@ export default function ProductsClientPage() {
             setRowSelection(typeof updater === "function" ? updater(rowSelection) : updater)
           }}
           searchSlot={
-            <div className="flex flex-wrap items-center gap-3 w-full">
-              <div className="relative flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
+              <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search products..."
@@ -275,39 +275,41 @@ export default function ProductsClientPage() {
                   className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
                 />
               </div>
-              <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
-                <SelectTrigger className="w-[180px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.label}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={featuredFilter} onValueChange={(val) => setFeaturedFilter(val || "all")}>
-                <SelectTrigger className="w-[150px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="true">Featured</SelectItem>
-                  <SelectItem value="false">Standard</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
+                <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
+                  <SelectTrigger className="w-full sm:w-[170px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="all" className="capitalize text-xs font-medium">All Categories</SelectItem>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.label} className="capitalize text-xs font-medium">
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={featuredFilter} onValueChange={(val) => setFeaturedFilter(val || "all")}>
+                  <SelectTrigger className="w-full sm:w-[140px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="all" className="capitalize text-xs font-medium">All Statuses</SelectItem>
+                    <SelectItem value="true" className="capitalize text-xs font-medium">Featured</SelectItem>
+                    <SelectItem value="false" className="capitalize text-xs font-medium">Standard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {selectedCount > 0 && (
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{selectedCount} selected</span>
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="gap-1.5 rounded-full text-xs font-semibold"
+                    className="gap-1.5 rounded-full text-xs font-semibold h-8 px-3"
                     onClick={() => setConfirmBulkDelete(true)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                     Delete
                   </Button>
                 </div>

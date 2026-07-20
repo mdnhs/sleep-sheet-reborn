@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -98,25 +99,24 @@ export default function AnalysisClientPage() {
   const orders = stats.byType["order_complete"] || 0;
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Analytics
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
           <p className="text-sm text-muted-foreground">
-            Traffic activity, page visits, and user interactions
+            Traffic activity, page visits, and real-time user interactions
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <IconActivity className="h-3 w-3" />
+          <Badge variant="outline" className="gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border bg-slate-50 dark:bg-muted/40">
+            <IconActivity className="h-3.5 w-3.5" />
             {allEvents.length} events
           </Badge>
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetch()}
+            className="rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none"
           >
             <IconRefresh className="h-3.5 w-3.5 mr-1" />
             Refresh
@@ -126,6 +126,7 @@ export default function AnalysisClientPage() {
             size="sm"
             onClick={() => clearEvents.mutate()}
             disabled={clearEvents.isPending}
+            className="rounded-full text-xs font-semibold text-destructive hover:bg-destructive/10"
           >
             <IconTrash className="h-3.5 w-3.5 mr-1" />
             Clear
@@ -135,14 +136,19 @@ export default function AnalysisClientPage() {
 
       <div className="flex flex-wrap gap-2">
         {(["1h", "6h", "24h", "7d", "all"] as TimeFilter[]).map((f) => (
-          <Button
+          <button
             key={f}
-            variant={timeFilter === f ? "default" : "outline"}
-            size="sm"
+            type="button"
             onClick={() => setTimeFilter(f)}
+            className={cn(
+              "rounded-full text-xs font-semibold px-4 h-8 transition-colors cursor-pointer",
+              timeFilter === f
+                ? "bg-slate-900 text-white hover:bg-slate-800 hover:text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 dark:hover:text-slate-900"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+            )}
           >
             {f === "all" ? "All Time" : f}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -150,140 +156,135 @@ export default function AnalysisClientPage() {
         <StatCard
           title="Page Views"
           value={pageViews}
-          icon={<IconEye className="h-4 w-4 text-muted-foreground" />}
+          icon={<IconEye className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+          badgeBg="bg-blue-50 dark:bg-blue-950/40"
           loading={isLoading}
         />
         <StatCard
           title="Product Views"
           value={productViews}
-          icon={<IconEye className="h-4 w-4 text-purple-500" />}
+          icon={<IconEye className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
+          badgeBg="bg-purple-50 dark:bg-purple-950/40"
           loading={isLoading}
         />
         <StatCard
           title="Add to Cart"
           value={addToCarts}
-          icon={<IconShoppingCart className="h-4 w-4 text-green-500" />}
+          icon={<IconShoppingCart className="h-5 w-5 text-green-600 dark:text-green-400" />}
+          badgeBg="bg-green-50 dark:bg-green-950/40"
           loading={isLoading}
         />
         <StatCard
           title="Buy Now"
           value={buyNows}
-          icon={<IconBolt className="h-4 w-4 text-orange-500" />}
+          icon={<IconBolt className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
+          badgeBg="bg-orange-50 dark:bg-orange-950/40"
           loading={isLoading}
         />
         <StatCard
           title="Orders"
           value={orders}
-          icon={<IconActivity className="h-4 w-4 text-emerald-500" />}
+          icon={<IconActivity className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
+          badgeBg="bg-emerald-50 dark:bg-emerald-950/40"
           loading={isLoading}
           className="col-span-2 lg:col-span-1"
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Events by Hour</CardTitle>
-          </CardHeader>
-          <CardContent className="h-64">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Events by Hour</h2>
+          <div className="h-64">
             {isLoading ? (
-              <Skeleton className="h-full w-full" />
+              <Skeleton className="h-full w-full rounded-2xl" />
             ) : stats.hourlyData.every((d) => d.value === 0) ? (
               <EmptyState />
             ) : (
               <CustomBarChart data={stats.hourlyData} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top Pages</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-48 w-full" />
-            ) : stats.topPages.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Page</TableHead>
-                      <TableHead className="text-right">Visits</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stats.topPages.map(([path, count]) => (
-                      <TableRow key={path}>
-                        <TableCell className="font-medium text-xs truncate max-w-[250px]">
-                          {path}
-                        </TableCell>
-                        <TableCell className="text-right">{count}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <IconClock className="h-4 w-4" />
-            Event Feed
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Top Pages</h2>
           {isLoading ? (
-            <Skeleton className="h-48 w-full" />
-          ) : allEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No events in this time range.
-            </p>
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          ) : stats.topPages.length === 0 ? (
+            <EmptyState />
           ) : (
-            <div className="rounded-md border max-h-[500px] overflow-auto">
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
               <Table>
-                <TableHeader className="sticky top-0 bg-background">
-                  <TableRow>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Page</TableHead>
-                    <TableHead>Label</TableHead>
-                    <TableHead className="text-right">Time</TableHead>
+                <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
+                  <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Page</TableHead>
+                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Visits</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allEvents.slice(0, 100).map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${EVENT_COLORS[e.type] || "bg-gray-100 text-gray-700"}`}
-                        >
-                          {EVENT_ICONS[e.type]}
-                          {EVENT_LABELS[e.type] || e.type}
-                        </span>
+                  {stats.topPages.map(([path, count]) => (
+                    <TableRow key={path} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
+                      <TableCell className="font-medium text-xs truncate max-w-[250px]">
+                        {path}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {e.path}
-                      </TableCell>
-                      <TableCell className="text-xs truncate max-w-[150px]">
-                        {e.label || "—"}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(e.createdAt), "MMM d, HH:mm:ss")}
-                      </TableCell>
+                      <TableCell className="text-right font-semibold text-xs">{count}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <h2 className="text-base font-bold tracking-tight flex items-center gap-2">
+          <IconClock className="h-4 w-4" />
+          Event Feed
+        </h2>
+        {isLoading ? (
+          <Skeleton className="h-48 w-full rounded-2xl" />
+        ) : allEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No events in this time range.
+          </p>
+        ) : (
+          <div className="rounded-2xl border border-slate-100 dark:border-slate-800 max-h-[500px] overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10 border-b border-slate-100 dark:border-slate-800">
+                <TableRow>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Event</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Page</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Label</TableHead>
+                  <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allEvents.slice(0, 100).map((e) => (
+                  <TableRow key={e.id} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${EVENT_COLORS[e.type] || "bg-gray-100 text-gray-700"}`}
+                      >
+                        {EVENT_ICONS[e.type]}
+                        {EVENT_LABELS[e.type] || e.type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
+                      {e.path}
+                    </TableCell>
+                    <TableCell className="text-xs truncate max-w-[150px]">
+                      {e.label || "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                      {format(new Date(e.createdAt), "MMM d, HH:mm:ss")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -292,31 +293,33 @@ function StatCard({
   title,
   value,
   icon,
+  badgeBg,
   loading,
   className,
 }: {
   title: string;
   value: number;
   icon: React.ReactNode;
+  badgeBg: string;
   loading: boolean;
   className?: string;
 }) {
   return (
-    <Card className={className}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            {title}
-          </span>
+    <div className={cn("rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4", className)}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          {title}
+        </span>
+        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", badgeBg)}>
           {icon}
         </div>
-        {loading ? (
-          <Skeleton className="h-7 w-16" />
-        ) : (
-          <p className="text-2xl font-bold">{value.toLocaleString()}</p>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      {loading ? (
+        <Skeleton className="h-8 w-20 rounded-xl" />
+      ) : (
+        <p className="text-3xl font-bold tracking-tight">{value.toLocaleString()}</p>
+      )}
+    </div>
   );
 }
 

@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useRef, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -418,10 +419,17 @@ function CategoriesClientPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 space-y-4">
-        <h1 className="text-2xl font-bold">Categories</h1>
-        <div className="rounded-xl border p-12 text-center text-muted-foreground">
-          Loading categories...
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-40 rounded-xl mb-2" />
+            <Skeleton className="h-4 w-64 rounded-xl" />
+          </div>
+          <Skeleton className="h-9 w-36 rounded-full" />
+        </div>
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       </div>
     )

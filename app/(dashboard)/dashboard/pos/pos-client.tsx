@@ -546,7 +546,10 @@ export default function PosClientPage() {
               {hasNextPage && (
                 <div ref={ref} className="w-full flex items-center justify-center py-6 mt-4">
                   {isFetchingNextPage ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+                      <Skeleton className="h-20 rounded-2xl" />
+                      <Skeleton className="h-20 rounded-2xl" />
+                    </div>
                   ) : (
                     <div className="h-6" /> // Placeholder
                   )}

@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Loader2 } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useGetUsers } from "@/features/users/api/use-get-users";
 import { useGetRoles } from "@/features/roles/api/use-get-roles";
@@ -45,7 +46,6 @@ export function UsersClient() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
-  
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,9 +56,12 @@ export function UsersClient() {
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return safeUsers;
-    return safeUsers.filter((u) =>
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const q = searchQuery.toLowerCase();
+    return safeUsers.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q)
     );
   }, [safeUsers, searchQuery]);
 
@@ -69,11 +72,11 @@ export function UsersClient() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createUser.mutate(
-      { 
-        name, 
-        email, 
-        password, 
-        roleId: selectedRole === "none" ? null : selectedRole 
+      {
+        name,
+        email,
+        password,
+        roleId: selectedRole === "none" ? null : selectedRole,
       },
       {
         onSuccess: () => {
@@ -82,7 +85,7 @@ export function UsersClient() {
           setEmail("");
           setPassword("");
           setSelectedRole("none");
-        }
+        },
       }
     );
   };
@@ -91,18 +94,18 @@ export function UsersClient() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+      cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
     },
     {
       accessorKey: "email",
       header: "Email",
-      cell: ({ row }) => <span>{row.original.email}</span>,
+      cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.email}</span>,
     },
     {
       accessorKey: "role",
       header: "System Role",
       cell: ({ row }) => (
-        <Badge variant={row.original.role === "ADMIN" ? "default" : "secondary"}>
+        <Badge variant={row.original.role === "ADMIN" ? "default" : "secondary"} className="rounded-full text-xs font-semibold px-3 py-0.5 border-none">
           {row.original.role}
         </Badge>
       ),
@@ -114,7 +117,7 @@ export function UsersClient() {
         const user = row.original;
         if (user.role === "ADMIN") {
           return (
-            <span className="text-sm text-muted-foreground italic">
+            <span className="text-xs text-muted-foreground italic">
               Admin bypasses custom roles
             </span>
           );
@@ -125,14 +128,14 @@ export function UsersClient() {
             onValueChange={(val) => handleRoleChange(user.id, val || "none")}
             disabled={updateRole.isPending}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8">
               <SelectValue placeholder="Select a role">
                 {user.roleId && user.roleId !== "none"
                   ? roles?.find((r) => r.id === user.roleId)?.name || user.assignedRole?.name || user.roleId
                   : "No Custom Role"}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-2xl">
               <SelectItem value="none">No Custom Role</SelectItem>
               {roles?.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
@@ -148,43 +151,48 @@ export function UsersClient() {
 
   if (loadingUsers || loadingRoles) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-32 rounded-xl mb-2" />
+            <Skeleton className="h-4 w-60 rounded-xl" />
+          </div>
+          <Skeleton className="h-9 w-28 rounded-full" />
+        </div>
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
-      <div className="flex items-center justify-between space-y-2">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Staff</h2>
-          <p className="text-muted-foreground">
-            Manage your team members and assign custom roles. Storefront
-            customers live on the Customers page.
+          <h1 className="text-3xl font-bold tracking-tight">Staff</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage team members and assign custom roles
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        </div>
+        <Button onClick={() => setCreateOpen(true)} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
+          <Plus className="h-4 w-4" />
+          Add User
+        </Button>
       </div>
 
-      <div className="flex items-center space-x-2 py-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search users..."
-            className="pl-8"
+            className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-      </div>
 
-      <div>
         <DataTable
           columns={columns}
           data={filteredUsers}

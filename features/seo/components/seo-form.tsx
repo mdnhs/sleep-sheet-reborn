@@ -69,15 +69,13 @@ export function SeoForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-primary" />
-              <CardTitle>General SEO</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="text-base font-bold tracking-tight">General SEO</h2>
+          </div>
+          <div className="space-y-4">
             <FormField
               control={form.control}
               name="seo_site_name"
@@ -134,17 +132,15 @@ export function SeoForm() {
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-primary" />
-              <CardTitle>Search Engine Verification</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="text-base font-bold tracking-tight">Search Engine Verification</h2>
+          </div>
+          <div className="space-y-4">
             <FormField
               control={form.control}
               name="seo_google_verification"
@@ -173,17 +169,15 @@ export function SeoForm() {
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              <CardTitle>Social &amp; Branding</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="text-base font-bold tracking-tight">Social &amp; Branding</h2>
+          </div>
+          <div className="space-y-4">
             <FormField
               control={form.control}
               name="seo_twitter_handle"
@@ -198,22 +192,20 @@ export function SeoForm() {
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
-              <CardTitle>AI Crawlers</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="text-base font-bold tracking-tight">AI Crawlers</h2>
+          </div>
+          <div>
             <FormField
               control={form.control}
               name="seo_robots_ai_block"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border px-4 py-3">
+                <FormItem className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">Block AI Crawlers</span>
                     <span className="text-xs text-muted-foreground">
@@ -226,13 +218,15 @@ export function SeoForm() {
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Button type="submit" disabled={isPending} className="rounded-xl">
-          <Shield className="h-4 w-4 mr-2" />
-          {isPending ? "Saving..." : "Save SEO Settings"}
-        </Button>
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={isPending} className="rounded-full text-xs font-semibold gap-2">
+            <Shield className="h-4 w-4" />
+            {isPending ? "Saving..." : "Save SEO Settings"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

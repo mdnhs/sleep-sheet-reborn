@@ -118,7 +118,7 @@ function SaveSectionButton({
 
   return (
     <div className="flex justify-end">
-      <Button type="button" onClick={handleSave} disabled={isPending} className="gap-2">
+      <Button type="button" onClick={handleSave} disabled={isPending} className="gap-2 rounded-full text-xs font-semibold">
         {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         Save Changes
       </Button>
@@ -181,11 +181,9 @@ export function WebsiteForm() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -193,64 +191,62 @@ export function WebsiteForm() {
     <Form {...form}>
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         <Tabs defaultValue="header">
-          <TabsList className="flex flex-wrap h-auto w-fit gap-1">
-            <TabsTrigger value="header">Header</TabsTrigger>
-            <TabsTrigger value="hero">Hero Slides</TabsTrigger>
-            <TabsTrigger value="promo">Promo Banners</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
-            <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
-            <TabsTrigger value="footer">Footer</TabsTrigger>
+          <TabsList className="flex flex-nowrap items-center h-9 w-max sm:w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full mb-4 overflow-x-auto">
+            <TabsTrigger value="header" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Header</TabsTrigger>
+            <TabsTrigger value="hero" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Hero Slides</TabsTrigger>
+            <TabsTrigger value="promo" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Promo Banners</TabsTrigger>
+            <TabsTrigger value="features" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Features</TabsTrigger>
+            <TabsTrigger value="newsletter" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Newsletter</TabsTrigger>
+            <TabsTrigger value="footer" className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Footer</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="header" className="space-y-6 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Header</CardTitle>
-                <CardDescription>Site name and logo displayed in the navigation bar.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="site_name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{FIELD_LABELS.site_name}</FormLabel>
-                      <FormControl><Input placeholder="Sleep Sheet" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="logo_url" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{FIELD_LABELS.logo_url}</FormLabel>
-                      <FormControl><Input placeholder="/logo.png" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="header" className="space-y-6">
+            <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+              <div>
+                <h2 className="text-base font-bold tracking-tight">Header Settings</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Site name and logo displayed in the navigation bar.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="site_name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{FIELD_LABELS.site_name}</FormLabel>
+                    <FormControl><Input placeholder="Sleep Sheet" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="logo_url" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{FIELD_LABELS.logo_url}</FormLabel>
+                    <FormControl><Input placeholder="/logo.png" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
             <SaveSectionButton form={form} section="header" />
           </TabsContent>
 
-          <TabsContent value="hero" className="space-y-6 mt-4">
+          <TabsContent value="hero" className="space-y-6">
             <HeroSlidesManager />
             <SaveSectionButton form={form} section="hero" />
           </TabsContent>
 
-          <TabsContent value="promo" className="space-y-6 mt-4">
+          <TabsContent value="promo" className="space-y-6">
             <PromoBannersManager />
             <SaveSectionButton form={form} section="promo" />
           </TabsContent>
 
-          <TabsContent value="features" className="space-y-6 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Stats / Features</CardTitle>
-                <CardDescription>Feature cards shown below the hero section.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          <TabsContent value="features" className="space-y-6">
+            <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-6">
+              <div>
+                <h2 className="text-base font-bold tracking-tight">Stats / Features</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Feature cards shown below the hero section.</p>
+              </div>
+              <div className="space-y-6">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i}>
                     {i > 1 && <Separator className="mb-6" />}
-                    <p className="text-sm font-medium text-muted-foreground mb-3">Feature {i}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Feature {i}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name={`feature_${i}_title` as keyof WebsiteFormValues} render={({ field }) => (
                         <FormItem>
@@ -269,46 +265,44 @@ export function WebsiteForm() {
                     </div>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             <SaveSectionButton form={form} section="features" />
           </TabsContent>
 
-          <TabsContent value="newsletter" className="space-y-6 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Newsletter</CardTitle>
-                <CardDescription>Subscription section text on the homepage.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="newsletter_title" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{FIELD_LABELS.newsletter_title}</FormLabel>
-                      <FormControl><Input placeholder="Join the inner circle" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="newsletter_subtitle" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{FIELD_LABELS.newsletter_subtitle}</FormLabel>
-                      <FormControl><Input placeholder="Subscribe for early access..." {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="newsletter" className="space-y-6">
+            <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+              <div>
+                <h2 className="text-base font-bold tracking-tight">Newsletter</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Subscription section text on the homepage.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="newsletter_title" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{FIELD_LABELS.newsletter_title}</FormLabel>
+                    <FormControl><Input placeholder="Join the inner circle" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="newsletter_subtitle" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{FIELD_LABELS.newsletter_subtitle}</FormLabel>
+                    <FormControl><Input placeholder="Subscribe for early access..." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
             <SaveSectionButton form={form} section="newsletter" />
           </TabsContent>
 
-          <TabsContent value="footer" className="space-y-6 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Footer</CardTitle>
-                <CardDescription>Brand info, contact details, and social links displayed in the footer.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <TabsContent value="footer" className="space-y-6">
+            <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+              <div>
+                <h2 className="text-base font-bold tracking-tight">Footer</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Brand info, contact details, and social links displayed in the footer.</p>
+              </div>
+              <div className="space-y-4">
                 <FormField control={form.control} name="footer_brand_desc" render={({ field }) => (
                   <FormItem>
                     <FormLabel>{FIELD_LABELS.footer_brand_desc}</FormLabel>
@@ -333,7 +327,7 @@ export function WebsiteForm() {
                   )} />
                 </div>
                 <Separator />
-                <p className="text-sm font-medium text-muted-foreground">Social Links</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Social Links</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="social_facebook" render={({ field }) => (
                     <FormItem>
@@ -372,8 +366,8 @@ export function WebsiteForm() {
                     <FormMessage />
                   </FormItem>
                 )} />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             <SaveSectionButton form={form} section="footer" />
           </TabsContent>
         </Tabs>

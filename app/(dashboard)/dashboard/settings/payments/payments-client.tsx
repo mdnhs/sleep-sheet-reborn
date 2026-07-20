@@ -7,38 +7,33 @@ import { CreditCard, Store } from "lucide-react";
 
 export function PaymentsSettings() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-2xl space-y-8">
-      <div className="flex items-center gap-3 mb-6">
-        <CreditCard className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Payment Methods</h1>
-          <p className="text-sm text-muted-foreground">
-            Enable or disable payment options at checkout
-          </p>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Payment Methods</h1>
+        <p className="text-muted-foreground text-sm">
+          Enable or disable payment options at checkout and point of sale
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Checkout Payment Methods</h2>
+          <PaymentsForm />
+        </div>
+
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2">
+              <Store className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              POS Payment Methods
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Cash is always available. Toggle Card and Due on/off. Add custom methods like BKash, Nagad, etc.
+            </p>
+          </div>
+          <PosPaymentMethods />
         </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Checkout Payment Methods</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PaymentsForm />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Store className="h-5 w-5 text-primary" />
-            <CardTitle>POS Payment Methods</CardTitle>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Cash is always available. Toggle Card and Due on/off. Add custom methods like BKash, Nagad, etc.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <PosPaymentMethods />
-        </CardContent>
-      </Card>
     </div>
   );
 }

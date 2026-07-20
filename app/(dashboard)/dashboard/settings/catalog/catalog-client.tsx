@@ -86,140 +86,136 @@ export function CatalogSettings() {
   }, [baseUrl]);
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Database className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Meta Catalog</h1>
-          <p className="text-sm text-muted-foreground">
-            Product feed for Facebook / Meta Commerce Catalog
-          </p>
-        </div>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Meta Catalog</h1>
+        <p className="text-muted-foreground text-sm">
+          Product feed for Facebook / Meta Commerce Catalog
+        </p>
       </div>
 
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Feed URLs</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Feed URLs</h2>
+          <div className="space-y-3">
             {FORMATS.map((format) => (
               <div
                 key={format}
-                className="flex items-center gap-3 rounded-lg border px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 px-4 py-3"
               >
-                <Badge variant="secondary" className="shrink-0 font-mono text-xs">
+                <Badge variant="secondary" className="shrink-0 font-mono text-xs font-semibold rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-none">
                   {LABELS[format]}
                 </Badge>
-                <code className="flex-1 text-sm truncate font-mono text-muted-foreground">
+                <code className="flex-1 text-xs truncate font-mono text-muted-foreground">
                   {baseUrl ? feedUrl(format) : "Loading..."}
                 </code>
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
                   onClick={() => handleCopy(format)}
-                  className="shrink-0"
+                  className="shrink-0 h-8 w-8 rounded-full"
                 >
                   {copied === format ? (
-                    <Check className="h-4 w-4 text-green-500" />
+                    <Check className="h-4 w-4 text-emerald-500" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Preview</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePreview(previewTab)}
-                disabled={previewLoading || !baseUrl}
-                className="gap-2"
-              >
-                {previewLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                {previewLoading ? "Loading..." : "Load Preview"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs
-              value={previewTab}
-              onValueChange={(v) => {
-                setPreviewTab(v as FeedFormat);
-                setPreview(null);
-                setPreviewMeta(null);
-              }}
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold tracking-tight">Preview</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePreview(previewTab)}
+              disabled={previewLoading || !baseUrl}
+              className="gap-2 rounded-full text-xs font-semibold border bg-slate-50 dark:bg-muted/40"
             >
-              <TabsList className="mb-4">
-                {FORMATS.map((f) => (
-                  <TabsTrigger key={f} value={f}>
-                    {LABELS[f]}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              {previewLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {previewLoading ? "Loading..." : "Load Preview"}
+            </Button>
+          </div>
 
-              {FORMATS.map((format) => (
-                <TabsContent key={format} value={format}>
-                  {!preview ? (
-                    previewLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center rounded-lg border border-dashed py-12 text-sm text-muted-foreground">
-                        Click &quot;Load Preview&quot; to fetch the {LABELS[format]} feed
-                      </div>
-                    )
-                  ) : previewMeta && previewMeta.format === format ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>
-                          <strong className="font-medium text-foreground">
-                            {previewMeta.totalLines.toLocaleString()}
-                          </strong>{" "}
-                          {previewMeta.totalLines === 1 ? "line" : "lines"}
-                        </span>
-                        <span>
-                          <strong className="font-medium text-foreground">
-                            {formatSize(previewMeta.byteSize)}
-                          </strong>{" "}
-                          total
-                        </span>
-                        {previewMeta.totalLines > PREVIEW_LINES && (
-                          <Badge variant="outline" className="text-xs">
-                            Showing first {PREVIEW_LINES} lines
-                          </Badge>
-                        )}
-                      </div>
-                      <pre className="max-h-96 overflow-auto rounded-lg border bg-muted p-4 text-xs font-mono leading-relaxed">
-                        {preview}
-                        {previewMeta.totalLines > PREVIEW_LINES && (
-                          <span className="block text-muted-foreground italic pt-2 border-t mt-2">
-                            ... {previewMeta.totalLines - PREVIEW_LINES} more lines
-                          </span>
-                        )}
-                      </pre>
+          <Tabs
+            value={previewTab}
+            onValueChange={(v) => {
+              setPreviewTab(v as FeedFormat);
+              setPreview(null);
+              setPreviewMeta(null);
+            }}
+          >
+            <TabsList className="flex flex-nowrap items-center h-9 w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full mb-4">
+              {FORMATS.map((f) => (
+                <TabsTrigger
+                  key={f}
+                  value={f}
+                  className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                >
+                  {LABELS[f]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {FORMATS.map((format) => (
+              <TabsContent key={format} value={format}>
+                {!preview ? (
+                  previewLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center rounded-lg border border-dashed py-12 text-sm text-muted-foreground">
-                      Switch tab and load preview
+                    <div className="flex items-center justify-center rounded-2xl border border-dashed py-12 text-xs font-medium text-muted-foreground">
+                      Click &quot;Load Preview&quot; to fetch the {LABELS[format]} feed
                     </div>
-                  )}
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-        </Card>
+                  )
+                ) : previewMeta && previewMeta.format === format ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>
+                        <strong className="font-semibold text-foreground">
+                          {previewMeta.totalLines.toLocaleString()}
+                        </strong>{" "}
+                        {previewMeta.totalLines === 1 ? "line" : "lines"}
+                      </span>
+                      <span>
+                        <strong className="font-semibold text-foreground">
+                          {formatSize(previewMeta.byteSize)}
+                        </strong>{" "}
+                        total
+                      </span>
+                      {previewMeta.totalLines > PREVIEW_LINES && (
+                        <Badge variant="outline" className="text-xs rounded-full">
+                          Showing first {PREVIEW_LINES} lines
+                        </Badge>
+                      )}
+                    </div>
+                    <pre className="max-h-96 overflow-auto rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-muted/40 p-4 text-xs font-mono leading-relaxed">
+                      {preview}
+                      {previewMeta.totalLines > PREVIEW_LINES && (
+                        <span className="block text-muted-foreground italic pt-2 border-t mt-2">
+                          ... {previewMeta.totalLines - PREVIEW_LINES} more lines
+                        </span>
+                      )}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-2xl border border-dashed py-12 text-xs font-medium text-muted-foreground">
+                    Switch tab and load preview
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
       </div>
     </div>
   );

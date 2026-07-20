@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, History, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -130,89 +131,101 @@ export function ActivityClient() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Activity Log</h2>
-          <p className="text-muted-foreground">
-            Every action and error in the dashboard, with time and IP address.
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Activity Log</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">
+            Audit trail of dashboard user actions and system events
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search user, action, IP..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
+      </div>
+
+      <div className="grid gap-3 sm:gap-4 grid-cols-2">
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">
+              Total Events
+            </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-blue-50 dark:bg-blue-950/40 shrink-0">
+              <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <div className="mt-2.5 mb-1">
+            <p className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight">{total.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">
+              System Errors
+            </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-red-50 dark:bg-red-950/40 shrink-0">
+              <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+          <div className="mt-2.5 mb-1">
+            <p className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-red-600 dark:text-red-400">{errorTotal.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <Tabs
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value as "ALL" | "ERROR");
               setPagination((p) => ({ ...p, pageIndex: 0 }));
             }}
-            className="pl-9"
+            className="w-fit"
+          >
+            <TabsList className="flex flex-nowrap items-center h-9 w-max sm:w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full">
+              <TabsTrigger
+                value="ALL"
+                className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              >
+                All Events
+              </TabsTrigger>
+              <TabsTrigger
+                value="ERROR"
+                className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                Errors ({errorTotal})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search user, action, IP..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPagination((p) => ({ ...p, pageIndex: 0 }));
+              }}
+              className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
+            />
+          </div>
+        </div>
+
+        {isLoading ? (
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={logs}
+            manualPagination
+            pageCount={totalPages}
+            pagination={pagination}
+            onPaginationChange={handlePaginationChange}
+            onRowClick={(row) => setSelectedLog(row)}
           />
-        </div>
+        )}
       </div>
-
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <History className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Errors</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{errorTotal}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs
-        value={statusFilter}
-        onValueChange={(value) => {
-          setStatusFilter(value as "ALL" | "ERROR");
-          setPagination((p) => ({ ...p, pageIndex: 0 }));
-        }}
-        className="w-full"
-      >
-        <TabsList className="flex flex-nowrap h-auto w-max sm:w-fit gap-1 bg-muted p-1 rounded-xl">
-          <TabsTrigger
-            value="ALL"
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
-          >
-            All
-          </TabsTrigger>
-          <TabsTrigger
-            value="ERROR"
-            className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5"
-          >
-            <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-            Errors ({errorTotal})
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={logs}
-          manualPagination
-          pageCount={totalPages}
-          pagination={pagination}
-          onPaginationChange={handlePaginationChange}
-          onRowClick={(row) => setSelectedLog(row)}
-        />
-      )}
 
       <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>
         <DialogContent className="sm:max-w-lg">

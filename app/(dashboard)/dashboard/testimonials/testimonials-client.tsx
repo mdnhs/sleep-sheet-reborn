@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { MoreVertical, Search, Trash2, Loader2, Star, ImageIcon, Plus, X, ImagePlus } from "lucide-react"
@@ -325,13 +326,17 @@ export default function TestimonialsClientPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto space-y-4 py-4 px-4">
-        <h1 className="text-2xl font-bold">Testimonials</h1>
-        <div className="flex items-center justify-between py-4 gap-4">
-          <Input placeholder="Search testimonials..." disabled className="max-w-sm" />
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-40 rounded-xl mb-2" />
+            <Skeleton className="h-4 w-64 rounded-xl" />
+          </div>
+          <Skeleton className="h-9 w-36 rounded-full" />
         </div>
-        <div className="rounded-xl border p-12 text-center text-muted-foreground">
-          Loading testimonials...
+        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
+          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       </div>
     )
