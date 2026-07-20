@@ -248,7 +248,12 @@ function CategoriesClientPage() {
   }
 
   const generateSlug = (name: string) =>
-    name.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, "-").trim()
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
 
   const parentMap = useMemo(() => new Map(categories.map((c) => [c.value, c.label])), [categories])
   const subCounts = useMemo(() => {

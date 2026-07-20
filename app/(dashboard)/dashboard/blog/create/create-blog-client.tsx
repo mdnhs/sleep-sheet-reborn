@@ -1,13 +1,13 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FileUpload } from '@/features/dashboard/components/file-upload';
 import { useCreatePost } from '@/features/blog/api/use-create-post';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { TiptapEditor } from '@/components/tiptap-editor';
 import { toast } from 'sonner';
+import { generateSlug } from '@/lib/utils';
 
 export default function CreateBlogClient() {
   const router = useRouter();
@@ -19,6 +19,11 @@ export default function CreateBlogClient() {
   const [coverImage, setCoverImage] = useState<File | string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+
+  const handleTitleChange = (val: string) => {
+    setTitle(val);
+    setSlug(generateSlug(val));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +50,7 @@ export default function CreateBlogClient() {
 
     createPost({
       title,
-      slug,
+      slug: slug || generateSlug(title),
       summary,
       content: content || '',
       coverImage: finalImage,
@@ -58,50 +63,91 @@ export default function CreateBlogClient() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Create Blog Post</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Post Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Title</label>
-              <Input value={title} onChange={e => setTitle(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Slug</label>
-              <Input value={slug} onChange={e => setSlug(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Summary</label>
-              <Input value={summary} onChange={e => setSummary(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Cover Image</label>
-              <FileUpload 
-                value={coverImage ? [coverImage] : []}
-                onChange={(urls) => setCoverImage(urls[0] || '')}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Content</label>
-              <TiptapEditor value={content || ''} onChange={setContent} />
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <input type="checkbox" checked={isPublished} onChange={e => setIsPublished(e.target.checked)} />
-              <label className="text-sm font-semibold">Publish immediately</label>
-            </div>
-            <div className="flex justify-end gap-4 mt-6">
-              <Button type="button" variant="outline" onClick={() => router.push('/dashboard/blog')}>Cancel</Button>
-              <Button type="submit" disabled={isPending || isUploading}>
-                {isUploading ? 'Uploading...' : isPending ? 'Saving...' : 'Save Post'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 max-w-5xl mx-auto">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Create Blog Post</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm">Publish new article or announcement</p>
+      </div>
+
+      <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Title</label>
+            <Input
+              placeholder="e.g. 10 Tips for Better Sleep Quality"
+              value={title}
+              onChange={e => handleTitleChange(e.target.value)}
+              className="rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold h-10 px-4"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">URL Slug</label>
+            <Input
+              placeholder="10-tips-for-better-sleep-quality"
+              value={slug}
+              onChange={e => setSlug(e.target.value)}
+              className="rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-mono h-10 px-4"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Summary (Optional)</label>
+            <Input
+              placeholder="Brief overview of the article..."
+              value={summary}
+              onChange={e => setSummary(e.target.value)}
+              className="rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold h-10 px-4"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Cover Image</label>
+            <FileUpload 
+              value={coverImage ? [coverImage] : []}
+              onChange={(urls) => setCoverImage(urls[0] || '')}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Content</label>
+            <TiptapEditor value={content || ''} onChange={setContent} />
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="isPublished"
+              checked={isPublished}
+              onChange={e => setIsPublished(e.target.checked)}
+              className="rounded border-input h-4 w-4"
+            />
+            <label htmlFor="isPublished" className="text-xs font-semibold cursor-pointer select-none">
+              Publish immediately
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/dashboard/blog')}
+              className="rounded-full text-xs font-semibold px-5 h-9"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending || isUploading}
+              className="rounded-full text-xs font-semibold px-6 h-9 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700"
+            >
+              {isUploading ? 'Uploading...' : isPending ? 'Saving...' : 'Save Post'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

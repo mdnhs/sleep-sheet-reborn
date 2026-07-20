@@ -5,6 +5,7 @@ export const metadata = {
   title: 'Update Blog Post',
 };
 
-export default function UpdateBlogPage({ params }: { params: { id: string } }) {
-  return <UpdateBlogClient id={params.id} />;
+export default async function UpdateBlogPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <UpdateBlogClient id={id} />;
 }

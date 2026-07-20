@@ -21,11 +21,13 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { MoreVertical, Plus, Search, Trash2, Loader2, EyeOff, CheckCircle } from "lucide-react"
 import { useGetPosts } from "@/features/blog/api/use-get-posts"
 import { useDeletePost } from "@/features/blog/api/use-delete-post"
 import { useBulkDeletePosts } from "@/features/blog/api/use-bulk-delete-posts"
+import { useTogglePublish } from "@/features/blog/api/use-toggle-publish"
 import Link from "next/link"
 
 export type BlogColumn = {
@@ -41,6 +43,11 @@ export type BlogColumn = {
 export default function BlogClientPage() {
   const { mutate: deletePost, isPending: isDeleting } = useDeletePost()
   const { mutate: bulkDelete, isPending: isBulkDeleting } = useBulkDeletePosts()
+  const {
+    mutate: togglePublish,
+    isPending: isTogglingPublish,
+    variables: togglingVariables,
+  } = useTogglePublish()
   const [postToDelete, setPostToDelete] = useState<BlogColumn | null>(null)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
@@ -121,18 +128,45 @@ export default function BlogClientPage() {
     {
       accessorKey: "isPublished",
       header: "Status",
-      cell: ({ row }) =>
-        row.original.isPublished ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-            <CheckCircle className="h-3 w-3" />
-            Published
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-            <EyeOff className="h-3 w-3" />
-            Draft
-          </span>
-        ),
+      cell: ({ row }) => {
+        const post = row.original
+        // The mutation is shared across rows, so scope the pending state to the row
+        // actually in flight — otherwise every switch would disable at once.
+        const isToggling = isTogglingPublish && togglingVariables?.id === post.id
+
+        return (
+          <div className="flex items-center gap-2">
+            <Switch
+              size="sm"
+              checked={post.isPublished}
+              disabled={isToggling}
+              onCheckedChange={(checked: boolean) =>
+                togglePublish({ id: post.id, isPublished: checked })
+              }
+              aria-label={
+                post.isPublished
+                  ? `Unpublish ${post.title}`
+                  : `Publish ${post.title}`
+              }
+            />
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap",
+                post.isPublished ? "text-green-600" : "text-amber-600"
+              )}
+            >
+              {isToggling ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : post.isPublished ? (
+                <CheckCircle className="h-3 w-3" />
+              ) : (
+                <EyeOff className="h-3 w-3" />
+              )}
+              {post.isPublished ? "Published" : "Draft"}
+            </span>
+          </div>
+        )
+      },
     },
     {
       accessorKey: "createdAt",

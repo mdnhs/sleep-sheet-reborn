@@ -179,3 +179,45 @@
   animation: cta-wiggle 2.4s ease-in-out infinite;
   transform-origin: center;
 }
+
+/* Tiptap & Blog Prose Table Styling */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+  font-size: 0.9em;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e2e8f0);
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-border, #e2e8f0);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.prose th {
+  background-color: var(--color-muted, #f8fafc);
+  font-weight: 700;
+  color: var(--color-foreground, #0f172a);
+}
+
+.prose tr:nth-child(even) td {
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+.dark .prose tr:nth-child(even) td {
+  background-color: rgba(30, 41, 59, 0.3);
+}
+
+.tiptap .selectedCell:after {
+  background: rgba(99, 102, 241, 0.15);
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}

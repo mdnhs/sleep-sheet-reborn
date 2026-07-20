@@ -15,6 +15,47 @@ export function toTitleCase(input: string): string {
     .join(' ');
 }
 
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function extractTags(title: string, content?: string): string[] {
+  const genericTags = [
+    "Best Comforters in Bangladesh",
+    "Best Price Comforters in BD",
+    "Sleep Sheet Bangladesh",
+    "Premium Bedding Set BD",
+    "Home Textile Bangladesh",
+  ];
+
+  if (!title) return genericTags;
+
+  const stopWords = new Set([
+    "a", "an", "the", "and", "or", "but", "for", "nor", "on", "at", "to", "from",
+    "by", "with", "in", "out", "over", "under", "this", "that", "these", "those",
+    "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do",
+    "does", "did", "how", "what", "why", "where", "when", "who", "which", "tips",
+    "guide", "best", "top", "এই", "এবং", "জন্য", "করা", "হলে", "কি", "না", "সেরা",
+    "সম্পূর্ণ", "গাইড", "কেনার", "উপভোগ", "করুন", "আরামদায়ক", "কথা", "সম্পর্কে",
+  ]);
+
+  const words = title
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w.toLowerCase()));
+
+  const uniqueTitleTags = Array.from(new Set(words))
+    .slice(0, 4)
+    .map((t) => t.charAt(0).toUpperCase() + t.slice(1));
+
+  return Array.from(new Set([...uniqueTitleTags, ...genericTags]));
+}
+
 export const sortOptions = [
   { value: "newest", label: "Newest" },
   { value: "featured", label: "Featured" },

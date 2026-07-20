@@ -89,7 +89,7 @@ const app = new Hono()
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .where(eq(posts.slug, slug))
+    .where(or(eq(posts.slug, slug), eq(posts.id, slug)))
     .limit(1);
 
     if (!postData.length) {
@@ -202,6 +202,41 @@ const app = new Hono()
       console.error("Update post error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return c.json({ success: false, message: 'Failed to update post', error: errorMessage }, 500);
+    }
+  }
+)
+
+// Toggle publish status
+// Deliberately separate from PUT /:id — a status flip should not require (and must
+// not rewrite) the post body, which would let a stale list row clobber newer content.
+.patch(
+  '/:id/publish',
+  sessionMiddleware,
+  zValidator('json', z.object({ isPublished: z.boolean() })),
+  async (c) => {
+    try {
+      const user = c.get("user");
+      if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+        return c.json({ success: false, error: 'Unauthorized' }, 403);
+      }
+
+      const id = c.req.param('id');
+      const { isPublished } = c.req.valid('json');
+
+      const updatedPost = await db.update(posts)
+        .set({ isPublished, updatedAt: new Date() })
+        .where(eq(posts.id, id))
+        .returning({ id: posts.id, isPublished: posts.isPublished });
+
+      if (!updatedPost.length) {
+        return c.json({ success: false, message: 'Post not found' }, 404);
+      }
+
+      return c.json({ success: true, post: updatedPost[0] });
+    } catch (error) {
+      console.error("Toggle publish error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return c.json({ success: false, message: 'Failed to update publish status', error: errorMessage }, 500);
     }
   }
 )

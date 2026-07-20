@@ -1,3 +1,4 @@
+import BlogCarousel from "@/components/home/blog-carousel";
 import Categories from "@/components/home/categories";
 import FeaturedProduct from "@/components/home/featured-product";
 import Hero from "@/components/home/hero";
@@ -43,6 +44,7 @@ function Page() {
       <NarrowBanner />
       <FeaturedProduct />
       <SubcategoryProducts />
+      <BlogCarousel />
       <SeoContent />
     </>
   );
