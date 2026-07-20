@@ -7,6 +7,12 @@ export interface TrafficEvent {
   path: string;
   label: string | null;
   meta: Record<string, string | number | boolean> | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  browser?: string | null;
+  device?: string | null;
+  country?: string | null;
+  city?: string | null;
   createdAt: string;
 }
 

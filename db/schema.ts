@@ -624,6 +624,12 @@ export const trafficEvents = pgTable("traffic_events", {
   path: text("path").notNull(),
   label: text("label"),
   meta: json("meta").$type<Record<string, string | number | boolean>>(),
+  ip: text("ip"),
+  userAgent: text("userAgent"),
+  browser: text("browser"),
+  device: text("device"),
+  country: text("country"),
+  city: text("city"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 

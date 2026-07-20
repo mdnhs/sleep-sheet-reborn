@@ -7,6 +7,8 @@ import { z } from "zod";
 import { desc, gte, sql } from "drizzle-orm";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
+import { parseUserAgent } from "@/lib/user-agent-parser";
+
 const app = new Hono()
   .post(
     "/",
@@ -25,12 +27,34 @@ const app = new Hono()
       const body = c.req.valid("json");
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+      // Extract customer headers
+      const rawIp =
+        c.req.header("cf-connecting-ip") ||
+        c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+        c.req.header("x-real-ip") ||
+        "127.0.0.1";
+
+      const userAgent = c.req.header("user-agent") || "";
+      const country =
+        c.req.header("cf-ipcountry") ||
+        c.req.header("x-vercel-ip-country") ||
+        null;
+      const city = c.req.header("x-vercel-ip-city") || null;
+
+      const { browser, device } = parseUserAgent(userAgent);
+
       await db.insert(trafficEvents).values({
         id,
         type: body.type,
         path: body.path,
         label: body.label ?? null,
         meta: body.meta ?? null,
+        ip: rawIp,
+        userAgent: userAgent || null,
+        browser: browser || null,
+        device: device || null,
+        country: country || null,
+        city: city || null,
       });
 
       return c.json({ success: true });

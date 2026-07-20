@@ -236,10 +236,78 @@ export default function AnalysisClientPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Browsers & Devices</h2>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          ) : stats.topBrowsers.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
+                  <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Browser / System</TableHead>
+                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Sessions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.topBrowsers.map(([bName, count]) => (
+                    <TableRow key={bName} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
+                      <TableCell className="font-medium text-xs truncate max-w-[250px]">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                          {bName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-xs">{count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Locations & IP Regions</h2>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          ) : stats.topLocations.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
+                  <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Location / IP</TableHead>
+                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Hits</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.topLocations.map(([loc, count]) => (
+                    <TableRow key={loc} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
+                      <TableCell className="font-medium text-xs truncate max-w-[250px]">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          {loc}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-xs">{count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
         <h2 className="text-base font-bold tracking-tight flex items-center gap-2">
           <IconClock className="h-4 w-4" />
-          Event Feed
+          Real-Time Event Feed with Customer Metadata
         </h2>
         {isLoading ? (
           <Skeleton className="h-48 w-full rounded-2xl" />
@@ -254,7 +322,9 @@ export default function AnalysisClientPage() {
                 <TableRow>
                   <TableHead className="font-bold text-slate-700 dark:text-slate-300">Event</TableHead>
                   <TableHead className="font-bold text-slate-700 dark:text-slate-300">Page</TableHead>
-                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Label</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">IP Address</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Browser & Device</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Location</TableHead>
                   <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Time</TableHead>
                 </TableRow>
               </TableHeader>
@@ -269,13 +339,26 @@ export default function AnalysisClientPage() {
                         {EVENT_LABELS[e.type] || e.type}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
+                    <TableCell className="text-xs text-muted-foreground truncate max-w-[180px]">
                       {e.path}
                     </TableCell>
-                    <TableCell className="text-xs truncate max-w-[150px]">
-                      {e.label || "—"}
+                    <TableCell className="text-xs font-mono font-medium text-slate-700 dark:text-slate-300">
+                      {e.ip || "127.0.0.1"}
                     </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-xs font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className="rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 border-none">
+                          {e.device || "Desktop"}
+                        </Badge>
+                        <span className="text-slate-600 dark:text-slate-300 truncate max-w-[120px]">
+                          {e.browser || "Unknown"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground truncate max-w-[140px]">
+                      {e.city && e.country ? `${e.city}, ${e.country}` : e.country || "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap font-mono">
                       {format(new Date(e.createdAt), "MMM d, HH:mm:ss")}
                     </TableCell>
                   </TableRow>
