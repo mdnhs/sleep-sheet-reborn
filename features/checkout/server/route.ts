@@ -22,6 +22,20 @@ async function generateOrderNumber(): Promise<string> {
   return `ORD-${dd}${mm}${yy}-${randomSuffix}`;
 }
 
+/**
+ * True when an error is a Postgres unique-constraint violation (SQLSTATE
+ * 23505). Used to turn a losing concurrent insert on `orders.idempotencyKey`
+ * into "return the order the winning request already created" instead of a 500.
+ */
+function isUniqueViolation(err: unknown): boolean {
+  const e = err as { code?: string; cause?: { code?: string }; message?: string };
+  return (
+    e?.code === "23505" ||
+    e?.cause?.code === "23505" ||
+    /duplicate key|unique constraint/i.test(e?.message ?? "")
+  );
+}
+
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
   // Card payments are hard-disabled here regardless of the
   // payment_method_card setting: there is no real payment gateway wired up,
@@ -38,7 +52,29 @@ const app = new Hono()
 .post("/", sessionMiddleware, async (c) => {
   const user = c.get("user");
 
-  const { shippingInfo, paymentInfo, guestItems } = await c.req.json();
+  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey } = await c.req.json();
+
+  // Order-creation idempotency key: one UUID per checkout attempt, generated
+  // client-side and stored in sessionStorage, so a double-click, a slow-network
+  // re-click, or a back-then-resubmit reuses the SAME key. If an order already
+  // exists for this key, return it instead of creating a second row. The unique
+  // index on orders.idempotencyKey closes the remaining concurrent-burst race
+  // below (the losing insert is caught via isUniqueViolation).
+  const idempotencyKey: string | undefined =
+    typeof rawKey === "string" && rawKey.trim() ? rawKey.trim() : undefined;
+
+  if (idempotencyKey) {
+    const existing = await db.query.orders.findFirst({
+      where: eq(orders.idempotencyKey, idempotencyKey),
+    });
+    if (existing) {
+      return c.json({
+        message: "Order already placed",
+        order: existing,
+        orderId: existing.id,
+      });
+    }
+  }
 
   const selectedMethod = paymentInfo?.paymentMethod === "card" ? "card" : "cod";
   const methodEnabled = await isPaymentMethodEnabled(selectedMethod);
@@ -100,8 +136,9 @@ const app = new Hono()
         paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
         saleType: 'WEBSITE',
         note: shippingInfo.notes || null,
+        idempotencyKey: idempotencyKey ?? null,
       }).returning();
-      
+
       createdOrder = order;
 
       await db.insert(orderItems).values(
@@ -148,26 +185,24 @@ const app = new Hono()
         capiContextFromHeaders(c.req.raw.headers),
       );
 
+      // Purchase is reported to Meta only server-side (sendPurchaseEventOnce
+      // above), so the response no longer carries a Pixel payload.
       return c.json({
         message: "Order placed successfully",
         order: createdOrder,
         orderId: order.id,
-        // Everything the browser Pixel needs to fire a matching Purchase.
-        // Same event_id (purchase_<orderId>) as the CAPI event so Meta
-        // deduplicates the browser + server events into one conversion.
-        purchase: {
-          value: totalAmount,
-          currency: "BDT",
-          orderId: order.id,
-          contents: cartItemsForOrder.map((i) => ({
-            id: i.productId,
-            quantity: i.quantity,
-            item_price: i.price,
-          })),
-          numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
-        },
       });
     } catch (error) {
+      // Lost a concurrent insert race on the same idempotency key: the winning
+      // request already created the order, so return that instead of erroring.
+      if (idempotencyKey && isUniqueViolation(error)) {
+        const existing = await db.query.orders.findFirst({
+          where: eq(orders.idempotencyKey, idempotencyKey),
+        });
+        if (existing) {
+          return c.json({ message: "Order already placed", order: existing, orderId: existing.id });
+        }
+      }
       console.error("Error placing order:", error);
       return c.json({ message: "Error placing order" }, 500);
     }
@@ -223,6 +258,7 @@ const app = new Hono()
       paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
       saleType: 'WEBSITE',
       note: shippingInfo.notes || null,
+      idempotencyKey: idempotencyKey ?? null,
     }).returning();
 
     guestOrderId = order.id;
@@ -267,22 +303,23 @@ const app = new Hono()
       capiContextFromHeaders(c.req.raw.headers),
     );
 
+    // Purchase is reported to Meta only server-side (sendPurchaseEventOnce
+    // above), so the response no longer carries a Pixel payload.
     return c.json({
       message: "Order placed successfully",
       orderId: guestOrderId,
-      purchase: {
-        value: totalAmount,
-        currency: "BDT",
-        orderId: order.id,
-        contents: cartItemsForOrder.map((i) => ({
-          id: i.productId,
-          quantity: i.quantity,
-          item_price: i.price,
-        })),
-        numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
-      },
     });
   } catch (error) {
+    // Lost a concurrent insert race on the same idempotency key: the winning
+    // request already created the order, so return that instead of erroring.
+    if (idempotencyKey && isUniqueViolation(error)) {
+      const existing = await db.query.orders.findFirst({
+        where: eq(orders.idempotencyKey, idempotencyKey),
+      });
+      if (existing) {
+        return c.json({ message: "Order already placed", order: existing, orderId: existing.id });
+      }
+    }
     console.error("Error placing guest order:", error);
     return c.json({ message: "Error placing order" }, 500);
   }

@@ -277,6 +277,14 @@ export const orders = pgTable("orders", {
   // this order, so re-running the creation path (retries, re-processing, or
   // any future status-change hook) can never double-count the conversion.
   metaPurchaseEventSentAt: timestamp("metaPurchaseEventSentAt", { precision: 3 }),
+  // Idempotency guard at ORDER CREATION time. A client generates one UUID per
+  // checkout attempt (stored in sessionStorage) and sends it with the
+  // order-creation request. The unique index means two rapid/duplicate submits
+  // carrying the same key can never create two order rows: the first insert
+  // wins and the server returns the already-created order for the rest. NULL
+  // for orders created before this existed and for paths that don't supply a
+  // key (POS, etc.). Postgres allows many NULLs under a unique index.
+  idempotencyKey: text("idempotencyKey").unique(),
   // Refunds. `refundedAmount` accumulates across partial refunds (0 = none).
   // When it reaches `totalAmount` the order is fully refunded. `refundReason`
   // holds the most recent reason; per-refund history lives in the timeline.

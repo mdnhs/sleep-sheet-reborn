@@ -6,15 +6,10 @@ import {
   ShippingInformationFormValues
 } from "../schema";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
-import { usePixelTracking } from "@/lib/meta-pixel";
-
-interface PurchasePayload {
-  value: number;
-  currency: string;
-  orderId: string;
-  contents: { id: string; quantity: number; item_price: number }[];
-  numItems: number;
-}
+import {
+  getOrCreateCheckoutIdempotencyKey,
+  clearCheckoutIdempotencyKey,
+} from "@/lib/checkout-idempotency";
 
 interface useCheckoutProps {
   paymentInfo: Partial<PaymentInformationFormValues>;
@@ -27,7 +22,6 @@ export const UseCheckout = () => {
   const userItems = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   const clearGuestCart = useCartStore((state) => state.clearGuestCart);
-  const { track } = usePixelTracking();
 
   return useMutation({
     mutationFn: async ({
@@ -45,6 +39,9 @@ export const UseCheckout = () => {
           nameOnCard: paymentInfo?.nameOnCard,
         },
         guestItems: guestItems.length > 0 ? guestItems : undefined,
+        // Same key for every submit of this cart, so a duplicate submit returns
+        // the existing order instead of creating a second one.
+        idempotencyKey: getOrCreateCheckoutIdempotencyKey(),
       };
 
       const response = await client.api.checkout.$post({ json: payload });
@@ -61,39 +58,28 @@ export const UseCheckout = () => {
       clearCart();
       clearGuestCart();
       try { localStorage.removeItem("guest-cart"); } catch { /* ignore */ }
+      // Order is placed — retire this key so the customer's next checkout
+      // starts a fresh idempotency window.
+      clearCheckoutIdempotencyKey();
 
       const orderId =
         (data as { orderId?: string }).orderId ??
         (data as { order?: { id?: string } }).order?.id;
 
-      // Browser-side Purchase, fired here on the checkout page (not on the
-      // success page). It carries the same deterministic event_id as the
-      // server-side CAPI Purchase (`purchase_<orderId>`) so Meta deduplicates
-      // the browser + server events into a single conversion.
-      const purchase = (data as { purchase?: PurchasePayload }).purchase;
-      if (purchase?.orderId) {
-        track(
-          "Purchase",
-          {
-            value: purchase.value,
-            currency: purchase.currency,
-            order_id: purchase.orderId,
-            content_type: "product",
-            content_ids: purchase.contents.map((c) => c.id),
-            contents: purchase.contents.map((c) => ({
-              id: c.id,
-              quantity: c.quantity,
-              item_price: c.item_price,
-            })),
-            quantity: purchase.numItems,
-          },
-          { eventId: `purchase_${purchase.orderId}` },
-        );
-      }
+      // NOTE: Purchase is intentionally NOT tracked from the browser Pixel.
+      // It is reported to Meta ONLY server-side via the Conversions API
+      // (`sendPurchaseEventOnce` in features/checkout/server/route.ts), which
+      // is gated per-order by `orders.metaPurchaseEventSentAt` so a single
+      // order can never fire more than one Purchase. The browser Pixel fire
+      // was removed because it is not gated by any DB row — a success-page
+      // reload/revisit or a repeated onSuccess could fire it multiple times
+      // for one order, over-counting the conversion in Meta. All other Pixel
+      // events (PageView, ViewContent, AddToCart, InitiateCheckout) are
+      // unaffected and still fire client-side.
 
       if (orderId) {
-        // Brief delay so the Pixel beacon flushes before the full-page
-        // navigation to the success screen.
+        // Brief delay so the success toast and cart-clear settle before the
+        // full-page navigation to the success screen.
         setTimeout(() => {
           window.location.href = `/order-success?orderId=${orderId}&phone=${encodeURIComponent(variables.shippingInfo.phone)}`;
         }, 300);

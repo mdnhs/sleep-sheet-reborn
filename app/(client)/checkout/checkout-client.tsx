@@ -6,6 +6,7 @@ import { useCartStore } from "@/features/cart/state/use-cart-store";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { getOrCreateCheckoutIdempotencyKey } from "@/lib/checkout-idempotency";
 
 function CheckoutClinet() {
   const router = useRouter();
@@ -16,6 +17,9 @@ function CheckoutClinet() {
 
   useEffect(() => {
     setMounted(true);
+    // Establish the order-creation idempotency key once, when the checkout
+    // page loads, so every submit for this cart carries the same key.
+    getOrCreateCheckoutIdempotencyKey();
   }, []);
 
   if (!mounted) {
