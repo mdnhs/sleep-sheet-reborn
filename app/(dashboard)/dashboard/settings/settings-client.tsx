@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Mail, Globe, ArrowRight, Shield } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Globe, ArrowRight, Shield } from "lucide-react";
 
 const sections = [
   {
@@ -41,12 +41,6 @@ const sections = [
     description: "Manage Cloudinary API credentials for image uploads",
     href: "/dashboard/settings/cdn",
     icon: ImageIcon,
-  },
-  {
-    title: "SMTP",
-    description: "Manage Gmail SMTP credentials for transactional emails",
-    href: "/dashboard/settings/smtp",
-    icon: Mail,
   },
   {
     title: "Website",

@@ -162,6 +162,54 @@ const app = new Hono()
 
       return c.json(updated);
     }
+  )
+  // Admin-side password reset — the only self-service path (OTP-based
+  // forgot-password) was removed, so a user locked out or who forgot their
+  // password now needs a staff member with MANAGE_USERS to set a new one.
+  .patch(
+    "/:id/password",
+    sessionMiddleware,
+    zValidator(
+      "json",
+      z.object({
+        newPassword: z.string().min(6),
+      })
+    ),
+    async (c) => {
+      const user = c.get("user");
+      if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      const id = c.req.param("id");
+      const { newPassword } = c.req.valid("json");
+
+      const targetUser = await db.query.users.findFirst({ where: eq(users.id, id) });
+
+      if (!targetUser) {
+        return c.json({ error: "User not found" }, 404);
+      }
+
+      if (targetUser.email === process.env.SUPER_ADMIN_EMAIL) {
+        return c.json({ error: "Cannot reset password of super admin" }, 400);
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // A fresh password is also a legitimate reason to lift any lockout —
+      // otherwise a locked-out user with a brand new password would still
+      // have to wait out the timer.
+      await db.update(users)
+        .set({ password: hashedPassword, failedLoginAttempts: 0, lockedUntil: null })
+        .where(eq(users.id, id));
+
+      setActivityMeta(c, {
+        name: targetUser.name || targetUser.email,
+        changes: [{ label: "Password", to: "Reset by admin" }],
+      });
+
+      return c.json({ success: true });
+    }
   );
 
 export default app;

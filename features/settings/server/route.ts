@@ -18,8 +18,6 @@ const SECRET_SETTING_KEYS = [
   "steadfast_secret_key",
   "cloudinary_api_key",
   "cloudinary_api_secret",
-  "smtp_email_user",
-  "smtp_email_pass",
 ] as const;
 
 // Safety net for credential-shaped rows that aren't in the list above (the
@@ -103,8 +101,6 @@ const app = new Hono()
         cloudinary_api_secret: z.string().optional(),
         steadfast_api_key: z.string().optional(),
         steadfast_secret_key: z.string().optional(),
-        smtp_email_user: z.string().optional(),
-        smtp_email_pass: z.string().optional(),
         site_name: z.string().optional(),
         logo_url: z.string().optional(),
         hero_title: z.string().optional(),

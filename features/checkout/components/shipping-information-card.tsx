@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, ChevronRight, CreditCard, Wallet, Lock, User, Calendar, Zap } from "lucide-react";
-import { useAppSelector } from "@/store/hooks";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { useSettings } from "@/features/settings/api/use-settings";
 import { useCurrency } from "@/hooks/use-currency";

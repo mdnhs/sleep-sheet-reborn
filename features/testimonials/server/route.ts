@@ -5,6 +5,7 @@ import { desc, eq, ilike, inArray, or, sql, and } from 'drizzle-orm'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { uploadImage } from '@/lib/cloudinary'
+import { sessionMiddleware } from '@/lib/session-middleware'
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
@@ -59,6 +60,7 @@ const app = new Hono()
 
 .post(
   '/',
+  sessionMiddleware,
   zValidator(
     'json',
     z.object({
@@ -71,6 +73,11 @@ const app = new Hono()
     })
   ),
   async (c) => {
+    const user = c.get('user')
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
     try {
       const data = c.req.valid('json')
 
@@ -86,7 +93,12 @@ const app = new Hono()
   }
 )
 
-.post('/upload-image', async (c) => {
+.post('/upload-image', sessionMiddleware, async (c) => {
+  const user = c.get('user')
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
   try {
     const formData = await c.req.formData()
     const file = formData.get("image")
@@ -102,7 +114,12 @@ const app = new Hono()
   }
 })
 
-.post('/bulk-delete', zValidator('json', z.object({ ids: z.array(z.string()) })), async (c) => {
+.post('/bulk-delete', sessionMiddleware, zValidator('json', z.object({ ids: z.array(z.string()) })), async (c) => {
+  const user = c.get('user')
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
   try {
     const { ids } = c.req.valid('json')
 
@@ -131,7 +148,13 @@ const app = new Hono()
 
 .delete(
   '/:id',
+  sessionMiddleware,
   async (c) => {
+    const user = c.get('user')
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
     try {
       const id = c.req.param('id')
 
@@ -153,6 +176,7 @@ const app = new Hono()
 
 .patch(
   '/:id',
+  sessionMiddleware,
   zValidator(
     'json',
     z.object({
@@ -165,6 +189,11 @@ const app = new Hono()
     })
   ),
   async (c) => {
+    const user = c.get('user')
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
     try {
       const id = c.req.param('id')
       const data = c.req.valid('json')

@@ -16,8 +16,8 @@ export function useSettings() {
   });
 }
 
-// Admin-only: fetches secret values (API keys, SMTP credentials, the CAPI
-// token) that the public settings endpoint intentionally omits.
+// Admin-only: fetches secret values (API keys, the CAPI token) that the
+// public settings endpoint intentionally omits.
 export function useSettingsSecrets() {
   return useQuery({
     queryKey: ["settings", "secrets"],
@@ -30,8 +30,6 @@ export function useSettingsSecrets() {
         steadfast_secret_key: string;
         cloudinary_api_key: string;
         cloudinary_api_secret: string;
-        smtp_email_user: string;
-        smtp_email_pass: string;
       }>;
     },
     staleTime: 5 * 60 * 1000,
@@ -70,8 +68,6 @@ export function useUpdateSettings() {
       cloudinary_api_secret?: string;
       steadfast_api_key?: string;
       steadfast_secret_key?: string;
-      smtp_email_user?: string;
-      smtp_email_pass?: string;
       site_name?: string;
       logo_url?: string;
       hero_title?: string;

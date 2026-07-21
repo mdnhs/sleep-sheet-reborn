@@ -59,13 +59,6 @@ export const TestimonialUserRole = {
 } as const;
 export type TestimonialUserRole = typeof TestimonialUserRole[keyof typeof TestimonialUserRole];
 
-export const OTPType = {
-  EMAIL_VERIFICATION: "EMAIL_VERIFICATION",
-  PASSWORD_RESET: "PASSWORD_RESET",
-  LOGIN_OTP: "LOGIN_OTP",
-} as const;
-export type OTPType = typeof OTPType[keyof typeof OTPType];
-
 export const roleEnum = pgEnum("Role", ["USER", "ADMIN", "MODERATOR"]);
 export const campaignStatusEnum = pgEnum("CampaignStatus", [
   "DRAFT",
@@ -96,12 +89,6 @@ export const testimonialUserRoleEnum = pgEnum("TestimonialUserRole", [
   "INFLUENCER",
   "OTHER",
 ]);
-export const otpTypeEnum = pgEnum("OTPType", [
-  "EMAIL_VERIFICATION",
-  "PASSWORD_RESET",
-  "LOGIN_OTP",
-]);
-
 // Tables
 export const roles = pgTable("roles", {
   id: text("id")
@@ -123,6 +110,12 @@ export const users = pgTable("User", {
   address: text("address"),
   role: roleEnum("role").default("USER").notNull(),
   roleId: text("roleId").references(() => roles.id, { onDelete: "set null" }),
+  // Brute-force login lockout. Incremented on each wrong password; once it
+  // hits the threshold (see MAX_FAILED_ATTEMPTS in the auth route),
+  // lockedUntil is set and login is refused until that time passes. Both
+  // reset to 0/null on the next successful login.
+  failedLoginAttempts: integer("failedLoginAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil", { precision: 3 }),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 
@@ -424,19 +417,6 @@ export const wishlistItems = pgTable(
   ]
 );
 
-export const otpVerifications = pgTable("OTPVerification", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => cuid()),
-  userId: text("userId").references(() => users.id),
-  email: text("email").notNull(),
-  code: text("code").notNull(),
-  type: otpTypeEnum("type").default("EMAIL_VERIFICATION").notNull(),
-  expiresAt: timestamp("expiresAt", { precision: 3 }).notNull(),
-  verified: boolean("verified").default(false).notNull(),
-  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
-});
-
 export const siteSettings = pgTable("site_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
@@ -449,7 +429,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   orders: many(orders),
   carts: many(carts),
   wishlists: many(wishlists),
-  otpVerifications: many(otpVerifications),
   posts: many(posts),
   assignedRole: one(roles, {
     fields: [users.roleId],

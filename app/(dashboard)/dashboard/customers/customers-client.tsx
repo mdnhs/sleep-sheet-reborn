@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Loader2, Users, ShoppingBag, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Loader2, Users, ShoppingBag, UserPlus, KeyRound } from "lucide-react";
 import { format, startOfMonth } from "date-fns";
 
 import { useGetCustomers } from "@/features/users/api/use-get-customers";
 import { useCurrency } from "@/hooks/use-currency";
+import { ResetPasswordDialog } from "@/features/users/components/reset-password-dialog";
 
 interface CustomerRow {
   id: string;
@@ -29,6 +31,7 @@ export function CustomersClient() {
   const { formatAmount } = useCurrency();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [resetPasswordCustomer, setResetPasswordCustomer] = useState<{ id: string; name: string } | null>(null);
 
   const safeCustomers = useMemo(
     () => (customers ?? []) as CustomerRow[],
@@ -104,6 +107,22 @@ export function CustomersClient() {
         ) : (
           <span className="text-muted-foreground text-xs">Never</span>
         ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 rounded-full text-xs font-semibold h-8"
+          onClick={() => setResetPasswordCustomer({ id: row.original.id, name: row.original.name })}
+        >
+          <KeyRound className="h-3.5 w-3.5" />
+          Reset Password
+        </Button>
+      ),
     },
   ];
 
@@ -200,6 +219,15 @@ export function CustomersClient() {
           }
         />
       </div>
+
+      {resetPasswordCustomer && (
+        <ResetPasswordDialog
+          open={!!resetPasswordCustomer}
+          onOpenChange={(open) => { if (!open) setResetPasswordCustomer(null); }}
+          userId={resetPasswordCustomer.id}
+          userName={resetPasswordCustomer.name}
+        />
+      )}
     </div>
   );
 }

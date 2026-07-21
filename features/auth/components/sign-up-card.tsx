@@ -19,16 +19,12 @@ import Link from "next/link";
 import { RegisterSchema } from "../schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRegister } from "../api/user-register";
-import { useDispatch } from "react-redux";
-import { setRegisterData } from "../state/register-slice";
 import { useRouter } from "next/navigation";
-import { OTPType } from "../state/forgot-password-slice";
 import { useLanguage } from "@/hooks/use-language";
 
 function SignUpCard() {
   const { language } = useLanguage();
   const isBn = language === "bn";
-  const dispatch = useDispatch();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const { mutate, isPending } = useRegister();

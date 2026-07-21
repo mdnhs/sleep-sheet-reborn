@@ -103,7 +103,7 @@ function SignInCard() {
                 </FormItem>
               )}
             />
-            <div className=" flex justify-between items-center">
+            <div className=" flex justify-start items-center">
               <label className=" flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -113,11 +113,6 @@ function SignInCard() {
                   {isBn ? "আমাকে মনে রাখুন" : "Remember me"}
                 </span>
               </label>
-              <Link href={"/forgot-password"}>
-                <span className=" text-sm text-primary font-bold cursor-pointer">
-                  {isBn ? "পাসওয়ার্ড ভুলে গেছেন?" : "Forgot Password?"}
-                </span>
-              </Link>
             </div>
             <Button type="submit" size="lg" className=" w-full" disabled={isPending}>
               {isBn ? "লগ ইন" : "Login"}

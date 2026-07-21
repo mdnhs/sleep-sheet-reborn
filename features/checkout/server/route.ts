@@ -1,10 +1,40 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
 import bcrypt from "bcryptjs";
+
+// Mirrors features/checkout/schema.ts (client-side form validation) so the
+// server never trusts shippingInfo/paymentInfo/guestItems shape or content
+// on faith — the client schema only ever ran in the browser.
+const checkoutSchema = z.object({
+  shippingInfo: z.object({
+    fullName: z.string().trim().min(1),
+    phone: z.string().trim().min(1),
+    email: z.string().trim().email().optional().or(z.literal("")),
+    address: z.string().trim().min(1),
+    shippingZone: z.enum(["inside_dhaka", "outside_dhaka"]),
+    notes: z.string().optional(),
+  }),
+  paymentInfo: z.object({
+    paymentMethod: z.enum(["card", "cod"]),
+    cardNumber: z.string().optional(),
+    expirationDate: z.string().optional(),
+    cvv: z.string().optional(),
+    nameOnCard: z.string().optional(),
+  }),
+  guestItems: z.array(z.object({
+    productId: z.string().min(1),
+    quantity: z.number().int().min(1),
+    size: z.string().optional(),
+    color: z.string().optional(),
+  })).optional(),
+  idempotencyKey: z.string().optional(),
+});
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
@@ -88,10 +118,10 @@ async function isPaymentMethodEnabled(method: string): Promise<boolean> {
 
 const app = new Hono()
 
-.post("/", sessionMiddleware, async (c) => {
+.post("/", sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
 
-  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey } = await c.req.json();
+  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey } = c.req.valid("json");
 
   // Order-creation idempotency key: one UUID per checkout attempt, generated
   // client-side and stored in sessionStorage, so a double-click, a slow-network

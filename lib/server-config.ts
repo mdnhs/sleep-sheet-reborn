@@ -22,11 +22,3 @@ export async function getSteadfastConfig() {
     secretKey: map.steadfast_secret_key || "",
   };
 }
-
-export async function getEmailConfig() {
-  const map = await getSettingsMap();
-  return {
-    user: map.smtp_email_user || "",
-    pass: map.smtp_email_pass || "",
-  };
-}

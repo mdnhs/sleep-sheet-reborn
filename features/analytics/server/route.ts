@@ -72,13 +72,22 @@ const app = new Hono()
         orderStats(startDate, endDate),
         orderStats(prevStart, prevEnd),
         db.select({
-            bucket: sql<string>`DATE_TRUNC(${sql.raw(`'${trendUnit}'`)}, ${orders.createdAt})`,
+            // trendUnit as a bound parameter (not sql.raw string interpolation)
+            // — DATE_TRUNC accepts its unit argument as a normal text value.
+            // GROUP BY / ORDER BY reference the select list by ordinal (1)
+            // rather than repeating the DATE_TRUNC expression: repeating it
+            // binds trendUnit as a SEPARATE parameter each time, and Postgres
+            // won't recognize two different placeholders as the same grouped
+            // expression even though they carry the same value at bind time
+            // — that mismatch is exactly what caused "column must appear in
+            // the GROUP BY clause" here. Ordinal position sidesteps that.
+            bucket: sql<string>`DATE_TRUNC(${trendUnit}, ${orders.createdAt})`,
             amount: sum(orders.totalAmount),
           })
           .from(orders)
           .where(inRange(startDate, endDate))
-          .groupBy(sql`DATE_TRUNC(${sql.raw(`'${trendUnit}'`)}, ${orders.createdAt})`)
-          .orderBy(asc(sql`DATE_TRUNC(${sql.raw(`'${trendUnit}'`)}, ${orders.createdAt})`)),
+          .groupBy(sql`1`)
+          .orderBy(asc(sql`1`)),
         expenseStats(startDate, endDate),
         expenseStats(prevStart, prevEnd),
         costStats(startDate, endDate),
@@ -418,16 +427,19 @@ const app = new Hono()
     // Bucket finer than the window itself, otherwise a long range collapses to one bar
     const bucketUnit = endDate ? getTrendBucketUnit(startDate, endDate) : (selectedPeriod === 'year' ? 'month' : 'day');
 
-    const usersRows = (await db.execute(sql.raw(`
+    // bucketUnit/startDate/endDate passed as bound parameters (not sql.raw
+    // string interpolation) — no user input ever gets spliced into the query
+    // text itself.
+    const usersRows = (await db.execute(sql`
       SELECT
-        DATE_TRUNC('${bucketUnit}', "createdAt") as period,
+        DATE_TRUNC(${bucketUnit}, "createdAt") as period,
         COUNT(*) as count
       FROM "User"
-      WHERE "createdAt" >= '${startDate.toISOString()}'
-      ${endDate ? `AND "createdAt" <= '${endDate.toISOString()}'` : ""}
+      WHERE "createdAt" >= ${startDate.toISOString()}
+      ${endDate ? sql`AND "createdAt" <= ${endDate.toISOString()}` : sql``}
       GROUP BY period
       ORDER BY period ASC
-    `))) as unknown as { rows: Array<{ period: string; count: string | number }> };
+    `)) as unknown as { rows: Array<{ period: string; count: string | number }> };
 
     return c.json(usersRows.rows.map(u => ({
       date: new Date(u.period).toISOString(),

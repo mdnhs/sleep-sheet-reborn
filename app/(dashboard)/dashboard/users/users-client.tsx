@@ -19,13 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, KeyRound } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useGetUsers } from "@/features/users/api/use-get-users";
 import { useGetRoles } from "@/features/roles/api/use-get-roles";
 import { useUpdateUserRole } from "@/features/users/api/use-update-user-role";
 import { useCreateUser } from "@/features/users/api/use-create-user";
+import { ResetPasswordDialog } from "@/features/users/components/reset-password-dialog";
 
 interface StaffRow {
   id: string;
@@ -51,6 +52,7 @@ export function UsersClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState("none");
+  const [resetPasswordUser, setResetPasswordUser] = useState<{ id: string; name: string } | null>(null);
 
   const safeUsers = useMemo(() => (users ?? []) as StaffRow[], [users]);
 
@@ -146,6 +148,22 @@ export function UsersClient() {
           </Select>
         );
       },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 rounded-full text-xs font-semibold h-8"
+          onClick={() => setResetPasswordUser({ id: row.original.id, name: row.original.name })}
+        >
+          <KeyRound className="h-3.5 w-3.5" />
+          Reset Password
+        </Button>
+      ),
     },
   ];
 
@@ -271,6 +289,15 @@ export function UsersClient() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {resetPasswordUser && (
+        <ResetPasswordDialog
+          open={!!resetPasswordUser}
+          onOpenChange={(open) => { if (!open) setResetPasswordUser(null); }}
+          userId={resetPasswordUser.id}
+          userName={resetPasswordUser.name}
+        />
+      )}
     </div>
   );
 }

@@ -91,8 +91,10 @@ const app = new Hono()
     return c.json(events);
   })
   .delete("/", sessionMiddleware, async (c) => {
+    // Wipes the entire traffic history — irreversible, so this needs more
+    // than the read-only VIEW_ANALYTICS permission that gates the GET above.
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+    if (!user || user.role !== "ADMIN") {
       return c.json({ success: false, error: "Unauthorized" }, 403);
     }
 

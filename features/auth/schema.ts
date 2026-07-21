@@ -12,9 +12,3 @@ export const RegisterSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Minium 8 characters required"),
 });
-
-export const ResetPasswordSchema = z.object({
-  email: z.string().email(),
-  otpCode: z.string(),
-  newPassword: z.string().min(6),
-});

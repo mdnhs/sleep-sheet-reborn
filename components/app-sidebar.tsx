@@ -135,7 +135,6 @@ const data = {
         { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
         { title: "SEO", url: "/dashboard/settings/seo" },
         { title: "CDN", url: "/dashboard/settings/cdn" },
-        { title: "SMTP", url: "/dashboard/settings/smtp" },
         { title: "Website", url: "/dashboard/settings/website" },
       ],
     },
