@@ -98,9 +98,14 @@ export default function DashBoardClientPage() {
   const [graphPeriod, setGraphPeriod] = useState<Period>("this-month");
   const [showBreakdownDialog, setShowBreakdownDialog] = useState(false);
 
-  // Top KPI metric cards remain steady on "this-month"
+  // Top KPI metric cards always show all-time totals, independent of the
+  // graphPeriod selector below (which only drives the trend chart/breakdown).
   const { data: overview, isLoading: loadingOverview } =
-    useSalesOverview("this-month");
+    useSalesOverview("all");
+  // Separate this-month fetch just for the % badge (this month vs last
+  // month — computed server-side via getPreviousRange). Independent of the
+  // all-time totals above.
+  const { data: monthOverview } = useSalesOverview("this-month");
   // Revenue Analytics & Total Income graph query isolated to graphPeriod
   const { data: graphOverview, isLoading: loadingGraphOverview } =
     useSalesOverview(graphPeriod);
@@ -149,7 +154,9 @@ export default function DashBoardClientPage() {
     value: a.count,
   }));
 
-  const changes = overview?.changes;
+  // Sourced from monthOverview (this-month), not overview (all-time) — an
+  // all-time total has no meaningful "previous period" to compare against.
+  const changes = monthOverview?.changes;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6">
@@ -832,13 +839,13 @@ function MetricCard({
             {hasChange && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold shrink-0",
+                  "inline-flex items-center gap-0.5 text-xs sm:text-sm font-bold shrink-0",
                   isGood
-                    ? "bg-[#EAF8ED] text-[#1E8A37] dark:bg-emerald-950/60 dark:text-emerald-400"
-                    : "bg-[#FCEBEB] text-[#D92D20] dark:bg-rose-950/60 dark:text-rose-400"
+                    ? "text-[#1E8A37] dark:text-emerald-400"
+                    : "text-[#D92D20] dark:text-rose-400"
                 )}
               >
-                {change! >= 0 ? "↑" : "↓"} {Math.abs(change!)}%
+                {change! >= 0 ? "▲" : "▼"} {Math.abs(change!)}%
               </span>
             )}
           </>

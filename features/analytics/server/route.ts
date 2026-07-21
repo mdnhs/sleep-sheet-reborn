@@ -125,12 +125,18 @@ const app = new Hono()
     const pctChange = (curr: number, prev: number) =>
       prev === 0 ? null : Number((((curr - prev) / Math.abs(prev)) * 100).toFixed(1));
 
-    // Populate all buckets in range (day vs month)
+    // Populate all buckets in range (day vs month) — capped at "now" so a
+    // period that extends into the future (e.g. "this month" viewed on the
+    // 21st) doesn't pre-fill zero-value buckets for days that haven't
+    // happened yet. Those trailing zeros would otherwise flatten the tail
+    // of every trend line/sparkline into a dead-flat segment.
+    const now = new Date();
     const bucketMap = new Map<string, number>();
 
     if (trendUnit === "month") {
       const curr = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-      const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      const cappedEnd = endDate.getTime() > now.getTime() ? now : endDate;
+      const end = new Date(cappedEnd.getFullYear(), cappedEnd.getMonth(), 1);
       while (curr <= end) {
         const key = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, "0")}-01`;
         bucketMap.set(key, 0);
@@ -146,7 +152,7 @@ const app = new Hono()
       });
     } else {
       const currDate = new Date(startDate);
-      const lastDate = new Date(endDate);
+      const lastDate = endDate.getTime() > now.getTime() ? now : endDate;
 
       while (currDate <= lastDate) {
         const dateKey = currDate.toISOString().split("T")[0];

@@ -102,6 +102,11 @@ export const getDateRange = (period: string) => {
   const month = now.getUTCMonth();
 
   switch (period) {
+    case "all":
+    case "all-time":
+      // From the epoch — effectively "no lower bound" without special-casing
+      // the query builder, since no real order predates 1970.
+      return { startDate: new Date(0), endDate: now };
     case "this-month":
     case "month": {
       const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
