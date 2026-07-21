@@ -24,6 +24,7 @@ import roles from "@/features/roles/server/route";
 import users from "@/features/users/server/route";
 import traffic from "@/features/traffic/server/route";
 import activity from "@/features/activity/server/route";
+import apiKeys from "@/features/api-keys/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 
@@ -56,6 +57,7 @@ const routes =app
 .route("/users",users)
 .route("/traffic",traffic)
 .route("/activity",activity)
+.route("/api-keys",apiKeys)
 
 export const GET = handle(app)
 export const POST = handle(app)

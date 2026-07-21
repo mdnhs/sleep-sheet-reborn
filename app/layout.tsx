@@ -118,6 +118,8 @@ export const viewport = {
   maximumScale: 5,
 };
 
+import GoogleAnalytics from "@/components/google-analytics";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -148,6 +150,7 @@ export default function RootLayout({
           <TooltipProvider>
             <Toaster />
             <QueryProvider>
+              <GoogleAnalytics />
               <NuqsAdapter>
                 <PixelTrackingProvider>
                   {children}

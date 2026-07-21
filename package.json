@@ -21,6 +21,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hono/zod-validator": "^0.7.6",
     "@hookform/resolvers": "^5.2.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@neondatabase/serverless": "^1.1.0",
     "@react-pdf/renderer": "^4.5.1",
     "@tabler/icons-react": "^3.43.0",

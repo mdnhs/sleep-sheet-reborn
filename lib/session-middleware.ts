@@ -7,6 +7,8 @@ import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { AUTH_COOKIE } from '@/features/auth/constants'
+import { authenticateApiKey } from '@/lib/api-keys'
+import { authenticateOAuthToken } from '@/lib/oauth'
 
 
 type CustomContext = {
@@ -25,9 +27,24 @@ type CustomContext = {
 }
 
 export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next) => {
-  const token = getCookie(c, AUTH_COOKIE)
-
   c.set('db', db)
+
+  // Server-to-server callers send an API key or an OAuth access token
+  // instead of a browser session cookie. Checked first — a request with an
+  // Authorization header never has a real login cookie anyway, and an
+  // invalid credential should fail as "logged out", not silently fall
+  // through to the cookie check below.
+  const authHeader = c.req.header('Authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    const rawToken = authHeader.slice(7).trim()
+    const bearerUser = rawToken.startsWith('mcp_at_')
+      ? await authenticateOAuthToken(rawToken)
+      : await authenticateApiKey(rawToken)
+    c.set('user', bearerUser)
+    return await next()
+  }
+
+  const token = getCookie(c, AUTH_COOKIE)
 
   if (!token) {
     c.set('user', null)

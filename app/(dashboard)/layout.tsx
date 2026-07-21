@@ -18,7 +18,7 @@ function DashBoardLayout({ children }: DashBoardLayoutProps) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="bg-[#F6F6F4] dark:bg-background">
-        <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-2 border-b bg-white/95 dark:bg-card/95 backdrop-blur-md px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-2 bg-white/95 dark:bg-card/95 backdrop-blur-md px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"

@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import { db } from '@/db';
 import { products, categories, specifications, wishlistItems, cartItems, reviews, orderItems, campaigns } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -349,5 +351,61 @@ app.patch('/bulk-feature', sessionMiddleware, async (c) => {
     return c.json({ error: "Failed to update products" }, 500);
   }
 });
+
+// Lightweight JSON update for non-image fields — the main /update endpoint
+// above takes multipart form-data (images, variants, specs, tags all at
+// once, mirroring the admin form exactly), which is awkward for a
+// programmatic caller like the MCP server that only wants to change a price
+// or stock count. This is intentionally narrower: no images, variants,
+// specifications, or tags — just the fields most operational edits touch.
+app.patch(
+  '/:id/details',
+  sessionMiddleware,
+  zValidator(
+    'json',
+    z.object({
+      name: z.string().min(1).optional(),
+      description: z.string().optional(),
+      price: z.number().min(0).optional(),
+      stock: z.number().int().min(0).optional(),
+      discount: z.number().min(0).max(100).optional(),
+      isFeatured: z.boolean().optional(),
+    })
+  ),
+  async (c) => {
+    const user = c.get("user");
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS))) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    const id = c.req.param("id");
+    const body = c.req.valid("json");
+
+    if (Object.keys(body).length === 0) {
+      return c.json({ error: "No fields to update" }, 400);
+    }
+
+    const existing = await db.query.products.findFirst({ where: eq(products.id, id) });
+    if (!existing) return c.json({ error: "Product not found" }, 404);
+
+    const [updated] = await db.update(products)
+      .set({ ...body, updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
+
+    invalidateFeed();
+
+    const changes: ActivityChange[] = [];
+    if (body.name !== undefined && body.name !== existing.name) changes.push({ label: "Name", from: existing.name, to: body.name });
+    if (body.description !== undefined && body.description !== existing.description) changes.push({ label: "Description", from: existing.description, to: body.description });
+    if (body.price !== undefined && body.price !== existing.price) changes.push({ label: "Price", from: existing.price, to: body.price });
+    if (body.stock !== undefined && body.stock !== existing.stock) changes.push({ label: "Stock", from: existing.stock, to: body.stock });
+    if (body.discount !== undefined && body.discount !== existing.discount) changes.push({ label: "Discount", from: existing.discount, to: body.discount });
+    if (body.isFeatured !== undefined && body.isFeatured !== existing.isFeatured) changes.push({ label: "Featured", from: existing.isFeatured, to: body.isFeatured });
+    setActivityMeta(c, { name: updated.name, changes });
+
+    return c.json({ success: true, product: updated });
+  }
+);
 
 export default app;

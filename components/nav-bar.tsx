@@ -345,7 +345,7 @@ function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md">
         <div className="container mx-auto px-4">
           {isMobile ? (
             <div className="flex flex-col py-2 gap-2">

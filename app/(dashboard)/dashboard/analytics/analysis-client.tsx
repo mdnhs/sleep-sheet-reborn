@@ -6,8 +6,8 @@ import {
   useClearTrafficEvents,
   type TrafficEvent,
 } from "@/features/traffic/api/use-traffic";
+import { useGetOrders } from "@/features/order/api/use-get-orders";
 import { getEventStats } from "@/lib/traffic-tracker";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +30,12 @@ import {
   IconClock,
   IconTrash,
   IconRefresh,
+  IconBrandAndroid,
+  IconBrandApple,
+  IconBrandWindows,
+  IconDeviceMobile,
+  IconDeviceLaptop,
+  IconMapPin,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 
@@ -86,17 +92,53 @@ export default function AnalysisClientPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("24h");
   const hours = timeFilter === "all" ? undefined : TIME_FILTER_HOURS[timeFilter];
 
-  const { data: events, isLoading, refetch } = useTrafficEvents(hours);
+  const { data: events, isLoading, isFetching: isFetchingEvents, refetch: refetchEvents } = useTrafficEvents(hours);
+  const { data: ordersData, isLoading: isLoadingOrders, isFetching: isFetchingOrders, refetch: refetchOrders } = useGetOrders();
   const clearEvents = useClearTrafficEvents();
+
+  const isRefreshing = isFetchingEvents || isFetchingOrders;
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([refetchEvents(), refetchOrders()]);
+    } catch (err) {
+      console.error("Failed to refresh analytics:", err);
+    }
+  };
 
   const allEvents = events ?? [];
   const stats = getEventStats(allEvents);
+  const recentOrders = ordersData?.orders ?? [];
 
   const pageViews = stats.byType["page_view"] || 0;
   const productViews = stats.byType["product_view"] || 0;
   const addToCarts = stats.byType["add_to_cart"] || 0;
   const buyNows = stats.byType["buy_now"] || 0;
-  const orders = stats.byType["order_complete"] || 0;
+  const totalOrders = stats.byType["order_complete"] || recentOrders.length;
+
+  const totalHits = allEvents.length || 1;
+
+  // OS Icon Helper
+  const getOSIcon = (osName: string) => {
+    const lower = osName.toLowerCase();
+    if (lower.includes("android")) return <IconBrandAndroid className="h-4 w-4 text-emerald-500" />;
+    if (lower.includes("ios") || lower.includes("mac")) return <IconBrandApple className="h-4 w-4 text-slate-800 dark:text-slate-200" />;
+    if (lower.includes("windows")) return <IconBrandWindows className="h-4 w-4 text-blue-500" />;
+    return <IconDeviceLaptop className="h-4 w-4 text-slate-400" />;
+  };
+
+  // Aggregate Order Locations
+  const orderCityStats = recentOrders.reduce((acc: Record<string, { count: number; total: number }>, o: any) => {
+    const city = o.shippingCity || o.shippingState || "Dhaka";
+    if (!acc[city]) acc[city] = { count: 0, total: 0 };
+    acc[city].count += 1;
+    acc[city].total += o.totalAmount || 0;
+    return acc;
+  }, {});
+
+  const topOrderCities = Object.entries(orderCityStats)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 6);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
@@ -104,7 +146,7 @@ export default function AnalysisClientPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
           <p className="text-sm text-muted-foreground">
-            Traffic activity, page visits, and real-time user interactions
+            Real-time traffic, phone OS breakdown, customer order locations, and system analytics
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -115,11 +157,12 @@ export default function AnalysisClientPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
-            className="rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none cursor-pointer transition-all"
           >
-            <IconRefresh className="h-3.5 w-3.5 mr-1" />
-            Refresh
+            <IconRefresh className={cn("h-3.5 w-3.5 mr-1", isRefreshing && "animate-spin text-rose-500")} />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
           </Button>
           <Button
             variant="ghost"
@@ -152,6 +195,7 @@ export default function AnalysisClientPage() {
         ))}
       </div>
 
+      {/* Top Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard
           title="Page Views"
@@ -183,7 +227,7 @@ export default function AnalysisClientPage() {
         />
         <StatCard
           title="Orders"
-          value={orders}
+          value={totalOrders}
           icon={<IconActivity className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
           badgeBg="bg-emerald-50 dark:bg-emerald-950/40"
           loading={isLoading}
@@ -191,8 +235,9 @@ export default function AnalysisClientPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+      {/* Events by Hour & Phone OS Distribution */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div className="xl:col-span-7 rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
           <h2 className="text-base font-bold tracking-tight">Events by Hour</h2>
           <div className="h-64">
             {isLoading ? (
@@ -205,8 +250,141 @@ export default function AnalysisClientPage() {
           </div>
         </div>
 
+        {/* Operating Systems Breakdown (Android vs iOS vs Windows) */}
+        <div className="xl:col-span-5 rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2">
+              <IconDeviceMobile className="h-5 w-5 text-emerald-600" />
+              Phone & OS Distribution
+            </h2>
+            <Badge variant="outline" className="text-[10px] font-bold rounded-full">
+              Mobile vs Desktop
+            </Badge>
+          </div>
+          {isLoading ? (
+            <Skeleton className="h-56 w-full rounded-2xl" />
+          ) : stats.topOS.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="space-y-3 pt-1">
+              {stats.topOS.map(([osName, count]) => {
+                const percent = Math.round((count / totalHits) * 100) || 0;
+                return (
+                  <div key={osName} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="flex items-center gap-2 text-foreground">
+                        {getOSIcon(osName)}
+                        {osName}
+                      </span>
+                      <span className="text-muted-foreground font-mono">
+                        {count} hits ({percent}%)
+                      </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          osName === "Android"
+                            ? "bg-emerald-500"
+                            : osName === "iOS"
+                            ? "bg-slate-900 dark:bg-slate-100"
+                            : osName === "Windows"
+                            ? "bg-blue-500"
+                            : "bg-indigo-500"
+                        )}
+                        style={{ width: `${Math.max(percent, 4)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+
+
+      {/* VISITED TRAFFIC UNIQUE LOCATIONS LIST */}
+      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2 text-foreground">
+              <IconMapPin className="h-5 w-5 text-rose-500" />
+              Visited Traffic Unique Locations List
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Geographic breakdown of traffic visitors by unique IP addresses, top pages visited, and last active time
+            </p>
+          </div>
+          <Badge variant="outline" className="rounded-full text-xs font-semibold px-3 py-1 bg-slate-50 dark:bg-muted/40">
+            {stats.uniqueLocationsList.length} Unique Locations
+          </Badge>
+        </div>
+
+        {isLoading ? (
+          <Skeleton className="h-48 w-full rounded-2xl" />
+        ) : stats.uniqueLocationsList.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
+                <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Location (City & Country)</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-center">Unique Visitors (IPs)</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300 text-center">Total Hits</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Top Visited Page</TableHead>
+                  <TableHead className="font-bold text-slate-700 dark:text-slate-300">Main Device</TableHead>
+                  <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Last Active Visit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.uniqueLocationsList.map((loc) => (
+                  <TableRow key={loc.locName} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
+                    <TableCell className="font-medium text-xs">
+                      <span className="inline-flex items-center gap-2 font-bold text-foreground">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                        {loc.locName}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="text-center text-xs">
+                      <Badge variant="outline" className="rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border-none px-2.5 py-0.5">
+                        {loc.uniqueIPsCount} Unique {loc.uniqueIPsCount === 1 ? "IP" : "IPs"}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-center text-xs font-semibold font-mono">
+                      {loc.hits} {loc.hits === 1 ? "hit" : "hits"}
+                    </TableCell>
+
+                    <TableCell className="text-xs text-muted-foreground truncate max-w-[180px]">
+                      {loc.topPath}
+                    </TableCell>
+
+                    <TableCell className="text-xs">
+                      <Badge variant="secondary" className="rounded-full text-[10px] font-semibold">
+                        {loc.topDevice}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap font-mono">
+                      {format(new Date(loc.lastVisitedAt), "MMM d, HH:mm:ss")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {/* Top Pages, Browsers, & Locations Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Top Pages */}
         <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
-          <h2 className="text-base font-bold tracking-tight">Top Pages</h2>
+          <h2 className="text-base font-bold tracking-tight">Top Pages Visited</h2>
           {isLoading ? (
             <Skeleton className="h-48 w-full rounded-2xl" />
           ) : stats.topPages.length === 0 ? (
@@ -223,7 +401,7 @@ export default function AnalysisClientPage() {
                 <TableBody>
                   {stats.topPages.map(([path, count]) => (
                     <TableRow key={path} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
-                      <TableCell className="font-medium text-xs truncate max-w-[250px]">
+                      <TableCell className="font-medium text-xs truncate max-w-[200px]">
                         {path}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-xs">{count}</TableCell>
@@ -234,11 +412,50 @@ export default function AnalysisClientPage() {
             </div>
           )}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Top Ordering Cities */}
         <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
-          <h2 className="text-base font-bold tracking-tight">Browsers & Devices</h2>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-1.5">
+            <IconMapPin className="h-4 w-4 text-rose-500" />
+            Top Order Locations
+          </h2>
+          {isLoadingOrders ? (
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          ) : topOrderCities.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
+                  <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">District / City</TableHead>
+                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Orders</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topOrderCities.map(([cityName, data]) => (
+                    <TableRow key={cityName} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
+                      <TableCell className="font-medium text-xs truncate max-w-[180px]">
+                        <span className="inline-flex items-center gap-1.5 font-bold">
+                          <span className="w-2 h-2 rounded-full bg-rose-500" />
+                          {cityName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        <span className="font-bold">{data.count} orders</span>
+                        <span className="text-[10px] text-muted-foreground block font-mono">৳{data.total.toLocaleString()}</span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+
+        {/* Browsers & System */}
+        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
+          <h2 className="text-base font-bold tracking-tight">Browsers & Systems</h2>
           {isLoading ? (
             <Skeleton className="h-48 w-full rounded-2xl" />
           ) : stats.topBrowsers.length === 0 ? (
@@ -248,14 +465,14 @@ export default function AnalysisClientPage() {
               <Table>
                 <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
                   <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
-                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Browser / System</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Browser</TableHead>
                     <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Sessions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {stats.topBrowsers.map(([bName, count]) => (
                     <TableRow key={bName} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
-                      <TableCell className="font-medium text-xs truncate max-w-[250px]">
+                      <TableCell className="font-medium text-xs truncate max-w-[200px]">
                         <span className="inline-flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-indigo-500" />
                           {bName}
@@ -269,54 +486,22 @@ export default function AnalysisClientPage() {
             </div>
           )}
         </div>
-
-        <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
-          <h2 className="text-base font-bold tracking-tight">Locations & IP Regions</h2>
-          {isLoading ? (
-            <Skeleton className="h-48 w-full rounded-2xl" />
-          ) : stats.topLocations.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-              <Table>
-                <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
-                  <TableRow className="hover:bg-transparent border-b border-slate-100 dark:border-slate-800">
-                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Location / IP</TableHead>
-                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Hits</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stats.topLocations.map(([loc, count]) => (
-                    <TableRow key={loc} className="hover:bg-slate-50/50 dark:hover:bg-muted/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
-                      <TableCell className="font-medium text-xs truncate max-w-[250px]">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          {loc}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-xs">{count}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
       </div>
 
+      {/* Real-Time Event Feed */}
       <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
         <h2 className="text-base font-bold tracking-tight flex items-center gap-2">
-          <IconClock className="h-4 w-4" />
-          Real-Time Event Feed with Customer Metadata
+          <IconClock className="h-4 w-4 text-indigo-500" />
+          Real-Time Live Activity Feed & Devices
         </h2>
         {isLoading ? (
           <Skeleton className="h-48 w-full rounded-2xl" />
         ) : allEvents.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            No events in this time range.
+            No live events in this time range.
           </p>
         ) : (
-          <div className="rounded-2xl border border-slate-100 dark:border-slate-800 max-h-[500px] overflow-auto">
+          <div className="rounded-2xl border border-slate-100 dark:border-slate-800 max-h-[450px] overflow-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10 border-b border-slate-100 dark:border-slate-800">
                 <TableRow>

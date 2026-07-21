@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Globe, ArrowRight, Shield } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Globe, ArrowRight, Shield, KeyRound } from "lucide-react";
 
 const sections = [
   {
@@ -53,6 +53,12 @@ const sections = [
     description: "Manage system access levels and create custom roles for your team",
     href: "/dashboard/settings/roles",
     icon: Shield,
+  },
+  {
+    title: "API Keys",
+    description: "Server-to-server credentials for the MCP server, scripts, and integrations",
+    href: "/dashboard/settings/api-keys",
+    icon: KeyRound,
   },
 ];
 

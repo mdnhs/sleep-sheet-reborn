@@ -119,6 +119,102 @@ export const users = pgTable("User", {
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 
+// Server-to-server credentials (MCP server, scripts, integrations) — an
+// alternative to the cookie/JWT session for callers that aren't a browser.
+// The raw key is shown to the user exactly once at creation time; only its
+// SHA-256 hash is ever stored. Authenticating with a key acts AS the user
+// who created it (same role/permissions), so revoking a staff account or
+// this row both cut off access identically.
+export const apiKeys = pgTable("api_keys", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  name: text("name").notNull(),
+  keyHash: text("keyHash").unique().notNull(),
+  // First few characters of the raw key, kept only for display in the UI
+  // ("sk_live_a1b2...") so an admin can recognize which key is which.
+  keyPrefix: text("keyPrefix").notNull(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+  lastUsedAt: timestamp("lastUsedAt", { precision: 3 }),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt", { precision: 3 }),
+});
+
+// --- OAuth 2.1 (for the claude.ai Custom Connector) ---
+// A remote MCP client (claude.ai) can't be handed a pre-shared API key the
+// way the local mcp-server is — it registers itself on the fly (Dynamic
+// Client Registration), then runs a normal OAuth authorization-code + PKCE
+// flow against these tables. Distinct from `apiKeys` above on purpose: OAuth
+// tokens expire and refresh, API keys don't.
+
+// Registered via POST /oauth/register (RFC 7591). `clientSecret` is issued
+// but PKCE is required regardless, since a browser-based client like
+// claude.ai can't keep a secret confidential.
+export const oauthClients = pgTable("oauth_clients", {
+  id: text("id").primaryKey(), // the client_id itself, not a surrogate key
+  clientSecretHash: text("clientSecretHash"),
+  clientName: text("clientName").notNull(),
+  redirectUris: json("redirectUris").$type<string[]>().notNull(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+});
+
+// Short-lived, single-use — minted when the user clicks "Allow" on the
+// consent screen, redeemed once at POST /oauth/token, then dead either way.
+export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
+  code: text("code").primaryKey(),
+  clientId: text("clientId")
+    .notNull()
+    .references(() => oauthClients.id),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+  redirectUri: text("redirectUri").notNull(),
+  // PKCE (RFC 7636) — the token endpoint hashes the caller's code_verifier
+  // and checks it matches this, proving it's the same party that started
+  // the flow (mitigates authorization-code interception).
+  codeChallenge: text("codeChallenge").notNull(),
+  codeChallengeMethod: text("codeChallengeMethod").notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 3 }).notNull(),
+  usedAt: timestamp("usedAt", { precision: 3 }),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+});
+
+export const oauthAccessTokens = pgTable("oauth_access_tokens", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  tokenHash: text("tokenHash").unique().notNull(),
+  clientId: text("clientId")
+    .notNull()
+    .references(() => oauthClients.id),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+  expiresAt: timestamp("expiresAt", { precision: 3 }).notNull(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt", { precision: 3 }),
+});
+
+export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  tokenHash: text("tokenHash").unique().notNull(),
+  clientId: text("clientId")
+    .notNull()
+    .references(() => oauthClients.id),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+  // Rotated on every use (a fresh refresh token is issued each refresh, this
+  // one is revoked) — a replayed old refresh token is then a clear signal
+  // of theft, not just an expired credential.
+  revokedAt: timestamp("revokedAt", { precision: 3 }),
+});
+
 export const posts = pgTable("posts", {
   id: text("id")
     .primaryKey()
@@ -430,6 +526,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   carts: many(carts),
   wishlists: many(wishlists),
   posts: many(posts),
+  apiKeys: many(apiKeys),
   assignedRole: one(roles, {
     fields: [users.roleId],
     references: [roles.id],
