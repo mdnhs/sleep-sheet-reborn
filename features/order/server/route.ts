@@ -5,10 +5,17 @@ import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql } from "drizzle-o
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
 
-.get("/", async (c) => {
+.get("/", sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const { search, from, to } = c.req.query();
 
   try {
@@ -59,7 +66,7 @@ const app = new Hono()
   }
 })
 
-.patch("/:id", zValidator("json", z.object({
+.patch("/:id", sessionMiddleware, zValidator("json", z.object({
   status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]).optional(),
   paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]).optional(),
   shippingCost: z.number().min(0).optional(),
@@ -68,6 +75,11 @@ const app = new Hono()
     costPrice: z.number().min(0)
   })).optional()
 })), async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const id = c.req.param("id");
   const { status, paymentStatus, shippingCost, items } = c.req.valid("json");
 
@@ -127,6 +139,18 @@ const app = new Hono()
       }
     });
 
+    const changes: ActivityChange[] = [];
+    if (status !== undefined && status !== currentOrder.status) {
+      changes.push({ label: "Status", from: titleCase(currentOrder.status), to: titleCase(status) });
+    }
+    if (paymentStatus !== undefined && paymentStatus !== currentOrder.paymentStatus) {
+      changes.push({ label: "Payment status", from: titleCase(currentOrder.paymentStatus), to: titleCase(paymentStatus) });
+    }
+    if (shippingCost !== undefined && shippingCost !== currentOrder.shippingCost) {
+      changes.push({ label: "Shipping cost", from: currentOrder.shippingCost, to: shippingCost });
+    }
+    setActivityMeta(c, { name: `#${currentOrder.orderNumber}`, changes });
+
     return c.json(updatedOrder);
   } catch (error) {
     console.error("Failed to update order:", error);
@@ -134,10 +158,15 @@ const app = new Hono()
   }
 })
 
-.post("/:id/cancel", zValidator("json", z.object({
+.post("/:id/cancel", sessionMiddleware, zValidator("json", z.object({
   reason: z.string().max(500).optional(),
   restock: z.boolean().optional().default(true),
 })), async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const id = c.req.param("id");
   const { reason, restock } = c.req.valid("json");
 
@@ -190,6 +219,14 @@ const app = new Hono()
       with: { user: true, items: true },
     });
 
+    setActivityMeta(c, {
+      name: `#${order.orderNumber}`,
+      changes: [
+        { label: "Status", from: titleCase(order.status), to: "Cancelled" },
+        ...(reason ? [{ label: "Reason", to: reason } as ActivityChange] : []),
+      ],
+    });
+
     return c.json(updatedOrder);
   } catch (error) {
     console.error("Failed to cancel order:", error);
@@ -197,11 +234,16 @@ const app = new Hono()
   }
 })
 
-.post("/:id/refund", zValidator("json", z.object({
+.post("/:id/refund", sessionMiddleware, zValidator("json", z.object({
   amount: z.number().positive(),
   reason: z.string().max(500).optional(),
   restock: z.boolean().optional().default(true),
 })), async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const id = c.req.param("id");
   const { amount, reason, restock } = c.req.valid("json");
 
@@ -285,6 +327,15 @@ const app = new Hono()
       with: { user: true, items: true },
     });
 
+    setActivityMeta(c, {
+      name: `#${order.orderNumber}`,
+      changes: [
+        { label: "Refunded amount", from: alreadyRefunded, to: newRefunded },
+        { label: "Payment status", from: titleCase(order.paymentStatus), to: isFull ? "Refunded" : "Partially Refunded" },
+        ...(reason ? [{ label: "Reason", to: reason } as ActivityChange] : []),
+      ],
+    });
+
     return c.json(updatedOrder);
   } catch (error) {
     console.error("Failed to refund order:", error);
@@ -292,14 +343,26 @@ const app = new Hono()
   }
 })
 
-.delete("/:id", async (c) => {
+.delete("/:id", sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const id = c.req.param("id");
 
   try {
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, id),
+        columns: { orderNumber: true },
+      });
+
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
       await db.delete(payments).where(eq(payments.orderId, id));
       await db.delete(orderTimelineEvents).where(eq(orderTimelineEvents.orderId, id));
       await db.delete(orders).where(eq(orders.id, id));
+
+      if (order) setActivityMeta(c, { name: `#${order.orderNumber}` });
 
     return c.json({ success: true });
   } catch (error) {
@@ -308,15 +371,29 @@ const app = new Hono()
   }
 })
 
-.post("/bulk-delete", zValidator("json", z.object({ ids: z.array(z.string()) })), async (c) => {
+.post("/bulk-delete", sessionMiddleware, zValidator("json", z.object({ ids: z.array(z.string()) })), async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const { ids } = c.req.valid("json");
 
   try {
     if (ids.length > 0) {
+      const targetOrders = await db.query.orders.findMany({
+        where: inArray(orders.id, ids),
+        columns: { orderNumber: true },
+      });
+
       await db.delete(orderItems).where(inArray(orderItems.orderId, ids));
       await db.delete(payments).where(inArray(payments.orderId, ids));
       await db.delete(orderTimelineEvents).where(inArray(orderTimelineEvents.orderId, ids));
       await db.delete(orders).where(inArray(orders.id, ids));
+
+      setActivityMeta(c, {
+        name: `${targetOrders.length} orders: ${summarizeNames(targetOrders.map((o) => `#${o.orderNumber}`))}`,
+      });
     }
     return c.json({ success: true });
   } catch (error) {

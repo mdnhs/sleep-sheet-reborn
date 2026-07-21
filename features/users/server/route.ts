@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import { db } from "@/db";
-import { users, orders } from "@/db/schema";
+import { users, orders, roles } from "@/db/schema";
 import { eq, ne, or, and, desc, isNull, isNotNull, sql } from "drizzle-orm";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
+import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
   .get("/", sessionMiddleware, async (c) => {
@@ -105,6 +106,8 @@ const app = new Hono()
         roleId: users.roleId,
       });
 
+      setActivityMeta(c, { name: newUser.name });
+
       return c.json(newUser);
     }
   )
@@ -139,9 +142,23 @@ const app = new Hono()
         return c.json({ error: "Cannot change role of super admin" }, 400);
       }
 
+      const [oldRole, newRole] = await Promise.all([
+        targetUser.roleId
+          ? db.query.roles.findFirst({ where: eq(roles.id, targetUser.roleId), columns: { name: true } })
+          : null,
+        roleId
+          ? db.query.roles.findFirst({ where: eq(roles.id, roleId), columns: { name: true } })
+          : null,
+      ]);
+
       const [updated] = await db.update(users).set({
         roleId,
       }).where(eq(users.id, id)).returning({ id: users.id });
+
+      setActivityMeta(c, {
+        name: targetUser.name || targetUser.email,
+        changes: [{ label: "Role", from: oldRole?.name ?? "None", to: newRole?.name ?? "None" }],
+      });
 
       return c.json(updated);
     }

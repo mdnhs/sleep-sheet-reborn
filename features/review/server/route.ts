@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { reviews, products } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
+import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
   .post("/", sessionMiddleware, async (c) => {
@@ -108,6 +109,19 @@ const app = new Hono()
       .where(eq(reviews.id, reviewId))
       .returning();
 
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, existingReview.productId),
+      columns: { name: true },
+    });
+    const changes: ActivityChange[] = [];
+    if (existingReview.rating !== updatedReview.rating) {
+      changes.push({ label: "Rating", from: existingReview.rating, to: updatedReview.rating });
+    }
+    if (existingReview.comment !== updatedReview.comment) {
+      changes.push({ label: "Comment", from: existingReview.comment, to: updatedReview.comment });
+    }
+    setActivityMeta(c, { name: product ? `Review on "${product.name}"` : "Review", changes });
+
     return c.json({ success: true, data: updatedReview });
   } catch (error) {
     console.error(error);
@@ -134,7 +148,13 @@ const app = new Hono()
       }
   
       await db.delete(reviews).where(eq(reviews.id, reviewId));
-  
+
+      const product = await db.query.products.findFirst({
+        where: eq(products.id, existingReview.productId),
+        columns: { name: true },
+      });
+      setActivityMeta(c, { name: product ? `Review on "${product.name}"` : "Review" });
+
       return c.json({ success: true });
     } catch (error) {
       console.error(error);

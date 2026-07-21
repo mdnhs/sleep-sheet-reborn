@@ -7,6 +7,7 @@ import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { invalidateFeed } from '@/lib/meta-catalog/cache';
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono();
 
@@ -83,6 +84,8 @@ app.post('/upload',sessionMiddleware, async (c) => {
         category,
         specifications: insertedSpecs,
       };
+
+    setActivityMeta(c, { name: product.name });
 
     return c.json({
       success: true,
@@ -206,6 +209,31 @@ app.post('/upload',sessionMiddleware, async (c) => {
         specifications: insertedSpecs,
       };
 
+      const changes: ActivityChange[] = [];
+      if (existingProduct.name !== newProduct.name) {
+        changes.push({ label: "Name", from: existingProduct.name, to: newProduct.name });
+      }
+      if (existingProduct.price !== newProduct.price) {
+        changes.push({ label: "Price", from: existingProduct.price, to: newProduct.price });
+      }
+      if (existingProduct.stock !== newProduct.stock) {
+        changes.push({ label: "Stock", from: existingProduct.stock, to: newProduct.stock });
+      }
+      if (existingProduct.categoryId !== newProduct.categoryId) {
+        const oldCategory = await db.query.categories.findFirst({
+          where: eq(categories.id, existingProduct.categoryId),
+          columns: { label: true },
+        });
+        changes.push({ label: "Category", from: oldCategory?.label ?? "—", to: category.label });
+      }
+      if (existingProduct.discount !== newProduct.discount) {
+        changes.push({ label: "Discount", from: existingProduct.discount, to: newProduct.discount });
+      }
+      if (existingProduct.isFeatured !== newProduct.isFeatured) {
+        changes.push({ label: "Featured", from: existingProduct.isFeatured, to: newProduct.isFeatured });
+      }
+      setActivityMeta(c, { name: newProduct.name, changes });
+
     return c.json({ success: true, product: updatedProduct }, 200);
   } catch (error) {
     console.error("Error updating product:", error);
@@ -228,11 +256,14 @@ app.post('/bulk-delete', sessionMiddleware, async (c) => {
       return c.json({ error: "No product IDs provided" }, 400);
     }
 
+    const deletedNames: string[] = [];
+
     for (const productId of ids) {
       const product = await db.query.products.findFirst({
         where: eq(products.id, productId),
       });
       if (!product) continue;
+      deletedNames.push(product.name);
 
       for (const img of product.images) {
         await deleteImageFromStorage(img);
@@ -250,6 +281,7 @@ app.post('/bulk-delete', sessionMiddleware, async (c) => {
     }
 
     invalidateFeed();
+    setActivityMeta(c, { name: `${deletedNames.length} products: ${summarizeNames(deletedNames)}` });
     return c.json({ success: true, deleted: ids.length });
   } catch (error) {
     console.error("Error bulk deleting products:", error);
@@ -285,6 +317,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
         .where(eq(orderItems.productId, productId));
       await db.delete(products).where(eq(products.id, productId));
       invalidateFeed();
+      setActivityMeta(c, { name: product.name });
 
     return c.json({ success: true });
   } catch (error) {

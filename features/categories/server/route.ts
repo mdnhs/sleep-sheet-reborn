@@ -8,6 +8,7 @@ import { z } from 'zod';
 import cuid from 'cuid';
 import { uploadImage, deleteImage } from '@/lib/cloudinary';
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
 .get("/", async(c)=>{
@@ -84,6 +85,8 @@ const app = new Hono()
           seoTitle: seoTitle ?? null,
           seoDescription: seoDescription ?? null,
         });
+
+        setActivityMeta(c, { name: label });
 
         return c.json({
           label,
@@ -179,6 +182,18 @@ const app = new Hono()
 
      await db.update(categories).set(updates).where(eq(categories.value, currentValue))
 
+     const changes: ActivityChange[] = [];
+     if (body.label !== undefined && body.label !== existing.label) {
+       changes.push({ label: "Name", from: existing.label, to: body.label });
+     }
+     if (body.value !== undefined && body.value !== existing.value) {
+       changes.push({ label: "URL slug", from: existing.value, to: body.value });
+     }
+     if (body.order !== undefined && body.order !== existing.order) {
+       changes.push({ label: "Sort order", from: existing.order, to: body.order });
+     }
+     setActivityMeta(c, { name: body.label ?? existing.label, changes });
+
      return c.json({ success: true })
    } catch (error) {
      console.error("Failed to update category", error)
@@ -217,6 +232,8 @@ const app = new Hono()
        return c.json({ error: "No category values provided" }, 400);
      }
 
+     const deletedLabels: string[] = [];
+
      for (const value of values) {
        const category = await db.query.categories.findFirst({
          where: eq(categories.value, value),
@@ -226,8 +243,10 @@ const app = new Hono()
        if (category.children.length > 0) continue;
 
        await db.delete(categories).where(eq(categories.value, value));
+       deletedLabels.push(category.label);
      }
 
+     setActivityMeta(c, { name: `${deletedLabels.length} categories: ${summarizeNames(deletedLabels)}` });
      return c.json({ success: true });
    } catch (error) {
      console.error("Failed to bulk delete categories", error);
@@ -262,6 +281,8 @@ const app = new Hono()
         await deleteImage(category.image).catch(() => {})
       }
       await db.delete(categories).where(eq(categories.value, value));
+
+      setActivityMeta(c, { name: category.label });
 
       return c.json({ success: true, message: "Category deleted" }, 200);
    } catch (error) {

@@ -7,6 +7,7 @@ import { expenseCategories, expenses } from "@/db/schema";
 import { eq, and, gte, lte, desc, sum, count, sql, type SQL } from "drizzle-orm";
 import cuid from "cuid";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 const canManageExpenses = (
   user: { role?: string; permissions?: string[] } | null | undefined
@@ -195,6 +196,13 @@ const app = new Hono()
             date: date ? new Date(date) : new Date(),
           })
           .returning();
+
+        const category = await db.query.expenseCategories.findFirst({
+          where: eq(expenseCategories.id, categoryId),
+          columns: { name: true },
+        });
+        setActivityMeta(c, { name: `${amount} — ${category?.name ?? "Uncategorized"}${note ? ` (${note})` : ""}` });
+
         return c.json({ data: expense });
       } catch (err) {
         console.error(err);
@@ -209,9 +217,18 @@ const app = new Hono()
     }
     try {
       const id = c.req.param("id");
+      const existing = await db.query.expenses.findFirst({
+        where: eq(expenses.id, id),
+        with: { category: { columns: { name: true } } },
+      });
       const deleted = await db.delete(expenses).where(eq(expenses.id, id)).returning({ id: expenses.id });
       if (deleted.length === 0) {
         return c.json({ error: "Expense not found" }, 404);
+      }
+      if (existing) {
+        setActivityMeta(c, {
+          name: `${existing.amount} — ${existing.category?.name ?? "Uncategorized"}${existing.note ? ` (${existing.note})` : ""}`,
+        });
       }
       return c.json({ success: true });
     } catch (err) {

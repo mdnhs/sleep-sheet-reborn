@@ -6,6 +6,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
   .get("/", sessionMiddleware, async (c) => {
@@ -51,6 +52,8 @@ const app = new Hono()
         permissions,
       }).returning();
 
+      setActivityMeta(c, { name: newRole.name });
+
       return c.json(newRole);
     }
   )
@@ -81,6 +84,8 @@ const app = new Hono()
         return c.json({ error: "Role name already exists" }, 400);
       }
 
+      const before = await db.query.roles.findFirst({ where: eq(roles.id, id) });
+
       const [updated] = await db.update(roles).set({
         name,
         permissions,
@@ -88,6 +93,19 @@ const app = new Hono()
 
       if (!updated) {
         return c.json({ error: "Role not found" }, 404);
+      }
+
+      if (before) {
+        const changes: ActivityChange[] = [];
+        if (before.name !== updated.name) {
+          changes.push({ label: "Name", from: before.name, to: updated.name });
+        }
+        const beforePerms = new Set(before.permissions);
+        const afterPerms = new Set(updated.permissions);
+        if (beforePerms.size !== afterPerms.size || [...beforePerms].some((p) => !afterPerms.has(p))) {
+          changes.push({ label: "Permissions", from: `${beforePerms.size} granted`, to: `${afterPerms.size} granted` });
+        }
+        setActivityMeta(c, { name: updated.name, changes });
       }
 
       return c.json(updated);
@@ -119,6 +137,8 @@ const app = new Hono()
       if (!deleted) {
         return c.json({ error: "Role not found" }, 404);
       }
+
+      setActivityMeta(c, { name: deleted.name });
 
       return c.json({ success: true });
     }

@@ -45,7 +45,7 @@ import {
   useBookCourier,
   useSteadfastBalance,
   useSteadfastTrackingStatuses,
-  useSyncOrderStatus,
+  useSyncBatchOrderStatus,
   useTrackSingleOrder,
 } from "@/features/steadfast/api/use-steadfast";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
@@ -83,6 +83,13 @@ import { toast } from "sonner";
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
 };
+
+// Once an order reaches one of these, Steadfast will never move it again
+// (mapSteadfastStatus can't produce REFUNDED, and DELIVERED/CANCELLED are
+// dead ends) — so polling or refreshing its courier status is pure waste.
+// Keep these orders out of the auto-poll and bulk refresh/sync calls.
+const TERMINAL_ORDER_STATUSES = new Set<Order["status"]>(["DELIVERED", "CANCELLED", "REFUNDED"]);
+const isTrackable = (o: ShippingOrder) => !!o.trackingNumber && !TERMINAL_ORDER_STATUSES.has(o.status);
 
 const STATUS_COLORS: Record<Order["status"], string> = {
   PENDING: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
@@ -213,7 +220,7 @@ export default function OrdersPage() {
     useOrderMutations();
   const { data: balanceData, isLoading: isBalanceLoading } =
     useSteadfastBalance(showBalance);
-  const syncStatus = useSyncOrderStatus();
+  const syncBatch = useSyncBatchOrderStatus();
   const trackSingleOrder = useTrackSingleOrder();
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
   const [isRefetchingSteadfast, setIsRefetchingSteadfast] = useState(false);
@@ -226,13 +233,14 @@ export default function OrdersPage() {
         queryClient.invalidateQueries({ queryKey: ["steadfast-tracking-statuses"] }),
         queryClient.invalidateQueries({ queryKey: ["steadfast-balance"] }),
       ]);
-      const trackedOrders = orders?.filter((o) => o.trackingNumber) ?? [];
+      const trackedOrders = orders?.filter(isTrackable) ?? [];
       if (trackedOrders.length > 0) {
-        await Promise.allSettled(
-          trackedOrders.map((o) => syncStatus.mutateAsync(o.id)),
-        );
+        // The mutation's own onSuccess toast reports how many orders actually
+        // changed, which is more useful than a blanket "done" message here.
+        await syncBatch.mutateAsync(trackedOrders.map((o) => o.id));
+      } else {
+        toast.success("Steadfast statuses re-fetched successfully");
       }
-      toast.success("Steadfast statuses re-fetched successfully");
     } catch (err) {
       toast.error("Failed to re-fetch status");
     } finally {
@@ -242,8 +250,10 @@ export default function OrdersPage() {
 
   const orders = rawOrders as ShippingOrder[] | undefined;
 
+  // Excludes delivered/cancelled/refunded orders — their courier status is
+  // final, so there's nothing left to poll every 60s (see isTrackable above).
   const trackedOrderIds =
-    orders?.filter((o) => o.trackingNumber).map((o) => o.id) ?? [];
+    orders?.filter(isTrackable).map((o) => o.id) ?? [];
   const { data: trackingStatuses } =
     useSteadfastTrackingStatuses(trackedOrderIds);
 
@@ -1255,24 +1265,24 @@ export default function OrdersPage() {
               Delete Selected ({selectedOrders.length})
             </Button>
           )}
-          {selectedOrders.filter((o) => o.trackingNumber).length > 0 && (
+          {selectedOrders.filter(isTrackable).length > 0 && (
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                const tracked = selectedOrders.filter((o) => o.trackingNumber);
-                tracked.forEach((o) => syncStatus.mutate(o.id));
+                const tracked = selectedOrders.filter(isTrackable);
+                syncBatch.mutate(tracked.map((o) => o.id));
               }}
-              disabled={syncStatus.isPending}
+              disabled={syncBatch.isPending}
               className="rounded-full gap-1 shrink-0 text-xs font-semibold border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800"
             >
-              {syncStatus.isPending ? (
+              {syncBatch.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
               Sync Tracked (
-              {selectedOrders.filter((o) => o.trackingNumber).length})
+              {selectedOrders.filter(isTrackable).length})
             </Button>
           )}
         </div>

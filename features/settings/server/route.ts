@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 
 // Credentials that must never leave the server through the public GET.
 // The public endpoint exposes only a "<key>_set" flag for each so the admin
@@ -142,6 +143,12 @@ const app = new Hono()
       const body = c.req.valid("json");
       const updates = Object.entries(body).filter(([, v]) => v !== undefined) as [string, any][];
 
+      const changedKeys = updates.map(([key]) => key);
+      const before = changedKeys.length
+        ? await db.query.siteSettings.findMany({ where: inArray(siteSettings.key, changedKeys) })
+        : [];
+      const beforeByKey = Object.fromEntries(before.map((r) => [r.key, r.value]));
+
       await Promise.all(
         updates.map(([key, value]) =>
           db.insert(siteSettings)
@@ -152,6 +159,23 @@ const app = new Hono()
             })
         )
       );
+
+      // Never log raw secret values — show only that a credential changed.
+      const prettifyKey = (key: string) =>
+        key.split("_").map((w) => w[0]?.toUpperCase() + w.slice(1)).join(" ");
+      const changes: ActivityChange[] = updates
+        .filter(([key, value]) => String(value) !== (beforeByKey[key] ?? ""))
+        .map(([key, value]) => {
+          if (isSecretKey(key)) {
+            return { label: prettifyKey(key), from: beforeByKey[key] ? "(set)" : "(empty)", to: "(updated)" };
+          }
+          return { label: prettifyKey(key), from: beforeByKey[key] ?? "(empty)", to: String(value) };
+        });
+
+      setActivityMeta(c, {
+        name: changes.length === 1 ? changes[0].label : `${changes.length} settings`,
+        changes,
+      });
 
       return c.json({ success: true });
     }

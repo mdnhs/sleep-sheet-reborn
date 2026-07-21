@@ -5,6 +5,7 @@ import { desc, eq, ilike, inArray, or, sql, and } from 'drizzle-orm'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { uploadImage } from '@/lib/cloudinary'
+import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
 
@@ -75,6 +76,8 @@ const app = new Hono()
 
       const newTestimonial = await db.insert(testimonials).values(data).returning()
 
+      setActivityMeta(c, { name: newTestimonial[0].name || "Anonymous" });
+
       return c.json({ success: true, testimonial: newTestimonial[0] }, 201)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -107,9 +110,17 @@ const app = new Hono()
       return c.json({ error: 'No IDs provided' }, 400)
     }
 
+    const toDelete = await db.select({ name: testimonials.name })
+      .from(testimonials)
+      .where(inArray(testimonials.id, ids))
+
     const result = await db.delete(testimonials)
       .where(inArray(testimonials.id, ids))
       .returning({ id: testimonials.id })
+
+    setActivityMeta(c, {
+      name: `${result.length} testimonials: ${summarizeNames(toDelete.map((t) => t.name || "Anonymous"))}`,
+    });
 
     return c.json({ deleted: result.length })
   } catch (error) {
@@ -129,6 +140,8 @@ const app = new Hono()
       if (!deletedTestimonial.length) {
         return c.json({ success: false, message: 'Testimonial not found' }, 404)
       }
+
+      setActivityMeta(c, { name: deletedTestimonial[0].name || "Anonymous" });
 
       return c.json({ success: true, testimonial: deletedTestimonial[0] })
     } catch (error) {
@@ -156,6 +169,8 @@ const app = new Hono()
       const id = c.req.param('id')
       const data = c.req.valid('json')
 
+      const before = await db.query.testimonials.findFirst({ where: eq(testimonials.id, id) })
+
       const updatedTestimonial = await db
         .update(testimonials)
         .set(data)
@@ -164,6 +179,17 @@ const app = new Hono()
 
       if (!updatedTestimonial.length) {
         return c.json({ success: false, message: 'Testimonial not found' }, 404)
+      }
+
+      if (before) {
+        const changes: ActivityChange[] = [];
+        if (data.rating !== undefined && data.rating !== before.rating) {
+          changes.push({ label: "Rating", from: before.rating, to: data.rating });
+        }
+        if (data.message !== undefined && data.message !== before.message) {
+          changes.push({ label: "Message", from: before.message, to: data.message });
+        }
+        setActivityMeta(c, { name: before.name || "Anonymous", changes });
       }
 
       return c.json({ success: true, testimonial: updatedTestimonial[0] }, 200)

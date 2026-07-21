@@ -56,6 +56,36 @@ export function useTrackSingleOrder() {
   });
 }
 
+// Syncs many orders' Steadfast status in ONE request instead of one request
+// per order (the "refresh all" / bulk sync buttons used to fire N POSTs —
+// see app/(dashboard)/dashboard/orders/page.tsx).
+export function useSyncBatchOrderStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderIds: string[]) => {
+      const res = await client.api.steadfast["sync-batch"]["$post"]({
+        json: { orderIds },
+      });
+      const data = await res.json();
+      if (!res.ok || "error" in data) {
+        throw new Error("error" in data ? data.error : "Sync failed");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.updatedCount > 0) {
+        toast.success(`${data.updatedCount} of ${data.total} order${data.total === 1 ? "" : "s"} updated`);
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+      } else {
+        toast.info("All statuses already up to date");
+      }
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to sync statuses");
+    },
+  });
+}
+
 export function useSteadfastBalance(enabled = true) {
   return useQuery({
     queryKey: ["steadfast-balance"],

@@ -25,6 +25,7 @@ const app = new Hono()
           ilike(activityLogs.userName, `%${search}%`),
           ilike(activityLogs.userEmail, `%${search}%`),
           ilike(activityLogs.action, `%${search}%`),
+          ilike(activityLogs.targetName, `%${search}%`),
           ilike(activityLogs.path, `%${search}%`),
           ilike(activityLogs.ip, `%${search}%`),
         ),

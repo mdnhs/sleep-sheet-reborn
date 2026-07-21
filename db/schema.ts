@@ -655,5 +655,13 @@ export const activityLogs = pgTable("activity_logs", {
   path: text("path").notNull(),
   status: integer("status").notNull(),
   ip: text("ip").notNull(),
+  // The specific thing that was acted on, e.g. a product name, an order
+  // number, or a customer's name — so a non-technical admin can tell WHAT
+  // was created/edited/deleted without reading the URL. Null when a route
+  // hasn't been taught to report one (falls back to the generic `action`).
+  targetName: text("targetName"),
+  // For edits: the fields that actually changed, as a small human-readable
+  // list of { label, from, to }. Null for creates/deletes/reads.
+  changes: json("changes").$type<{ label: string; from?: string | null; to?: string | null }[]>(),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });

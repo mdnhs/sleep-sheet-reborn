@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods } from "@/db/schema";
+import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
+import bcrypt from "bcryptjs";
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
@@ -34,6 +35,44 @@ function isUniqueViolation(err: unknown): boolean {
     e?.cause?.code === "23505" ||
     /duplicate key|unique constraint/i.test(e?.message ?? "")
   );
+}
+
+/**
+ * Find (by phone) or create the customer account behind a guest checkout —
+ * the same phone-based match/create pattern POS uses for walk-in customers.
+ * Without this, a guest order's only trace of the customer is columns on
+ * that one order row: if the order is ever deleted, the customer vanishes
+ * with it and never appears on the Customers page. Linking a real `users`
+ * row makes the customer persist independently of any single order.
+ */
+async function findOrCreateGuestCustomer(info: {
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  address: string;
+}): Promise<string> {
+  const existing = await db.query.users.findFirst({ where: eq(users.phone, info.phone) });
+  if (existing) return existing.id;
+
+  // Only reuse the submitted email if it doesn't already belong to a
+  // different account — `users.email` is unique, and a collision here would
+  // otherwise crash order creation.
+  let email = info.email?.trim() || "";
+  if (email) {
+    const emailTaken = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (emailTaken) email = "";
+  }
+
+  const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
+  const [newCustomer] = await db.insert(users).values({
+    name: info.fullName,
+    email: email || `${info.phone}@guest.local`,
+    phone: info.phone,
+    password: hashedPassword,
+    address: info.address,
+  }).returning({ id: users.id });
+
+  return newCustomer.id;
 }
 
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
@@ -242,11 +281,18 @@ const app = new Hono()
   const totalAmount = subtotal + shippingCost;
 
   try {
+    const guestUserId = await findOrCreateGuestCustomer({
+      fullName: shippingInfo.fullName,
+      phone: shippingInfo.phone,
+      email: shippingInfo.email,
+      address: shippingInfo.address,
+    });
+
     let guestOrderId = "";
     const orderNumber = await generateOrderNumber();
     const [order] = await db.insert(orders).values({
       orderNumber,
-      userId: null,
+      userId: guestUserId,
       guestName: shippingInfo.fullName,
       guestPhone: shippingInfo.phone,
       guestEmail: shippingInfo.email || null,

@@ -7,6 +7,7 @@ import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { uploadImage } from '@/lib/cloudinary';
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
 
@@ -132,6 +133,8 @@ const app = new Hono()
         authorId: user.id,
       }).returning();
 
+      setActivityMeta(c, { name: newPost[0].title });
+
       return c.json({ success: true, post: newPost[0] }, 201);
     } catch (error) {
       console.error("Create post error:", error);
@@ -187,7 +190,9 @@ const app = new Hono()
 
       const id = c.req.param('id');
       const data = c.req.valid('json');
-      
+
+      const before = await db.query.posts.findFirst({ where: eq(posts.id, id) });
+
       const updatedPost = await db.update(posts)
         .set({ ...data, updatedAt: new Date() })
         .where(eq(posts.id, id))
@@ -195,6 +200,15 @@ const app = new Hono()
 
       if (!updatedPost.length) {
         return c.json({ success: false, message: 'Post not found' }, 404);
+      }
+
+      if (before) {
+        const changes: ActivityChange[] = [];
+        if (before.title !== data.title) changes.push({ label: "Title", from: before.title, to: data.title });
+        if (before.isPublished !== data.isPublished) {
+          changes.push({ label: "Published", from: before.isPublished, to: data.isPublished });
+        }
+        setActivityMeta(c, { name: data.title, changes });
       }
 
       return c.json({ success: true, post: updatedPost[0] });
@@ -223,6 +237,8 @@ const app = new Hono()
       const id = c.req.param('id');
       const { isPublished } = c.req.valid('json');
 
+      const before = await db.query.posts.findFirst({ where: eq(posts.id, id), columns: { title: true, isPublished: true } });
+
       const updatedPost = await db.update(posts)
         .set({ isPublished, updatedAt: new Date() })
         .where(eq(posts.id, id))
@@ -230,6 +246,13 @@ const app = new Hono()
 
       if (!updatedPost.length) {
         return c.json({ success: false, message: 'Post not found' }, 404);
+      }
+
+      if (before) {
+        setActivityMeta(c, {
+          name: before.title,
+          changes: [{ label: "Published", from: before.isPublished, to: isPublished }],
+        });
       }
 
       return c.json({ success: true, post: updatedPost[0] });
@@ -255,9 +278,15 @@ const app = new Hono()
       return c.json({ error: 'No IDs provided' }, 400)
     }
 
+    const toDelete = await db.select({ title: posts.title }).from(posts).where(inArray(posts.id, ids))
+
     const result = await db.delete(posts)
       .where(inArray(posts.id, ids))
       .returning({ id: posts.id })
+
+    setActivityMeta(c, {
+      name: `${result.length} blog posts: ${summarizeNames(toDelete.map((p) => p.title))}`,
+    });
 
     return c.json({ deleted: result.length })
   } catch (error) {
@@ -286,6 +315,8 @@ const app = new Hono()
       if (!deletedPost.length) {
         return c.json({ success: false, message: 'Post not found' }, 404);
       }
+
+      setActivityMeta(c, { name: deletedPost[0].title });
 
       return c.json({ success: true, post: deletedPost[0] });
     } catch (error) {
