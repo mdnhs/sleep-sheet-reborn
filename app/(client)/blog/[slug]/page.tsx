@@ -31,13 +31,13 @@ export async function generateMetadata({ params }: Props) {
           description,
           type: "article",
           url: `${seoConfig.siteUrl}/blog/${slug}`,
-          images: post.coverImage ? [{ url: post.coverImage }] : undefined,
+          images: [{ url: "/logo.png" }],
         },
         twitter: {
           card: "summary_large_image",
           title: post.title,
           description,
-          images: post.coverImage ? [post.coverImage] : undefined,
+          images: ["/logo.png"],
         },
         alternates: {
           canonical: `${seoConfig.siteUrl}/blog/${slug}`,

@@ -27,7 +27,7 @@ export function generateMetadata({
 }: MetadataParams): Metadata {
   const fullTitle = `${title} | ${seoConfig.siteName}`
   const canonicalUrl = canonical || seoConfig.siteUrl
-  const ogImage = openGraph?.image || seoConfig.defaultImage
+  const ogImage = "/logo.png"
 
   return {
     // { absolute } opts out of the root layout's `%s | ${siteName}` title
