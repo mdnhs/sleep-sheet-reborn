@@ -215,7 +215,7 @@ export default function OrdersPage() {
 
   const { data: rawOrders, isLoading } = useOrders(search, rangeFilter);
   const { symbol: currencySymbol, formatAmount } = useCurrency();
-  const { siteName, logoUrl } = useWebsiteSettings();
+  const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
   const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
     useOrderMutations();
   const { data: balanceData, isLoading: isBalanceLoading } =
@@ -320,6 +320,7 @@ export default function OrdersPage() {
           siteName={siteName}
           language="bn"
           logoUrl={logoUrl}
+          phoneNumber={footerPhone}
         />
       );
 
@@ -417,6 +418,7 @@ export default function OrdersPage() {
           siteName={siteName}
           language="bn"
           logoUrl={logoUrl}
+          phoneNumber={footerPhone}
         />
       );
 

@@ -189,6 +189,9 @@ export default function BlogClientPage() {
                 <Link href={`/dashboard/blog/update/${post.id}`}>
                   <DropdownMenuItem>Edit</DropdownMenuItem>
                 </Link>
+                <Link href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                  <DropdownMenuItem>View Blog</DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   disabled={isDeleting}

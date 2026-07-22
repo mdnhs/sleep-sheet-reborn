@@ -2,6 +2,7 @@ import React from "react";
 import { Document, Page, Text, View, StyleSheet, Font, Image } from "@react-pdf/renderer";
 import { PlacedOrder, ShippingInfo } from "../types";
 import { translations } from "@/hooks/use-language";
+import { seoConfig } from "@/lib/seo";
 
 // Register Hind Siliguri font from Google Fonts GitHub via jsDelivr to support Bangla characters
 Font.register({
@@ -248,9 +249,10 @@ interface InvoicePDFProps {
   siteName: string;
   language: "en" | "bn";
   logoUrl: string;
+  phoneNumber?: string;
 }
 
-export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUrl }: InvoicePDFProps) => {
+export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUrl, phoneNumber }: InvoicePDFProps) => {
   const t = (key: string) => {
     return translations[language]?.[key as keyof typeof translations.en] || translations.en[key as keyof typeof translations.en] || key;
   };
@@ -274,6 +276,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
               <Text style={styles.brandName}>{siteName}</Text>
               <Text style={styles.brandDesc}>Merchant ID - USH1CSYQ</Text>
               <Text style={styles.brandDesc}>www.sleepsheetbd.com</Text>
+              <Text style={styles.brandDesc}>{phoneNumber || seoConfig.contact.telephone}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -400,9 +403,10 @@ interface BulkInvoicePDFProps {
   siteName: string;
   language: "en" | "bn";
   logoUrl: string;
+  phoneNumber?: string;
 }
 
-export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl }: BulkInvoicePDFProps) => {
+export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl, phoneNumber }: BulkInvoicePDFProps) => {
   return (
     <Document>
       {orders.map((item, index) => (
@@ -413,6 +417,7 @@ export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl }: BulkInvo
           siteName={siteName}
           language={language}
           logoUrl={logoUrl}
+          phoneNumber={phoneNumber}
         />
       ))}
     </Document>

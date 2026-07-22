@@ -59,7 +59,7 @@ function TrackOrderContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
   const { formatAmount } = useCurrency();
-  const { siteName, logoUrl } = useWebsiteSettings();
+  const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
 
   const performSearch = async (phoneNumber: string) => {
     if (!phoneNumber.trim()) return;
@@ -141,6 +141,7 @@ function TrackOrderContent() {
           siteName={siteName}
           logoUrl={logoUrl || ""}
           language={language}
+          phoneNumber={footerPhone}
         />
       );
       const asPdf = pdf(doc);

@@ -40,7 +40,7 @@ function OrderSuccessContent() {
   const [orderId] = useQueryState("orderId");
   const [phone] = useQueryState("phone");
   const { t, language } = useLanguage();
-  const { siteName, logoUrl } = useWebsiteSettings();
+  const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,6 +127,7 @@ function OrderSuccessContent() {
           siteName={siteName}
           logoUrl={logoUrl || ""}
           language={language}
+          phoneNumber={footerPhone}
         />
       );
       const asPdf = pdf(doc);

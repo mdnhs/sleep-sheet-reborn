@@ -38,7 +38,7 @@ function OrderSuccessContent() {
   const router = useRouter();
   const orderId = searchParams.get("orderId");
   const { t, language } = useLanguage();
-  const { siteName, logoUrl } = useWebsiteSettings();
+  const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +113,7 @@ function OrderSuccessContent() {
           siteName={siteName} 
           logoUrl={logoUrl || ""}
           language={language}
+          phoneNumber={footerPhone}
         />
       );
 
