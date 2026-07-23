@@ -6,6 +6,8 @@ import { carts, cartItems, products } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { CartResponse } from "../type";
 
+import { calculateItemUnitPrice } from "@/lib/utils";
+
 const addToCartSchema = z.object({
   productId: z.string(),
   quantity: z.number().min(1),
@@ -169,8 +171,12 @@ const app = new Hono()
 
       const response: CartResponse = {
         items: cart?.items.map(item => {
-          const variant = (item.product.variants as { name: string; price: number | null }[] | null)?.find(v => v.name === item.color);
-          const displayPrice = variant?.price ?? item.product.price;
+          const displayPrice = calculateItemUnitPrice(
+            item.color,
+            item.product.price,
+            item.product.variants as { name: string; price: number | null }[] | null,
+            item.product.addOns as { name: string; price: number }[] | null
+          );
 
           return {
             id: item.id,
@@ -183,7 +189,8 @@ const app = new Hono()
               name: item.product.name,
               price: displayPrice,
               image: item.product.images[0] || "",
-              description: item.product.description
+              description: item.product.description,
+              addOns: item.product.addOns as { name: string; price: number }[] | null,
             }
           };
         }) || []

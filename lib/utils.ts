@@ -213,3 +213,61 @@ export function getOptimizedImageUrl(url: string | null | undefined, width?: num
   return url;
 }
 
+export function calculateItemUnitPrice(
+  color: string | null | undefined,
+  basePrice: number,
+  variants?: { name: string; price: number | null }[] | null,
+  addOns?: { name: string; price: number }[] | null
+): number {
+  if (!color) return basePrice;
+
+  let baseColorName = color;
+  if (color.includes(" (+ ")) {
+    baseColorName = color.split(" (+ ")[0];
+  } else if (color.startsWith("Add-ons: ")) {
+    baseColorName = "";
+  }
+
+  const variant = variants?.find((v) => v.name === baseColorName);
+  let price =
+    variant && variant.price !== null && variant.price !== undefined
+      ? variant.price
+      : basePrice;
+
+  if (addOns && addOns.length > 0) {
+    for (const addOn of addOns) {
+      if (!addOn.name) continue;
+      const escapedName = addOn.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`${escapedName}\\s+x(\\d+)`);
+      const match = color.match(regex);
+      if (match && match[1]) {
+        const qty = parseInt(match[1], 10);
+        if (!isNaN(qty) && qty > 0) {
+          price += addOn.price * qty;
+        }
+      }
+    }
+  }
+
+  return price;
+}
+
+export function enrichColorWithAddOnPrices(
+  color: string | undefined | null,
+  addOns?: { name: string; price: number }[] | null,
+  formatAmount?: (price: number) => string
+): string {
+  if (!color) return "";
+  if (!addOns || addOns.length === 0) return color;
+
+  let result = color;
+  for (const addOn of addOns) {
+    if (!addOn.name) continue;
+    const escapedName = addOn.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escapedName}\\s+x\\d+)(?!\\s*\\()`, "g");
+    const formattedPrice = formatAmount ? formatAmount(addOn.price) : `${addOn.price} TK`;
+    result = result.replace(regex, `$1 (${formattedPrice})`);
+  }
+  return result;
+}
+

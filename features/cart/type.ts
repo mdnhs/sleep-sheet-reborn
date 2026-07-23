@@ -5,6 +5,7 @@ export interface CartProduct {
     price: number;
     image: string;
     description: string;
+    addOns?: { name: string; price: number }[] | null;
   }
   
   export interface CartItemResponse {

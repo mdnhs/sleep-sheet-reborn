@@ -6,6 +6,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
+import { enrichColorWithAddOnPrices } from "@/lib/utils";
 
 function OrderSummeryCard() {
   const userItems = useCartStore((state) => state.items);
@@ -49,12 +50,12 @@ function OrderSummeryCard() {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-2">
                   <h1 className="text-[11px] lg:text-xs font-semibold leading-tight truncate">{cartItem.name}</h1>
-                  <label className="font-bold text-[11px] lg:text-xs whitespace-nowrap">{symbol}{cartItem.price}</label>
+                  <label className="font-bold text-[11px] lg:text-xs whitespace-nowrap">{formatAmount(cartItem.price)}</label>
                 </div>
                 <div className="flex items-center gap-1.5 lg:gap-2 mt-0.5 text-[9px] lg:text-[10px] font-medium text-muted-foreground">
                   <span>{t("qty")}: {cartItem.quantity}</span>
                   <span className="w-0.5 h-0.5 rounded-full bg-border"></span>
-                  <span>{cartItem.color}</span>
+                  <span>{enrichColorWithAddOnPrices(cartItem.color, cartItem.addOns || (cartItem as any).product?.addOns, formatAmount)}</span>
                   {cartItem.size && (
                     <>
                       <span className="w-0.5 h-0.5 rounded-full bg-border"></span>

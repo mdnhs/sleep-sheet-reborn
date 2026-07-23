@@ -189,7 +189,7 @@ function NavbarActions({
       </Tooltip>
 
       {/* Profile/Sign In Button */}
-      {!user ? (
+      {!hasMounted || !user ? (
         <Tooltip>
           <TooltipTrigger
             render={
@@ -205,10 +205,7 @@ function NavbarActions({
           <TooltipContent side="bottom">{t("signIn")}</TooltipContent>
         </Tooltip>
       ) : (
-        <Tooltip>
-          <TooltipTrigger render={<UserButton />} />
-          <TooltipContent side="bottom">{t("account")}</TooltipContent>
-        </Tooltip>
+        <UserButton />
       )}
     </div>
   );

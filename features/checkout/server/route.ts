@@ -2,6 +2,18 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
+import { calculateItemUnitPrice } from "@/lib/utils";
+
+async function generateOrderNumber(): Promise<string> {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yy = String(now.getFullYear()).slice(-2);
+
+  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+  return `ORD-${dd}${mm}${yy}-${randomSuffix}`;
+}
 import { db } from "@/db";
 import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -40,17 +52,6 @@ async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
   const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) });
   return setting ? Number(setting.value) : (zone === "outside_dhaka" ? 120 : 60);
-}
-
-async function generateOrderNumber(): Promise<string> {
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2, "0");
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const yy = String(now.getFullYear()).slice(-2);
-
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-  return `ORD-${dd}${mm}${yy}-${randomSuffix}`;
 }
 
 /**
@@ -173,8 +174,12 @@ const app = new Hono()
       if (item.product.stock < item.quantity) {
         return c.json({ message: `Insufficient stock for ${item.product.name}` }, 400);
       }
-      const variant = (item.product.variants as { name: string; price: number | null }[] | null)?.find(v => v.name === item.color);
-      const displayPrice = variant?.price ?? item.product.price;
+      const displayPrice = calculateItemUnitPrice(
+        item.color,
+        item.product.price,
+        item.product.variants as { name: string; price: number | null }[] | null,
+        item.product.addOns as { name: string; price: number }[] | null
+      );
       cartItemsForOrder.push({
         productId: item.productId,
         quantity: item.quantity,
@@ -295,8 +300,12 @@ const app = new Hono()
     if (product.stock < item.quantity) {
       return c.json({ message: `Insufficient stock for ${product.name}` }, 400);
     }
-    const variant = (product.variants as { name: string; price: number | null }[] | null)?.find(v => v.name === item.color);
-    const displayPrice = variant?.price ?? product.price;
+    const displayPrice = calculateItemUnitPrice(
+      item.color,
+      product.price,
+      product.variants as { name: string; price: number | null }[] | null,
+      product.addOns as { name: string; price: number }[] | null
+    );
     cartItemsForOrder.push({
       productId: item.productId,
       quantity: item.quantity,

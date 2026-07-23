@@ -67,7 +67,10 @@ function ProductPicker({ product }: ProductPickerProps) {
 
   const selectedAddOnsSummary = Object.entries(selectedAddOns)
     .filter(([_, qty]) => qty > 0)
-    .map(([name, qty]) => `${name} x${qty}`)
+    .map(([name, qty]) => {
+      const addOn = product.addOns?.find((a) => a.name === name);
+      return addOn ? `${name} x${qty} (${formatAmount(addOn.price)})` : `${name} x${qty}`;
+    })
     .join(", ");
 
   const colorWithAddOns = selectedColor

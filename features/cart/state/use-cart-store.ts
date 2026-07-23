@@ -49,6 +49,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         size: item.size,
         color: item.color,
         ...item.product,
+        addOns: item.product.addOns,
         id: item.id
       }));
       set({ items: mappedItems, status: "succeeded" });
