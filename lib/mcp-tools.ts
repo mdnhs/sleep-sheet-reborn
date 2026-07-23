@@ -44,6 +44,7 @@ function makeApiClient({ origin, bearerToken }: McpToolContext) {
     post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
     put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
     patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
+    delete: <T>(path: string) => request<T>("DELETE", path),
   };
 }
 
@@ -242,5 +243,382 @@ export function registerMcpTools(server: McpServer, ctx: McpToolContext) {
       inputSchema: { id: z.string(), reason: z.string().max(500).optional(), restock: z.boolean().default(true) },
     },
     async ({ id, ...body }) => text(await api.post(`/orders/${id}/cancel`, body))
+  );
+
+  // --- Categories (read-only — structural, product FK target) ---
+  server.registerTool(
+    "list_categories",
+    {
+      title: "List categories",
+      description:
+        "List every product category, with each one's value/slug (the identifier update_product_details expects), label, parent, and product count.",
+      inputSchema: {},
+    },
+    async () => text(await api.get(`/categories`))
+  );
+
+  // --- Customers (read-only) ---
+  server.registerTool(
+    "list_customers",
+    {
+      title: "List customers",
+      description:
+        "List storefront customers (plain USER accounts, not staff) with order count, lifetime spend, and last order date. Returns everyone — filter client-side by name/phone/email if you're looking for one person.",
+      inputSchema: {},
+    },
+    async () => text(await api.get(`/users/customers`))
+  );
+
+  // --- Reports (read-only) ---
+  server.registerTool(
+    "get_financial_report",
+    {
+      title: "Get financial report",
+      description:
+        "Revenue, product cost, shipping, expenses, and profit for a date range (default: all time), plus cancelled/returned order totals. Cancelled and refunded orders are excluded from revenue.",
+      inputSchema: { from: z.string().optional(), to: z.string().optional() },
+    },
+    async ({ from, to }) => {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      return text(await api.get(`/reports?${params.toString()}`));
+    }
+  );
+
+  server.registerTool(
+    "get_monthly_report",
+    {
+      title: "Get monthly financial breakdown",
+      description: "Revenue, cost, shipping, expenses, and profit bucketed by month for a date range (default: all time).",
+      inputSchema: { from: z.string().optional(), to: z.string().optional() },
+    },
+    async ({ from, to }) => {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      return text(await api.get(`/reports/monthly?${params.toString()}`));
+    }
+  );
+
+  // --- Analytics (read-only) ---
+  server.registerTool(
+    "get_sales_overview",
+    {
+      title: "Get sales overview",
+      description:
+        "Revenue, order count, and trend vs. the previous equivalent period, for a preset period (default: month) or an explicit from/to range.",
+      inputSchema: {
+        period: z.enum(["today", "week", "month", "quarter", "year"]).optional().describe("Ignored if from/to are given"),
+        from: z.string().optional().describe("Overrides period"),
+        to: z.string().optional(),
+      },
+    },
+    async ({ period, from, to }) => {
+      const params = new URLSearchParams();
+      if (period) params.set("period", period);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      return text(await api.get(`/analytics/sales-overview?${params.toString()}`));
+    }
+  );
+
+  server.registerTool(
+    "get_top_products",
+    {
+      title: "Get top-selling products",
+      description: "The 5 best-selling products by units sold (all time, cancelled orders excluded).",
+      inputSchema: {},
+    },
+    async () => text(await api.get(`/analytics/most-purchased`))
+  );
+
+  // --- Traffic (read-only) ---
+  server.registerTool(
+    "get_traffic_summary",
+    {
+      title: "Get traffic summary",
+      description:
+        "Visitor traffic breakdown by event type, attribution source (utm_source/campaign, when present), and country over a recent time window (default: last 24 hours). Useful for cross-checking against ad platform numbers.",
+      inputSchema: { hours: z.number().int().min(1).max(720).optional().describe("Lookback window in hours, default 24") },
+    },
+    async ({ hours }) => {
+      const params = new URLSearchParams({ hours: String(hours ?? 24) });
+      const events = await api.get<Array<{
+        type: string;
+        country?: string | null;
+        meta?: Record<string, string | number | boolean> | null;
+      }>>(`/traffic?${params.toString()}`);
+
+      const bump = (key: string, r: Record<string, number>) => { r[key] = (r[key] || 0) + 1; };
+      const byType: Record<string, number> = {};
+      const bySource: Record<string, number> = {};
+      const byCountry: Record<string, number> = {};
+
+      for (const e of events) {
+        bump(e.type, byType);
+        bump(e.country || "unknown", byCountry);
+        const source = e.meta?.utm_source || e.meta?.source || "direct";
+        const campaign = e.meta?.utm_campaign || e.meta?.campaign;
+        bump(campaign ? `${source} / ${campaign}` : String(source), bySource);
+      }
+
+      const rank = (r: Record<string, number>) =>
+        Object.entries(r).sort((a, b) => b[1] - a[1]).map(([key, count]) => ({ key, count }));
+
+      return text({
+        windowHours: hours ?? 24,
+        totalEvents: events.length,
+        byEventType: rank(byType),
+        bySourceCampaign: rank(bySource),
+        byCountry: rank(byCountry),
+      });
+    }
+  );
+
+  // --- POS ---
+  server.registerTool(
+    "create_pos_order",
+    {
+      title: "Create a POS (manual) order",
+      description:
+        "Record an in-person, phone, or WhatsApp sale as a POS order. Does not send a Meta Purchase event (POS sales aren't ad-attributed) and does not touch cart/checkout state. Use get_product first to confirm current price and productId.",
+      inputSchema: {
+        customerName: z.string().min(1),
+        customerPhone: z.string().optional(),
+        customerAddress: z.string().optional(),
+        reference: z.string().optional().describe('e.g. "Facebook DM", "WhatsApp", a referring name'),
+        note: z.string().optional(),
+        shippingType: z.enum(["showroom", "online"]).default("online"),
+        paymentMethod: z.enum(["COD", "CARD", "DUE"]).default("COD"),
+        shippingCost: z.number().min(0).optional(),
+        items: z.array(z.object({
+          productId: z.string(),
+          quantity: z.number().int().min(1),
+          price: z.number().min(0).describe("Unit price actually charged"),
+          costPrice: z.number().min(0).optional(),
+          size: z.string().optional(),
+          color: z.string().optional(),
+        })).min(1),
+      },
+    },
+    async (input) => text(await api.post(`/pos`, input))
+  );
+
+  // --- Steadfast courier (no cancel/unbook — dashboard-only) ---
+  server.registerTool(
+    "book_shipment",
+    {
+      title: "Book a Steadfast courier shipment",
+      description:
+        "Book an order for delivery with Steadfast Courier. Sets the order's tracking number and moves it to PROCESSING. Use get_order first to confirm the order exists and isn't already booked.",
+      inputSchema: {
+        orderId: z.string(),
+        recipient_phone: z.string().length(11).describe("11-digit BD phone number"),
+        note: z.string().optional(),
+      },
+    },
+    async (input) => text(await api.post(`/steadfast/book`, input))
+  );
+
+  server.registerTool(
+    "track_shipment",
+    {
+      title: "Track a Steadfast shipment",
+      description: "Get live delivery status for an order that's already been booked with Steadfast.",
+      inputSchema: { orderId: z.string() },
+    },
+    async ({ orderId }) => text(await api.get(`/steadfast/track/${encodeURIComponent(orderId)}`))
+  );
+
+  // --- Google Analytics 4 (GA4) ---
+  server.registerTool(
+    "get_ga4_realtime_metrics",
+    {
+      title: "Get GA4 Realtime Active Users",
+      description: "Get active users in last 30 mins and active page paths for GA4 Property 546802046.",
+      inputSchema: { propertyId: z.string().optional().describe("Default: 546802046") },
+    },
+    async ({ propertyId }) => text(await api.get(`/traffic?ga4=true&propertyId=${propertyId || "546802046"}`))
+  );
+
+  // --- Most-wishlisted (analytics) ---
+  server.registerTool(
+    "get_most_wishlisted",
+    {
+      title: "Get most-wishlisted products",
+      description: "The 5 products with the most wishlist adds — demand signal for items people want but haven't bought (restock/discount candidates).",
+      inputSchema: {},
+    },
+    async () => text(await api.get(`/analytics/most-wishlisted`))
+  );
+
+  // --- Reviews (moderation) ---
+  server.registerTool(
+    "delete_review",
+    {
+      title: "Delete a review",
+      description: "Permanently remove a product review (e.g. spam or abuse). Find the review id via get_product first — reviews come back embedded in each product's `reviews` array.",
+      inputSchema: { reviewId: z.string() },
+    },
+    async ({ reviewId }) => text(await api.delete(`/reviews/${encodeURIComponent(reviewId)}`))
+  );
+
+  // --- Testimonials ---
+  const testimonialRole = z.enum(["FASHION_ENTHUSIAST", "CUSTOMER", "INFLUENCER", "OTHER"]);
+
+  server.registerTool(
+    "list_testimonials",
+    {
+      title: "List testimonials",
+      description: "List homepage testimonials, newest first. Optionally search by name or message text.",
+      inputSchema: {
+        search: z.string().optional(),
+        page: z.number().int().min(1).optional(),
+        limit: z.number().int().min(1).max(100).optional(),
+      },
+    },
+    async ({ search, page, limit }) => {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (page) params.set("page", String(page));
+      if (limit) params.set("limit", String(limit));
+      return text(await api.get(`/testimonials?${params.toString()}`));
+    }
+  );
+
+  server.registerTool(
+    "create_testimonial",
+    {
+      title: "Create a testimonial",
+      description: "Add a new customer testimonial to the homepage. `image`/`screenshot` must be existing hosted URLs — this tool doesn't upload files.",
+      inputSchema: {
+        name: z.string().optional(),
+        message: z.string().optional(),
+        rating: z.number().int().min(1).max(5),
+        image: z.string().url().optional(),
+        screenshot: z.string().url().optional(),
+        role: testimonialRole.default("CUSTOMER"),
+      },
+    },
+    async (input) => text(await api.post(`/testimonials`, input))
+  );
+
+  server.registerTool(
+    "update_testimonial",
+    {
+      title: "Update a testimonial",
+      description: "Edit an existing testimonial's text, rating, image, or role.",
+      inputSchema: {
+        id: z.string(),
+        name: z.string().optional(),
+        message: z.string().optional(),
+        rating: z.number().int().min(1).max(5).optional(),
+        image: z.string().url().optional(),
+        screenshot: z.string().url().optional(),
+        role: testimonialRole.optional(),
+      },
+    },
+    async ({ id, ...body }) => text(await api.patch(`/testimonials/${encodeURIComponent(id)}`, body))
+  );
+
+  server.registerTool(
+    "delete_testimonial",
+    {
+      title: "Delete a testimonial",
+      description: "Remove a testimonial from the homepage permanently.",
+      inputSchema: { id: z.string() },
+    },
+    async ({ id }) => text(await api.delete(`/testimonials/${encodeURIComponent(id)}`))
+  );
+
+  // --- Expenses (no delete tool — corrections stay a dashboard action) ---
+  server.registerTool(
+    "list_expense_categories",
+    {
+      title: "List expense categories",
+      description: "List expense categories (e.g. Rent, Ads, Salaries). Use the id when adding an expense.",
+      inputSchema: {},
+    },
+    async () => text(await api.get(`/expenses/categories`))
+  );
+
+  server.registerTool(
+    "create_expense_category",
+    {
+      title: "Create an expense category",
+      description: "Add a new expense category. Fails if a category with the same name (case-insensitive) already exists.",
+      inputSchema: { name: z.string().min(1) },
+    },
+    async (input) => text(await api.post(`/expenses/categories`, input))
+  );
+
+  server.registerTool(
+    "list_expenses",
+    {
+      title: "List expenses",
+      description: "List recorded expenses (up to 500), newest first, with running total. Optionally filter by date range or category.",
+      inputSchema: {
+        from: z.string().optional().describe("ISO date, inclusive"),
+        to: z.string().optional().describe("ISO date, inclusive"),
+        categoryId: z.string().optional(),
+      },
+    },
+    async ({ from, to, categoryId }) => {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      if (categoryId) params.set("categoryId", categoryId);
+      return text(await api.get(`/expenses?${params.toString()}`));
+    }
+  );
+
+  server.registerTool(
+    "add_expense",
+    {
+      title: "Add an expense",
+      description: "Record a new expense. Use list_expense_categories first to get a valid categoryId.",
+      inputSchema: {
+        amount: z.number().min(0.01),
+        categoryId: z.string(),
+        note: z.string().optional(),
+        date: z.string().optional().describe("ISO date, defaults to now"),
+      },
+    },
+    async (input) => text(await api.post(`/expenses`, input))
+  );
+
+  server.registerTool(
+    "get_expense_summary",
+    {
+      title: "Get expense summary",
+      description: "All-time and this-month expense totals, plus the top spending category this month.",
+      inputSchema: {},
+    },
+    async () => text(await api.get(`/expenses/summary`))
+  );
+
+  // --- Activity log (read-only) ---
+  server.registerTool(
+    "list_activity_log",
+    {
+      title: "List dashboard activity log",
+      description:
+        "List the audit trail of dashboard actions (who changed what, when). Search matches user name/email, action, target, path, or IP. Pass status:\"error\" to see only failed requests (status >= 400).",
+      inputSchema: {
+        search: z.string().optional(),
+        status: z.enum(["error"]).optional(),
+        page: z.number().int().min(1).optional(),
+        limit: z.number().int().min(1).max(100).optional(),
+      },
+    },
+    async ({ search, status, page, limit }) => {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (status) params.set("status", status);
+      if (page) params.set("page", String(page));
+      if (limit) params.set("limit", String(limit));
+      return text(await api.get(`/activity?${params.toString()}`));
+    }
   );
 }

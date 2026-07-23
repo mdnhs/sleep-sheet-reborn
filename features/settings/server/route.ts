@@ -95,6 +95,7 @@ const app = new Hono()
         seo_google_verification: z.string().optional(),
         seo_bing_verification: z.string().optional(),
         google_analytics_id: z.string().optional(),
+        ga4_property_id: z.string().optional(),
         seo_twitter_handle: z.string().optional(),
         seo_robots_ai_block: z.enum(["true", "false"]).optional(),
         cloudinary_cloud_name: z.string().optional(),

@@ -62,6 +62,7 @@ export function useUpdateSettings() {
       seo_google_verification?: string;
       seo_bing_verification?: string;
       google_analytics_id?: string;
+      ga4_property_id?: string;
       seo_twitter_handle?: string;
       seo_robots_ai_block?: "true" | "false";
       cloudinary_cloud_name?: string;

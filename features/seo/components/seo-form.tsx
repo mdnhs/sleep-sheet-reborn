@@ -22,6 +22,7 @@ const seoSchema = z.object({
   seo_google_verification: z.string().optional(),
   seo_bing_verification: z.string().optional(),
   google_analytics_id: z.string().optional(),
+  ga4_property_id: z.string().optional(),
   seo_twitter_handle: z.string().optional(),
   seo_robots_ai_block: z.boolean(),
 });
@@ -42,6 +43,7 @@ export function SeoForm() {
       seo_google_verification: data?.seo_google_verification || "",
       seo_bing_verification: data?.seo_bing_verification || "",
       google_analytics_id: data?.google_analytics_id || "",
+      ga4_property_id: data?.ga4_property_id || "546802046",
       seo_twitter_handle: data?.seo_twitter_handle || "@sleepsheet2025",
       seo_robots_ai_block: data?.seo_robots_ai_block !== "false",
     },
@@ -69,6 +71,7 @@ export function SeoForm() {
       seo_google_verification: values.seo_google_verification || undefined,
       seo_bing_verification: values.seo_bing_verification || undefined,
       google_analytics_id: cleanGaId || undefined,
+      ga4_property_id: values.ga4_property_id || undefined,
       seo_twitter_handle: values.seo_twitter_handle || undefined,
       seo_robots_ai_block: values.seo_robots_ai_block ? "true" : "false",
     });
