@@ -314,7 +314,7 @@ function TrackOrderContent() {
       </div>
 
       {Math.ceil(orders.length / itemsPerPage) > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-8">
+        <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -325,9 +325,46 @@ function TrackOrderContent() {
             <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
           </Button>
-          <span className="text-sm font-medium text-muted-foreground">
-            Page {currentPage} of {Math.ceil(orders.length / itemsPerPage)}
-          </span>
+
+          {(() => {
+            const totalPages = Math.ceil(orders.length / itemsPerPage);
+            const pages: (number | string)[] = [];
+            if (totalPages <= 7) {
+              for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+              pages.push(1);
+              if (currentPage > 3) pages.push("...");
+
+              const start = Math.max(2, currentPage - 1);
+              const end = Math.min(totalPages - 1, currentPage + 1);
+
+              for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) pages.push(i);
+              }
+
+              if (currentPage < totalPages - 2) pages.push("...");
+              pages.push(totalPages);
+            }
+
+            return pages.map((p, idx) =>
+              typeof p === "number" ? (
+                <Button
+                  key={idx}
+                  variant={currentPage === p ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(p)}
+                  className="rounded-full h-8 w-8 p-0 text-xs font-semibold shrink-0"
+                >
+                  {p}
+                </Button>
+              ) : (
+                <span key={idx} className="px-1 text-xs text-muted-foreground shrink-0">
+                  {p}
+                </span>
+              )
+            );
+          })()}
+
           <Button
             variant="outline"
             size="sm"

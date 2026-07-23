@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { calculateItemUnitPrice } from "@/lib/utils";
+import { parseUserAgent } from "@/lib/user-agent-parser";
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -193,6 +194,10 @@ const app = new Hono()
     const shippingCost = await getShippingCost(shippingInfo.shippingZone);
     const totalAmount = subtotal + shippingCost;
 
+    const userAgentHeader = c.req.header("user-agent") || null;
+    const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
+    const parsedUa = parseUserAgent(userAgentHeader);
+
     try {
       let createdOrder: any = null;
       const orderNumber = await generateOrderNumber();
@@ -211,6 +216,10 @@ const app = new Hono()
         saleType: 'WEBSITE',
         note: shippingInfo.notes || null,
         idempotencyKey: idempotencyKey ?? null,
+        ipAddress: clientIp,
+        deviceOs: parsedUa.os,
+        browserName: parsedUa.browser,
+        userAgent: userAgentHeader,
       }).returning();
 
       createdOrder = order;
@@ -319,6 +328,10 @@ const app = new Hono()
   const shippingCost = await getShippingCost(shippingInfo.shippingZone);
   const totalAmount = subtotal + shippingCost;
 
+  const userAgentHeader = c.req.header("user-agent") || null;
+  const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
+  const parsedUa = parseUserAgent(userAgentHeader);
+
   try {
     const guestUserId = await findOrCreateGuestCustomer({
       fullName: shippingInfo.fullName,
@@ -344,6 +357,10 @@ const app = new Hono()
       saleType: 'WEBSITE',
       note: shippingInfo.notes || null,
       idempotencyKey: idempotencyKey ?? null,
+      ipAddress: clientIp,
+      deviceOs: parsedUa.os,
+      browserName: parsedUa.browser,
+      userAgent: userAgentHeader,
     }).returning();
 
     guestOrderId = order.id;

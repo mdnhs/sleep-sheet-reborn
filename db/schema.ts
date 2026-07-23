@@ -381,6 +381,11 @@ export const orders = pgTable("orders", {
   refundedAmount: doublePrecision("refundedAmount").default(0).notNull(),
   refundReason: text("refundReason"),
   refundedAt: timestamp("refundedAt", { precision: 3 }),
+  // Customer Device & Location metadata captured at checkout
+  ipAddress: text("ipAddress"),
+  deviceOs: text("deviceOs"),
+  browserName: text("browserName"),
+  userAgent: text("userAgent"),
 });
 
 export const orderItems = pgTable("order_items", {

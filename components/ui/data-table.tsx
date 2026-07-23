@@ -192,27 +192,77 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between px-2 py-1">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 py-1">
         <div className="text-xs text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getFilteredSelectedRowModel().rows.length > 0 ? (
+            `${table.getFilteredSelectedRowModel().rows.length} of ${table.getFilteredRowModel().rows.length} row(s) selected.`
+          ) : (
+            `Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount() || 1}`
+          )}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="rounded-lg"
+            className="rounded-lg h-8 px-2.5 text-xs"
           >
             Previous
           </Button>
+
+          {(() => {
+            const pageIndex = table.getState().pagination.pageIndex;
+            const totalPages = table.getPageCount();
+            if (totalPages <= 0) return null;
+
+            const pages: (number | string)[] = [];
+            if (totalPages <= 7) {
+              for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+              const current = pageIndex + 1;
+              pages.push(1);
+              if (current > 3) pages.push("...");
+
+              const start = Math.max(2, current - 1);
+              const end = Math.min(totalPages - 1, current + 1);
+
+              for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) pages.push(i);
+              }
+
+              if (current < totalPages - 2) pages.push("...");
+              pages.push(totalPages);
+            }
+
+            return pages.map((p, idx) =>
+              typeof p === "number" ? (
+                <Button
+                  key={idx}
+                  variant={pageIndex + 1 === p ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => table.setPageIndex(p - 1)}
+                  className={cn(
+                    "rounded-lg h-8 w-8 p-0 text-xs font-semibold shrink-0",
+                    pageIndex + 1 === p && "pointer-events-none"
+                  )}
+                >
+                  {p}
+                </Button>
+              ) : (
+                <span key={idx} className="px-1 text-xs text-muted-foreground shrink-0">
+                  {p}
+                </span>
+              )
+            );
+          })()}
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="rounded-lg"
+            className="rounded-lg h-8 px-2.5 text-xs"
           >
             Next
           </Button>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useGetReports } from "@/features/reports/api/use-get-reports";
+import { useGetMonthlyReports } from "@/features/reports/api/use-get-monthly-reports";
 import { useCurrency } from "@/hooks/use-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -50,25 +51,69 @@ function PaginatedTable<T>({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
+          <p className="text-xs text-muted-foreground">
             Page {currentPage} of {totalPages} ({data.length} total)
           </p>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              className="rounded-lg h-8 px-2.5 text-xs"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
+
+            {(() => {
+              const pages: (number | string)[] = [];
+              if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                pages.push(1);
+                if (currentPage > 3) pages.push("...");
+
+                const start = Math.max(2, currentPage - 1);
+                const end = Math.min(totalPages - 1, currentPage + 1);
+
+                for (let i = start; i <= end; i++) {
+                  if (!pages.includes(i)) pages.push(i);
+                }
+
+                if (currentPage < totalPages - 2) pages.push("...");
+                pages.push(totalPages);
+              }
+
+              return pages.map((p, idx) =>
+                typeof p === "number" ? (
+                  <Button
+                    key={idx}
+                    variant={currentPage === p ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(p)}
+                    className={cn(
+                      "rounded-lg h-8 w-8 p-0 text-xs font-semibold shrink-0",
+                      currentPage === p && "pointer-events-none"
+                    )}
+                  >
+                    {p}
+                  </Button>
+                ) : (
+                  <span key={idx} className="px-1 text-xs text-muted-foreground shrink-0">
+                    {p}
+                  </span>
+                )
+              );
+            })()}
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              className="rounded-lg h-8 px-2.5 text-xs"
             >
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -82,9 +127,15 @@ function PaginatedTable<T>({
 
 export default function ReportsPage() {
   const { formatAmount } = useCurrency();
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [activeFilter, setActiveFilter] = useState<FilterType>("today");
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
-  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
+  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>(() => {
+    const today = new Date();
+    return {
+      from: startOfDay(today).toISOString(),
+      to: endOfDay(today).toISOString(),
+    };
+  });
 
   const [showProductCostBreakdown, setShowProductCostBreakdown] = useState(false);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
@@ -92,6 +143,7 @@ export default function ReportsPage() {
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
 
   const { data, isLoading } = useGetReports(dateRange);
+  const { data: monthlyReportsData, isLoading: isMonthlyLoading } = useGetMonthlyReports();
 
   const handleFilter = (type: FilterType) => {
     setActiveFilter(type);
@@ -288,58 +340,78 @@ export default function ReportsPage() {
             <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Month-wise Breakdown</h3>
               <div>
-                {!data.monthlyData || data.monthlyData.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No data available for this period.</div>
-                ) : (
-                  <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
-                    <Table>
-                      <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
-                        <TableRow>
-                          <TableHead className="font-bold text-slate-700 dark:text-slate-300">Month</TableHead>
-                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Sales (Net)</TableHead>
-                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Costs (Product + Delivery)</TableHead>
-                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Expenses</TableHead>
-                          <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Net Profit/Loss</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {data.monthlyData.map((m) => (
-                          <TableRow key={m.month} className="hover:bg-slate-50/50 dark:hover:bg-muted/40">
-                            <TableCell className="font-medium">
-                              {format(parseISO(`${m.month}-01`), "MMMM yyyy")}
-                            </TableCell>
-                            <TableCell className="text-right text-emerald-600 dark:text-emerald-400 font-semibold">
-                              {formatAmount(m.revenue)}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground font-semibold">
-                              {formatAmount(m.cost + m.shippingCost)}
-                            </TableCell>
-                            <TableCell className="text-right text-orange-600 dark:text-orange-400 font-semibold">
-                              {formatAmount(m.expense)}
-                            </TableCell>
-                            <TableCell className={`text-right font-bold ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                              {formatAmount(m.profit)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        <TableRow className="bg-slate-50 dark:bg-muted/30 font-bold">
-                          <TableCell>Total</TableCell>
-                          <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
-                            {formatAmount(data.totalRevenue)}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatAmount(data.totalCost + data.totalShippingCost)}
-                          </TableCell>
-                          <TableCell className="text-right text-orange-600 dark:text-orange-400">
-                            {formatAmount(data.totalExpense)}
-                          </TableCell>
-                          <TableCell className={`text-right ${data.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                            {formatAmount(data.netProfit)}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+                {isMonthlyLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
+                ) : !monthlyReportsData?.monthlyData || monthlyReportsData.monthlyData.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No monthly data available.</div>
+                ) : (
+                  (() => {
+                    const monthlyList = monthlyReportsData.monthlyData;
+                    const monthlyTotals = monthlyList.reduce(
+                      (acc, m) => ({
+                        revenue: acc.revenue + m.revenue,
+                        cost: acc.cost + m.cost,
+                        shippingCost: acc.shippingCost + m.shippingCost,
+                        expense: acc.expense + m.expense,
+                        profit: acc.profit + m.profit,
+                      }),
+                      { revenue: 0, cost: 0, shippingCost: 0, expense: 0, profit: 0 }
+                    );
+
+                    return (
+                      <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <Table>
+                          <TableHeader className="bg-slate-50/70 dark:bg-muted/30">
+                            <TableRow>
+                              <TableHead className="font-bold text-slate-700 dark:text-slate-300">Month</TableHead>
+                              <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Sales (Net)</TableHead>
+                              <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Costs (Product + Delivery)</TableHead>
+                              <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Expenses</TableHead>
+                              <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Net Profit/Loss</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {monthlyList.map((m) => (
+                              <TableRow key={m.month} className="hover:bg-slate-50/50 dark:hover:bg-muted/40">
+                                <TableCell className="font-medium">
+                                  {format(parseISO(`${m.month}-01`), "MMMM yyyy")}
+                                </TableCell>
+                                <TableCell className="text-right text-emerald-600 dark:text-emerald-400 font-semibold">
+                                  {formatAmount(m.revenue)}
+                                </TableCell>
+                                <TableCell className="text-right text-muted-foreground font-semibold">
+                                  {formatAmount(m.cost + m.shippingCost)}
+                                </TableCell>
+                                <TableCell className="text-right text-orange-600 dark:text-orange-400 font-semibold">
+                                  {formatAmount(m.expense)}
+                                </TableCell>
+                                <TableCell className={`text-right font-bold ${m.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                  {formatAmount(m.profit)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            <TableRow className="bg-slate-50 dark:bg-muted/30 font-bold">
+                              <TableCell>Total</TableCell>
+                              <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
+                                {formatAmount(monthlyTotals.revenue)}
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                {formatAmount(monthlyTotals.cost + monthlyTotals.shippingCost)}
+                              </TableCell>
+                              <TableCell className="text-right text-orange-600 dark:text-orange-400">
+                                {formatAmount(monthlyTotals.expense)}
+                              </TableCell>
+                              <TableCell className={`text-right ${monthlyTotals.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {formatAmount(monthlyTotals.profit)}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </div>

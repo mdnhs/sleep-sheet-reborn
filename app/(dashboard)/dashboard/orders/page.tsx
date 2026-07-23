@@ -75,6 +75,9 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  Globe,
+  Smartphone,
+  Laptop,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -1343,7 +1346,7 @@ export default function OrdersPage() {
               </DialogHeader>
 
               <div className="space-y-6 shrink-0">
-                <div className="grid grid-cols-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <h3 className="font-semibold">Shipping Information</h3>
                     <div className="text-sm space-y-0.5">
@@ -1359,20 +1362,41 @@ export default function OrdersPage() {
                             selectedOrder.guestPhone}
                         </p>
                       )}
-                      <p>{selectedOrder.shippingAddress}</p>
+                      <p className="text-slate-600 dark:text-slate-400">{selectedOrder.shippingAddress}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <h3 className="font-semibold">Payment Information</h3>
-                    <div className="text-sm">
-                      <p>Method: {selectedOrder.paymentMethod}</p>
-                      <p>Status: {selectedOrder.paymentStatus}</p>
+                    <div className="text-sm space-y-0.5">
+                      <p><span className="text-muted-foreground">Method:</span> <span className="font-medium">{selectedOrder.paymentMethod}</span></p>
+                      <p><span className="text-muted-foreground">Status:</span> <span className="font-medium">{selectedOrder.paymentStatus}</span></p>
                       {selectedOrder.payment?.transactionId && (
-                        <p>
-                          Transaction ID: {selectedOrder.payment.transactionId}
+                        <p className="text-muted-foreground truncate" title={selectedOrder.payment.transactionId}>
+                          TxID: {selectedOrder.payment.transactionId}
                         </p>
                       )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Device & Network Info
+                    </h3>
+                    <div className="text-sm space-y-1">
+                      <p className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                        <span className="text-muted-foreground font-normal">IP:</span>{" "}
+                        <span className="font-mono text-xs font-semibold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">{selectedOrder.ipAddress || "N/A"}</span>
+                      </p>
+                      <p className="flex items-center gap-1">
+                        <span className="text-muted-foreground font-normal">OS:</span>{" "}
+                        <span className="font-medium">{selectedOrder.deviceOs || "Unknown OS"}</span>
+                      </p>
+                      <p className="flex items-center gap-1">
+                        <span className="text-muted-foreground font-normal">Browser:</span>{" "}
+                        <span className="font-medium">{selectedOrder.browserName || "Unknown Browser"}</span>
+                      </p>
                     </div>
                   </div>
                 </div>

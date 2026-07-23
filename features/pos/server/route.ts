@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
+import { parseUserAgent } from '@/lib/user-agent-parser';
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -99,6 +100,10 @@ const app = new Hono()
       finalUserId = newUser.id;
     }
 
+    const userAgentHeader = c.req.header("user-agent") || null;
+    const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
+    const parsedUa = parseUserAgent(userAgentHeader);
+
     const [order] = await db.insert(orders).values({
       orderNumber,
       userId: finalUserId,
@@ -115,6 +120,10 @@ const app = new Hono()
       paymentMethod,
       paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
       status: shippingType === 'showroom' ? 'DELIVERED' : 'PENDING',
+      ipAddress: clientIp,
+      deviceOs: parsedUa.os,
+      browserName: parsedUa.browser,
+      userAgent: userAgentHeader,
     }).returning();
 
     await db.insert(orderItems).values(
