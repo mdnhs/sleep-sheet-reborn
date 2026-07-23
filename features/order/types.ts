@@ -83,6 +83,10 @@ export interface OrderItem {
       transactionId?: string | null;
       last4Digits?: string | null;
     } | null;
+    ipAddress?: string | null;
+    deviceOs?: string | null;
+    browserName?: string | null;
+    userAgent?: string | null;
   }
 export interface PaginatedOrders {
   data: Order[];
