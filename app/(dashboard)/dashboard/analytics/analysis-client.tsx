@@ -88,6 +88,12 @@ const TIME_FILTER_HOURS: Record<Exclude<TimeFilter, "all">, number> = {
   "7d": 168,
 };
 
+import { DavidWellsAnalyticsMonitor } from "./david-wells-analytics-monitor";
+import { AnalyticsFunnelCard } from "./analytics-funnel-card";
+import { RealtimeActiveUsersCard } from "./realtime-active-users-card";
+import { UtmTrafficSourcesCard } from "./utm-traffic-sources-card";
+import { CartAbandonmentCard } from "./cart-abandonment-card";
+
 export default function AnalysisClientPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("24h");
   const hours = timeFilter === "all" ? undefined : TIME_FILTER_HOURS[timeFilter];
@@ -194,6 +200,21 @@ export default function AnalysisClientPage() {
           </button>
         ))}
       </div>
+
+      {/* GA4 Style Realtime Active Users */}
+      <RealtimeActiveUsersCard realtimeData={stats.realtime30Min} loading={isLoading} />
+
+      {/* E-Commerce Conversion Funnel */}
+      <AnalyticsFunnelCard funnelData={stats.funnelData} loading={isLoading} />
+
+      {/* Traffic Channels & Cart Abandonment Analytics */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <UtmTrafficSourcesCard topSources={stats.topTrafficSources} loading={isLoading} />
+        <CartAbandonmentCard cartAbandonment={stats.cartAbandonment} loading={isLoading} />
+      </div>
+
+      {/* David Wells Analytics Engine & Live Monitor Playground */}
+      <DavidWellsAnalyticsMonitor />
 
       {/* Top Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">

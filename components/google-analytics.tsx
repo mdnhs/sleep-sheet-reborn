@@ -5,6 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
 import { useSettings } from "@/features/settings/api/use-settings";
 
+import { initAnalytics, trackPageView } from "@/lib/analytics";
+
 declare global {
   interface Window {
     dataLayer: any[];
@@ -29,11 +31,21 @@ function GoogleAnalyticsTracker({ gaId }: { gaId: string }) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!gaId || typeof window === "undefined" || !window.gtag) return;
+    if (!gaId || typeof window === "undefined") return;
+
+    // Initialize David Wells' analytics instance with @analytics/google-analytics plugin
+    initAnalytics(gaId);
+
     const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
-    window.gtag("config", gaId, {
-      page_path: url,
-    });
+
+    // Track page views via David Wells analytics library
+    trackPageView(url, gaId);
+
+    if (window.gtag) {
+      window.gtag("config", gaId, {
+        page_path: url,
+      });
+    }
   }, [pathname, searchParams, gaId]);
 
   return null;
