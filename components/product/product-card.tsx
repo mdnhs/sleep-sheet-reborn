@@ -36,29 +36,49 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const [dialogAction, setDialogAction] = useState<"cart" | "buy" | null>(null);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || product.colors?.[0]?.name || "");
+  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, number>>({});
   const [quantity, setQuantity] = useState(1);
 
   const hasColors = product.colors && product.colors.length > 0;
   const hasSizes = product.sizes && product.sizes.length > 0;
-  const hasVariants = hasColors || hasSizes;
+  const hasAddOns = product.addOns && product.addOns.length > 0;
+  const hasVariants = hasColors || hasSizes || hasAddOns;
 
   const currentVariant = product.colors?.find(c => c.name === selectedColor);
-  const displayPrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
+  const baseDisplayPrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
     ? currentVariant.price
     : product.price;
 
+  const addOnsTotalPerUnit = Object.entries(selectedAddOns).reduce((sum, [name, qty]) => {
+    const addOn = product.addOns?.find((a) => a.name === name);
+    return sum + (addOn ? addOn.price * qty : 0);
+  }, 0);
+
+  const displayPrice = baseDisplayPrice + addOnsTotalPerUnit;
+
+  const selectedAddOnsSummary = Object.entries(selectedAddOns)
+    .filter(([_, qty]) => qty > 0)
+    .map(([name, qty]) => `${name} x${qty}`)
+    .join(", ");
+
+  const colorWithAddOns = selectedColor
+    ? (selectedAddOnsSummary ? `${selectedColor} (+ ${selectedAddOnsSummary})` : selectedColor)
+    : (selectedAddOnsSummary ? `Add-ons: ${selectedAddOnsSummary}` : "");
+
   const dispatchAddToCart = () => {
+    const finalColor = colorWithAddOns || selectedColor;
+
     addToCart({
       productId: product.id,
       quantity: quantity,
       size: selectedSize,
-      color: selectedColor,
+      color: finalColor,
       guestProduct: {
-        id: `guest-${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
+        id: `guest-${product.id}-${selectedSize}-${finalColor}-${Date.now()}`,
         productId: product.id,
         quantity,
         size: selectedSize || undefined,
-        color: selectedColor || undefined,
+        color: finalColor || undefined,
         name: product.name,
         price: displayPrice,
         image: product.images?.[0] ?? "",
@@ -312,7 +332,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
 
             {hasColors && (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variant</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variants</span>
                 <div className="flex flex-wrap gap-2">
                   {product.colors?.map((color) => (
                     <button
@@ -327,6 +347,66 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
                       {color.name} ({formatAmount(color.price !== null ? color.price : product.price)})
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {hasAddOns && (
+              <div className="flex flex-col gap-2.5 mt-2 border-t pt-3 border-slate-100 dark:border-slate-800">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Add-ons
+                </span>
+                <div className="flex flex-col gap-2">
+                  {product.addOns?.map((addOn) => {
+                    const qty = selectedAddOns[addOn.name] || 0;
+                    return (
+                      <div
+                        key={addOn.name}
+                        className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      >
+                        <div className="flex items-center min-w-0 pr-2">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                            {addOn.name} ({formatAmount(addOn.price)})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shrink-0">
+                          <button
+                            type="button"
+                            className="h-7 w-7 flex items-center justify-center rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all disabled:opacity-30 disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-700"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedAddOns((prev) => ({
+                                ...prev,
+                                [addOn.name]: Math.max(0, qty - 1),
+                              }));
+                            }}
+                            disabled={qty <= 0}
+                          >
+                            −
+                          </button>
+                          <span className="w-5 text-center text-xs font-bold text-slate-800 dark:text-slate-100">
+                            {qty}
+                          </span>
+                          <button
+                            type="button"
+                            className="h-7 w-7 flex items-center justify-center rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedAddOns((prev) => ({
+                                ...prev,
+                                [addOn.name]: qty + 1,
+                              }));
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

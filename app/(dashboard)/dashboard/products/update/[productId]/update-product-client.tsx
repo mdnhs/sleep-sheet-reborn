@@ -29,6 +29,7 @@ import { ChipsInput } from "@/components/chip-input";
 import { FileUpload } from "@/features/dashboard/components/file-upload";
 import { SpecificationFields } from "@/features/dashboard/components/specifications-fields";
 import { VariantFields } from "@/features/dashboard/components/variant-fields";
+import { AddOnFields } from "@/features/dashboard/components/add-on-fields";
 import { useGetCategories } from "@/features/categories/api/use-get-categories";
 import { useGetProduct } from "@/features/product/api/use-get-product";
 import { useUpdateProduct } from "@/features/dashboard/api/use-update-product";
@@ -55,6 +56,7 @@ function UpdateProductClient() {
       productCategory: "",
       productSKU: "",
       productVariants: [],
+      productAddOns: [],
       productImages: [],
       productTags: [],
       productSize: [],
@@ -81,6 +83,7 @@ function UpdateProductClient() {
         productCategory: product.category,
         productSKU: product.sku,
         productVariants: product.colors || [],
+        productAddOns: product.addOns || [],
         productImages: product.images,
         productTags: product.tags,
         productSize: product.sizes,
@@ -106,6 +109,7 @@ function UpdateProductClient() {
     formData.append("productCategory", values.productCategory);
     formData.append("productSKU", values.productSKU);
     formData.append("productVariants", JSON.stringify(values.productVariants || []));
+    formData.append("productAddOns", JSON.stringify(values.productAddOns || []));
     formData.append("productTags", JSON.stringify(values.productTags || []));
     formData.append("specifications", JSON.stringify(values.specifications || []));
     formData.append("productSize", JSON.stringify(values.productSize || []));
@@ -306,6 +310,7 @@ function UpdateProductClient() {
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <div className="w-full">
                     <VariantFields control={form.control as any} setValue={form.setValue} />
+                    <AddOnFields control={form.control as any} setValue={form.setValue} />
                   </div>
 
                   <FormField

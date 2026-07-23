@@ -43,6 +43,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     })),
     care: product.careInstruction || "",
     colors: product.variants,
+    addOns: product.addOns || [],
     sizes: product.sizes,
     features: product.features,
     isFeatured: product.isFeatured,

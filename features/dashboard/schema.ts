@@ -8,6 +8,7 @@ export const ProductSchema = z.object({
   productCategory: z.string().trim().min(1, "Required"),
   productSKU: z.string().trim().min(1, "Required"),
   productVariants: z.array(z.object({ name: z.string().min(1, "Required"), price: z.coerce.number().nullable().optional() })).optional(),
+  productAddOns: z.array(z.object({ name: z.string().min(1, "Required"), price: z.coerce.number().min(0, "Required") })).optional(),
   productImages: z.array(z.union([z.string(), z.instanceof(File)])).min(1, "Required"),
   productTags: z.array(z.string()).optional(),
   productSize: z.array(z.string()).optional(),

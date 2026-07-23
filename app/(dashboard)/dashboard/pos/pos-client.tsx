@@ -756,7 +756,7 @@ function ProductCard({
 
             {hasColors && (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variant</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variants</span>
                 <div className="flex flex-wrap gap-2">
                   {product.colors?.map((color) => (
                     <button

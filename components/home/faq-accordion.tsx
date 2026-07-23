@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -13,9 +14,20 @@ interface Faq {
 }
 
 export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
+  const [value, setValue] = useState<string[]>(() =>
+    faqs[0]?.question ? [faqs[0].question] : []
+  );
+
+  useEffect(() => {
+    if (faqs[0]?.question && value.length === 0) {
+      setValue([faqs[0].question]);
+    }
+  }, [faqs]);
+
   return (
     <Accordion
-      defaultValue={[faqs[0]?.question]}
+      value={value}
+      onValueChange={setValue}
       className="w-full border-none space-y-4"
     >
       {faqs.map((faq) => (

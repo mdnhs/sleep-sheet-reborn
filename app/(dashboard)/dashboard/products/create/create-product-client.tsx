@@ -31,6 +31,7 @@ import { FileUpload } from "@/features/dashboard/components/file-upload";
 import { useCreateProduct } from "@/features/dashboard/api/use-create-product";
 import { SpecificationFields } from "@/features/dashboard/components/specifications-fields";
 import { VariantFields } from "@/features/dashboard/components/variant-fields";
+import { AddOnFields } from "@/features/dashboard/components/add-on-fields";
 import { useGetCategories } from "@/features/categories/api/use-get-categories";
 
 function AddProductClient() {
@@ -51,6 +52,7 @@ function AddProductClient() {
       productCategory: "",
       productSKU: "",
       productVariants: [],
+      productAddOns: [],
       productImages: [],
       productTags: [],
       productSize: [],
@@ -91,6 +93,7 @@ function AddProductClient() {
         isFeatured: duplicateProduct.isFeatured,
         discount: duplicateProduct.discount,
         productVariants: duplicateProduct.colors,
+        productAddOns: duplicateProduct.addOns || [],
         defaultVariantName: duplicateProduct.defaultVariantName ?? "",
       })
     }
@@ -107,6 +110,7 @@ function AddProductClient() {
     formData.append("productCategory", values.productCategory);
     formData.append("productSKU", values.productSKU);
     formData.append("productVariants", JSON.stringify(values.productVariants || []));
+    formData.append("productAddOns", JSON.stringify(values.productAddOns || []));
     formData.append("productTags", JSON.stringify(values.productTags || []));
     formData.append("specifications", JSON.stringify(values.specifications || []));
     formData.append("productSize", JSON.stringify(values.productSize || []));
@@ -299,6 +303,7 @@ function AddProductClient() {
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <div className="w-full">
                     <VariantFields control={form.control as any} setValue={form.setValue} />
+                    <AddOnFields control={form.control as any} setValue={form.setValue} />
                   </div>
 
                   <FormField
