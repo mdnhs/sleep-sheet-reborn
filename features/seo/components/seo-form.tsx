@@ -47,7 +47,20 @@ export function SeoForm() {
     },
   });
 
+  function extractGaId(input?: string): string {
+    if (!input) return "";
+    const trimmed = input.trim();
+    const gaMatch = trimmed.match(/G-[A-Z0-9]+/i);
+    if (gaMatch) return gaMatch[0].toUpperCase();
+    const gtmMatch = trimmed.match(/GTM-[A-Z0-9]+/i);
+    if (gtmMatch) return gtmMatch[0].toUpperCase();
+    const uaMatch = trimmed.match(/UA-\d+-\d+/i);
+    if (uaMatch) return uaMatch[0].toUpperCase();
+    return trimmed;
+  }
+
   function onSubmit(values: SeoFormValues) {
+    const cleanGaId = extractGaId(values.google_analytics_id);
     mutate({
       seo_site_name: values.seo_site_name,
       seo_default_title: values.seo_default_title,
@@ -55,7 +68,7 @@ export function SeoForm() {
       seo_default_image: values.seo_default_image || undefined,
       seo_google_verification: values.seo_google_verification || undefined,
       seo_bing_verification: values.seo_bing_verification || undefined,
-      google_analytics_id: values.google_analytics_id || undefined,
+      google_analytics_id: cleanGaId || undefined,
       seo_twitter_handle: values.seo_twitter_handle || undefined,
       seo_robots_ai_block: values.seo_robots_ai_block ? "true" : "false",
     });
@@ -175,11 +188,11 @@ export function SeoForm() {
                   name="google_analytics_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Google Analytics (GA4) Measurement ID</FormLabel>
+                      <FormLabel>Google Analytics (GA4) Measurement ID or Tag Script</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g. G-XXXXXXXXXX" className="rounded-xl font-mono text-sm" />
+                        <Input {...field} placeholder="e.g. G-Y62ZKHQGLV or paste full Google Tag script" className="rounded-xl font-mono text-sm" />
                       </FormControl>
-                      <FormDescription>Google Analytics 4 Measurement ID for tracking visitor events and conversions</FormDescription>
+                      <FormDescription>Enter your GA4 Measurement ID (e.g. G-Y62ZKHQGLV) or paste the full Google tag script code</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

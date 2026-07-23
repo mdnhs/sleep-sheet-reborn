@@ -12,6 +12,18 @@ declare global {
   }
 }
 
+function extractMeasurementId(input?: string | null): string {
+  if (!input) return "";
+  const trimmed = input.trim();
+  const gaMatch = trimmed.match(/G-[A-Z0-9]+/i);
+  if (gaMatch) return gaMatch[0].toUpperCase();
+  const gtmMatch = trimmed.match(/GTM-[A-Z0-9]+/i);
+  if (gtmMatch) return gtmMatch[0].toUpperCase();
+  const uaMatch = trimmed.match(/UA-\d+-\d+/i);
+  if (uaMatch) return uaMatch[0].toUpperCase();
+  return trimmed;
+}
+
 function GoogleAnalyticsTracker({ gaId }: { gaId: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -30,10 +42,11 @@ function GoogleAnalyticsTracker({ gaId }: { gaId: string }) {
 export default function GoogleAnalytics() {
   const { data: settings } = useSettings();
 
-  const gaId =
+  const gaId = extractMeasurementId(
     settings?.google_analytics_id ||
     process.env.NEXT_PUBLIC_GA_ID ||
-    "";
+    ""
+  );
 
   if (!gaId) return null;
 

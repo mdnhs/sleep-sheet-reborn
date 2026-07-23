@@ -119,6 +119,7 @@ export const viewport = {
 };
 
 import GoogleAnalytics from "@/components/google-analytics";
+import SeoVerification from "@/components/seo-verification";
 
 export default function RootLayout({
   children,
@@ -150,6 +151,7 @@ export default function RootLayout({
           <TooltipProvider>
             <Toaster />
             <QueryProvider>
+              <SeoVerification />
               <GoogleAnalytics />
               <NuqsAdapter>
                 <PixelTrackingProvider>
