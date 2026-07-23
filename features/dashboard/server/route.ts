@@ -355,12 +355,13 @@ app.patch('/bulk-feature', sessionMiddleware, async (c) => {
   }
 });
 
-// Lightweight JSON update for non-image fields — the main /update endpoint
-// above takes multipart form-data (images, variants, specs, tags all at
-// once, mirroring the admin form exactly), which is awkward for a
-// programmatic caller like the MCP server that only wants to change a price
-// or stock count. This is intentionally narrower: no images, variants,
-// specifications, or tags — just the fields most operational edits touch.
+// Lightweight JSON update — the main /update endpoint above takes multipart
+// form-data (mirroring the admin form exactly, including new image file
+// uploads), which is awkward for a programmatic caller like the MCP server.
+// This covers every product field except new image *uploads*: images are
+// accepted as an array of existing URLs (reorder/remove), category as its
+// value/slug (resolved to an id), specifications as key/value pairs
+// (replaces the full set).
 app.patch(
   '/:id/details',
   sessionMiddleware,
@@ -373,6 +374,18 @@ app.patch(
       stock: z.number().int().min(0).optional(),
       discount: z.number().min(0).max(100).optional(),
       isFeatured: z.boolean().optional(),
+      sku: z.string().min(1).optional(),
+      category: z.string().min(1).optional(),
+      variants: z.array(z.object({ name: z.string(), price: z.number().nullable() })).optional(),
+      addOns: z.array(z.object({ name: z.string(), price: z.number() })).optional(),
+      tags: z.array(z.string()).optional(),
+      sizes: z.array(z.string()).optional(),
+      features: z.array(z.string()).optional(),
+      careInstruction: z.string().nullable().optional(),
+      images: z.array(z.string().url()).optional(),
+      specifications: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
+      defaultVariantName: z.string().nullable().optional(),
+      showLowestPriceAsDefault: z.boolean().optional(),
     })
   ),
   async (c) => {
@@ -382,32 +395,59 @@ app.patch(
     }
 
     const id = c.req.param("id");
-    const body = c.req.valid("json");
+    const { category: categoryVal, specifications: specList, ...rest } = c.req.valid("json");
 
-    if (Object.keys(body).length === 0) {
+    if (Object.keys(rest).length === 0 && categoryVal === undefined && specList === undefined) {
       return c.json({ error: "No fields to update" }, 400);
     }
 
     const existing = await db.query.products.findFirst({ where: eq(products.id, id) });
     if (!existing) return c.json({ error: "Product not found" }, 404);
 
+    let category: { id: string; label: string } | undefined;
+    if (categoryVal !== undefined) {
+      const found = await db.query.categories.findFirst({ where: eq(categories.value, categoryVal) });
+      if (!found) return c.json({ error: "Category not found" }, 400);
+      category = found;
+    }
+
+    if (rest.images !== undefined) {
+      const removedImages = existing.images.filter((oldImg) => !rest.images!.includes(oldImg));
+      for (const img of removedImages) {
+        await deleteImageFromStorage(img);
+      }
+    }
+
     const [updated] = await db.update(products)
-      .set({ ...body, updatedAt: new Date() })
+      .set({
+        ...rest,
+        ...(category ? { categoryId: category.id } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(products.id, id))
       .returning();
+
+    let insertedSpecs: (typeof specifications.$inferSelect)[] | undefined;
+    if (specList !== undefined) {
+      await db.delete(specifications).where(eq(specifications.productId, id));
+      insertedSpecs = specList.length > 0
+        ? await db.insert(specifications).values(specList.map((spec) => ({ ...spec, productId: id }))).returning()
+        : [];
+    }
 
     invalidateFeed();
 
     const changes: ActivityChange[] = [];
-    if (body.name !== undefined && body.name !== existing.name) changes.push({ label: "Name", from: existing.name, to: body.name });
-    if (body.description !== undefined && body.description !== existing.description) changes.push({ label: "Description", from: existing.description, to: body.description });
-    if (body.price !== undefined && body.price !== existing.price) changes.push({ label: "Price", from: existing.price, to: body.price });
-    if (body.stock !== undefined && body.stock !== existing.stock) changes.push({ label: "Stock", from: existing.stock, to: body.stock });
-    if (body.discount !== undefined && body.discount !== existing.discount) changes.push({ label: "Discount", from: existing.discount, to: body.discount });
-    if (body.isFeatured !== undefined && body.isFeatured !== existing.isFeatured) changes.push({ label: "Featured", from: existing.isFeatured, to: body.isFeatured });
+    if (rest.name !== undefined && rest.name !== existing.name) changes.push({ label: "Name", from: existing.name, to: rest.name });
+    if (rest.description !== undefined && rest.description !== existing.description) changes.push({ label: "Description", from: existing.description, to: rest.description });
+    if (rest.price !== undefined && rest.price !== existing.price) changes.push({ label: "Price", from: existing.price, to: rest.price });
+    if (rest.stock !== undefined && rest.stock !== existing.stock) changes.push({ label: "Stock", from: existing.stock, to: rest.stock });
+    if (rest.discount !== undefined && rest.discount !== existing.discount) changes.push({ label: "Discount", from: existing.discount, to: rest.discount });
+    if (rest.isFeatured !== undefined && rest.isFeatured !== existing.isFeatured) changes.push({ label: "Featured", from: existing.isFeatured, to: rest.isFeatured });
+    if (category && category.id !== existing.categoryId) changes.push({ label: "Category", from: existing.categoryId, to: category.label });
     setActivityMeta(c, { name: updated.name, changes });
 
-    return c.json({ success: true, product: updated });
+    return c.json({ success: true, product: { ...updated, ...(insertedSpecs !== undefined ? { specifications: insertedSpecs } : {}) } });
   }
 );
 

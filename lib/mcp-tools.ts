@@ -167,7 +167,7 @@ export function registerMcpTools(server: McpServer, ctx: McpToolContext) {
     {
       title: "Update a product",
       description:
-        "Update a product's name, description, price, stock, discount, or featured flag. Only the fields you pass are changed — images, variants, specifications, and tags are left untouched.",
+        "Update any product field: name, description, price, stock, discount, featured flag, SKU, category, variants, add-ons, tags, sizes, features, care instruction, images, specifications, default variant, or lowest-price display. Only the fields you pass are changed. `images` replaces the full image list — pass existing URLs (from get_product) plus/minus the ones you want to change; new file uploads aren't supported here. `specifications` replaces the full key/value list. `category` is the category's value/slug, not its id.",
       inputSchema: {
         id: z.string(),
         name: z.string().min(1).optional(),
@@ -176,6 +176,18 @@ export function registerMcpTools(server: McpServer, ctx: McpToolContext) {
         stock: z.number().int().min(0).optional(),
         discount: z.number().min(0).max(100).optional(),
         isFeatured: z.boolean().optional(),
+        sku: z.string().min(1).optional(),
+        category: z.string().min(1).optional().describe("Category value/slug"),
+        variants: z.array(z.object({ name: z.string(), price: z.number().nullable() })).optional(),
+        addOns: z.array(z.object({ name: z.string(), price: z.number() })).optional(),
+        tags: z.array(z.string()).optional(),
+        sizes: z.array(z.string()).optional(),
+        features: z.array(z.string()).optional(),
+        careInstruction: z.string().nullable().optional(),
+        images: z.array(z.string().url()).optional().describe("Full replacement list of image URLs"),
+        specifications: z.array(z.object({ key: z.string(), value: z.string() })).optional().describe("Full replacement list"),
+        defaultVariantName: z.string().nullable().optional(),
+        showLowestPriceAsDefault: z.boolean().optional(),
       },
     },
     async ({ id, ...body }) => text(await api.patch(`/product/${id}/details`, body))
