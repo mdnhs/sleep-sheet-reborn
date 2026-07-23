@@ -335,7 +335,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
 
             {hasColors && (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Variants</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{t("variants")}</span>
                 <div className="flex flex-wrap gap-2">
                   {product.colors?.map((color) => (
                     <button
@@ -357,7 +357,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             {hasAddOns && (
               <div className="flex flex-col gap-2.5 mt-2 border-t pt-3 border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Add-ons
+                  {t("addOns")}
                 </span>
                 <div className="flex flex-col gap-2">
                   {product.addOns?.map((addOn) => {
@@ -368,10 +368,15 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
                         className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                       >
-                        <div className="flex items-center min-w-0 pr-2">
+                        <div className="flex flex-col justify-center min-w-0 pr-2">
                           <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                            {addOn.name} ({formatAmount(addOn.price)})
+                            {addOn.name} ({formatAmount(addOn.price)} {t("perPiece")})
                           </span>
+                          {qty > 0 && (
+                            <span className="text-[11px] font-medium text-primary mt-0.5">
+                              {t("totalLabel")}: {formatAmount(addOn.price * qty)}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shrink-0">
                           <button
@@ -389,8 +394,8 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
                           >
                             −
                           </button>
-                          <span className="w-5 text-center text-xs font-bold text-slate-800 dark:text-slate-100">
-                            {qty}
+                          <span className="px-1.5 text-center text-xs font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                            {qty} {t("piece")}
                           </span>
                           <button
                             type="button"
