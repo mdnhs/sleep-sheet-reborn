@@ -336,7 +336,6 @@ function ShippingInformationCard() {
               type="submit"
               disabled={isPending || !form.formState.isValid}
               id="checkout-purchase-button"
-              data-pixel-event="purchase"
               data-testid="checkout-purchase-button"
               className={cn(
                 "w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md",

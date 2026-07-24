@@ -10,6 +10,10 @@ import {
   getOrCreateCheckoutIdempotencyKey,
   clearCheckoutIdempotencyKey,
 } from "@/lib/checkout-idempotency";
+import { usePixelTracking } from "@/lib/meta-pixel";
+import type { PurchaseTrackingPayload } from "@/lib/meta-purchase-event";
+
+const trackedBrowserPurchaseOrderIds = new Set<string>();
 
 interface useCheckoutProps {
   paymentInfo: Partial<PaymentInformationFormValues>;
@@ -19,9 +23,9 @@ interface useCheckoutProps {
 
 export const UseCheckout = () => {
   const guestItems = useCartStore((state) => state.guestItems);
-  const userItems = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   const clearGuestCart = useCartStore((state) => state.clearGuestCart);
+  const { track } = usePixelTracking();
 
   return useMutation({
     mutationFn: async ({
@@ -66,20 +70,42 @@ export const UseCheckout = () => {
         (data as { orderId?: string }).orderId ??
         (data as { order?: { id?: string } }).order?.id;
 
-      // NOTE: Purchase is intentionally NOT tracked from the browser Pixel.
-      // It is reported to Meta ONLY server-side via the Conversions API
-      // (`sendPurchaseEventOnce` in features/checkout/server/route.ts), which
-      // is gated per-order by `orders.metaPurchaseEventSentAt` so a single
-      // order can never fire more than one Purchase. The browser Pixel fire
-      // was removed because it is not gated by any DB row — a success-page
-      // reload/revisit or a repeated onSuccess could fire it multiple times
-      // for one order, over-counting the conversion in Meta. All other Pixel
-      // events (PageView, ViewContent, AddToCart, InitiateCheckout) are
-      // unaffected and still fire client-side.
+      const purchase = (data as { purchase?: PurchaseTrackingPayload }).purchase;
+      if (purchase?.orderId && purchase.eventId) {
+        const guardKey = `fb_purchase_tracked_${purchase.orderId}`;
+        let alreadyTracked = trackedBrowserPurchaseOrderIds.has(purchase.orderId);
+        try {
+          alreadyTracked = alreadyTracked || sessionStorage.getItem(guardKey) === "1";
+        } catch {
+          /* sessionStorage unavailable */
+        }
+
+        if (!alreadyTracked) {
+          trackedBrowserPurchaseOrderIds.add(purchase.orderId);
+          try {
+            sessionStorage.setItem(guardKey, "1");
+          } catch {
+            /* sessionStorage unavailable */
+          }
+
+          track(
+            "Purchase",
+            {
+              value: purchase.value,
+              currency: purchase.currency,
+              order_id: purchase.orderId,
+              content_type: "product",
+              content_ids: purchase.contents.map((c) => c.id),
+              contents: purchase.contents,
+              quantity: purchase.numItems,
+            },
+            { eventId: purchase.eventId },
+          );
+        }
+      }
 
       if (orderId) {
-        // Brief delay so the success toast and cart-clear settle before the
-        // full-page navigation to the success screen.
+        // Brief delay so the Pixel beacon can enqueue before full-page navigation.
         setTimeout(() => {
           window.location.href = `/order-success?orderId=${orderId}&phone=${encodeURIComponent(variables.shippingInfo.phone)}`;
         }, 300);

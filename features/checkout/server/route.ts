@@ -19,6 +19,7 @@ import { db } from "@/db";
 import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
+import { purchaseEventId } from "@/lib/meta-purchase-event";
 import bcrypt from "bcryptjs";
 
 // Mirrors features/checkout/schema.ts (client-side form validation) so the
@@ -268,12 +269,22 @@ const app = new Hono()
         capiContextFromHeaders(c.req.raw.headers),
       );
 
-      // Purchase is reported to Meta only server-side (sendPurchaseEventOnce
-      // above), so the response no longer carries a Pixel payload.
       return c.json({
         message: "Order placed successfully",
         order: createdOrder,
         orderId: order.id,
+        purchase: {
+          value: totalAmount,
+          currency: "BDT",
+          orderId: order.id,
+          eventId: purchaseEventId(order.id),
+          contents: cartItemsForOrder.map((i) => ({
+            id: i.productId,
+            quantity: i.quantity,
+            item_price: i.price,
+          })),
+          numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
+        },
       });
     } catch (error) {
       // Lost a concurrent insert race on the same idempotency key: the winning
@@ -405,11 +416,21 @@ const app = new Hono()
       capiContextFromHeaders(c.req.raw.headers),
     );
 
-    // Purchase is reported to Meta only server-side (sendPurchaseEventOnce
-    // above), so the response no longer carries a Pixel payload.
     return c.json({
       message: "Order placed successfully",
       orderId: guestOrderId,
+      purchase: {
+        value: totalAmount,
+        currency: "BDT",
+        orderId: order.id,
+        eventId: purchaseEventId(order.id),
+        contents: cartItemsForOrder.map((i) => ({
+          id: i.productId,
+          quantity: i.quantity,
+          item_price: i.price,
+        })),
+        numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
+      },
     });
   } catch (error) {
     // Lost a concurrent insert race on the same idempotency key: the winning

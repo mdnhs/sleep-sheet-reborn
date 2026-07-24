@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { orders, siteSettings } from "@/db/schema";
+import { purchaseEventId } from "@/lib/meta-purchase-event";
 
 /**
  * Meta Conversions API (server-side) sender.
@@ -9,7 +10,7 @@ import { orders, siteSettings } from "@/db/schema";
  * Recovers Purchase (and other) events that the browser Pixel loses to
  * iOS ATT, Safari ITP and ad blockers, and boosts Event Match Quality by
  * sending hashed customer data (email/phone/name). Events are deduplicated
- * against the browser Pixel via a shared `event_id` (we use the order id).
+ * against the browser Pixel via a shared `event_id`.
  *
  * No-ops silently unless META_CAPI_ACCESS_TOKEN and a pixel/dataset id are
  * configured, so it is safe to deploy before the token exists.
@@ -215,16 +216,6 @@ export async function sendPurchaseEvent(
     console.error("[MetaCAPI] Purchase error", err);
     return false;
   }
-}
-
-/**
- * Deterministic, namespaced dedup key for an order's Purchase event. BOTH the
- * browser Pixel and this server CAPI must use this exact value so Meta merges
- * the two channels into one conversion. Namespaced with a `purchase_` prefix
- * so it never collides with other order-keyed events.
- */
-export function purchaseEventId(orderId: string): string {
-  return `purchase_${orderId}`;
 }
 
 /**
