@@ -54,6 +54,7 @@ export function defaultRobotsTxt(): string {
       "/account/",
       "/checkout/",
       "/orders/",
+      "/order-success/",
       "/track-order/",
     ],
     additionalRules: [
