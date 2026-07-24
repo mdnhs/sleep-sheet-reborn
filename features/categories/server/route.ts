@@ -9,6 +9,7 @@ import cuid from 'cuid';
 import { uploadImage, deleteImage } from '@/lib/cloudinary';
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
+import { invalidateFeed } from "@/lib/meta-catalog/cache";
 
 const app = new Hono()
 .get("/", async(c)=>{
@@ -86,6 +87,7 @@ const app = new Hono()
           seoDescription: seoDescription ?? null,
         });
 
+        invalidateFeed();
         setActivityMeta(c, { name: label });
 
         return c.json({
@@ -122,6 +124,7 @@ const app = new Hono()
         .set({ order, updatedAt: new Date() })
         .where(eq(categories.value, value))
     ));
+    invalidateFeed();
     return c.json({ success: true });
   } catch (error) {
     console.error("Failed to reorder categories", error);
@@ -192,6 +195,7 @@ const app = new Hono()
      if (body.order !== undefined && body.order !== existing.order) {
        changes.push({ label: "Sort order", from: existing.order, to: body.order });
      }
+     invalidateFeed();
      setActivityMeta(c, { name: body.label ?? existing.label, changes });
 
      return c.json({ success: true })
@@ -246,6 +250,7 @@ const app = new Hono()
        deletedLabels.push(category.label);
      }
 
+     invalidateFeed();
      setActivityMeta(c, { name: `${deletedLabels.length} categories: ${summarizeNames(deletedLabels)}` });
      return c.json({ success: true });
    } catch (error) {
@@ -282,6 +287,7 @@ const app = new Hono()
       }
       await db.delete(categories).where(eq(categories.value, value));
 
+      invalidateFeed();
       setActivityMeta(c, { name: category.label });
 
       return c.json({ success: true, message: "Category deleted" }, 200);

@@ -30,8 +30,17 @@ export function setCachedFeed(format: FeedFormat, data: string): CacheEntry {
   return entry
 }
 
+import { revalidateTag, revalidatePath } from "next/cache";
+
 export function invalidateFeed(): void {
-  store.clear()
+  store.clear();
+  try {
+    revalidateTag("products", "default");
+    revalidateTag("categories", "default");
+    revalidatePath("/", "layout");
+  } catch {
+    /* Ignore if invoked outside Next.js request lifecycle */
+  }
 }
 
 export function getCacheAge(format: FeedFormat): number | null {

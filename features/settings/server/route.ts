@@ -7,6 +7,7 @@ import { siteSettings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
+import { revalidateTag } from "next/cache";
 
 // Credentials that must never leave the server through the public GET.
 // The public endpoint exposes only a "<key>_set" flag for each so the admin
@@ -177,6 +178,12 @@ const app = new Hono()
         name: changes.length === 1 ? changes[0].label : `${changes.length} settings`,
         changes,
       });
+
+      try {
+        revalidateTag("settings", "default");
+      } catch {
+        /* Ignore if called outside Next request context */
+      }
 
       return c.json({ success: true });
     }
