@@ -20,9 +20,10 @@ interface ProductContentsProps {
   // Same idea, for routes like /bestsellers that default to a specific sort
   // without needing a ?sort= query string.
   initialSort?: string;
+  initialProducts?: any[];
 }
 
-function ProductContents({ initialCategory, initialSort }: ProductContentsProps = {}) {
+function ProductContents({ initialCategory, initialSort, initialProducts }: ProductContentsProps = {}) {
   const [category] = useQueryState("category", { defaultValue: initialCategory || "" });
   const [minPrice] = useQueryState("minPrice", { defaultValue: "" });
   const [maxPrice] = useQueryState("maxPrice", { defaultValue: "" });
@@ -58,8 +59,9 @@ function ProductContents({ initialCategory, initialSort }: ProductContentsProps 
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const allProducts = productsPages?.pages.flatMap((page) => page.data) || [];
-  const totalCount = productsPages?.pages[0]?.total || 0;
+  const fetchedProducts = productsPages?.pages.flatMap((page) => page.data) || [];
+  const allProducts = fetchedProducts.length > 0 ? fetchedProducts : (initialProducts || []);
+  const totalCount = productsPages?.pages[0]?.total || allProducts.length;
 
   return (
     <div className="w-full">
@@ -71,7 +73,7 @@ function ProductContents({ initialCategory, initialSort }: ProductContentsProps 
         <MobileFilterSheet initialCategory={initialCategory} />
       </div>
 
-      {isLoading ? (
+      {isLoading && allProducts.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex flex-col gap-3">

@@ -1,12 +1,9 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGetOrderByID } from "@/features/order/api/use-get-order-via-id";
+import { getOrderById } from "@/features/order/server/get-order";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft, CheckCircle, Package, Truck } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import {
   Table,
@@ -17,44 +14,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Image from "next/image";
-import { toast } from "sonner";
-import { printReceipt } from "@/lib/print-receipt";
-import { useCurrency } from "@/hooks/use-currency";
+import { OrderActionButtons } from "./order-actions";
+import { formatCurrency } from "@/lib/utils";
 
-export default function OrderDetail() {
-  const params = useParams();
-  const id = params?.orderId as string;
+type Props = { params: Promise<{ orderId: string }> };
 
-  const { data, isLoading, error } = useGetOrderByID(id);
-  const { symbol: currencySymbol, formatAmount } = useCurrency();
+export default async function OrderDetailPage({ params }: Props) {
+  const { orderId } = await params;
+  const order = await getOrderById(orderId);
 
-  if (isLoading) {
+  if (!order) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-64 bg-muted rounded"></div>
-          <div className="h-64 bg-muted rounded"></div>
-          <div className="h-96 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data?.order) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <div className="container mx-auto px-4 py-16 text-center min-h-[70vh] flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
-        <p className="mb-8">
+        <p className="mb-8 text-muted-foreground">
           We couldn&apos;t find the order you&apos;re looking for.
         </p>
-        <Button nativeButton={false} render={<Link href="/account" />}>
-          Return to Account
+        <Button nativeButton={false} render={<Link href="/" />}>
+          Return to Home
         </Button>
       </div>
     );
   }
-
-  if (error) return <div>Error fetching order details</div>;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,59 +52,30 @@ export default function OrderDetail() {
     }
   };
 
-  const handlePrintReceipt = () => {
-    if (!data?.order) return;
-
-    printReceipt({
-      orderNumber: data.order.orderNumber,
-      createdAt: formatDate(data.order.createdAt),
-      userName: data.order.user?.name ?? data.order.guestName ?? "Guest",
-      shippingAddress: data.order.shippingAddress,
-      items: data.order.items.map((item) => ({
-        name: item.product?.name ?? "Deleted product",
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      currencySymbol,
-      subtotal: data.order.subtotal,
-      shippingCost: data.order.shippingCost,
-      totalAmount: data.order.totalAmount,
-    });
-
-    toast("Receipt sent to printer", {
-      description: "Your receipt is now printing.",
-    });
-  };
-
-  const handleRequestReturn = () => {
-    toast("Return requested", {
-      description:
-        "Your return request has been submitted. We'll contact you shortly.",
-    });
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen">
       {/* Back button and order ID */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <Button
           variant="ghost"
           nativeButton={false}
           className="mb-4 sm:mb-0 -ml-4"
-          render={<Link href="/account" className="flex items-center" />}
+          render={<Link href="/" className="flex items-center" />}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Orders
+          Back to Store
         </Button>
         <div className="text-right">
           <h1 className="text-xl font-bold">
-            Order #{data?.order.orderNumber}
+            Order #{order.orderNumber}
           </h1>
-          <p className="text-muted-foreground">
-            Placed on {formatDate(data?.order.createdAt as string)}
+          <p className="text-muted-foreground text-sm">
+            Placed on {formatDate(String(order.createdAt))}
           </p>
         </div>
       </div>
+
+      {/* Order Status Timeline */}
       <Card className="mb-8">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Order Status</CardTitle>
@@ -132,27 +84,25 @@ export default function OrderDetail() {
           <div className="flex items-center mb-6">
             <span
               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                data?.order.status as string
+                order.status
               )}`}
             >
-              {data?.order.status === "DELIVERED" ? (
+              {order.status === "DELIVERED" ? (
                 <CheckCircle className="mr-1 h-4 w-4" />
-              ) : data?.order.status === "SHIPPED" ||
-                data?.order.status === "PROCESSING" ? (
+              ) : order.status === "SHIPPED" || order.status === "PROCESSING" ? (
                 <Truck className="mr-1 h-4 w-4" />
               ) : (
                 <Package className="mr-1 h-4 w-4" />
               )}
-              {data?.order.status}
+              {order.status}
             </span>
           </div>
           <div className="relative">
             <div className="absolute top-0 left-3 h-full w-0.5 bg-border"></div>
             <ul className="space-y-6">
-              {data?.order.OrderTimelineEvent.map((event, index) => {
+              {order.OrderTimelineEvent.map((event, index) => {
                 const createdAt = new Date(event.createdAt);
-                const isLatest =
-                  index === data.order.OrderTimelineEvent.length - 1;
+                const isLatest = index === order.OrderTimelineEvent.length - 1;
 
                 return (
                   <li key={event.id} className="relative pl-10">
@@ -169,8 +119,8 @@ export default function OrderDetail() {
                         <span className="h-2 w-2 rounded-full bg-muted-foreground" />
                       )}
                     </div>
-                    <div className="font-medium">{event.status}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="font-medium text-sm">{event.status}</div>
+                    <div className="text-xs text-muted-foreground">
                       {format(createdAt, "PPpp")}
                     </div>
                   </li>
@@ -180,6 +130,8 @@ export default function OrderDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Items Table */}
       <Card className="mb-8">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Items</CardTitle>
@@ -195,26 +147,26 @@ export default function OrderDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.order.items.map((item) => (
+              {order.items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="flex items-center">
                       <Image
-                        src={item.product?.images[0] ?? "/placeholder.jpg"}
-                        alt={item.product?.name ?? "Deleted product"}
+                        src={item.product?.images?.[0] ?? "/placeholder.jpg"}
+                        alt={item.product?.name ?? "Product"}
                         width={48}
                         height={48}
-                        className="h-12 w-12 object-cover rounded-md mr-4"
+                        className="h-12 w-12 object-cover rounded-md mr-4 shrink-0"
                       />
-                      <span>{item.product?.name ?? "Deleted product"}</span>
+                      <span className="font-medium text-sm">{item.product?.name ?? "Deleted product"}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {formatAmount(item.price)}
+                  <TableCell className="text-right text-sm">
+                    ৳{item.price.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatAmount(item.price * item.quantity)}
+                  <TableCell className="text-center text-sm">{item.quantity}</TableCell>
+                  <TableCell className="text-right font-medium text-sm">
+                    ৳{(item.price * item.quantity).toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))}
@@ -222,35 +174,36 @@ export default function OrderDetail() {
           </Table>
 
           {/* Order Summary */}
-          <div className="mt-6 border-t pt-6">
+          <div className="mt-6 border-t pt-6 text-sm">
             <div className="flex justify-between mb-2">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatAmount(data?.order.subtotal ?? 0)}</span>
+              <span>৳{order.subtotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-muted-foreground">Shipping</span>
-              <span>{formatAmount(data?.order.shippingCost ?? 0)}</span>
+              <span>৳{order.shippingCost.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between font-medium text-lg">
+            <div className="flex justify-between font-bold text-lg pt-2 border-t">
               <span>Total</span>
-              <span>{formatAmount(data?.order.totalAmount ?? 0)}</span>
+              <span>৳{order.totalAmount.toLocaleString()}</span>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Address and Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        {/* Shipping Address */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Shipping Address</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              <p className="font-medium">{data?.order.user?.name ?? data?.order.guestName ?? "Guest"}</p>
-              {(data?.order.user?.phone ?? data?.order.guestPhone) && (
-                <p className="text-muted-foreground">{data?.order.user?.phone ?? data?.order.guestPhone}</p>
+            <div className="space-y-1 text-sm">
+              <p className="font-medium">{order.user?.name ?? order.guestName ?? "Guest"}</p>
+              {(order.user?.phone ?? order.guestPhone) && (
+                <p className="text-muted-foreground">{order.user?.phone ?? order.guestPhone}</p>
               )}
-              <p>{data?.order.shippingAddress}</p>
+              <p>{order.shippingAddress}</p>
             </div>
           </CardContent>
         </Card>
@@ -259,51 +212,25 @@ export default function OrderDetail() {
             <CardTitle className="text-lg">Payment Method</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>{data?.order.paymentMethod}</p>
+            <p className="text-sm font-medium">{order.paymentMethod}</p>
           </CardContent>
         </Card>
-        {(data?.order.reference || data?.order.note) && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {data?.order.reference && (
-                  <p><span className="text-muted-foreground">Reference:</span> {data.order.reference}</p>
-                )}
-                {data?.order.note && (
-                  <p><span className="text-muted-foreground">Note:</span> {data.order.note}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
-      <div className="flex flex-wrap gap-4 justify-end">
-        <Button variant="outline" onClick={handlePrintReceipt}>
-          Print Receipt
-        </Button>
-        {data?.order.status !== "DELIVERED" ? (
-          <Button variant="outline" disabled>
-            Request Return
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={handleRequestReturn}>
-            Request Return
-          </Button>
-        )}
-        <Button
-          nativeButton={false}
-          render={
-            <a
-              href={`mailto:support@example.com?subject=Help%20with%20Order%20${data?.order.orderNumber}`}
-            />
-          }
-        >
-          Need Help?
-        </Button>
-      </div>
+
+      <OrderActionButtons
+        order={{
+          orderNumber: order.orderNumber,
+          createdAt: String(order.createdAt),
+          userName: order.user?.name,
+          guestName: order.guestName,
+          shippingAddress: order.shippingAddress,
+          items: order.items,
+          subtotal: order.subtotal,
+          shippingCost: order.shippingCost,
+          totalAmount: order.totalAmount,
+          status: order.status,
+        }}
+      />
     </div>
   );
 }

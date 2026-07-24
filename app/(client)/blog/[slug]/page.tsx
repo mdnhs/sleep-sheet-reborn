@@ -58,5 +58,16 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  return <BlogPostClient slug={slug} />;
+  let post: any = null;
+
+  try {
+    const [dbPost] = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.slug, slug))
+      .limit(1);
+    post = dbPost || null;
+  } catch {}
+
+  return <BlogPostClient slug={slug} initialPost={post} />;
 }

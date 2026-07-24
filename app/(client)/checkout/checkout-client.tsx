@@ -8,7 +8,11 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { getOrCreateCheckoutIdempotencyKey } from "@/lib/checkout-idempotency";
 
-function CheckoutClinet() {
+interface CheckoutClientProps {
+  initialSettings?: Record<string, string> | null;
+}
+
+function CheckoutClinet({ initialSettings }: CheckoutClientProps) {
   const router = useRouter();
   const cartItems = useCartStore((state) => state.items);
   const guestItems = useCartStore((state) => state.guestItems);
@@ -31,7 +35,7 @@ function CheckoutClinet() {
       <div className="container mx-auto px-3 pb-4 pt-1 max-w-5xl">
         <div className="flex flex-col lg:flex-row items-start gap-4 mt-2">
           <div className="w-full lg:w-3/5 order-1">
-            <ShippingInformationCard />
+            <ShippingInformationCard initialSettings={initialSettings} />
           </div>
           <div className="w-full lg:w-2/5 order-2 lg:sticky lg:top-20">
             <OrderSummeryCard />

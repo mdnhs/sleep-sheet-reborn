@@ -43,10 +43,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
+import { getPublicProducts } from "@/lib/prefetch-home";
+
 export default async function ProductDetailPage({ params }: Props) {
   const { productId: id } = await params;
   const product = await getProductById(id);
   if (!product) notFound();
+
+  const relatedProductsRes = await getPublicProducts().catch(() => null);
+  const relatedProducts = relatedProductsRes?.data || [];
 
   const categoryLabel = product.categoryLabel || product.category || "Products";
   const productBreadcrumbs = [
@@ -175,7 +180,7 @@ export default async function ProductDetailPage({ params }: Props) {
         <div className="container mx-auto px-4 mb-8">
           <h2 className="text-3xl md:text-4xl font-semibold text-center text-foreground tracking-tight">You might also like</h2>
         </div>
-        <FeaturedProduct />
+        <FeaturedProduct initialData={relatedProducts} />
       </section>
     </div>
   );

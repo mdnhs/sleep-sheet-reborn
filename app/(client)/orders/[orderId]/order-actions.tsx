@@ -1,0 +1,83 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { printReceipt } from "@/lib/print-receipt";
+import { useCurrency } from "@/hooks/use-currency";
+import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
+
+interface OrderActionButtonsProps {
+  order: {
+    orderNumber: string;
+    createdAt: string;
+    userName?: string | null;
+    guestName?: string | null;
+    shippingAddress: string;
+    items: {
+      product?: { name: string } | null;
+      quantity: number;
+      price: number;
+    }[];
+    subtotal: number;
+    shippingCost: number;
+    totalAmount: number;
+    status: string;
+  };
+}
+
+export function OrderActionButtons({ order }: OrderActionButtonsProps) {
+  const { symbol: currencySymbol } = useCurrency();
+
+  const handlePrintReceipt = () => {
+    printReceipt({
+      orderNumber: order.orderNumber,
+      createdAt: formatDate(order.createdAt),
+      userName: order.userName ?? order.guestName ?? "Guest",
+      shippingAddress: order.shippingAddress,
+      items: order.items.map((item) => ({
+        name: item.product?.name ?? "Deleted product",
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      currencySymbol,
+      subtotal: order.subtotal,
+      shippingCost: order.shippingCost,
+      totalAmount: order.totalAmount,
+    });
+
+    toast("Receipt sent to printer", {
+      description: "Your receipt is now printing.",
+    });
+  };
+
+  const handleRequestReturn = () => {
+    toast("Return requested", {
+      description: "Your return request has been submitted. We'll contact you shortly.",
+    });
+  };
+
+  return (
+    <div className="flex flex-wrap gap-4 justify-end">
+      <Button variant="outline" onClick={handlePrintReceipt}>
+        Print Receipt
+      </Button>
+      {order.status !== "DELIVERED" ? (
+        <Button variant="outline" disabled>
+          Request Return
+        </Button>
+      ) : (
+        <Button variant="outline" onClick={handleRequestReturn}>
+          Request Return
+        </Button>
+      )}
+      <Button
+        nativeButton={false}
+        render={
+          <a href={`mailto:support@example.com?subject=Help%20with%20Order%20${order.orderNumber}`} />
+        }
+      >
+        Need Help?
+      </Button>
+    </div>
+  );
+}

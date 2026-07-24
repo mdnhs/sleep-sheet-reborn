@@ -45,16 +45,21 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   REFUNDED: { label: "Refunded", color: "text-rose-600 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-400 border border-rose-200/30" },
 };
 
-function TrackOrderContent() {
+interface TrackOrderContentProps {
+  initialOrders?: Order[];
+  initialPhone?: string;
+}
+
+function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentProps = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const phoneParam = searchParams.get("phone");
+  const phoneParam = searchParams.get("phone") || initialPhone || "";
   const { t, language } = useLanguage();
 
-  const [phone, setPhone] = useState("");
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [phone, setPhone] = useState(phoneParam);
+  const [orders, setOrders] = useState<Order[]>(initialOrders || []);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(Boolean(initialOrders && initialOrders.length > 0));
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
@@ -88,7 +93,7 @@ function TrackOrderContent() {
   };
 
   useEffect(() => {
-    if (phoneParam) {
+    if (phoneParam && (!initialOrders || initialOrders.length === 0)) {
       setPhone(phoneParam);
       performSearch(phoneParam);
     }

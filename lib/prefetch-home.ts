@@ -33,8 +33,16 @@ export const getPublicCategories = unstable_cache(
   { revalidate: 300, tags: ["categories"] }
 );
 
+import blogApp from "@/features/blog/server/route";
+
 export const getPublicProducts = unstable_cache(
   () => fromRoute<{ data: any[] }>(productsApp, "/?sort=newest&limit=8"),
   ["prefetch-products"],
   { revalidate: 300, tags: ["products"] }
+);
+
+export const getPublicBlogPosts = unstable_cache(
+  () => fromRoute<{ data: any[] }>(blogApp, "/"),
+  ["prefetch-blog"],
+  { revalidate: 300, tags: ["blog"] }
 );

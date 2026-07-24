@@ -8,11 +8,16 @@ import { useQueryState } from 'nuqs';
 import { X } from 'lucide-react';
 import { extractTags } from '@/lib/utils';
 
-export default function BlogClientPage() {
+interface BlogClientPageProps {
+  initialPosts?: any[];
+}
+
+export default function BlogClientPage({ initialPosts }: BlogClientPageProps = {}) {
   const { data: postsData, isLoading } = useGetPosts();
   const [activeTag, setActiveTag] = useQueryState('tag', { defaultValue: '' });
 
-  const publishedPosts = postsData?.data?.filter((p: any) => p.isPublished) || [];
+  const fetchedPosts = postsData?.data?.filter((p: any) => p.isPublished) || [];
+  const publishedPosts = fetchedPosts.length > 0 ? fetchedPosts : (initialPosts || []);
 
   // Match against the same derived tags the post page renders, so a tag chip always
   // finds at least the post it was clicked from. Tags come from extractTags(), not
@@ -52,7 +57,7 @@ export default function BlogClientPage() {
         </div>
       )}
 
-      {isLoading ? (
+      {isLoading && publishedPosts.length === 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex flex-col gap-3">

@@ -3,13 +3,18 @@ import ProductSidebar from "@/features/product/components/products-sidebar";
 import React, { Suspense } from "react";
 import { seoConfig, generateMetadata, webpageSchema, structuredDataScript } from "@/lib/seo";
 
+import { getPublicProducts } from "@/lib/prefetch-home";
+
 export const metadata = generateMetadata({
   title: "All Products",
   description: `Browse our complete collection of comforter sets, bed sheets, and pillow covers online in Bangladesh. 100% twill cotton fabric, cash on delivery at ${seoConfig.siteName}.`,
   canonical: `${seoConfig.siteUrl}/shop`,
 })
 
-function ProductsPage() {
+async function ProductsPage() {
+  const productsRes = await getPublicProducts().catch(() => null);
+  const products = productsRes?.data || [];
+
   return (
     <div className="w-full bg-primary/5 dark:bg-primary/10 min-h-screen">
       <div className="container mx-auto py-4 px-4 min-h-[80vh]">
@@ -27,7 +32,7 @@ function ProductsPage() {
           {/* Main Content */}
           <div className="flex-1 w-full">
             <Suspense fallback={<div className="w-full h-96 bg-muted animate-pulse rounded-lg" />}>
-              <ProductContents />
+              <ProductContents initialProducts={products} />
             </Suspense>
           </div>
         </div>

@@ -9,7 +9,12 @@ export const metadata = generateMetadata({
   canonical: `${seoConfig.siteUrl}/blog`,
 })
 
-export default function BlogPage() {
+import { getPublicBlogPosts } from "@/lib/prefetch-home";
+
+export default async function BlogPage() {
+  const postsRes = await getPublicBlogPosts().catch(() => null);
+  const posts = postsRes?.data || [];
+
   return (
     <>
       {structuredDataScript("blog-listing", webpageSchema(
@@ -17,11 +22,8 @@ export default function BlogPage() {
         "Read our latest stories, sleep tips, product guides, and news.",
         `${seoConfig.siteUrl}/blog`,
       ))}
-      {/* BlogClientPage reads the ?tag= param via nuqs (useSearchParams under the
-          hood), which opts its subtree out of prerendering. The boundary keeps the
-          rest of the route static and serves the skeleton in the initial HTML. */}
       <Suspense fallback={<BlogListFallback />}>
-        <BlogClientPage />
+        <BlogClientPage initialPosts={posts} />
       </Suspense>
     </>
   );

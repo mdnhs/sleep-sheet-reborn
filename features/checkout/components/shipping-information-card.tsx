@@ -30,9 +30,14 @@ import { UseCheckout } from "../api/use-checkout";
 import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
 
-function ShippingInformationCard() {
+interface ShippingInformationCardProps {
+  initialSettings?: Record<string, string> | null;
+}
+
+function ShippingInformationCard({ initialSettings }: ShippingInformationCardProps = {}) {
   const setShipping = useCartStore((state) => state.setShipping);
-  const { data: settings } = useSettings();
+  const { data: fetchedSettings } = useSettings();
+  const settings = fetchedSettings || initialSettings;
   const { formatAmount } = useCurrency();
   const { data: currentUser } = useCurrent();
   const { mutate, isPending } = UseCheckout();

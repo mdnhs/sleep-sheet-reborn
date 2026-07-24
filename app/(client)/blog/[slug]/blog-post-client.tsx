@@ -37,18 +37,20 @@ const TAGS = [
   'Decor & Styling',
 ];
 
-export default function BlogPostClient({ slug }: { slug: string }) {
-  const { data: post, isLoading } = useGetPost(slug);
+export default function BlogPostClient({ slug, initialPost }: { slug: string; initialPost?: any }) {
+  const { data: fetchedPost, isLoading } = useGetPost(slug);
   const { data: allPostsData } = useGetPosts({ limit: '5' });
   const [isLiked, setIsLiked] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const post = fetchedPost || initialPost;
 
   const relatedPosts =
     allPostsData?.data?.filter(
       (p: any) => p.slug !== slug && p.id !== post?.id && p.isPublished !== false
     ).slice(0, 3) || [];
 
-  if (isLoading) {
+  if (isLoading && !post) {
     return (
       <div className="container mx-auto px-4 max-w-7xl py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pt-2">

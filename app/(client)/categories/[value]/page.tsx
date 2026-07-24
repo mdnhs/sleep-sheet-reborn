@@ -86,7 +86,7 @@ export default async function CategoryPage({ params }: Props) {
 
           <div className="flex-1 w-full">
             <Suspense fallback={<div className="w-full h-96 bg-muted animate-pulse rounded-lg" />}>
-              <ProductContents initialCategory={category.label} />
+              <ProductContents initialCategory={category.label} initialProducts={previewProducts} />
             </Suspense>
           </div>
         </div>
