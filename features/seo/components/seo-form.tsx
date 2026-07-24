@@ -23,6 +23,9 @@ const seoSchema = z.object({
   seo_bing_verification: z.string().optional(),
   google_analytics_id: z.string().optional(),
   ga4_property_id: z.string().optional(),
+  gtm_web_id: z.string().optional(),
+  gtm_server_id: z.string().optional(),
+  gtm_server_url: z.string().optional(),
   seo_twitter_handle: z.string().optional(),
   seo_robots_ai_block: z.boolean(),
 });
@@ -44,6 +47,9 @@ export function SeoForm() {
       seo_bing_verification: data?.seo_bing_verification || "",
       google_analytics_id: data?.google_analytics_id || "",
       ga4_property_id: data?.ga4_property_id || "546802046",
+      gtm_web_id: data?.gtm_web_id || "",
+      gtm_server_id: data?.gtm_server_id || "",
+      gtm_server_url: data?.gtm_server_url || "",
       seo_twitter_handle: data?.seo_twitter_handle || "@sleepsheet2025",
       seo_robots_ai_block: data?.seo_robots_ai_block !== "false",
     },
@@ -72,6 +78,9 @@ export function SeoForm() {
       seo_bing_verification: values.seo_bing_verification || undefined,
       google_analytics_id: cleanGaId || undefined,
       ga4_property_id: values.ga4_property_id || undefined,
+      gtm_web_id: values.gtm_web_id?.trim() || undefined,
+      gtm_server_id: values.gtm_server_id?.trim() || undefined,
+      gtm_server_url: values.gtm_server_url?.trim() || undefined,
       seo_twitter_handle: values.seo_twitter_handle || undefined,
       seo_robots_ai_block: values.seo_robots_ai_block ? "true" : "false",
     });
@@ -188,14 +197,62 @@ export function SeoForm() {
               <div className="space-y-4">
                 <FormField
                   control={form.control}
+                  name="gtm_web_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <span>Google Tag Manager (Web Container ID)</span>
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold px-2 py-0.5 rounded-md">Web Container</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. GTM-PQ667JWQ" className="rounded-xl font-mono text-sm" />
+                      </FormControl>
+                      <FormDescription>Your Web Container ID from GTM dashboard (e.g. GTM-PQ667JWQ)</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gtm_server_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <span>Google Tag Manager (Server Container ID)</span>
+                        <span className="text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-semibold px-2 py-0.5 rounded-md">Server Container</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. GTM-PZQMNK4K" className="rounded-xl font-mono text-sm" />
+                      </FormControl>
+                      <FormDescription>Your Server Container ID for Server-Side Tracking (e.g. GTM-PZQMNK4K)</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gtm_server_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GTM Server Tagging URL (Optional Custom Domain)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. https://sgtm.sleepsheetbd.com" className="rounded-xl font-mono text-sm" />
+                      </FormControl>
+                      <FormDescription>Custom tagging server endpoint URL if hosting your GTM server container</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="google_analytics_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Google Analytics (GA4) Measurement ID or Tag Script</FormLabel>
+                      <FormLabel>Google Analytics (GA4) Measurement ID</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="e.g. G-Y62ZKHQGLV or paste full Google Tag script" className="rounded-xl font-mono text-sm" />
                       </FormControl>
-                      <FormDescription>Enter your GA4 Measurement ID (e.g. G-Y62ZKHQGLV) or paste the full Google tag script code</FormDescription>
+                      <FormDescription>Enter your GA4 Measurement ID (e.g. G-Y62ZKHQGLV)</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

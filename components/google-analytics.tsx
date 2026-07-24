@@ -54,33 +54,70 @@ function GoogleAnalyticsTracker({ gaId }: { gaId: string }) {
 export default function GoogleAnalytics() {
   const { data: settings } = useSettings();
 
-  const gaId = extractMeasurementId(
-    settings?.google_analytics_id ||
-    process.env.NEXT_PUBLIC_GA_ID ||
-    ""
-  );
+  // Extract GTM Web Container ID
+  const rawGtmWebId = settings?.gtm_web_id?.trim();
+  const rawGaId = settings?.google_analytics_id?.trim() || process.env.NEXT_PUBLIC_GA_ID || "";
+  
+  const gtmWebId = rawGtmWebId || (rawGaId.startsWith("GTM-") ? rawGaId : "");
+  const gtmServerId = settings?.gtm_server_id?.trim();
+  const gtmServerUrl = settings?.gtm_server_url?.trim().replace(/\/$/, "");
 
-  if (!gaId) return null;
+  const gaId = extractMeasurementId(rawGaId);
+
+  const gtmDomain = gtmServerUrl || "https://www.googletagmanager.com";
 
   return (
     <>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${gaId}', {
-            page_path: window.location.pathname,
-          });
-        `}
-      </Script>
-      <Suspense fallback={null}>
-        <GoogleAnalyticsTracker gaId={gaId} />
-      </Suspense>
+      {/* Google Tag Manager (Web Container / Server Tagging URL) */}
+      {gtmWebId && (
+        <>
+          <Script id="google-tag-manager" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              ${gtmServerId ? `window.dataLayer.push({ 'gtm.serverContainerId': '${gtmServerId}' });` : ''}
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              '${gtmDomain}/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','${gtmWebId}');
+            `}
+          </Script>
+          <noscript>
+            <iframe
+              src={`${gtmDomain}/ns.html?id=${gtmWebId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+            />
+          </noscript>
+        </>
+      )}
+
+      {/* Google Analytics (GA4) fallback if GA ID is present */}
+      {gaId && !gaId.startsWith("GTM-") && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaId}', {
+                page_path: window.location.pathname,
+              });
+            `}
+          </Script>
+        </>
+      )}
+
+      {gaId && (
+        <Suspense fallback={null}>
+          <GoogleAnalyticsTracker gaId={gaId} />
+        </Suspense>
+      )}
     </>
   );
 }
