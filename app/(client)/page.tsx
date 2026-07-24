@@ -19,9 +19,17 @@ import {
 // moved their heavy hydration into the initial load window, spiking Total
 // Blocking Time and — on mobile — delaying the hero paint. Fetching them
 // after paint keeps that work off the critical path.
-function Page() {
-  // No <main> here — the (client) layout already provides the single <main>
-  // landmark. A nested second <main> is invalid HTML and hurts a11y/SEO.
+import { getPublicCategories, getPublicProducts } from "@/lib/prefetch-home";
+
+async function Page() {
+  const [categoriesRes, productsRes] = await Promise.all([
+    getPublicCategories().catch(() => null),
+    getPublicProducts().catch(() => null),
+  ]);
+
+  const categories = categoriesRes?.categories || [];
+  const products = productsRes?.data || [];
+
   return (
     <>
       {structuredDataScript(
@@ -40,9 +48,9 @@ function Page() {
 
       <Hero />
 
-      <Categories />
+      <Categories initialData={categories} />
       <NarrowBanner />
-      <FeaturedProduct />
+      <FeaturedProduct initialData={products} />
       <SubcategoryProducts />
       <BlogCarousel />
       <SeoContent />

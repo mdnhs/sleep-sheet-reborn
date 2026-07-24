@@ -14,12 +14,18 @@ import {
 } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const Categories = () => {
+interface CategoriesProps {
+  initialData?: any[];
+}
+
+const Categories = ({ initialData }: CategoriesProps) => {
   const { data, isLoading } = useGetCategory();
 
-  const displayedCategories = data?.categories || [];
+  const displayedCategories = (data?.categories && data.categories.length > 0)
+    ? data.categories
+    : initialData || [];
 
-  if (isLoading) {
+  if (isLoading && displayedCategories.length === 0) {
     return (
       <section className="py-5 md:py-10 bg-white dark:bg-transparent relative overflow-hidden">
         <div className="container mx-auto px-4 relative">

@@ -14,12 +14,20 @@ import {
 } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const FeaturedProduct = () => {
+interface FeaturedProductProps {
+  initialData?: any[];
+}
+
+const FeaturedProduct = ({ initialData }: FeaturedProductProps) => {
   const { data: products, isLoading } = useGetProducts({
     sort: "newest",
   });
 
-  if (isLoading) {
+  const productList = (products?.data && products.data.length > 0)
+    ? products.data
+    : initialData || [];
+
+  if (isLoading && productList.length === 0) {
     return (
       <section className="py-6 md:py-10 bg-primary/5 dark:bg-primary/10 border-t border-slate-100 dark:border-slate-800 relative overflow-hidden">
         <div className="container mx-auto px-4 relative">
@@ -50,7 +58,7 @@ const FeaturedProduct = () => {
     );
   }
 
-  if (!products || products.data.length === 0) {
+  if (productList.length === 0) {
     return null;
   }
 
@@ -82,7 +90,7 @@ const FeaturedProduct = () => {
           className="w-full"
         >
           <CarouselContent className="-ml-4 md:-ml-6">
-            {products?.data.map((product) => (
+            {productList.map((product) => (
               <CarouselItem key={product.id} className="pl-4 md:pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                 <div className="h-full py-4">
                   <ProductCard product={product as any} />

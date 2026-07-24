@@ -199,15 +199,20 @@ export function getStartDate(period: string): Date {
 
 export function getOptimizedImageUrl(url: string | null | undefined, width?: number): string {
   if (!url) return "";
+  const targetWidth = width || 1000;
   if (url.startsWith("https://res.cloudinary.com/")) {
     const uploadIndex = url.indexOf("/image/upload/");
     if (uploadIndex !== -1) {
       const start = url.slice(0, uploadIndex + 14);
-      const rest = url.slice(uploadIndex + 14);
-      if (!rest.startsWith("c_") && !rest.startsWith("w_") && !rest.startsWith("f_") && !rest.startsWith("q_")) {
-        const transform = width ? `f_auto,q_auto,w_${width}/` : "f_auto,q_auto/";
-        return `${start}${transform}${rest}`;
+      let rest = url.slice(uploadIndex + 14);
+
+      // Strip any old existing Cloudinary transformation segments before re-applying optimized params
+      if (/^(?:[a-z]_[^/]+,)*[a-z]_[^/]+\//.test(rest)) {
+        rest = rest.replace(/^(?:[a-z]_[^/]+,)*[a-z]_[^/]+\//, "");
       }
+
+      const transform = `f_auto,q_auto:good,c_limit,w_${targetWidth}/`;
+      return `${start}${transform}${rest}`;
     }
   }
   return url;

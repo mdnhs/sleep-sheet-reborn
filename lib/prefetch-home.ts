@@ -16,10 +16,25 @@ async function fromRoute<T>(
   return res.json() as Promise<T>;
 }
 
+import categoriesApp from "@/features/categories/server/route";
+import productsApp from "@/features/product/server/route";
+
 // Server-side data cache so per-request SSR pages don't hit the database for
 // layout settings on every render.
 export const getPublicSettings = unstable_cache(
   () => fromRoute<Record<string, string>>(settingsApp, "/"),
   ["prefetch-settings"],
   { revalidate: 300, tags: ["settings"] },
+);
+
+export const getPublicCategories = unstable_cache(
+  () => fromRoute<{ success: boolean; categories: any[] }>(categoriesApp, "/category"),
+  ["prefetch-categories"],
+  { revalidate: 300, tags: ["categories"] }
+);
+
+export const getPublicProducts = unstable_cache(
+  () => fromRoute<{ data: any[] }>(productsApp, "/?sort=newest&limit=8"),
+  ["prefetch-products"],
+  { revalidate: 300, tags: ["products"] }
 );
