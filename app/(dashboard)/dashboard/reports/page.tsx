@@ -178,10 +178,19 @@ export default function ReportsPage() {
     setCustomRange(range);
     if (range?.from && range?.to) {
       setActiveFilter("custom");
-      setDateRange({ from: range.from.toISOString(), to: range.to.toISOString() });
-    } else if (!range) {
+      setDateRange({
+        from: startOfDay(range.from).toISOString(),
+        to: endOfDay(range.to).toISOString(),
+      });
+    } else if (range?.from) {
+      setActiveFilter("custom");
+      setDateRange({
+        from: startOfDay(range.from).toISOString(),
+        to: endOfDay(range.from).toISOString(),
+      });
+    } else {
       setActiveFilter("all");
-      setDateRange({})
+      setDateRange({});
     }
   };
 

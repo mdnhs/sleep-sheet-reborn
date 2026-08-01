@@ -33,7 +33,9 @@ const app = new Hono()
       if (from) {
         const d = new Date(from);
         if (!isNaN(d.getTime())) {
-          d.setHours(0, 0, 0, 0);
+          if (!from.includes("T")) {
+            d.setHours(0, 0, 0, 0);
+          }
           fromDate = d;
         }
       }
@@ -41,7 +43,9 @@ const app = new Hono()
       if (to) {
         const d = new Date(to);
         if (!isNaN(d.getTime())) {
-          d.setHours(23, 59, 59, 999);
+          if (!to.includes("T")) {
+            d.setHours(23, 59, 59, 999);
+          }
           toDate = d;
         }
       }
@@ -143,7 +147,9 @@ const app = new Hono()
       if (from) {
         const d = new Date(from);
         if (!isNaN(d.getTime())) {
-          d.setHours(0, 0, 0, 0);
+          if (!from.includes("T")) {
+            d.setHours(0, 0, 0, 0);
+          }
           fromDate = d;
         }
       }
@@ -151,7 +157,9 @@ const app = new Hono()
       if (to) {
         const d = new Date(to);
         if (!isNaN(d.getTime())) {
-          d.setHours(23, 59, 59, 999);
+          if (!to.includes("T")) {
+            d.setHours(23, 59, 59, 999);
+          }
           toDate = d;
         }
       }
