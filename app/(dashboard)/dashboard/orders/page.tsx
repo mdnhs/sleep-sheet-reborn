@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense } from "react";
 import { ConfirmDialog } from "@/components/conform-dialouge";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -177,7 +178,7 @@ type StatusFilter =
   | "CANCELLED"
   | "RETURNED";
 
-export default function OrdersPage() {
+function OrdersPageContent() {
   const [search, setSearch] = useQueryState(
     "search",
     parseAsString.withDefault("")
@@ -2104,6 +2105,21 @@ export default function OrdersPage() {
         onOpenChange={(open) => !open && setLogDetailsOrder(null)}
       />
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-6xl mx-auto">
+          <div className="h-10 w-48 bg-muted animate-pulse rounded-full" />
+          <div className="h-64 w-full bg-muted animate-pulse rounded-3xl" />
+        </div>
+      }
+    >
+      <OrdersPageContent />
+    </Suspense>
   );
 }
 
