@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useGetReports } from "@/features/reports/api/use-get-reports";
 import { useGetMonthlyReports } from "@/features/reports/api/use-get-monthly-reports";
+import { useGetOrderByID } from "@/features/order/api/use-get-order-via-id";
 import { useCurrency } from "@/hooks/use-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -141,6 +143,7 @@ export default function ReportsPage() {
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
   const [showShippingBreakdown, setShowShippingBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const { data, isLoading } = useGetReports(dateRange);
   const { data: monthlyReportsData, isLoading: isMonthlyLoading } = useGetMonthlyReports();
@@ -469,11 +472,15 @@ export default function ReportsPage() {
                             </TableRow>
                           )}
                           renderRow={(item: any, i: number) => (
-                            <TableRow key={`${item.orderId}-${i}`} className="group">
+                            <TableRow
+                              key={`${item.orderId}-${i}`}
+                              onClick={() => setSelectedOrderId(item.orderId)}
+                              className="group cursor-pointer hover:bg-slate-100/80 dark:hover:bg-muted/60 transition-colors"
+                            >
                               <TableCell className="py-3 text-muted-foreground align-middle">
                                 {format(new Date(item.date), "MMM d, yyyy")}
                               </TableCell>
-                              <TableCell className="py-3 font-medium align-middle">
+                              <TableCell className="py-3 font-semibold align-middle text-indigo-600 dark:text-indigo-400 group-hover:underline">
                                 {item.orderNumber}
                               </TableCell>
                               <TableCell className="py-3 align-middle max-w-[250px] truncate" title={item.productName}>
@@ -526,16 +533,24 @@ export default function ReportsPage() {
                             <TableRow className="hover:bg-transparent">
                               <TableHead className="font-medium h-10 w-[120px]">Date</TableHead>
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
+                              <TableHead className="font-medium h-10">Customer</TableHead>
                               <TableHead className="text-right font-medium h-10">Net Sale Amount</TableHead>
                             </TableRow>
                           )}
                           renderRow={(item: any, i: number) => (
-                            <TableRow key={`rev-${item.orderId}-${i}`} className="group">
+                            <TableRow
+                              key={`rev-${item.orderId}-${i}`}
+                              onClick={() => setSelectedOrderId(item.orderId)}
+                              className="group cursor-pointer hover:bg-slate-100/80 dark:hover:bg-muted/60 transition-colors"
+                            >
                               <TableCell className="py-3 text-muted-foreground align-middle">
                                 {format(new Date(item.date), "MMM d, yyyy")}
                               </TableCell>
-                              <TableCell className="py-3 font-medium align-middle">
+                              <TableCell className="py-3 font-semibold align-middle text-indigo-600 dark:text-indigo-400 group-hover:underline">
                                 {item.orderNumber}
+                              </TableCell>
+                              <TableCell className="py-3 font-medium align-middle text-slate-700 dark:text-slate-300">
+                                {item.customerName || "Guest"}
                               </TableCell>
                               <TableCell className="text-right py-3 align-middle font-medium tabular-nums text-green-600 dark:text-green-400">
                                 {formatAmount(item.totalAmount)}
@@ -578,16 +593,24 @@ export default function ReportsPage() {
                             <TableRow className="hover:bg-transparent">
                               <TableHead className="font-medium h-10 w-[120px]">Date</TableHead>
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
+                              <TableHead className="font-medium h-10">Customer</TableHead>
                               <TableHead className="text-right font-medium h-10">Delivery Charge</TableHead>
                             </TableRow>
                           )}
                           renderRow={(item: any, i: number) => (
-                            <TableRow key={`ship-${item.orderId}-${i}`} className="group">
+                            <TableRow
+                              key={`ship-${item.orderId}-${i}`}
+                              onClick={() => setSelectedOrderId(item.orderId)}
+                              className="group cursor-pointer hover:bg-slate-100/80 dark:hover:bg-muted/60 transition-colors"
+                            >
                               <TableCell className="py-3 text-muted-foreground align-middle">
                                 {format(new Date(item.date), "MMM d, yyyy")}
                               </TableCell>
-                              <TableCell className="py-3 font-medium align-middle">
+                              <TableCell className="py-3 font-semibold align-middle text-indigo-600 dark:text-indigo-400 group-hover:underline">
                                 {item.orderNumber}
+                              </TableCell>
+                              <TableCell className="py-3 font-medium align-middle text-slate-700 dark:text-slate-300">
+                                {item.customerName || "Guest"}
                               </TableCell>
                               <TableCell className="text-right py-3 align-middle font-medium tabular-nums text-red-600 dark:text-red-400">
                                 {formatAmount(item.shippingCost)}
@@ -658,11 +681,174 @@ export default function ReportsPage() {
               </DialogContent>
             </Dialog>
 
+            <OrderDetailDialog
+              orderId={selectedOrderId}
+              open={!!selectedOrderId}
+              onOpenChange={(open) => !open && setSelectedOrderId(null)}
+            />
+
           </div>
         ) : (
           <div>Failed to load reports.</div>
         )}
       </div>
     </div>
+  );
+}
+
+function OrderDetailDialog({
+  orderId,
+  open,
+  onOpenChange,
+}: {
+  orderId: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { formatAmount } = useCurrency();
+  const { data: orderData, isLoading } = useGetOrderByID(orderId || "");
+  const order = orderData?.order;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-6 rounded-3xl overflow-hidden">
+        <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+          <DialogTitle className="flex items-center justify-between gap-2 text-lg font-bold">
+            <span>Order Details — #{order?.orderNumber || "..."}</span>
+            {order && (
+              <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-slate-50 dark:bg-muted/40 capitalize">
+                {order.status}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-6 py-4 pr-1">
+          {isLoading ? (
+            <div className="space-y-4 py-8">
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-32 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+            </div>
+          ) : !order ? (
+            <div className="text-center py-12 text-muted-foreground text-sm font-medium">
+              Failed to load order details.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 dark:bg-muted/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs">
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    Shipping & Customer Info
+                  </h4>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">
+                    {order.user?.name ?? order.guestName ?? "Guest"}
+                  </p>
+                  {(order.user?.phone || order.guestPhone) && (
+                    <p className="text-muted-foreground">
+                      {order.user?.phone || order.guestPhone}
+                    </p>
+                  )}
+                  <p className="text-slate-600 dark:text-slate-400">
+                    {order.shippingAddress}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    Payment & Order Info
+                  </h4>
+                  <p>
+                    <span className="text-muted-foreground">Payment Method:</span>{" "}
+                    <span className="font-semibold">{order.paymentMethod || "COD"}</span>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Payment Status:</span>{" "}
+                    <span className="font-semibold">{order.paymentStatus}</span>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Order Date:</span>{" "}
+                    <span className="font-semibold">
+                      {format(new Date(order.createdAt), "MMM d, yyyy h:mm a")}
+                    </span>
+                  </p>
+                  {order.trackingNumber && (
+                    <p>
+                      <span className="text-muted-foreground">Tracking Code:</span>{" "}
+                      <span className="font-mono font-semibold">{order.trackingNumber}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {order.note && (
+                <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl text-xs">
+                  <span className="font-bold text-amber-900 dark:text-amber-200">Note: </span>
+                  <span className="text-amber-800 dark:text-amber-300">{order.note}</span>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  Order Items ({order.items?.length || 0})
+                </h4>
+                <div className="space-y-2">
+                  {order.items?.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 p-3 bg-slate-50/60 dark:bg-card border border-slate-100 dark:border-slate-800 rounded-xl text-xs"
+                    >
+                      {item.product?.images?.[0] && (
+                        <Image
+                          src={item.product.images[0]}
+                          alt={item.product.name}
+                          width={48}
+                          height={48}
+                          className="rounded-lg object-cover border shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {item.product?.name}
+                        </p>
+                        <p className="text-muted-foreground text-[11px]">
+                          Qty: {item.quantity} &times; {formatAmount(item.price)}
+                          {item.size && ` · Size: ${item.size}`}
+                          {item.color && ` · Color: ${item.color}`}
+                        </p>
+                      </div>
+                      <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                        {formatAmount(item.quantity * item.price)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-3 border-t text-xs">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>{formatAmount(order.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Shipping Cost</span>
+                  <span>{formatAmount(order.shippingCost)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-extrabold text-slate-900 dark:text-slate-100 pt-1">
+                  <span>Total Amount</span>
+                  <span>{formatAmount(order.totalAmount)}</span>
+                </div>
+                {(order.refundedAmount ?? 0) > 0 && (
+                  <div className="flex justify-between text-xs font-bold text-rose-600 dark:text-rose-400">
+                    <span>Refunded Amount</span>
+                    <span>-{formatAmount(order.refundedAmount)}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

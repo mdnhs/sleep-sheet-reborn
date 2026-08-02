@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
-import { orders, orderItems, products, expenses, expenseCategories } from "@/db/schema";
+import { orders, orderItems, products, expenses, expenseCategories, users } from "@/db/schema";
 import { eq, ne, and, gte, lte, desc, sum, count, isNotNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -257,20 +257,24 @@ const app = new Hono()
           db.select({
               orderId: orders.id,
               orderNumber: orders.orderNumber,
+              customerName: sql<string>`COALESCE(${users.name}, ${orders.guestName}, 'Guest')`,
               date: orders.createdAt,
               totalAmount: sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`,
             })
             .from(orders)
+            .leftJoin(users, eq(orders.userId, users.id))
             .where(orderWhere)
             .orderBy(desc(orders.createdAt))
             .limit(BREAKDOWN_LIMIT),
           db.select({
               orderId: orders.id,
               orderNumber: orders.orderNumber,
+              customerName: sql<string>`COALESCE(${users.name}, ${orders.guestName}, 'Guest')`,
               date: orders.createdAt,
               shippingCost: orders.shippingCost,
             })
             .from(orders)
+            .leftJoin(users, eq(orders.userId, users.id))
             .where(and(orderWhere, sql`${orders.shippingCost} > 0`))
             .orderBy(desc(orders.createdAt))
             .limit(BREAKDOWN_LIMIT),
