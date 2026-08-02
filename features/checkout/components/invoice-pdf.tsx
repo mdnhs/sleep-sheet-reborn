@@ -22,7 +22,7 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     paddingVertical: 5,
-    paddingHorizontal: 75,
+    paddingHorizontal: 80,
     fontFamily: "Hind Siliguri",
     fontSize: 8,
     color: "#334155",
