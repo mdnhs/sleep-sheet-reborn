@@ -16,10 +16,30 @@ const app = new Hono()
     const page = Math.max(parseInt(c.req.query("page") || "1", 10) || 1, 1);
     const limit = Math.min(parseInt(c.req.query("limit") || "20", 10) || 20, 100);
     const search = c.req.query("search")?.trim();
+    const orderId = c.req.query("orderId")?.trim();
     const errorsOnly = c.req.query("status") === "error";
 
     const conditions = [];
-    if (search) {
+    if (orderId && search) {
+      conditions.push(
+        or(
+          ilike(activityLogs.targetName, `%${search}%`),
+          ilike(activityLogs.path, `%${search}%`),
+          ilike(activityLogs.action, `%${search}%`),
+          ilike(activityLogs.targetName, `%${orderId}%`),
+          ilike(activityLogs.path, `%${orderId}%`),
+          ilike(activityLogs.action, `%${orderId}%`),
+        ),
+      );
+    } else if (orderId) {
+      conditions.push(
+        or(
+          ilike(activityLogs.targetName, `%${orderId}%`),
+          ilike(activityLogs.path, `%${orderId}%`),
+          ilike(activityLogs.action, `%${orderId}%`),
+        ),
+      );
+    } else if (search) {
       conditions.push(
         or(
           ilike(activityLogs.userName, `%${search}%`),

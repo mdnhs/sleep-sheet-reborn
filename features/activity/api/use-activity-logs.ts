@@ -5,6 +5,7 @@ interface ActivityLogQueryParams {
   page?: string;
   limit?: string;
   search?: string;
+  orderId?: string;
   status?: "error";
 }
 

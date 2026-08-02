@@ -210,6 +210,64 @@ const app = new Hono()
       }
     }
   )
+  .patch(
+    "/:id",
+    sessionMiddleware,
+    zValidator(
+      "json",
+      z.object({
+        amount: z.number().min(0.01).optional(),
+        categoryId: z.string().optional(),
+        note: z.string().optional(),
+        date: z.string().optional(),
+      })
+    ),
+    async (c) => {
+      const user = c.get("user");
+      if (!canManageExpenses(user)) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+      try {
+        const id = c.req.param("id");
+        const { amount, categoryId, note, date } = c.req.valid("json");
+
+        const existing = await db.query.expenses.findFirst({
+          where: eq(expenses.id, id),
+        });
+
+        if (!existing) {
+          return c.json({ error: "Expense not found" }, 404);
+        }
+
+        const updateData: Partial<typeof expenses.$inferInsert> = {};
+        if (amount !== undefined) updateData.amount = amount;
+        if (categoryId !== undefined) updateData.categoryId = categoryId;
+        if (note !== undefined) updateData.note = note || null;
+        if (date !== undefined) updateData.date = new Date(date);
+        updateData.updatedAt = new Date();
+
+        const [updated] = await db
+          .update(expenses)
+          .set(updateData)
+          .where(eq(expenses.id, id))
+          .returning();
+
+        const category = await db.query.expenseCategories.findFirst({
+          where: eq(expenseCategories.id, updated.categoryId),
+          columns: { name: true },
+        });
+
+        setActivityMeta(c, {
+          name: `${updated.amount} — ${category?.name ?? "Uncategorized"}${updated.note ? ` (${updated.note})` : ""}`,
+        });
+
+        return c.json({ data: updated });
+      } catch (err) {
+        console.error(err);
+        return c.json({ error: "Failed to update expense" }, 500);
+      }
+    }
+  )
   .delete("/:id", sessionMiddleware, async (c) => {
     const user = c.get("user");
     if (!canManageExpenses(user)) {

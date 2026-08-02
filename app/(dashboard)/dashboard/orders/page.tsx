@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
 import { isToday } from "date-fns";
+import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
@@ -40,6 +41,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useOrders } from "@/features/order/api/use-order";
+import { useActivityLogs } from "@/features/activity/api/use-activity-logs";
 import type { Order } from "@/features/order/types";
 import {
   useBookCourier,
@@ -63,6 +65,7 @@ import {
   Copy,
   FileText,
   FilterX,
+  History,
   Loader2,
   MoreVertical,
   Pointer,
@@ -175,10 +178,45 @@ type StatusFilter =
   | "RETURNED";
 
 export default function OrdersPage() {
-  const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("PENDING");
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault("")
+  );
+  const [fromStr, setFromStr] = useQueryState(
+    "from",
+    parseAsString.withDefault("")
+  );
+  const [toStr, setToStr] = useQueryState(
+    "to",
+    parseAsString.withDefault("")
+  );
+  const [statusFilter, setStatusFilter] = useQueryState(
+    "status",
+    parseAsStringEnum<StatusFilter>([
+      "ALL",
+      "TODAY",
+      "PENDING",
+      "CONFIRMED",
+      "DELIVERED",
+      "CANCELLED",
+      "RETURNED",
+    ]).withDefault("PENDING")
+  );
+
+  const dateRange: DateRange | undefined =
+    fromStr || toStr
+      ? {
+          from: fromStr ? new Date(fromStr) : undefined,
+          to: toStr ? new Date(toStr) : undefined,
+        }
+      : undefined;
+
+  const setDateRange = (range: DateRange | undefined) => {
+    setFromStr(range?.from ? range.from.toISOString() : "");
+    setToStr(range?.to ? range.to.toISOString() : "");
+  };
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [logDetailsOrder, setLogDetailsOrder] = useState<ShippingOrder | null>(null);
   const [showAllOrderItems, setShowAllOrderItems] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [courierOrder, setCourierOrder] = useState<ShippingOrder | null>(null);
@@ -975,6 +1013,10 @@ export default function OrdersPage() {
                 >
                   Edit Order Costs
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLogDetailsOrder(order)}>
+                  <History className="h-4 w-4 mr-2" />
+                  Log Details
+                </DropdownMenuItem>
                 {order.note && (
                   <DropdownMenuItem
                     onClick={() => {
@@ -1210,12 +1252,16 @@ export default function OrdersPage() {
             />
           </div>
           <DateRangePicker value={dateRange} onChange={setDateRange} />
-          {statusFilter !== "ALL" && (
+          {(statusFilter !== "ALL" || search !== "" || dateRange !== undefined) && (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setStatusFilter("ALL")}
+              onClick={() => {
+                setStatusFilter("ALL");
+                setSearch("");
+                setDateRange(undefined);
+              }}
               className="shrink-0 gap-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none"
             >
               <FilterX className="h-3.5 w-3.5" />
@@ -2051,6 +2097,136 @@ export default function OrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <OrderLogDetailsDialog
+        order={logDetailsOrder}
+        open={!!logDetailsOrder}
+        onOpenChange={(open) => !open && setLogDetailsOrder(null)}
+      />
     </div>
+  );
+}
+
+function OrderLogDetailsDialog({
+  order,
+  open,
+  onOpenChange,
+}: {
+  order: ShippingOrder | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { data: logsData, isLoading } = useActivityLogs(
+    order && open
+      ? { search: order.orderNumber, orderId: order.id, limit: "50" }
+      : undefined
+  );
+
+  if (!order) return null;
+
+  const logs = logsData?.data || [];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl h-[580px] max-h-[85vh] flex flex-col p-6 rounded-3xl">
+        <DialogHeader className="pb-2 border-b border-slate-100 dark:border-slate-800">
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <History className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            Activity Logs — Order #{order.orderNumber}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto pr-1 space-y-3 py-2 flex flex-col">
+          {isLoading ? (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-20 w-full rounded-2xl" />
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-12 text-muted-foreground text-xs font-medium space-y-1 text-center">
+              <p>No activity logs recorded for order #{order.orderNumber} yet.</p>
+              <p className="text-[11px] text-slate-400">Activity logs are captured automatically whenever orders are created or updated.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {logs.map((log: any) => (
+                <div
+                  key={log.id}
+                  className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4 space-y-2 text-xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                        {log.action}
+                      </span>
+                      <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                        By{" "}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {log.userName}
+                        </span>{" "}
+                        ({log.userEmail})
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                          log.status < 300
+                            ? "bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
+                            : "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+                        )}
+                      >
+                        {log.method} {log.status}
+                      </span>
+                      <span className="text-[11px] font-medium text-slate-400">
+                        {formatDate(log.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {log.targetName && (
+                    <div className="text-slate-600 dark:text-slate-300 text-xs bg-white dark:bg-card px-2.5 py-1 rounded-lg border border-slate-100 dark:border-slate-800 inline-block font-mono">
+                      Target: {log.targetName}
+                    </div>
+                  )}
+
+                  {Array.isArray(log.changes) && log.changes.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5">
+                      <p className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">
+                        Recorded Changes:
+                      </p>
+                      <div className="space-y-1">
+                        {log.changes.map((change: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 bg-white/70 dark:bg-card/50 px-2 py-1 rounded-md"
+                          >
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {change.label}:
+                            </span>
+                            {change.from && (
+                              <span className="line-through text-red-500/80">
+                                {change.from}
+                              </span>
+                            )}
+                            {change.from && change.to && <span>&rarr;</span>}
+                            {change.to && (
+                              <span className="text-green-600 dark:text-green-400 font-bold">
+                                {change.to}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

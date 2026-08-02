@@ -8,6 +8,7 @@ import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 import { parseUserAgent } from '@/lib/user-agent-parser';
+import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -125,6 +126,8 @@ const app = new Hono()
       browserName: parsedUa.browser,
       userAgent: userAgentHeader,
     }).returning();
+
+    setActivityMeta(c, { name: `#${orderNumber}` });
 
     await db.insert(orderItems).values(
       items.map(item => ({

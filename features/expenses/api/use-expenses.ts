@@ -91,6 +91,31 @@ export const useCreateExpense = () => {
   });
 };
 
+type UpdateExpenseRequest = InferRequestType<typeof client.api.expenses[":id"]["$patch"]>["json"];
+
+export const useUpdateExpense = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, json }: { id: string; json: UpdateExpenseRequest }) => {
+      const response = await client.api.expenses[":id"].$patch({ param: { id }, json });
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorData?.error || "Failed to update expense");
+      }
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast.success("Expense updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["expense-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update expense");
+    },
+  });
+};
+
 export const useDeleteExpense = () => {
   const queryClient = useQueryClient();
   return useMutation({

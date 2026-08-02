@@ -13,12 +13,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, ChevronLeft, ChevronRight } from "lucide-react";
-import { subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+import { subDays, subMonths, startOfDay, endOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 import React from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-type FilterType = "all" | "today" | "week" | "month" | "custom";
+type FilterType = "all" | "today" | "week" | "month" | "last_month" | "custom";
 
 function PaginatedTable<T>({
   data,
@@ -171,6 +171,14 @@ export default function ReportsPage() {
           to: endOfMonth(today).toISOString(),
         });
         break;
+      case "last_month": {
+        const lastMonth = subMonths(today, 1);
+        setDateRange({
+          from: startOfMonth(lastMonth).toISOString(),
+          to: endOfMonth(lastMonth).toISOString(),
+        });
+        break;
+      }
     }
   };
 
@@ -199,6 +207,7 @@ export default function ReportsPage() {
     { type: "today", label: "Today" },
     { type: "week", label: "Last 7 Days" },
     { type: "month", label: "This Month" },
+    { type: "last_month", label: "Last Month" },
   ];
 
   const profitMargin =

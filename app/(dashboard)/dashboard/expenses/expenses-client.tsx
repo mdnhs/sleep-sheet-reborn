@@ -6,6 +6,7 @@ import {
   useGetExpenseCategories,
   useGetExpenseSummary,
   useCreateExpense,
+  useUpdateExpense,
   useCreateExpenseCategory,
   useDeleteExpense,
   type ExpenseFilters,
@@ -40,7 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format, startOfDay, endOfDay, startOfMonth, subDays } from "date-fns";
-import { Plus, Trash2, Loader2, CalendarDays, Tag, Receipt } from "lucide-react";
+import { Plus, Trash2, Pencil, Loader2, CalendarDays, Tag, Receipt } from "lucide-react";
 import { ConfirmDialog } from "@/components/conform-dialouge";
 
 type DateFilter = "all" | "today" | "week" | "month";
@@ -86,6 +87,7 @@ export default function ExpensesClientPage() {
   const { data: summary, isLoading: summaryLoading } = useGetExpenseSummary();
 
   const createExpense = useCreateExpense();
+  const updateExpense = useUpdateExpense();
   const createCategory = useCreateExpenseCategory();
   const deleteExpense = useDeleteExpense();
 
@@ -96,11 +98,48 @@ export default function ExpensesClientPage() {
   const [expenseNote, setExpenseNote] = useState("");
   const [expenseDate, setExpenseDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
+  // State for Edit Expense Dialog
+  const [editingExpense, setEditingExpense] = useState<NonNullable<typeof expenseData>["data"][number] | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [editDate, setEditDate] = useState("");
+
   // State for Add Category Dialog
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [categoryName, setCategoryName] = useState("");
 
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
+
+  const handleOpenEdit = (expense: NonNullable<typeof expenseData>["data"][number]) => {
+    setEditingExpense(expense);
+    setEditAmount(expense.amount.toString());
+    setEditCategoryId(expense.categoryId);
+    setEditNote(expense.note || "");
+    setEditDate(format(new Date(expense.date), "yyyy-MM-dd"));
+  };
+
+  const handleUpdateExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingExpense || !editCategoryId || !editAmount) return;
+
+    updateExpense.mutate(
+      {
+        id: editingExpense.id,
+        json: {
+          amount: parseFloat(editAmount),
+          categoryId: editCategoryId,
+          note: editNote,
+          date: editDate,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingExpense(null);
+        },
+      }
+    );
+  };
 
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,7 +382,7 @@ export default function ExpensesClientPage() {
                     <TableHead className="font-bold text-slate-700 dark:text-slate-300">Category</TableHead>
                     <TableHead className="font-bold text-slate-700 dark:text-slate-300">Note</TableHead>
                     <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Amount</TableHead>
-                    <TableHead className="w-20"></TableHead>
+                    <TableHead className="w-24 text-right font-bold text-slate-700 dark:text-slate-300">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -358,14 +397,24 @@ export default function ExpensesClientPage() {
                       <TableCell className="text-muted-foreground text-xs">{expense.note || "-"}</TableCell>
                       <TableCell className="text-right font-bold text-xs text-orange-600 dark:text-orange-400">{formatAmount(expense.amount)}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => setDeleteExpenseId(expense.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleOpenEdit(expense)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeleteExpenseId(expense.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -375,6 +424,69 @@ export default function ExpensesClientPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateExpense} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Amount</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v || "")} required>
+                <SelectTrigger className="capitalize">
+                  <SelectValue placeholder="Select a category">
+                    {editCategoryId
+                      ? categories?.find((c) => c.id === editCategoryId)?.name
+                      : "Select a category"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id} label={cat.name} className="capitalize">{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={editDate}
+                max={format(new Date(), "yyyy-MM-dd")}
+                onChange={(e) => setEditDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Note (Optional)</Label>
+              <Input
+                placeholder="Brief description"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingExpense(null)}>Cancel</Button>
+              <Button type="submit" disabled={updateExpense.isPending}>
+                {updateExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!deleteExpenseId}
