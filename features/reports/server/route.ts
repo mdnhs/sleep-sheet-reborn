@@ -242,16 +242,19 @@ const app = new Hono()
           db.select({
               orderId: orders.id,
               orderNumber: orders.orderNumber,
-              productName: products.name,
-              quantity: orderItems.quantity,
-              costPrice: orderItems.costPrice,
-              totalItemCost: sql<number>`${orderItems.quantity} * ${orderItems.costPrice}`,
+              customerName: sql<string>`COALESCE(${users.name}, ${orders.guestName}, 'Guest')`,
+              productName: sql<string>`COALESCE(STRING_AGG(DISTINCT ${products.name}, ', '), 'Unknown Product')`,
+              quantity: sum(orderItems.quantity),
+              costPrice: sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0)) / NULLIF(SUM(${orderItems.quantity}), 0)`,
+              totalItemCost: sum(sql<number>`${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0)`),
               date: orders.createdAt,
             })
-            .from(orderItems)
-            .innerJoin(orders, eq(orderItems.orderId, orders.id))
+            .from(orders)
+            .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
             .leftJoin(products, eq(orderItems.productId, products.id))
-            .where(and(orderWhere, isNotNull(orderItems.costPrice)))
+            .leftJoin(users, eq(orders.userId, users.id))
+            .where(orderWhere)
+            .groupBy(orders.id, orders.orderNumber, orders.createdAt, users.name, orders.guestName)
             .orderBy(desc(orders.createdAt))
             .limit(BREAKDOWN_LIMIT),
           db.select({
@@ -270,12 +273,15 @@ const app = new Hono()
               orderId: orders.id,
               orderNumber: orders.orderNumber,
               customerName: sql<string>`COALESCE(${users.name}, ${orders.guestName}, 'Guest')`,
+              quantity: sql<number>`COALESCE(SUM(${orderItems.quantity}), 0)`,
               date: orders.createdAt,
               shippingCost: orders.shippingCost,
             })
             .from(orders)
+            .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
             .leftJoin(users, eq(orders.userId, users.id))
             .where(and(orderWhere, sql`${orders.shippingCost} > 0`))
+            .groupBy(orders.id, orders.orderNumber, orders.createdAt, orders.shippingCost, users.name, orders.guestName)
             .orderBy(desc(orders.createdAt))
             .limit(BREAKDOWN_LIMIT),
           db.select({
@@ -352,7 +358,7 @@ const app = new Hono()
           totalItemCost: Number(item.totalItemCost || 0),
         })),
         revenueBreakdown: revenueBreakdown.map(item => ({ ...item, totalAmount: Number(item.totalAmount || 0) })),
-        shippingBreakdown: shippingBreakdown.map(item => ({ ...item, shippingCost: Number(item.shippingCost || 0) })),
+        shippingBreakdown: shippingBreakdown.map(item => ({ ...item, quantity: Number(item.quantity || 0), shippingCost: Number(item.shippingCost || 0) })),
         expenseBreakdown: expenseBreakdown.map(item => ({ ...item, amount: Number(item.amount || 0) })),
         cancelledBreakdown: cancelledBreakdown.map(item => ({ ...item, totalAmount: Number(item.totalAmount || 0) })),
         returnedBreakdown: returnedBreakdown.map(item => ({ ...item, refundedAmount: Number(item.refundedAmount || 0) })),

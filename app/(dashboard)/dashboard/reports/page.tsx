@@ -465,7 +465,7 @@ export default function ReportsPage() {
                             <TableRow className="hover:bg-transparent">
                               <TableHead className="font-medium h-10 w-[120px]">Date</TableHead>
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
-                              <TableHead className="font-medium h-10">Product</TableHead>
+                              <TableHead className="font-medium h-10">Customer</TableHead>
                               <TableHead className="text-right font-medium h-10">Qty</TableHead>
                               <TableHead className="text-right font-medium h-10">Bought Cost</TableHead>
                               <TableHead className="text-right font-medium h-10">Total Cost</TableHead>
@@ -483,8 +483,8 @@ export default function ReportsPage() {
                               <TableCell className="py-3 font-semibold align-middle text-indigo-600 dark:text-indigo-400 group-hover:underline">
                                 {item.orderNumber}
                               </TableCell>
-                              <TableCell className="py-3 align-middle max-w-[250px] truncate" title={item.productName}>
-                                {item.productName}
+                              <TableCell className="py-3 font-medium align-middle text-slate-700 dark:text-slate-300">
+                                {item.customerName || "Guest"}
                               </TableCell>
                               <TableCell className="text-right py-3 align-middle tabular-nums">
                                 {item.quantity}
@@ -594,6 +594,7 @@ export default function ReportsPage() {
                               <TableHead className="font-medium h-10 w-[120px]">Date</TableHead>
                               <TableHead className="font-medium h-10 w-[120px]">Order #</TableHead>
                               <TableHead className="font-medium h-10">Customer</TableHead>
+                              <TableHead className="text-right font-medium h-10">Qty</TableHead>
                               <TableHead className="text-right font-medium h-10">Delivery Charge</TableHead>
                             </TableRow>
                           )}
@@ -611,6 +612,9 @@ export default function ReportsPage() {
                               </TableCell>
                               <TableCell className="py-3 font-medium align-middle text-slate-700 dark:text-slate-300">
                                 {item.customerName || "Guest"}
+                              </TableCell>
+                              <TableCell className="text-right py-3 align-middle tabular-nums">
+                                {item.quantity}
                               </TableCell>
                               <TableCell className="text-right py-3 align-middle font-medium tabular-nums text-red-600 dark:text-red-400">
                                 {formatAmount(item.shippingCost)}
