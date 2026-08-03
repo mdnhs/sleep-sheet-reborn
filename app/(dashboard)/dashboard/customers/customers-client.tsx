@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQueryState, parseAsString } from "nuqs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ export function CustomersClient() {
   const { data: customers, isLoading } = useGetCustomers();
   const { formatAmount } = useCurrency();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useQueryState("search", parseAsString.withDefault(""));
   const [resetPasswordCustomer, setResetPasswordCustomer] = useState<{ id: string; name: string } | null>(null);
 
   const safeCustomers = useMemo(
@@ -213,7 +214,7 @@ export function CustomersClient() {
                 placeholder="Search by name, email, or phone..."
                 className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value || null)}
               />
             </div>
           }

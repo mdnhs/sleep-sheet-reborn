@@ -200,7 +200,7 @@ export function DataTable<TData, TValue>({
             `Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount() || 1}`
           )}
         </div>
-        <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full">
+        <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full overflow-y-hidden py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Button
             variant="outline"
             size="sm"

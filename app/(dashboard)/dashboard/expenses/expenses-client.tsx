@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import {
   useGetExpenses,
   useGetExpenseCategories,
@@ -51,8 +52,8 @@ const ALL_CATEGORIES = "all";
 export default function ExpensesClientPage() {
   const { formatAmount } = useCurrency();
 
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
+  const [dateFilter, setDateFilter] = useQueryState("date", parseAsStringEnum<DateFilter>(["all", "today", "week", "month"]).withDefault("all"));
+  const [categoryFilter, setCategoryFilter] = useQueryState("category", parseAsString.withDefault(ALL_CATEGORIES));
 
   const buildDateRange = (type: DateFilter): Pick<ExpenseFilters, "from" | "to"> => {
     const today = new Date();

@@ -25,6 +25,7 @@ interface POSProduct {
   images: string[]
   colors: { name: string; price: number | null }[]
   sizes: string[]
+  addOns?: { name: string; price: number }[]
   category: string
   categoryLabel: string
   discount?: number
@@ -614,32 +615,57 @@ function ProductCard({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "")
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || product.colors?.[0]?.name || "")
+  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, number>>({})
   const [quantity, setQuantity] = useState(1)
   const [costPrice, setCostPrice] = useState("")
   const [shippingCost, setShippingCost] = useState("")
 
   const hasColors = product.colors && product.colors.length > 0
   const hasSizes = product.sizes && product.sizes.length > 0
-  const hasVariants = hasColors || hasSizes
+  const hasAddOns = product.addOns && product.addOns.length > 0
+  const hasVariants = hasColors || hasSizes || hasAddOns
 
   const currentVariant = product.colors?.find(c => c.name === selectedColor)
-  const displayPrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
+  const basePrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
     ? currentVariant.price
     : product.price
+
+  const addOnsTotalPerUnit = Object.entries(selectedAddOns).reduce((sum, [name, qty]) => {
+    const addOn = product.addOns?.find((a) => a.name === name)
+    return sum + (addOn ? addOn.price * qty : 0)
+  }, 0)
+
+  const displayPrice = basePrice + addOnsTotalPerUnit
 
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) { toast.error("Please select a size"); return }
     if (hasColors && !selectedColor) { toast.error("Please select a variant"); return }
     if (isDrawerOpen && costPrice !== "" && isNaN(Number(costPrice))) { toast.error("Bought price must be a number"); return }
     if (isDrawerOpen && shippingCost !== "" && isNaN(Number(shippingCost))) { toast.error("Shipping cost must be a number"); return }
-    const variant = currentVariant || undefined
+
+    const selectedAddOnsSummary = Object.entries(selectedAddOns)
+      .filter(([, qty]) => qty > 0)
+      .map(([name, qty]) => {
+        const addOn = product.addOns?.find((a) => a.name === name)
+        return addOn ? `${name} x${qty} (${formatAmount(addOn.price)})` : `${name} x${qty}`
+      })
+      .join(", ")
+
+    const colorWithAddOns = selectedColor
+      ? (selectedAddOnsSummary ? `${selectedColor} (+ ${selectedAddOnsSummary})` : selectedColor)
+      : (selectedAddOnsSummary ? `Add-ons: ${selectedAddOnsSummary}` : "")
+
+    const finalColor = colorWithAddOns || selectedColor || undefined
+    const variant = finalColor ? { name: finalColor, price: displayPrice } : (currentVariant || undefined)
     const size = hasSizes ? selectedSize : undefined
     const parsedCostPrice = costPrice !== "" ? Number(costPrice) : undefined
     const parsedShippingCost = shippingCost !== "" ? Number(shippingCost) : undefined
+
     onAdd(product, variant, size, parsedCostPrice, parsedShippingCost, quantity)
     setIsDrawerOpen(false)
     setCostPrice("")
     setShippingCost("")
+    setSelectedAddOns({})
     setQuantity(1)
   }
 
@@ -781,6 +807,71 @@ function ProductCard({
               </div>
             )}
             
+            {hasAddOns && (
+              <div className="flex flex-col gap-2 mt-2 border-t pt-3 border-slate-100 dark:border-slate-800">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Add-ons
+                </span>
+                <div className="flex flex-col gap-2">
+                  {product.addOns?.map((addOn) => {
+                    const qty = selectedAddOns[addOn.name] || 0;
+                    return (
+                      <div
+                        key={addOn.name}
+                        className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      >
+                        <div className="flex flex-col justify-center min-w-0 pr-2">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                            {addOn.name} ({formatAmount(addOn.price)})
+                          </span>
+                          {qty > 0 && (
+                            <span className="text-[11px] font-medium text-primary mt-0.5">
+                              Total: {formatAmount(addOn.price * qty)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shrink-0">
+                          <button
+                            type="button"
+                            className="h-7 w-7 flex items-center justify-center rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all disabled:opacity-30 disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-700"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedAddOns((prev) => ({
+                                ...prev,
+                                [addOn.name]: Math.max(0, qty - 1),
+                              }));
+                            }}
+                            disabled={qty <= 0}
+                          >
+                            −
+                          </button>
+                          <span className="px-1.5 text-center text-xs font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                            {qty}
+                          </span>
+                          <button
+                            type="button"
+                            className="h-7 w-7 flex items-center justify-center rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedAddOns((prev) => ({
+                                ...prev,
+                                [addOn.name]: qty + 1,
+                              }));
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
             <div className="flex flex-col gap-1 mt-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Bought Price (Cost)</span>
               <Input 
@@ -808,7 +899,7 @@ function ProductCard({
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-4 w-4" />
-              Add to Cart
+              Add to Cart — {formatAmount(displayPrice * quantity)}
             </button>
           </div>
         </DialogContent>

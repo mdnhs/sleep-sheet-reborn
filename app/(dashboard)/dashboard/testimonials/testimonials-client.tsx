@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
+import { useQueryState, parseAsString, parseAsInteger } from "nuqs"
 import type { ColumnDef, PaginationState, Updater } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import {
@@ -71,13 +72,16 @@ export default function TestimonialsClientPage() {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
+  const [searchQuery, setSearchQuery] = useQueryState("search", parseAsString.withDefault(""))
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1))
+  const [limit, setLimit] = useQueryState("limit", parseAsInteger.withDefault(10))
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+
+  const pagination: PaginationState = {
+    pageIndex: Math.max(0, page - 1),
+    pageSize: limit,
+  }
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -87,9 +91,9 @@ export default function TestimonialsClientPage() {
   }, [searchQuery])
 
   const { data: testimonials, isLoading } = useGetTestimonials({
-    page: (pagination.pageIndex + 1).toString(),
+    page: page.toString(),
     search: debouncedSearch,
-    limit: pagination.pageSize.toString(),
+    limit: limit.toString(),
   })
 
   const handleBulkDelete = () => {
@@ -318,8 +322,8 @@ export default function TestimonialsClientPage() {
   ]
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    setSearchQuery(e.target.value || null)
+    setPage(1)
   }
 
   const selectedCount = Object.keys(rowSelection).length
@@ -462,7 +466,9 @@ export default function TestimonialsClientPage() {
           pageCount={testimonials?.totalPages ?? -1}
           pagination={pagination}
           onPaginationChange={(updater: Updater<PaginationState>) => {
-            setPagination(typeof updater === "function" ? updater(pagination) : updater)
+            const next = typeof updater === "function" ? updater(pagination) : updater
+            setPage(next.pageIndex + 1)
+            setLimit(next.pageSize)
           }}
           rowSelection={rowSelection}
           onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
@@ -475,7 +481,10 @@ export default function TestimonialsClientPage() {
                 <Input
                   placeholder="Search testimonials..."
                   value={searchQuery}
-                  onChange={handleSearch}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value || null)
+                    setPage(1)
+                  }}
                   className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
                 />
               </div>

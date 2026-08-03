@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useRef, useState } from "react"
+import { useQueryState, parseAsString } from "nuqs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -193,7 +194,7 @@ function CategoriesClientPage() {
   const { mutate: deleteCategory, isPending: isDeleting } = useDeleteCategory()
   const { mutate: bulkDelete, isPending: isBulkDeleting } = useBulkDeleteCategories()
 
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useQueryState("search", parseAsString.withDefault(""))
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<CategoryRow | null>(null)
@@ -721,7 +722,7 @@ function CategoriesClientPage() {
                 <Input
                   placeholder="Search categories..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value || null)}
                   className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
                 />
               </div>

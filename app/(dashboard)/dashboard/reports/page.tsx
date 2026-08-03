@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import Image from "next/image";
 import { useGetReports } from "@/features/reports/api/use-get-reports";
 import { useGetMonthlyReports } from "@/features/reports/api/use-get-monthly-reports";
@@ -57,7 +58,7 @@ function PaginatedTable<T>({
           <p className="text-xs text-muted-foreground">
             Page {currentPage} of {totalPages} ({data.length} total)
           </p>
-          <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full">
+          <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full overflow-y-hidden py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <Button
               variant="outline"
               size="sm"
@@ -127,17 +128,60 @@ function PaginatedTable<T>({
   );
 }
 
-export default function ReportsPage() {
+function ReportsContent() {
   const { formatAmount } = useCurrency();
-  const [activeFilter, setActiveFilter] = useState<FilterType>("today");
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
-  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>(() => {
-    const today = new Date();
+  const [activeFilter, setActiveFilter] = useQueryState("filter", parseAsStringEnum<FilterType>(["all", "today", "week", "month", "last_month", "custom"]).withDefault("today"));
+  const [fromStr, setFromStr] = useQueryState("from", parseAsString.withDefault(""));
+  const [toStr, setToStr] = useQueryState("to", parseAsString.withDefault(""));
+
+  const customRange = React.useMemo<DateRange | undefined>(() => {
+    if (!fromStr) return undefined;
     return {
-      from: startOfDay(today).toISOString(),
-      to: endOfDay(today).toISOString(),
+      from: new Date(fromStr),
+      to: toStr ? new Date(toStr) : undefined,
     };
-  });
+  }, [fromStr, toStr]);
+
+  const dateRange = React.useMemo<{ from?: string; to?: string }>(() => {
+    const today = new Date();
+    switch (activeFilter) {
+      case "all":
+        return {};
+      case "today":
+        return {
+          from: startOfDay(today).toISOString(),
+          to: endOfDay(today).toISOString(),
+        };
+      case "week":
+        return {
+          from: startOfDay(subDays(today, 6)).toISOString(),
+          to: endOfDay(today).toISOString(),
+        };
+      case "month":
+        return {
+          from: startOfMonth(today).toISOString(),
+          to: endOfMonth(today).toISOString(),
+        };
+      case "last_month": {
+        const lastMonth = subMonths(today, 1);
+        return {
+          from: startOfMonth(lastMonth).toISOString(),
+          to: endOfMonth(lastMonth).toISOString(),
+        };
+      }
+      case "custom": {
+        if (!fromStr) return {};
+        const fromD = startOfDay(new Date(fromStr)).toISOString();
+        const toD = toStr ? endOfDay(new Date(toStr)).toISOString() : endOfDay(new Date(fromStr)).toISOString();
+        return { from: fromD, to: toD };
+      }
+      default:
+        return {
+          from: startOfDay(today).toISOString(),
+          to: endOfDay(today).toISOString(),
+        };
+    }
+  }, [activeFilter, fromStr, toStr]);
 
   const [showProductCostBreakdown, setShowProductCostBreakdown] = useState(false);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
@@ -150,58 +194,23 @@ export default function ReportsPage() {
 
   const handleFilter = (type: FilterType) => {
     setActiveFilter(type);
-    setCustomRange(undefined);
-    const today = new Date();
-    switch (type) {
-      case "all":
-        setDateRange({});
-        break;
-      case "today":
-        setDateRange({
-          from: startOfDay(today).toISOString(),
-          to: endOfDay(today).toISOString(),
-        });
-        break;
-      case "week":
-        setDateRange({
-          from: startOfDay(subDays(today, 6)).toISOString(),
-          to: endOfDay(today).toISOString(),
-        });
-        break;
-      case "month":
-        setDateRange({
-          from: startOfMonth(today).toISOString(),
-          to: endOfMonth(today).toISOString(),
-        });
-        break;
-      case "last_month": {
-        const lastMonth = subMonths(today, 1);
-        setDateRange({
-          from: startOfMonth(lastMonth).toISOString(),
-          to: endOfMonth(lastMonth).toISOString(),
-        });
-        break;
-      }
-    }
+    setFromStr(null);
+    setToStr(null);
   };
 
   const handleCustomRangeChange = (range: DateRange | undefined) => {
-    setCustomRange(range);
     if (range?.from && range?.to) {
       setActiveFilter("custom");
-      setDateRange({
-        from: startOfDay(range.from).toISOString(),
-        to: endOfDay(range.to).toISOString(),
-      });
+      setFromStr(range.from.toISOString());
+      setToStr(range.to.toISOString());
     } else if (range?.from) {
       setActiveFilter("custom");
-      setDateRange({
-        from: startOfDay(range.from).toISOString(),
-        to: endOfDay(range.from).toISOString(),
-      });
+      setFromStr(range.from.toISOString());
+      setToStr(range.from.toISOString());
     } else {
       setActiveFilter("all");
-      setDateRange({});
+      setFromStr(null);
+      setToStr(null);
     }
   };
 
@@ -854,5 +863,13 @@ function OrderDetailDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8"><Skeleton className="h-96 w-full rounded-3xl" /></div>}>
+      <ReportsContent />
+    </React.Suspense>
   );
 }

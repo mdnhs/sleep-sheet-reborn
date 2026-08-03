@@ -30,7 +30,7 @@ const app = new Hono()
   reference: z.string().optional(),
   note: z.string().optional(),
   shippingType: z.enum(['showroom', 'online']).default('online'),
-  paymentMethod: z.enum(['COD', 'CARD', 'DUE']).default('COD'),
+  paymentMethod: z.string().default('COD'),
   items: z.array(z.object({
     productId: z.string(),
     quantity: z.number().min(1),

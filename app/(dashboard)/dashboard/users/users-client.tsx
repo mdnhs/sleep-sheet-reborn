@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQueryState, parseAsString } from "nuqs";
 import type { ColumnDef, Updater } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ export function UsersClient() {
   const updateRole = useUpdateUserRole();
   const createUser = useCreateUser();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useQueryState("search", parseAsString.withDefault(""));
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -207,7 +208,7 @@ export function UsersClient() {
             placeholder="Search users..."
             className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value || null)}
           />
         </div>
 

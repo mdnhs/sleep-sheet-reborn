@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryState, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
 import type { ColumnDef, PaginationState, Updater } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
@@ -203,18 +204,22 @@ const METHOD_STYLES: Record<string, string> = {
 };
 
 export function ActivityClient() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ERROR">("ALL");
+  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
+  const [statusFilter, setStatusFilter] = useQueryState("status", parseAsStringEnum(["ALL", "ERROR"]).withDefault("ALL"));
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [limit, setLimit] = useQueryState("limit", parseAsInteger.withDefault(20));
+
   const [selectedLog, setSelectedLog] = useState<ActivityLogRow | null>(null);
   const [showTechnical, setShowTechnical] = useState(false);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 20,
-  });
+
+  const pagination: PaginationState = {
+    pageIndex: Math.max(0, page - 1),
+    pageSize: limit,
+  };
 
   const { data, isLoading } = useActivityLogs({
-    page: String(pagination.pageIndex + 1),
-    limit: String(pagination.pageSize),
+    page: String(page),
+    limit: String(limit),
     search: search || undefined,
     status: statusFilter === "ERROR" ? "error" : undefined,
   });
@@ -225,7 +230,9 @@ export function ActivityClient() {
   const errorTotal = data && "errorTotal" in data ? data.errorTotal : 0;
 
   const handlePaginationChange = (updater: Updater<PaginationState>) => {
-    setPagination((old) => (typeof updater === "function" ? updater(old) : updater));
+    const next = typeof updater === "function" ? updater(pagination) : updater;
+    setPage(next.pageIndex + 1);
+    setLimit(next.pageSize);
   };
 
   const selectedKind = selectedLog ? getEventKind(selectedLog.action, selectedLog.status) : null;
@@ -277,7 +284,7 @@ export function ActivityClient() {
             value={statusFilter}
             onValueChange={(value) => {
               setStatusFilter(value as "ALL" | "ERROR");
-              setPagination((p) => ({ ...p, pageIndex: 0 }));
+              setPage(1);
             }}
             className="w-fit"
           >
@@ -304,8 +311,8 @@ export function ActivityClient() {
               placeholder="Search by name, person, or item..."
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value);
-                setPagination((p) => ({ ...p, pageIndex: 0 }));
+                setSearch(e.target.value || null);
+                setPage(1);
               }}
               className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
             />

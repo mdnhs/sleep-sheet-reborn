@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
+import { useQueryState, parseAsString, parseAsInteger } from "nuqs"
 import type { ColumnDef, PaginationState, Updater } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import {
@@ -58,14 +59,18 @@ export default function ProductsClientPage() {
   const [productToDelete, setProductToDelete] = useState<ProductColumn | null>(null)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false)
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
+  const [searchQuery, setSearchQuery] = useQueryState("search", parseAsString.withDefault(""))
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1))
+  const [limit, setLimit] = useQueryState("limit", parseAsInteger.withDefault(10))
+  const [categoryId, setCategoryId] = useQueryState("category", parseAsString.withDefault("all"))
+  const [featuredFilter, setFeaturedFilter] = useQueryState("featured", parseAsString.withDefault("all"))
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+
+  const pagination: PaginationState = {
+    pageIndex: Math.max(0, page - 1),
+    pageSize: limit,
+  }
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -74,15 +79,13 @@ export default function ProductsClientPage() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
-  const [categoryId, setCategoryId] = useState("all")
-  const [featuredFilter, setFeaturedFilter] = useState("all")
   const { data: categories } = useGetCategories()
 
   const { data: products, isLoading } = useGetProducts({
-    page: (pagination.pageIndex + 1).toString(),
+    page: page.toString(),
     search: debouncedSearch,
     sort: "newest",
-    limit: pagination.pageSize.toString(),
+    limit: limit.toString(),
     admin: "true",
     category: categoryId === "all" ? undefined : categoryId,
     featured: featuredFilter === "all" ? undefined : featuredFilter,
@@ -216,8 +219,8 @@ export default function ProductsClientPage() {
   ]
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    setSearchQuery(e.target.value || null)
+    setPage(1)
   }
 
   const selectedCount = Object.keys(rowSelection).length
@@ -258,7 +261,9 @@ export default function ProductsClientPage() {
           pageCount={products?.totalPages ?? -1}
           pagination={pagination}
           onPaginationChange={(updater: Updater<PaginationState>) => {
-            setPagination(typeof updater === "function" ? updater(pagination) : updater)
+            const next = typeof updater === "function" ? updater(pagination) : updater
+            setPage(next.pageIndex + 1)
+            setLimit(next.pageSize)
           }}
           rowSelection={rowSelection}
           onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {
@@ -271,12 +276,15 @@ export default function ProductsClientPage() {
                 <Input
                   placeholder="Search products..."
                   value={searchQuery}
-                  onChange={handleSearch}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value || null)
+                    setPage(1)
+                  }}
                   className="pl-9 w-full rounded-full bg-slate-50 dark:bg-muted/40 border-none shadow-none text-xs font-semibold"
                 />
               </div>
               <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
-                <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
+                <Select value={categoryId} onValueChange={(val) => { setCategoryId(val || "all"); setPage(1); }}>
                   <SelectTrigger className="w-full sm:w-[170px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
@@ -289,7 +297,7 @@ export default function ProductsClientPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={featuredFilter} onValueChange={(val) => setFeaturedFilter(val || "all")}>
+                <Select value={featuredFilter} onValueChange={(val) => { setFeaturedFilter(val || "all"); setPage(1); }}>
                   <SelectTrigger className="w-full sm:w-[140px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
