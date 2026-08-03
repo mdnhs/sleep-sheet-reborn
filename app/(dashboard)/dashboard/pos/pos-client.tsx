@@ -154,7 +154,7 @@ export default function PosClientPage() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
-  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number) => {
+  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity: number = 1) => {
     setCart(prev => {
       const price = variant?.price ?? product.price
       const color = variant?.name || null
@@ -163,22 +163,27 @@ export default function PosClientPage() {
       )
 
       if (existing) {
-        if (existing.quantity >= product.stock) {
+        if (existing.quantity + quantity > product.stock) {
           toast.error("Insufficient stock")
           return prev
         }
         return prev.map(i =>
           i.productId === product.id && i.color === color && i.size === (size || null) && i.costPrice === costPrice
-            ? { ...i, quantity: i.quantity + 1 }
+            ? { ...i, quantity: i.quantity + quantity }
             : i
         )
+      }
+
+      if (quantity > product.stock) {
+        toast.error("Insufficient stock")
+        return prev
       }
 
       return [...prev, {
         productId: product.id,
         name: product.name,
         price,
-        quantity: 1,
+        quantity,
         size: size || null,
         color,
         image: product.images?.[0] || "",
@@ -603,7 +608,7 @@ function ProductCard({
   onAdd,
 }: {
   product: POSProduct
-  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number) => void
+  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity?: number) => void
 }) {
   const { formatAmount } = useCurrency()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -631,10 +636,11 @@ function ProductCard({
     const size = hasSizes ? selectedSize : undefined
     const parsedCostPrice = costPrice !== "" ? Number(costPrice) : undefined
     const parsedShippingCost = shippingCost !== "" ? Number(shippingCost) : undefined
-    onAdd(product, variant, size, parsedCostPrice, parsedShippingCost)
+    onAdd(product, variant, size, parsedCostPrice, parsedShippingCost, quantity)
     setIsDrawerOpen(false)
     setCostPrice("")
     setShippingCost("")
+    setQuantity(1)
   }
 
   const handleActionClick = (e: React.MouseEvent) => {
