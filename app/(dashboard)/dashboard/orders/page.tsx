@@ -7,7 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
-import { isToday } from "date-fns";
+import { isToday, format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -204,17 +204,24 @@ function OrdersPageContent() {
     ]).withDefault("PENDING")
   );
 
-  const dateRange: DateRange | undefined =
-    fromStr || toStr
-      ? {
-          from: fromStr ? new Date(fromStr) : undefined,
-          to: toStr ? new Date(toStr) : undefined,
-        }
-      : undefined;
+  const dateRange: DateRange | undefined = React.useMemo(() => {
+    if (!fromStr) return undefined;
+    try {
+      const fromDate = parseISO(fromStr);
+      const toDate = toStr ? parseISO(toStr) : undefined;
+      if (isNaN(fromDate.getTime())) return undefined;
+      return {
+        from: fromDate,
+        to: toDate && !isNaN(toDate.getTime()) ? toDate : undefined,
+      };
+    } catch {
+      return undefined;
+    }
+  }, [fromStr, toStr]);
 
   const setDateRange = (range: DateRange | undefined) => {
-    setFromStr(range?.from ? range.from.toISOString() : "");
-    setToStr(range?.to ? range.to.toISOString() : "");
+    setFromStr(range?.from ? format(range.from, "yyyy-MM-dd") : null);
+    setToStr(range?.to ? format(range.to, "yyyy-MM-dd") : null);
   };
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [logDetailsOrder, setLogDetailsOrder] = useState<ShippingOrder | null>(null);
@@ -250,10 +257,21 @@ function OrdersPageContent() {
     }
   }, [showBalance, queryClient]);
 
-  const rangeFilter =
-    dateRange?.from && dateRange?.to
-      ? { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() }
-      : undefined;
+  const rangeFilter = React.useMemo(() => {
+    if (!fromStr) return undefined;
+    try {
+      const fromDate = parseISO(fromStr);
+      const toDate = toStr ? parseISO(toStr) : fromDate;
+      if (isNaN(fromDate.getTime())) return undefined;
+      const validToDate = !isNaN(toDate.getTime()) ? toDate : fromDate;
+      return {
+        from: startOfDay(fromDate).toISOString(),
+        to: endOfDay(validToDate).toISOString(),
+      };
+    } catch {
+      return undefined;
+    }
+  }, [fromStr, toStr]);
 
   const { data: rawOrders, isLoading } = useOrders(search, rangeFilter);
   const { symbol: currencySymbol, formatAmount } = useCurrency();

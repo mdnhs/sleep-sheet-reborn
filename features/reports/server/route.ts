@@ -43,7 +43,7 @@ const app = new Hono()
       if (to) {
         const d = new Date(to);
         if (!isNaN(d.getTime())) {
-          if (!to.includes("T")) {
+          if (!to.includes("T") || d.getHours() === 0) {
             d.setHours(23, 59, 59, 999);
           }
           toDate = d;
@@ -157,7 +157,7 @@ const app = new Hono()
       if (to) {
         const d = new Date(to);
         if (!isNaN(d.getTime())) {
-          if (!to.includes("T")) {
+          if (!to.includes("T") || d.getHours() === 0) {
             d.setHours(23, 59, 59, 999);
           }
           toDate = d;

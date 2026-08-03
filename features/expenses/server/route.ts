@@ -90,12 +90,14 @@ const app = new Hono()
         if (from) {
           const d = new Date(from);
           if (!isNaN(d.getTime())) {
+            if (!from.includes("T")) d.setHours(0, 0, 0, 0);
             conditions.push(gte(expenses.date, d));
           }
         }
         if (to) {
           const d = new Date(to);
           if (!isNaN(d.getTime())) {
+            if (!to.includes("T") || d.getHours() === 0) d.setHours(23, 59, 59, 999);
             conditions.push(lte(expenses.date, d));
           }
         }

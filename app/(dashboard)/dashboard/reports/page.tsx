@@ -136,10 +136,17 @@ function ReportsContent() {
 
   const customRange = React.useMemo<DateRange | undefined>(() => {
     if (!fromStr) return undefined;
-    return {
-      from: new Date(fromStr),
-      to: toStr ? new Date(toStr) : undefined,
-    };
+    try {
+      const fromDate = parseISO(fromStr);
+      const toDate = toStr ? parseISO(toStr) : undefined;
+      if (isNaN(fromDate.getTime())) return undefined;
+      return {
+        from: fromDate,
+        to: toDate && !isNaN(toDate.getTime()) ? toDate : undefined,
+      };
+    } catch {
+      return undefined;
+    }
   }, [fromStr, toStr]);
 
   const dateRange = React.useMemo<{ from?: string; to?: string }>(() => {
@@ -171,9 +178,18 @@ function ReportsContent() {
       }
       case "custom": {
         if (!fromStr) return {};
-        const fromD = startOfDay(new Date(fromStr)).toISOString();
-        const toD = toStr ? endOfDay(new Date(toStr)).toISOString() : endOfDay(new Date(fromStr)).toISOString();
-        return { from: fromD, to: toD };
+        try {
+          const fromDate = parseISO(fromStr);
+          const toDate = toStr ? parseISO(toStr) : fromDate;
+          if (isNaN(fromDate.getTime())) return {};
+          const validToDate = !isNaN(toDate.getTime()) ? toDate : fromDate;
+          return {
+            from: startOfDay(fromDate).toISOString(),
+            to: endOfDay(validToDate).toISOString(),
+          };
+        } catch {
+          return {};
+        }
       }
       default:
         return {
@@ -201,12 +217,12 @@ function ReportsContent() {
   const handleCustomRangeChange = (range: DateRange | undefined) => {
     if (range?.from && range?.to) {
       setActiveFilter("custom");
-      setFromStr(range.from.toISOString());
-      setToStr(range.to.toISOString());
+      setFromStr(format(range.from, "yyyy-MM-dd"));
+      setToStr(format(range.to, "yyyy-MM-dd"));
     } else if (range?.from) {
       setActiveFilter("custom");
-      setFromStr(range.from.toISOString());
-      setToStr(range.from.toISOString());
+      setFromStr(format(range.from, "yyyy-MM-dd"));
+      setToStr(format(range.from, "yyyy-MM-dd"));
     } else {
       setActiveFilter("all");
       setFromStr(null);

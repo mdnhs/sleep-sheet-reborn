@@ -163,7 +163,9 @@ export const resolveDateRange = (period: string, from?: string, to?: string) => 
   if (from && to) {
     const startDate = new Date(from)
     const endDate = new Date(to)
-    if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate < endDate) {
+    if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate) {
+      if (!from.includes("T")) startDate.setHours(0, 0, 0, 0);
+      if (!to.includes("T") || endDate.getHours() === 0) endDate.setHours(23, 59, 59, 999);
       return { startDate, endDate }
     }
   }

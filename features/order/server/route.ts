@@ -37,10 +37,24 @@ const app = new Hono()
 
     const conditions = [];
     if (hasSearched) conditions.push(inArray(orders.id, matchingOrderIds));
-    const fromDate = from ? new Date(from) : null;
-    const toDate = to ? new Date(to) : null;
-    if (fromDate && !isNaN(fromDate.getTime())) conditions.push(gte(orders.createdAt, fromDate));
-    if (toDate && !isNaN(toDate.getTime())) conditions.push(lte(orders.createdAt, toDate));
+    let fromDate: Date | null = null;
+    if (from) {
+      const d = new Date(from);
+      if (!isNaN(d.getTime())) {
+        if (!from.includes("T")) d.setHours(0, 0, 0, 0);
+        fromDate = d;
+      }
+    }
+    let toDate: Date | null = null;
+    if (to) {
+      const d = new Date(to);
+      if (!isNaN(d.getTime())) {
+        if (!to.includes("T") || d.getHours() === 0) d.setHours(23, 59, 59, 999);
+        toDate = d;
+      }
+    }
+    if (fromDate) conditions.push(gte(orders.createdAt, fromDate));
+    if (toDate) conditions.push(lte(orders.createdAt, toDate));
 
     const ordersList = (!hasSearched || matchingOrderIds.length > 0)
       ? await db.query.orders.findMany({
