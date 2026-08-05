@@ -1401,7 +1401,7 @@ function OrdersPageContent() {
           setShowAllOrderItems(false);
         }}
       >
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-y-auto">
           {selectedOrder && (
             <>
               <DialogHeader>
@@ -1506,11 +1506,11 @@ function OrdersPageContent() {
                 )}
               </div>
 
-              <div className="flex flex-col min-h-0 flex-1">
-                <h3 className="font-semibold shrink-0 mb-4">
+              <div>
+                <h3 className="font-semibold mb-4">
                   Order Items ({selectedOrder.items.length})
                 </h3>
-                <div className="space-y-4 min-h-0 flex-1 overflow-y-auto pr-1 -mr-1">
+                <div className="space-y-4">
                   {(showAllOrderItems
                     ? selectedOrder.items
                     : selectedOrder.items.slice(0, 1)
