@@ -1520,34 +1520,35 @@ function OrdersPageContent() {
                 <h3 className="font-semibold mb-4">
                   Order Items ({selectedOrder.items.length})
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {(showAllOrderItems
                     ? selectedOrder.items
                     : selectedOrder.items.slice(0, 1)
                   ).map((item) => (
                     <div
                       key={item.id}
-                      className="flex gap-4 items-start p-4 bg-muted/25 rounded-lg"
+                      className="flex items-center gap-3 p-3 bg-muted/25 rounded-xl text-xs"
                     >
                       {item.product.images?.[0] && (
                         <Image
                           src={item.product.images[0]}
                           alt={item.product.name}
-                          width={120}
-                          height={80}
-                          className="rounded-lg border w-16 h-12 sm:w-[120px] sm:h-[80px] object-cover shrink-0"
+                          width={48}
+                          height={48}
+                          className="rounded-lg object-cover border shrink-0"
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate" title={item.product.name}>{item.product.name}</p>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          <p>Quantity: {item.quantity}</p>
-                          <p>Price: {formatAmount(item.price)}</p>
-                          {item.size && <p>Size: {item.size}</p>}
-                          {item.color && <p>Variant: {item.color}</p>}
-                        </div>
+                        <p className="font-semibold truncate" title={item.product.name}>
+                          {item.product.name}
+                        </p>
+                        <p className="text-muted-foreground text-[11px]">
+                          Qty: {item.quantity} &times; {formatAmount(item.price)}
+                          {item.size && ` · Size: ${item.size}`}
+                          {item.color && ` · Color: ${item.color}`}
+                        </p>
                       </div>
-                      <div className="font-medium">
+                      <div className="font-bold text-sm">
                         {formatAmount(item.quantity * item.price)}
                       </div>
                     </div>
