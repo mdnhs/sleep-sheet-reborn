@@ -533,6 +533,23 @@ function OrdersPageContent() {
     setTimeout(() => setCopiedPhone(null), 2000);
   };
 
+  const openOrderDetails = (order: ShippingOrder) => {
+    setSelectedOrder({
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        images: item.product.images || [],
+      })),
+      payment:
+        order.payment === null
+          ? undefined
+          : {
+              transactionId: order.payment?.transactionId ?? undefined,
+              last4Digits: order.payment?.last4Digits ?? undefined,
+            },
+    });
+  };
+
   const handleQuickTrack = (order: ShippingOrder) => {
     trackSingleOrder.mutate(order.id);
   };
@@ -743,6 +760,7 @@ function OrdersPageContent() {
           className="rounded border-input"
           checked={row.getIsSelected()}
           onChange={(value) => row.toggleSelected(!!value.target.checked)}
+          onClick={(e) => e.stopPropagation()}
           aria-label="Select row"
         />
       ),
@@ -815,7 +833,10 @@ function OrdersPageContent() {
               {phone && phone.length >= 11 && (
                 <button
                   type="button"
-                  onClick={() => handleCopyPhone(phone)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyPhone(phone);
+                  }}
                   className="ml-0.5 hover:text-foreground transition-colors"
                   title="Copy phone number"
                 >
@@ -867,7 +888,10 @@ function OrdersPageContent() {
         return (
           <button
             type="button"
-            onClick={() => setProfitBreakdownOrder(order)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setProfitBreakdownOrder(order);
+            }}
             className={cn(
               "font-medium text-sm hover:underline cursor-pointer",
               profit >= 0
@@ -896,6 +920,7 @@ function OrdersPageContent() {
             href={`https://steadfast.com.bd/t/${trk}`}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="font-mono text-sm text-green-600 dark:text-green-400 hover:underline"
             title="Open Steadfast tracking page"
           >
@@ -953,7 +978,10 @@ function OrdersPageContent() {
           (order.refundedAmount ?? 0) < order.totalAmount;
 
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div
+            className="flex items-center justify-end gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             {canBook && (
               <Button
                 type="button"
@@ -987,26 +1015,7 @@ function OrdersPageContent() {
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() =>
-                    setSelectedOrder({
-                      ...order,
-                      items: order.items.map((item) => ({
-                        ...item,
-                        images: item.product.images || [],
-                      })),
-                      payment:
-                        order.payment === null
-                          ? undefined
-                          : {
-                              transactionId:
-                                order.payment?.transactionId ?? undefined,
-                              last4Digits:
-                                order.payment?.last4Digits ?? undefined,
-                            },
-                    })
-                  }
-                >
+                <DropdownMenuItem onClick={() => openOrderDetails(order)}>
                   View Details
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -1367,6 +1376,7 @@ function OrdersPageContent() {
           <DataTable
             columns={columns}
             data={filtered || []}
+            onRowClick={openOrderDetails}
             actionSlot={
               <Button
                 type="button"
@@ -1525,11 +1535,11 @@ function OrdersPageContent() {
                           alt={item.product.name}
                           width={120}
                           height={80}
-                          className="rounded-lg border"
+                          className="rounded-lg border w-16 h-12 sm:w-[120px] sm:h-[80px] object-cover shrink-0"
                         />
                       )}
-                      <div className="flex-1">
-                        <p className="font-medium">{item.product.name}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate" title={item.product.name}>{item.product.name}</p>
                         <div className="text-sm text-muted-foreground mt-1">
                           <p>Quantity: {item.quantity}</p>
                           <p>Price: {formatAmount(item.price)}</p>
