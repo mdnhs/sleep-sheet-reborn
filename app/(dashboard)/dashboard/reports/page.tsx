@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
-import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Receipt, Truck, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 import { subDays, subMonths, startOfDay, endOfDay, startOfMonth, endOfMonth, format, parseISO } from "date-fns";
 import React from "react";
 
@@ -270,12 +270,13 @@ function ReportsContent() {
 
         {isLoading ? (
           <div className="space-y-6">
-            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-6">
               <Skeleton className="h-28 rounded-3xl" />
               <Skeleton className="h-28 rounded-3xl" />
               <Skeleton className="h-28 rounded-3xl" />
               <Skeleton className="h-28 rounded-3xl" />
-              <Skeleton className="h-28 rounded-3xl col-span-2 lg:col-span-1" />
+              <Skeleton className="h-28 rounded-3xl" />
+              <Skeleton className="h-28 rounded-3xl" />
             </div>
             <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
               <Skeleton className="h-6 w-48 rounded-xl" />
@@ -284,8 +285,28 @@ function ReportsContent() {
           </div>
         ) : data ? (
           <div className="space-y-6">
-            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
-              <div 
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-6">
+              <div
+                className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
+                onClick={() => setShowProductCostBreakdown(true)}
+              >
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Total Items/Products</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#EEF2FF] dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
+                    <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                </div>
+                <div className="mt-2.5 mb-1">
+                  <div className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400 truncate">
+                    {data.totalItemsSold}
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 truncate">
+                    Across {data.orderCount} order{data.orderCount === 1 ? "" : "s"}
+                  </p>
+                </div>
+              </div>
+
+              <div
                 className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/40 transition-all"
                 onClick={() => setShowRevenueBreakdown(true)}
               >
@@ -361,7 +382,7 @@ function ReportsContent() {
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] col-span-2 lg:col-span-1">
+              <div className="rounded-3xl bg-white dark:bg-card border-none shadow-none p-4 sm:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">
                 <div className="flex items-center justify-between gap-1.5">
                   <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 line-clamp-1">Net Profit / Loss</span>
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${data.netProfit >= 0 ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-rose-50 dark:bg-rose-950/40"} flex items-center justify-center shrink-0`}>

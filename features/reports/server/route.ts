@@ -192,13 +192,14 @@ const app = new Hono()
       const itemCost = sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))`;
 
       const [
-        orderTotals, 
-        costTotals, 
-        expenseTotals, 
+        orderTotals,
+        costTotals,
+        expenseTotals,
         cancelledTotals,
         returnedTotals,
         allOrdersTotals,
         allCostsTotals,
+        itemTotals,
         productCostBreakdown,
         revenueBreakdown,
         shippingBreakdown,
@@ -239,6 +240,10 @@ const app = new Hono()
             .from(orders),
           db.select({ cost: itemCost })
             .from(orderItems),
+          db.select({ items: sum(orderItems.quantity) })
+            .from(orderItems)
+            .innerJoin(orders, eq(orderItems.orderId, orders.id))
+            .where(orderWhere),
           db.select({
               orderId: orders.id,
               orderNumber: orders.orderNumber,
@@ -332,6 +337,7 @@ const app = new Hono()
       const grossSales = Number(allOrdersTotals[0]?.amount || 0);
       const grossCost = Number(allCostsTotals[0]?.cost || 0);
       const cancelledCost = grossCost - totalCost;
+      const totalItemsSold = Number(itemTotals[0]?.items || 0);
 
       const grossProfit = totalRevenue - (totalCost + totalShippingCost);
       const netProfit = grossProfit - totalExpenseAmount;
@@ -347,6 +353,7 @@ const app = new Hono()
         totalExpense: totalExpenseAmount,
         netProfit,
         orderCount,
+        totalItemsSold,
         cancelledCount,
         cancelledAmount,
         returnedCount,
