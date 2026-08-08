@@ -15,7 +15,6 @@ const canManageExpenses = (
   !!user &&
   (user.role === "ADMIN" ||
     user.role === "MODERATOR" ||
-    hasPermission(user, PERMISSIONS.VIEW_ANALYTICS) ||
     hasPermission(user, PERMISSIONS.MANAGE_SETTINGS));
 
 const app = new Hono()

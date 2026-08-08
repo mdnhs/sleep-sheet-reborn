@@ -9,8 +9,7 @@ export const PERMISSIONS = {
   MANAGE_ORDERS: "manage_orders",
   POS_ACCESS: "pos_access",
   
-  // Settings & Analytics
-  VIEW_ANALYTICS: "view_analytics",
+  // Settings
   MANAGE_SETTINGS: "manage_settings",
   
   // Users & Roles
@@ -39,9 +38,8 @@ export const PERMISSION_GROUPS = [
     ]
   },
   {
-    label: "Analytics & Settings",
+    label: "Settings",
     permissions: [
-      { id: PERMISSIONS.VIEW_ANALYTICS, label: "View Analytics" },
       { id: PERMISSIONS.MANAGE_SETTINGS, label: "Manage Settings" },
     ]
   },

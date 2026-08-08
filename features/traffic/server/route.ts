@@ -62,7 +62,7 @@ const app = new Hono()
   )
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+    if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
       return c.json({ success: false, error: "Unauthorized" }, 403);
     }
 

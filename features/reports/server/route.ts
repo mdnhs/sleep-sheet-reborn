@@ -23,7 +23,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS))) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -136,7 +136,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.VIEW_ANALYTICS))) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_SETTINGS))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

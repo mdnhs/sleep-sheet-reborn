@@ -4,14 +4,13 @@ import { db } from "@/db";
 import { orders, orderItems, products, carts, wishlistItems, expenses, users } from "@/db/schema";
 import { eq, ne, and, gte, lte, asc, desc, sum, count, isNotNull, sql } from "drizzle-orm";
 import { getPreviousRange, getStartDate, getTrendBucketUnit, resolveDateRange } from "@/lib/utils";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 const app = new Hono()
 
 // Sales Overview
 .get("/sales-overview", sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -213,7 +212,7 @@ const app = new Hono()
 // Customer Lifetime Value (CLV)
 .get('/clv',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -241,7 +240,7 @@ const app = new Hono()
 // Geographic Distribution
 .get('/distribution',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -271,7 +270,7 @@ const app = new Hono()
 // Inventory Turnover
 .get('/inventory-turnover',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -307,7 +306,7 @@ const app = new Hono()
 // Cart Abandonment Rate
 .get('/abandonment',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -344,7 +343,7 @@ const app = new Hono()
 // Cohort Retention
 .get('/cohort',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -383,7 +382,7 @@ const app = new Hono()
 // Spending Clusters
 .get('/spending-clusters',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -418,7 +417,7 @@ const app = new Hono()
 // Customer Acquisition
 .get('/acquisition', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
 
@@ -458,7 +457,7 @@ const app = new Hono()
 })
 .get('/most-purchased',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -491,7 +490,7 @@ const app = new Hono()
 
 .get('/most-wishlisted',sessionMiddleware, async (c) => {
   const user =c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
   
@@ -521,7 +520,7 @@ const app = new Hono()
 })
 .get('/recent-orders', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
 
@@ -551,7 +550,7 @@ const app = new Hono()
 })
 .get('/low-stock', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!hasPermission(user, PERMISSIONS.VIEW_ANALYTICS)) {
+  if (!user) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
 

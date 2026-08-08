@@ -24,7 +24,6 @@ import {
   IconSettings,
   IconShoppingCart,
   IconChartBar,
-  IconActivity,
   IconReceipt2,
   IconUsers,
   IconUserHeart,
@@ -45,7 +44,6 @@ const navGroups = [
     label: "Main",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: <IconLayoutDashboard /> },
-      { title: "Analytics", url: "/dashboard/analytics", icon: <IconActivity /> },
       { title: "Reports", url: "/dashboard/reports", icon: <IconChartBar /> },
     ],
   },
