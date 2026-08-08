@@ -84,6 +84,7 @@ const app = new Hono()
   status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]).optional(),
   paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]).optional(),
   shippingCost: z.number().min(0).optional(),
+  totalAmount: z.number().min(0).optional(),
   items: z.array(z.object({
     id: z.string(),
     costPrice: z.number().min(0)
@@ -95,7 +96,7 @@ const app = new Hono()
   }
 
   const id = c.req.param("id");
-  const { status, paymentStatus, shippingCost, items } = c.req.valid("json");
+  const { status, paymentStatus, shippingCost, totalAmount, items } = c.req.valid("json");
 
   const statusMessages: Record<string, string> = {
     PENDING: "Order placed and pending confirmation.",
@@ -122,6 +123,7 @@ const app = new Hono()
       updateFields.shippingCost = shippingCost;
       updateFields.totalAmount = currentOrder.subtotal + shippingCost;
     }
+    if (totalAmount !== undefined) updateFields.totalAmount = totalAmount;
 
     await db.update(orders)
       .set(updateFields)
@@ -162,6 +164,9 @@ const app = new Hono()
     }
     if (shippingCost !== undefined && shippingCost !== currentOrder.shippingCost) {
       changes.push({ label: "Shipping cost", from: currentOrder.shippingCost, to: shippingCost });
+    }
+    if (totalAmount !== undefined && totalAmount !== currentOrder.totalAmount) {
+      changes.push({ label: "Total amount", from: currentOrder.totalAmount, to: totalAmount });
     }
     setActivityMeta(c, { name: `#${currentOrder.orderNumber}`, changes });
 
