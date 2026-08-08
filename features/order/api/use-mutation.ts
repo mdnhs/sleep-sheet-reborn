@@ -7,19 +7,21 @@ export const useOrderMutations = () => {
   const queryClient = useQueryClient();
 
   const updateOrder = useMutation({
-    mutationFn: async (data: { 
-      id: string; 
-      status?: OrderStatus; 
+    mutationFn: async (data: {
+      id: string;
+      status?: OrderStatus;
       paymentStatus?: PaymentStatus;
       shippingCost?: number;
+      totalAmount?: number;
       items?: { id: string; costPrice: number }[];
     }) => {
       const response = await client.api.orders[":id"].$patch({
         param: { id: data.id },
-        json: { 
-          status: data.status, 
+        json: {
+          status: data.status,
           paymentStatus: data.paymentStatus,
           shippingCost: data.shippingCost,
+          totalAmount: data.totalAmount,
           items: data.items,
         },
       });

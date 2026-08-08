@@ -239,6 +239,8 @@ function OrdersPageContent() {
     useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
+  const [amountOrder, setAmountOrder] = useState<ShippingOrder | null>(null);
+  const [newTotalAmount, setNewTotalAmount] = useState("");
   const [profitBreakdownOrder, setProfitBreakdownOrder] =
     useState<ShippingOrder | null>(null);
   const [cancelTarget, setCancelTarget] = useState<ShippingOrder | null>(null);
@@ -1041,6 +1043,14 @@ function OrdersPageContent() {
                 >
                   Edit Order Costs
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setAmountOrder(order);
+                    setNewTotalAmount(order.totalAmount.toString());
+                  }}
+                >
+                  Edit Order Amount
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLogDetailsOrder(order)}>
                   <History className="h-4 w-4 mr-2" />
                   Log Details
@@ -1807,6 +1817,64 @@ function OrdersPageContent() {
                     setShippingCostOrder(null);
                   } catch (error) {
                     toast.error("Failed to update order costs");
+                  }
+                }}
+                disabled={updateOrder.isPending}
+              >
+                {updateOrder.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : null}
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!amountOrder}
+        onOpenChange={(open) => !open && setAmountOrder(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Order Amount</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Total Amount (৳)</label>
+              <Input
+                type="number"
+                min="0"
+                value={newTotalAmount}
+                onChange={(e) => setNewTotalAmount(e.target.value)}
+                placeholder="Enter total amount"
+              />
+              <p className="text-xs text-muted-foreground">
+                Overrides the order&apos;s total sale amount directly (subtotal + shipping cost are left as-is).
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setAmountOrder(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!amountOrder) return;
+                  const amount = parseFloat(newTotalAmount);
+                  if (isNaN(amount) || amount < 0) {
+                    toast.error("Please enter a valid total amount");
+                    return;
+                  }
+
+                  try {
+                    await updateOrder.mutateAsync({
+                      id: amountOrder.id,
+                      totalAmount: amount,
+                    });
+                    toast.success("Order amount updated successfully");
+                    setAmountOrder(null);
+                  } catch (error) {
+                    toast.error("Failed to update order amount");
                   }
                 }}
                 disabled={updateOrder.isPending}
