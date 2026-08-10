@@ -145,6 +145,16 @@ const Footer = () => {
               </li>
               <li>
                 <Link
+                  href="/testimonials"
+                  prefetch={false}
+                  className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
+                >
+                  Testimonials
+                  <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/sustainability"
                   prefetch={false}
                   className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"

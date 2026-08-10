@@ -76,6 +76,7 @@ export async function generatePagesSitemap() {
     { url: `${seoConfig.siteUrl}/new-arrivals`, priority: 0.8, changeFrequency: "daily" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/bestsellers`, priority: 0.8, changeFrequency: "daily" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/blog`, priority: 0.8, changeFrequency: "daily" as const, lastModified: now },
+    { url: `${seoConfig.siteUrl}/testimonials`, priority: 0.6, changeFrequency: "weekly" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/about`, priority: 0.5, changeFrequency: "yearly" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/contact`, priority: 0.5, changeFrequency: "yearly" as const, lastModified: now },
     { url: `${seoConfig.siteUrl}/track-order`, priority: 0.3, changeFrequency: "monthly" as const, lastModified: now },
