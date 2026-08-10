@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Star, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import { client } from "@/lib/rpc";
+
+// Same lightbox used for product image galleries — loaded on demand so it
+// stays out of this page's initial bundle.
+const ProductLightbox = dynamic(
+  () => import("@/features/product/components/product-lightbox"),
+  { ssr: false }
+);
 
 interface Testimonial {
   id: string;
@@ -23,18 +31,31 @@ interface TestimonialsClientProps {
   initialTotal: number;
 }
 
-function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+function TestimonialCard({
+  testimonial,
+  onImageClick,
+}: {
+  testimonial: Testimonial;
+  onImageClick: () => void;
+}) {
   if (testimonial.screenshot) {
     return (
       <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden border border-border/50 bg-muted shadow-sm hover:shadow-md transition-shadow">
-        <Image
-          src={getOptimizedImageUrl(testimonial.screenshot, 400)}
-          alt={`Review from ${testimonial.name}`}
-          fill
-          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
-          quality={70}
-          className="object-cover"
-        />
+        <button
+          type="button"
+          onClick={onImageClick}
+          className="absolute inset-0 cursor-zoom-in"
+          aria-label={`View full review image from ${testimonial.name}`}
+        >
+          <Image
+            src={getOptimizedImageUrl(testimonial.screenshot, 400)}
+            alt={`Review from ${testimonial.name}`}
+            fill
+            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
+            quality={70}
+            className="object-cover"
+          />
+        </button>
         <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8 border border-white/20 bg-secondary overflow-hidden shrink-0">
@@ -104,6 +125,20 @@ export default function TestimonialsClientPage({
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [lightboxMounted, setLightboxMounted] = useState(false);
+
+  const screenshotTestimonials = testimonials.filter((t) => t.screenshot);
+  const screenshotIndexById = new Map(
+    screenshotTestimonials.map((t, i) => [t.id, i])
+  );
+
+  const openLightbox = (id: string) => {
+    const index = screenshotIndexById.get(id);
+    if (index === undefined) return;
+    setLightboxMounted(true);
+    setLightboxIndex(index);
+  };
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
@@ -142,7 +177,11 @@ export default function TestimonialsClientPage({
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {testimonials.map((testimonial) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+              <TestimonialCard
+                key={testimonial.id}
+                testimonial={testimonial}
+                onImageClick={() => openLightbox(testimonial.id)}
+              />
             ))}
           </div>
 
@@ -163,6 +202,19 @@ export default function TestimonialsClientPage({
         <div className="text-center py-16 text-muted-foreground text-sm">
           No reviews yet.
         </div>
+      )}
+
+      {lightboxMounted && (
+        <ProductLightbox
+          index={lightboxIndex}
+          slides={screenshotTestimonials.map((t) => ({
+            src: t.screenshot as string,
+            title: t.name || "Customer Review",
+            description: t.message || `${t.rating} star review`,
+          }))}
+          open={lightboxIndex >= 0}
+          close={() => setLightboxIndex(-1)}
+        />
       )}
     </div>
   );

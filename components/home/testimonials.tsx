@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useGetTestimonials } from "@/features/testimonials/api/use-get-testimonials";
 import { Star, ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,8 +17,29 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+// Same lightbox used for product image galleries — loaded on demand so it
+// stays out of the homepage's initial bundle.
+const ProductLightbox = dynamic(
+  () => import("@/features/product/components/product-lightbox"),
+  { ssr: false }
+);
+
 const Testimonials = () => {
   const { data } = useGetTestimonials();
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [lightboxMounted, setLightboxMounted] = useState(false);
+
+  const screenshotTestimonials = (data?.data || []).filter((t) => t.screenshot);
+  const screenshotIndexById = new Map(
+    screenshotTestimonials.map((t, i) => [t.id, i])
+  );
+
+  const openLightbox = (id: string) => {
+    const index = screenshotIndexById.get(id);
+    if (index === undefined) return;
+    setLightboxMounted(true);
+    setLightboxIndex(index);
+  };
 
   return (
     <section className="py-6 md:py-10 bg-background border-t border-slate-100 dark:border-slate-800">
@@ -54,14 +77,21 @@ const Testimonials = () => {
                 <CarouselItem key={index} className="pl-4 basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
                   {testimonial.screenshot ? (
                     <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden border border-border/50 group cursor-grab active:cursor-grabbing bg-muted shadow-sm hover:shadow-md transition-shadow">
-                      <Image
-                        src={getOptimizedImageUrl(testimonial.screenshot, 300)}
-                        alt={`Review from ${testimonial.name}`}
-                        fill
-                        sizes="(max-width: 640px) 75vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                        quality={65}
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => openLightbox(testimonial.id)}
+                        className="absolute inset-0 cursor-zoom-in"
+                        aria-label={`View full review image from ${testimonial.name}`}
+                      >
+                        <Image
+                          src={getOptimizedImageUrl(testimonial.screenshot, 300)}
+                          alt={`Review from ${testimonial.name}`}
+                          fill
+                          sizes="(max-width: 640px) 75vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          quality={65}
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      </button>
                       <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8 border border-white/20 bg-secondary overflow-hidden shrink-0">
@@ -127,6 +157,19 @@ const Testimonials = () => {
           </div>
         )}
       </div>
+
+      {lightboxMounted && (
+        <ProductLightbox
+          index={lightboxIndex}
+          slides={screenshotTestimonials.map((t) => ({
+            src: t.screenshot as string,
+            title: t.name || "Customer Review",
+            description: t.message || `${t.rating} star review`,
+          }))}
+          open={lightboxIndex >= 0}
+          close={() => setLightboxIndex(-1)}
+        />
+      )}
     </section>
   );
 };
