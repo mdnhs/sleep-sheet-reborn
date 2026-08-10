@@ -34,6 +34,7 @@ export const getPublicCategories = unstable_cache(
 );
 
 import blogApp from "@/features/blog/server/route";
+import testimonialsApp from "@/features/testimonials/server/route";
 
 export const getPublicProducts = unstable_cache(
   () => fromRoute<{ data: any[] }>(productsApp, "/?sort=newest&limit=8"),
@@ -45,4 +46,13 @@ export const getPublicBlogPosts = unstable_cache(
   () => fromRoute<{ data: any[] }>(blogApp, "/"),
   ["prefetch-blog"],
   { revalidate: 300, tags: ["blog"] }
+);
+
+export const getPublicTestimonials = unstable_cache(
+  () => fromRoute<{ data: any[]; total: number; hasNextPage: boolean; totalPages: number }>(
+    testimonialsApp,
+    "/?page=1&limit=12",
+  ),
+  ["prefetch-testimonials"],
+  { revalidate: 300, tags: ["testimonials"] }
 );

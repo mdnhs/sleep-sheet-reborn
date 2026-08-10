@@ -1,9 +1,10 @@
 "use client";
 
 import { useGetTestimonials } from "@/features/testimonials/api/use-get-testimonials";
-import { Star } from "lucide-react";
+import { Star, ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import Link from "next/link";
 import Autoplay from "embla-carousel-autoplay";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import {
@@ -25,6 +26,13 @@ const Testimonials = () => {
           <h2 className="font-heading text-xl md:text-2xl font-medium text-foreground tracking-tight">
             Customer Reviews
           </h2>
+          <Link
+            href="/testimonials"
+            className="group flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            Show More
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
         {data?.data && data.data.length > 0 ? (

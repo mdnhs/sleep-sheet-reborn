@@ -16,6 +16,7 @@ const mainPages = [
   { href: "/bestsellers", label: "Bestsellers" },
   { href: "/sale", label: "Sale" },
   { href: "/blog", label: "Blog" },
+  { href: "/testimonials", label: "Customer Reviews" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact Us" },
   { href: "/track-order", label: "Track Your Order" },
