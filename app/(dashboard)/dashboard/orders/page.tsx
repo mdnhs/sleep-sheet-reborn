@@ -574,12 +574,18 @@ function OrdersPageContent() {
   const getPhone = (order: ShippingOrder) =>
     (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "");
 
+  // Revenue is totalAmount (net of any refund), not subtotal — totalAmount
+  // already includes the shipping charge collected from the customer, which
+  // is what makes this match the reports page's aggregate profit formula
+  // (totalRevenue - totalCost - totalShippingCost) and what makes "Edit
+  // Order Amount" actually move the profit shown here.
   const getProfit = (order: ShippingOrder) => {
     const totalCost = order.items.reduce(
       (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
       0,
     );
-    return order.subtotal - totalCost - order.shippingCost;
+    const revenue = order.totalAmount - (order.refundedAmount ?? 0);
+    return revenue - totalCost - order.shippingCost;
   };
 
   const isCancelled = (o: ShippingOrder) => {
@@ -1904,7 +1910,11 @@ function OrdersPageContent() {
             {profitBreakdownOrder &&
               (() => {
                 const order = profitBreakdownOrder;
-                const itemsRevenue = order.subtotal;
+                const refundedAmount = order.refundedAmount ?? 0;
+                // Revenue is totalAmount (net of refunds), not subtotal — see
+                // getProfit() above for why: it keeps this in sync with the
+                // reports page's aggregate formula and with "Edit Order Amount".
+                const itemsRevenue = order.totalAmount - refundedAmount;
                 const itemsCost = order.items.reduce(
                   (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
                   0,
@@ -2010,14 +2020,35 @@ function OrdersPageContent() {
                           })}
                         </TableBody>
                         <TableFooter className="bg-muted/10 border-t-2 border-border">
+                          {refundedAmount > 0 && (
+                            <TableRow className="hover:bg-transparent border-0">
+                              <TableCell
+                                colSpan={4}
+                                className="text-right font-medium text-muted-foreground pt-6"
+                              >
+                                Refunded
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums font-medium text-red-600 dark:text-red-400 pt-6">
+                                -{formatAmount(refundedAmount)}
+                              </TableCell>
+                            </TableRow>
+                          )}
                           <TableRow className="hover:bg-transparent border-0">
                             <TableCell
                               colSpan={4}
-                              className="text-right font-medium text-muted-foreground pt-6"
+                              className={cn(
+                                "text-right font-medium text-muted-foreground",
+                                refundedAmount > 0 ? "" : "pt-6",
+                              )}
                             >
-                              Subtotal (Profit)
+                              Net Sale − Product Cost
                             </TableCell>
-                            <TableCell className="text-right tabular-nums font-medium pt-6">
+                            <TableCell
+                              className={cn(
+                                "text-right tabular-nums font-medium",
+                                refundedAmount > 0 ? "" : "pt-6",
+                              )}
+                            >
                               <span
                                 className={cn(
                                   itemsRevenue - itemsCost >= 0
