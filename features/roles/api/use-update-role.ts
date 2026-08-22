@@ -6,7 +6,7 @@ export const useUpdateRole = (id: string) => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (json: { name: string; permissions: string[] }) => {
+    mutationFn: async (json: { name: string; permissions: string[]; landingUrl?: string | null }) => {
       const res = await client.api.roles[":id"]["$patch"]({ 
         param: { id },
         json 

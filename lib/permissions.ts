@@ -137,7 +137,7 @@ export const PERMISSIONS = {
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
-type AuthUser = { role?: string; permissions?: string[] } | null;
+type AuthUser = { role?: string; permissions?: string[]; landingUrl?: string | null } | null;
 
 /**
  * Normalize stored permissions into a flat set of granular perms.
@@ -204,4 +204,35 @@ export function hasPermission(user: AuthUser, permission: string): boolean {
   if (mapped) return granted.has(mapped[0]);
 
   return granted.has(permission);
+}
+
+// Ordered module -> landing route. First module the user can read decides where
+// their "Go to Dashboard" button (and post-login redirect) should point.
+const MODULE_ROUTES: { module: ModuleKey; path: string }[] = [
+  { module: "dashboard", path: "/dashboard" },
+  { module: "orders", path: "/dashboard/orders" },
+  { module: "pos", path: "/dashboard/pos" },
+  { module: "products", path: "/dashboard/products" },
+  { module: "reports", path: "/dashboard/reports" },
+  { module: "expenses", path: "/dashboard/expenses" },
+  { module: "blog", path: "/dashboard/blog" },
+  { module: "testimonials", path: "/dashboard/testimonials" },
+  { module: "users", path: "/dashboard/users" },
+  { module: "settings", path: "/dashboard/settings" },
+  { module: "roles", path: "/dashboard/settings/roles" },
+  { module: "activity", path: "/dashboard/activity" },
+];
+
+/**
+ * The first dashboard route a user is allowed to read. ADMIN/MODERATOR land on
+ * /dashboard; a granular role lands on its first accessible module. Returns
+ * null when the user has no dashboard access at all.
+ */
+export function landingPath(user: AuthUser): string | null {
+  if (!user) return null;
+  // A role's explicit custom URL always wins.
+  if (user.landingUrl && user.landingUrl.trim()) return user.landingUrl.trim();
+  if (user.role === "ADMIN" || user.role === "MODERATOR") return "/dashboard";
+  const hit = MODULE_ROUTES.find((r) => can(user, r.module, "read"));
+  return hit?.path ?? null;
 }

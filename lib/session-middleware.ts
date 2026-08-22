@@ -20,6 +20,7 @@ type CustomContext = {
       name: string
       role: string
       permissions: string[]
+      landingUrl?: string | null
       phone: string | null
       address: string | null
     } | null
@@ -76,7 +77,8 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       name: user.name, 
       role: isSuperAdmin ? 'ADMIN' : user.role, 
       permissions: user.assignedRole ? user.assignedRole.permissions : [],
-      phone: user.phone, 
+      landingUrl: user.assignedRole ? user.assignedRole.landingUrl : null,
+      phone: user.phone,
       address: user.address 
     })
   } catch (err) {

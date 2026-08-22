@@ -46,11 +46,13 @@ export function RolesClient() {
   // Form State — a set of granular "module:action" strings.
   const [name, setName] = useState("");
   const [permissions, setPermissions] = useState<Set<string>>(new Set());
+  const [landingUrl, setLandingUrl] = useState("");
 
   const handleOpenNew = () => {
     setEditingRole(null);
     setName("");
     setPermissions(new Set());
+    setLandingUrl("");
     setIsOpen(true);
   };
 
@@ -58,6 +60,7 @@ export function RolesClient() {
     setEditingRole(role);
     setName(role.name);
     setPermissions(toGranular(role.permissions));
+    setLandingUrl(role.landingUrl ?? "");
     setIsOpen(true);
   };
 
@@ -86,7 +89,11 @@ export function RolesClient() {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const payload = { name, permissions: [...permissions] };
+    const payload = {
+      name,
+      permissions: [...permissions],
+      landingUrl: landingUrl.trim() || null,
+    };
 
     if (editingRole) {
       updateRole.mutate(payload, { onSuccess: () => setIsOpen(false) });
@@ -187,6 +194,32 @@ export function RolesClient() {
                 onChange={(e) => setName(e.target.value)}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Landing URL <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <Input
+                placeholder="/dashboard/orders"
+                value={landingUrl}
+                onChange={(e) => setLandingUrl(e.target.value)}
+                list="landing-url-suggestions"
+              />
+              <datalist id="landing-url-suggestions">
+                <option value="/dashboard" />
+                <option value="/dashboard/orders" />
+                <option value="/dashboard/pos" />
+                <option value="/dashboard/products" />
+                <option value="/dashboard/reports" />
+                <option value="/dashboard/expenses" />
+                <option value="/dashboard/blog" />
+                <option value="/dashboard/testimonials" />
+                <option value="/dashboard/users" />
+                <option value="/dashboard/settings" />
+                <option value="/dashboard/activity" />
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                Where this role lands after login. Leave blank to use the first accessible page.
+              </p>
             </div>
 
             <div className="space-y-3">

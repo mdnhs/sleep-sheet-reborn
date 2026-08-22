@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrent } from "@/features/auth/api/use-current";
+import { landingPath } from "@/lib/permissions";
 import { useUpdateProfile } from "@/features/auth/api/use-update-profile";
 import { useGetOrder } from "@/features/order/api/use-get-order";
 import { useDeleteFromWishlist } from "@/features/wishlist/api/use-delete-from-wishlist";
@@ -160,6 +161,8 @@ function AccountClientPage({ name }: AccountClientPageProps) {
   const latestOrder = ordersList[0];
   const hasAddress = Boolean(currentUser?.address?.trim());
   const displayName = currentUser?.name || name || "Customer";
+  // Role-aware entry point: first dashboard route this user can actually open.
+  const dashboardPath = landingPath(currentUser ?? null);
 
   const profileForm = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -218,8 +221,8 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                   <Sparkles className="size-3.5" />
                   Account hub
                 </Badge>
-                {currentUser && (currentUser.role !== "USER" || (currentUser.permissions && currentUser.permissions.length > 0)) && (
-                  <Link href="/dashboard">
+                {dashboardPath && (
+                  <Link href={dashboardPath}>
                     <Button variant="outline" size="sm" className="rounded-full h-8 px-4 font-medium hover:bg-muted">
                       <LayoutDashboard className="mr-2 size-4" />
                       Go to Dashboard

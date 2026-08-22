@@ -34,6 +34,7 @@ export async function getCurrentUser() {
       name: user.name,
       role: isSuperAdmin ? "ADMIN" : user.role,
       permissions: user.assignedRole ? user.assignedRole.permissions : [],
+      landingUrl: user.assignedRole ? user.assignedRole.landingUrl : null,
     };
   } catch (error) {
     console.error("Token verification failed:", error);

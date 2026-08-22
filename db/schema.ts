@@ -96,6 +96,9 @@ export const roles = pgTable("roles", {
     .$defaultFn(() => cuid()),
   name: text("name").unique().notNull(),
   permissions: text("permissions").array().notNull().default([]),
+  // Optional custom landing route for this role, e.g. "/dashboard/orders".
+  // When null, the first accessible module decides where the user lands.
+  landingUrl: text("landingUrl"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });
 

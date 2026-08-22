@@ -29,6 +29,7 @@ const app = new Hono()
       z.object({
         name: z.string().min(1),
         permissions: z.array(z.string()),
+        landingUrl: z.string().optional().nullable(),
       })
     ),
     async (c) => {
@@ -37,7 +38,7 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const { name, permissions } = c.req.valid("json");
+      const { name, permissions, landingUrl } = c.req.valid("json");
 
       const existing = await db.query.roles.findFirst({
         where: eq(roles.name, name),
@@ -50,6 +51,7 @@ const app = new Hono()
       const [newRole] = await db.insert(roles).values({
         name,
         permissions,
+        landingUrl: landingUrl?.trim() || null,
       }).returning();
 
       setActivityMeta(c, { name: newRole.name });
@@ -65,6 +67,7 @@ const app = new Hono()
       z.object({
         name: z.string().min(1),
         permissions: z.array(z.string()),
+        landingUrl: z.string().optional().nullable(),
       })
     ),
     async (c) => {
@@ -74,7 +77,7 @@ const app = new Hono()
       }
 
       const id = c.req.param("id");
-      const { name, permissions } = c.req.valid("json");
+      const { name, permissions, landingUrl } = c.req.valid("json");
 
       const existing = await db.query.roles.findFirst({
         where: eq(roles.name, name),
@@ -89,6 +92,7 @@ const app = new Hono()
       const [updated] = await db.update(roles).set({
         name,
         permissions,
+        landingUrl: landingUrl?.trim() || null,
       }).where(eq(roles.id, id)).returning();
 
       if (!updated) {
