@@ -56,6 +56,7 @@ import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book
 import { useCurrency } from "@/hooks/use-currency";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { can } from "@/lib/permissions";
+import { useRouter } from "next/navigation";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { cn, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -277,24 +278,36 @@ function OrdersPageContent() {
     }
   }, [fromStr, toStr]);
 
-  const { data: rawOrders, isLoading } = useOrders(search, rangeFilter);
-  const { symbol: currencySymbol, formatAmount } = useCurrency();
-  const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
-  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
-    useOrderMutations();
-  const { data: balanceData, isLoading: isBalanceLoading } =
-    useSteadfastBalance(showBalance);
-
   // Permission gates. ADMIN/MODERATOR keep full access (matches server routes);
   // otherwise fall back to the granular order permissions.
-  const { data: currentUser } = useCurrent();
+  const router = useRouter();
+  const { data: currentUser, isLoading: isUserLoading } = useCurrent();
   const privileged =
     currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR";
+  const permRead = privileged || can(currentUser ?? null, "orders", "read");
   const permWrite = privileged || can(currentUser ?? null, "orders", "write");
   const permCancel = privileged || can(currentUser ?? null, "orders", "cancel");
   const permRefund = privileged || can(currentUser ?? null, "orders", "refund");
   const permDelete = privileged || can(currentUser ?? null, "orders", "delete");
   const permBalance = privileged || can(currentUser ?? null, "orders", "balance");
+
+  // No read access → bounce to the dashboard instead of showing a broken
+  // page that only fires 401s.
+  React.useEffect(() => {
+    if (!isUserLoading && currentUser && !permRead) {
+      router.replace("/dashboard");
+    }
+  }, [isUserLoading, currentUser, permRead, router]);
+
+  const { data: rawOrders, isLoading } = useOrders(search, rangeFilter, {
+    enabled: permRead,
+  });
+  const { symbol: currencySymbol, formatAmount } = useCurrency();
+  const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
+  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
+    useOrderMutations();
+  const { data: balanceData, isLoading: isBalanceLoading } =
+    useSteadfastBalance(showBalance && permBalance);
   const syncBatch = useSyncBatchOrderStatus();
   const trackSingleOrder = useTrackSingleOrder();
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
@@ -2291,7 +2304,8 @@ function OrderLogDetailsDialog({
   const { data: logsData, isLoading } = useActivityLogs(
     order && open
       ? { search: order.orderNumber, orderId: order.id, limit: "50" }
-      : undefined
+      : undefined,
+    { enabled: !!(order && open) }
   );
 
   if (!order) return null;

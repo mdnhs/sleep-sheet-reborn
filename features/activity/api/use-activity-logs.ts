@@ -9,7 +9,10 @@ interface ActivityLogQueryParams {
   status?: "error";
 }
 
-export const useActivityLogs = (params?: ActivityLogQueryParams) => {
+export const useActivityLogs = (
+  params?: ActivityLogQueryParams,
+  options?: { enabled?: boolean }
+) => {
   return useQuery({
     queryKey: ["activity-logs", params],
     queryFn: async () => {
@@ -21,6 +24,7 @@ export const useActivityLogs = (params?: ActivityLogQueryParams) => {
 
       return response.json();
     },
+    enabled: options?.enabled ?? true,
     placeholderData: keepPreviousData,
   });
 };

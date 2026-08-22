@@ -7,7 +7,11 @@ export interface OrderDateRangeFilter {
   to: string;
 }
 
-export const useOrders = (search?: string, range?: OrderDateRangeFilter) => {
+export const useOrders = (
+  search?: string,
+  range?: OrderDateRangeFilter,
+  options?: { enabled?: boolean }
+) => {
   return useQuery({
     queryKey: ["orders", search, range],
     queryFn: async () => {
@@ -18,6 +22,7 @@ export const useOrders = (search?: string, range?: OrderDateRangeFilter) => {
       const data = await response.json();
       return data.orders;
     },
+    enabled: options?.enabled ?? true,
     // Keep showing the previous result set while a new filter's query is in
     // flight, instead of flipping isLoading true and swapping out the UI.
     placeholderData: keepPreviousData,

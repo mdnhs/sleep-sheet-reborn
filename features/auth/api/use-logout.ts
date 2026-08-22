@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InferResponseType } from "hono";
 
 import { client } from "@/lib/rpc";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type ResponseType= InferResponseType<typeof client.api.auth.logout["$post"]>
@@ -10,7 +9,6 @@ type ResponseType= InferResponseType<typeof client.api.auth.logout["$post"]>
 
 export const useLogout =()=>{
 
-    const router = useRouter();
     const queryclient = useQueryClient();
     const mutation= useMutation<ResponseType,Error>({
         mutationFn:async()=>{
@@ -23,9 +21,11 @@ export const useLogout =()=>{
         },
         onSuccess:()=>{
             toast.success("Logged out");
-            router.refresh();
-            queryclient.invalidateQueries({queryKey:["current"]});
-            // queryclient.invalidateQueries({queryKey:["workspaces"]});
+            queryclient.clear();
+            // Hard navigation: forces a full reload so server components
+            // re-evaluate with the cleared cookie instead of a cached
+            // (still-authenticated) RSC payload.
+            window.location.href = "/signin";
         },
         onError:()=>{
             toast.error("Failed to log out");
