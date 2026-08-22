@@ -5,14 +5,14 @@ import { eq, ne, or, and, desc, isNull, isNotNull, sql } from "drizzle-orm";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+    if (!can(user, "users", "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -37,7 +37,7 @@ const app = new Hono()
   })
   .get("/customers", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+    if (!can(user, "users", "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -77,7 +77,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+      if (!can(user, "users", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -122,7 +122,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+      if (!can(user, "users", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -177,7 +177,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+      if (!can(user, "users", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

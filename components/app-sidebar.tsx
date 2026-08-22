@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 
-import { NavMain } from "@/components/nav-main"
+import { NavMain, type NavGroup } from "@/components/nav-main"
 import {
   Sidebar,
   SidebarContent,
@@ -30,47 +30,52 @@ import {
   IconShield,
   IconHistory
 } from "@tabler/icons-react"
+import { useCurrent } from "@/features/auth/api/use-current"
+import { can, type ModuleKey } from "@/lib/permissions"
 
-const data = {
-  user: {
-    name: "Admin",
-    email: "admin@sleepsheet.com",
-    avatar: "/avatars/admin.jpg",
-  },
+// `module` gates an item: shown only if the user can read that module.
+// Items with no `module` are always visible.
+type GatedItem = {
+  title: string
+  url: string
+  icon?: React.ReactNode
+  module?: ModuleKey
+  items?: { title: string; url: string }[]
 }
+type GatedGroup = { label: string; items: GatedItem[] }
 
-const navGroups = [
+const navGroups: GatedGroup[] = [
   {
     label: "Main",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: <IconLayoutDashboard /> },
-      { title: "Reports", url: "/dashboard/reports", icon: <IconChartBar /> },
+      { title: "Dashboard", url: "/dashboard", icon: <IconLayoutDashboard />, module: "dashboard" },
+      { title: "Reports", url: "/dashboard/reports", icon: <IconChartBar />, module: "reports" },
     ],
   },
   {
     label: "Sales & POS",
     items: [
-      { title: "Orders", url: "/dashboard/orders", icon: <IconShoppingCart /> },
-      { title: "POS", url: "/dashboard/pos", icon: <IconCashRegister /> },
-      { title: "Expenses", url: "/dashboard/expenses", icon: <IconReceipt2 /> },
+      { title: "Orders", url: "/dashboard/orders", icon: <IconShoppingCart />, module: "orders" },
+      { title: "POS", url: "/dashboard/pos", icon: <IconCashRegister />, module: "pos" },
+      { title: "Expenses", url: "/dashboard/expenses", icon: <IconReceipt2 />, module: "expenses" },
     ],
   },
   {
     label: "Catalog & Content",
     items: [
-      { title: "Products", url: "/dashboard/products", icon: <IconPackage /> },
-      { title: "Categories", url: "/dashboard/categories", icon: <IconCategory /> },
-      { title: "Blog", url: "/dashboard/blog", icon: <IconArticle /> },
-      { title: "Testimonials", url: "/dashboard/testimonials", icon: <IconBed /> },
+      { title: "Products", url: "/dashboard/products", icon: <IconPackage />, module: "products" },
+      { title: "Categories", url: "/dashboard/categories", icon: <IconCategory />, module: "products" },
+      { title: "Blog", url: "/dashboard/blog", icon: <IconArticle />, module: "blog" },
+      { title: "Testimonials", url: "/dashboard/testimonials", icon: <IconBed />, module: "testimonials" },
     ],
   },
   {
     label: "People & Security",
     items: [
-      { title: "Customers", url: "/dashboard/customers", icon: <IconUserHeart /> },
-      { title: "Staff", url: "/dashboard/users", icon: <IconUsers /> },
-      { title: "Roles", url: "/dashboard/settings/roles", icon: <IconShield /> },
-      { title: "Activity Log", url: "/dashboard/activity", icon: <IconHistory /> },
+      { title: "Customers", url: "/dashboard/customers", icon: <IconUserHeart />, module: "users" },
+      { title: "Staff", url: "/dashboard/users", icon: <IconUsers />, module: "users" },
+      { title: "Roles", url: "/dashboard/settings/roles", icon: <IconShield />, module: "roles" },
+      { title: "Activity Log", url: "/dashboard/activity", icon: <IconHistory />, module: "activity" },
     ],
   },
   {
@@ -80,6 +85,7 @@ const navGroups = [
         title: "Settings",
         url: "/dashboard/settings",
         icon: <IconSettings />,
+        module: "settings",
         items: [
           { title: "Currency", url: "/dashboard/settings/currency" },
           { title: "Payments", url: "/dashboard/settings/payments" },
@@ -96,8 +102,27 @@ const navGroups = [
   },
 ]
 
+// Keep only items the user can see, then drop groups left empty.
+function filterGroups(
+  groups: GatedGroup[],
+  user: { role?: string; permissions?: string[] } | null | undefined
+): NavGroup[] {
+  return groups
+    .map((group) => ({
+      label: group.label,
+      items: group.items.filter(
+        (item) => !item.module || can(user ?? null, item.module, "read")
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { setOpenMobile } = useSidebar()
+  const { data: user } = useCurrent()
+
+  const groups = React.useMemo(() => filterGroups(navGroups, user), [user])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -116,7 +141,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain groups={navGroups} />
+        <NavMain groups={groups} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

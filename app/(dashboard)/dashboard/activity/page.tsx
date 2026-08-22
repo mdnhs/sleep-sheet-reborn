@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 import { ActivityClient } from "./activity-client";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ function ActivitySkeleton() {
 export default async function ActivityPage() {
   const user = await getCurrentUser();
 
-  if (!user || !hasPermission(user, PERMISSIONS.VIEW_ACTIVITY_LOGS)) {
+  if (!user || !can(user, "activity", "read")) {
     redirect("/dashboard");
   }
 

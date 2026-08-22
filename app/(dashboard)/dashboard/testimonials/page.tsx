@@ -1,6 +1,9 @@
 import React, { Suspense } from "react";
 import TestimonialsClientPage from "./testimonials-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCurrentUser } from "@/lib/is-authenticated";
+import { redirect } from "next/navigation";
+import { can } from "@/lib/permissions";
 
 function TestimonialsSkeleton() {
   return (
@@ -11,7 +14,12 @@ function TestimonialsSkeleton() {
   );
 }
 
-function TestimonialsPage() {
+async function TestimonialsPage() {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "MODERATOR" && !can(user, "testimonials", "read"))) {
+    redirect("/");
+  }
+
   return (
     <Suspense fallback={<TestimonialsSkeleton />}>
       <TestimonialsClientPage />

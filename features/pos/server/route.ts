@@ -6,7 +6,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
-import { hasPermission, PERMISSIONS } from '@/lib/permissions';
+import { can } from '@/lib/permissions';
 import { parseUserAgent } from '@/lib/user-agent-parser';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
@@ -42,7 +42,7 @@ const app = new Hono()
   shippingCost: z.number().optional(),
 })), async (c) => {
   const user = c.get('user');
-  if (!user || !hasPermission(user, PERMISSIONS.POS_ACCESS)) {
+  if (!user || !can(user, "pos", "write")) {
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
 

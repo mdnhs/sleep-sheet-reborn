@@ -5,7 +5,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { desc, gte, sql } from "drizzle-orm";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 
 import { parseUserAgent } from "@/lib/user-agent-parser";
 
@@ -62,7 +62,7 @@ const app = new Hono()
   )
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
+    if (!can(user, "settings", "read")) {
       return c.json({ success: false, error: "Unauthorized" }, 403);
     }
 

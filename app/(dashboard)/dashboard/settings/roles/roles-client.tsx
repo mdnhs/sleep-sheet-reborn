@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit, Trash2, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, ShieldAlert, Eye, Pencil } from "lucide-react";
 import { useGetRoles } from "@/features/roles/api/use-get-roles";
 import { useCreateRole } from "@/features/roles/api/use-create-role";
 import { useUpdateRole } from "@/features/roles/api/use-update-role";
 import { useDeleteRole } from "@/features/roles/api/use-delete-role";
-import { PERMISSION_GROUPS } from "@/lib/permissions";
+import { MODULES, expandPermissions } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +17,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Turn a role's stored permissions (legacy or granular) into a set of granular
+// perm strings, e.g. { "products:read", "products:write" }.
+const toGranular = (permissions?: string[]) => expandPermissions(permissions);
+
+// Human-readable badges for a role card, one per module the role can touch.
+function summarizeRole(permissions?: string[]) {
+  const granted = toGranular(permissions);
+  const badges: { key: string; label: string; write: boolean }[] = [];
+  for (const m of MODULES) {
+    const write = granted.has(`${m.key}:write`);
+    const read = granted.has(`${m.key}:read`);
+    if (write || read) {
+      badges.push({ key: m.key, label: m.label, write });
+    }
+  }
+  return badges;
+}
+
 export function RolesClient() {
   const { data: roles, isLoading } = useGetRoles();
   const createRole = useCreateRole();
@@ -25,30 +43,41 @@ export function RolesClient() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any>(null);
 
-  // Form State
+  // Form State — a set of granular "module:action" strings.
   const [name, setName] = useState("");
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<Set<string>>(new Set());
 
   const handleOpenNew = () => {
     setEditingRole(null);
     setName("");
-    setPermissions([]);
+    setPermissions(new Set());
     setIsOpen(true);
   };
 
   const handleOpenEdit = (role: any) => {
     setEditingRole(role);
     setName(role.name);
-    setPermissions(role.permissions || []);
+    setPermissions(toGranular(role.permissions));
     setIsOpen(true);
   };
 
-  const handleTogglePermission = (id: string, checked: boolean) => {
-    if (checked) {
-      setPermissions((prev) => [...prev, id]);
-    } else {
-      setPermissions((prev) => prev.filter((p) => p !== id));
-    }
+  const has = (module: string, action: string) => permissions.has(`${module}:${action}`);
+
+  const toggle = (module: string, action: string, checked: boolean) => {
+    setPermissions((prev) => {
+      const next = new Set(prev);
+      const key = `${module}:${action}`;
+      if (checked) {
+        next.add(key);
+        // write requires read
+        if (action === "write") next.add(`${module}:read`);
+      } else {
+        next.delete(key);
+        // dropping read also drops write (write can't exist without read)
+        if (action === "read") next.delete(`${module}:write`);
+      }
+      return next;
+    });
   };
 
   const updateRole = useUpdateRole(editingRole?.id);
@@ -57,14 +86,12 @@ export function RolesClient() {
     e.preventDefault();
     if (!name.trim()) return;
 
+    const payload = { name, permissions: [...permissions] };
+
     if (editingRole) {
-      updateRole.mutate({ name, permissions }, {
-        onSuccess: () => setIsOpen(false)
-      });
+      updateRole.mutate(payload, { onSuccess: () => setIsOpen(false) });
     } else {
-      createRole.mutate({ name, permissions }, {
-        onSuccess: () => setIsOpen(false)
-      });
+      createRole.mutate(payload, { onSuccess: () => setIsOpen(false) });
     }
   };
 
@@ -74,7 +101,7 @@ export function RolesClient() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Roles & Permissions</h1>
           <p className="text-muted-foreground text-sm">
-            Manage custom roles and configure their access levels
+            Grant each role read (view) or write (manage) access per module
           </p>
         </div>
         <Button onClick={handleOpenNew} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
@@ -104,42 +131,46 @@ export function RolesClient() {
         </div>
 
         {/* Custom Roles */}
-        {roles?.map((role: any) => (
-          <div key={role.id} className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-bold text-xl">{role.name}</h3>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOpenEdit(role)}>
-                    <Edit className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:text-destructive hover:bg-destructive/10" onClick={() => {
-                    if (confirm("Are you sure you want to delete this role?")) {
-                      deleteRole.mutate(role.id);
-                    }
-                  }}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+        {roles?.map((role: any) => {
+          const badges = summarizeRole(role.permissions);
+          return (
+            <div key={role.id} className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-bold text-xl">{role.name}</h3>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOpenEdit(role)}>
+                      <Edit className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:text-destructive hover:bg-destructive/10" onClick={() => {
+                      if (confirm("Are you sure you want to delete this role?")) {
+                        deleteRole.mutate(role.id);
+                      }
+                    }}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {badges.length === 0 ? "No access granted." : "Custom role with specific access."}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Custom role with specific access.
-              </p>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {badges.slice(0, 4).map((b) => (
+                  <span key={b.key} className={`px-3 py-1 rounded-full text-xs font-semibold border-none inline-flex items-center gap-1 ${b.write ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
+                    {b.write ? <Pencil className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    {b.label}
+                  </span>
+                ))}
+                {badges.length > 4 && (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 border-none">
+                    +{badges.length - 4} more
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              {role.permissions?.slice(0, 3).map((p: string) => (
-                <span key={p} className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none">
-                  {p.replace(/_/g, " ")}
-                </span>
-              ))}
-              {role.permissions?.length > 3 && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 border-none">
-                  +{role.permissions.length - 3} more
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -158,31 +189,66 @@ export function RolesClient() {
               />
             </div>
 
-            <div className="space-y-4">
-              <label className="text-sm font-medium">Permissions</label>
-              <div className="grid md:grid-cols-2 gap-6">
-                {PERMISSION_GROUPS.map((group) => (
-                  <div key={group.label} className="space-y-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {group.label}
-                    </h4>
-                    {group.permissions.map((p) => (
-                      <div key={p.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={p.id}
-                          checked={permissions.includes(p.id)}
-                          onCheckedChange={(checked) => handleTogglePermission(p.id, checked as boolean)}
-                        />
-                        <label
-                          htmlFor={p.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {p.label}
-                        </label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Module Permissions</label>
+                <div className="flex items-center gap-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> Read</span>
+                  <span className="flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Write</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border divide-y max-h-[45vh] overflow-y-auto">
+                {MODULES.map((m) => {
+                  const hasWrite = (m.actions as readonly string[]).includes("write");
+                  const writeOn = has(m.key, "write");
+                  const extras = (m as { extras?: { key: string; label: string }[] }).extras ?? [];
+                  return (
+                    <div key={m.key} className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{m.label}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.description}</p>
+                        </div>
+                        <div className="flex items-center gap-6 shrink-0">
+                          <Checkbox
+                            aria-label={`${m.label} read`}
+                            // write implies read, so force-on & lock when write is set
+                            checked={has(m.key, "read") || writeOn}
+                            disabled={writeOn}
+                            onCheckedChange={(v) => toggle(m.key, "read", v as boolean)}
+                          />
+                          {hasWrite ? (
+                            <Checkbox
+                              aria-label={`${m.label} write`}
+                              checked={writeOn}
+                              onCheckedChange={(v) => toggle(m.key, "write", v as boolean)}
+                            />
+                          ) : (
+                            <span className="w-4 h-4 inline-block" />
+                          )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                ))}
+
+                      {extras.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 pl-1">
+                          {extras.map((ex) => (
+                            <label key={ex.key} className="flex items-center gap-2 text-xs cursor-pointer">
+                              <Checkbox
+                                aria-label={`${m.label} ${ex.label}`}
+                                // write grants every extra automatically
+                                checked={writeOn || has(m.key, ex.key)}
+                                disabled={writeOn}
+                                onCheckedChange={(v) => toggle(m.key, ex.key, v as boolean)}
+                              />
+                              <span className={writeOn ? "text-muted-foreground" : ""}>{ex.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

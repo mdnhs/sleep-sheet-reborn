@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
 import { CustomersClient } from "./customers-client";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ function CustomersSkeleton() {
 export default async function CustomersPage() {
   const user = await getCurrentUser();
 
-  if (!user || !hasPermission(user, PERMISSIONS.MANAGE_USERS)) {
+  if (!user || !can(user, "users", "read")) {
     redirect("/dashboard");
   }
 

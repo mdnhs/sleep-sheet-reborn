@@ -11,7 +11,7 @@ import { db } from "@/db";
 import { orders, orderTimelineEvents, orderItems } from "@/db/schema";
 import type { OrderStatus } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 
 // Once an order is in one of these, Steadfast will never move it again — see
 // the switch below (nothing maps to REFUNDED, and DELIVERED/CANCELLED are
@@ -76,7 +76,7 @@ const app = new Hono()
 
   .get("/balance", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "balance"))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -105,7 +105,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -173,7 +173,7 @@ const app = new Hono()
 
   .get("/track/:orderId", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "read"))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -207,7 +207,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -246,7 +246,7 @@ const app = new Hono()
 
   .post("/sync/:orderId", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -281,7 +281,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

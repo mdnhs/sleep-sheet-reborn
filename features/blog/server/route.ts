@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { uploadImage } from '@/lib/cloudinary';
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
@@ -122,7 +122,7 @@ const app = new Hono()
   async (c) => {
     try {
       const user = c.get("user");
-      if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+      if (!user || !can(user, "blog", "write")) {
         return c.json({ success: false, error: 'Unauthorized' }, 403);
       }
 
@@ -147,7 +147,7 @@ const app = new Hono()
 // Upload image
 .post('/upload-image', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+  if (!user || !can(user, "blog", "write")) {
     return c.json({ success: false, error: "Unauthorized" }, 403);
   }
 
@@ -184,7 +184,7 @@ const app = new Hono()
   async (c) => {
     try {
       const user = c.get("user");
-      if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+      if (!user || !can(user, "blog", "write")) {
         return c.json({ success: false, error: 'Unauthorized' }, 403);
       }
 
@@ -230,7 +230,7 @@ const app = new Hono()
   async (c) => {
     try {
       const user = c.get("user");
-      if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+      if (!user || !can(user, "blog", "write")) {
         return c.json({ success: false, error: 'Unauthorized' }, 403);
       }
 
@@ -268,7 +268,7 @@ const app = new Hono()
 .post('/bulk-delete', sessionMiddleware, zValidator('json', z.object({ ids: z.array(z.string()) })), async (c) => {
   try {
     const user = c.get("user");
-    if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+    if (!user || !can(user, "blog", "write")) {
       return c.json({ success: false, error: 'Unauthorized' }, 403);
     }
 
@@ -302,7 +302,7 @@ const app = new Hono()
   async (c) => {
     try {
       const user = c.get("user");
-      if (!user || !hasPermission(user, PERMISSIONS.MANAGE_BLOG)) {
+      if (!user || !can(user, "blog", "write")) {
         return c.json({ success: false, error: 'Unauthorized' }, 403);
       }
 

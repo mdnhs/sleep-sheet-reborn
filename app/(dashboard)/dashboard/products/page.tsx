@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import ProductsClientPage from "./client";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function ProductsSkeleton() {
@@ -16,7 +16,7 @@ function ProductsSkeleton() {
 
 async function ProductPage() {
   const user = await getCurrentUser();
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "read"))) {
     redirect("/");
   }
 

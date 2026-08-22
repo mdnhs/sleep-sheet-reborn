@@ -3,13 +3,13 @@ import { db } from "@/db";
 import { activityLogs } from "@/db/schema";
 import { and, desc, gte, ilike, or, sql } from "drizzle-orm";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 
 const app = new Hono()
 
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.VIEW_ACTIVITY_LOGS)) {
+    if (!can(user, "activity", "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 

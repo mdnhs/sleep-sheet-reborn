@@ -5,7 +5,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 import { revalidateTag } from "next/cache";
 
@@ -55,7 +55,7 @@ const app = new Hono()
   // view and edit them. Kept off the public GET above.
   .get("/secrets", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
+    if (!can(user, "settings", "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     const rows = await db.query.siteSettings.findMany({
@@ -138,7 +138,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_SETTINGS)) {
+      if (!can(user, "settings", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

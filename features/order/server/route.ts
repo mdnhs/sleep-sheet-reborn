@@ -5,14 +5,14 @@ import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql } from "drizzle-o
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
 
 .get("/", sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "read"))) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -91,12 +91,24 @@ const app = new Hono()
   })).optional()
 })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
   const id = c.req.param("id");
   const { status, paymentStatus, shippingCost, totalAmount, items } = c.req.valid("json");
+
+  // Changing money (shipping, total, item cost) needs the refund/amounts perm.
+  const changesAmounts =
+    shippingCost !== undefined || totalAmount !== undefined || (items?.length ?? 0) > 0;
+  if (
+    changesAmounts &&
+    user.role !== "ADMIN" &&
+    user.role !== "MODERATOR" &&
+    !can(user, "orders", "refund")
+  ) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 
   const statusMessages: Record<string, string> = {
     PENDING: "Order placed and pending confirmation.",
@@ -182,7 +194,7 @@ const app = new Hono()
   restock: z.boolean().optional().default(true),
 })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "cancel"))) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -259,7 +271,7 @@ const app = new Hono()
   restock: z.boolean().optional().default(true),
 })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "refund"))) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -364,7 +376,7 @@ const app = new Hono()
 
 .delete("/:id", sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "delete"))) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -392,7 +404,7 @@ const app = new Hono()
 
 .post("/bulk-delete", sessionMiddleware, zValidator("json", z.object({ ids: z.array(z.string()) })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_ORDERS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "delete"))) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 

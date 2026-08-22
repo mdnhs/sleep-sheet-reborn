@@ -7,7 +7,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import cuid from 'cuid';
 import { uploadImage, deleteImage } from '@/lib/cloudinary';
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 import { invalidateFeed } from "@/lib/meta-catalog/cache";
 
@@ -58,7 +58,7 @@ const app = new Hono()
       const user = c.get("user");
       const {label,value,parentId,image,order,seoTitle,seoDescription}=c.req.valid("json");
 
-      if(!user || !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS)){
+      if(!user || !can(user, "products", "write")){
          return c.json({ success: false, error: 'Unauthorized' }, 403);
        }
 

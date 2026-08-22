@@ -5,13 +5,13 @@ import { eq, count } from "drizzle-orm";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
   .get("/", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!hasPermission(user, PERMISSIONS.MANAGE_ROLES)) {
+    if (!can(user, "roles", "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -33,7 +33,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_ROLES)) {
+      if (!can(user, "roles", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -69,7 +69,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_ROLES)) {
+      if (!can(user, "roles", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -116,7 +116,7 @@ const app = new Hono()
     sessionMiddleware,
     async (c) => {
       const user = c.get("user");
-      if (!hasPermission(user, PERMISSIONS.MANAGE_ROLES)) {
+      if (!can(user, "roles", "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

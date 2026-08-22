@@ -54,6 +54,8 @@ import {
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
 import { useCurrency } from "@/hooks/use-currency";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { can } from "@/lib/permissions";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { cn, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -282,6 +284,17 @@ function OrdersPageContent() {
     useOrderMutations();
   const { data: balanceData, isLoading: isBalanceLoading } =
     useSteadfastBalance(showBalance);
+
+  // Permission gates. ADMIN/MODERATOR keep full access (matches server routes);
+  // otherwise fall back to the granular order permissions.
+  const { data: currentUser } = useCurrent();
+  const privileged =
+    currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR";
+  const permWrite = privileged || can(currentUser ?? null, "orders", "write");
+  const permCancel = privileged || can(currentUser ?? null, "orders", "cancel");
+  const permRefund = privileged || can(currentUser ?? null, "orders", "refund");
+  const permDelete = privileged || can(currentUser ?? null, "orders", "delete");
+  const permBalance = privileged || can(currentUser ?? null, "orders", "balance");
   const syncBatch = useSyncBatchOrderStatus();
   const trackSingleOrder = useTrackSingleOrder();
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
@@ -990,7 +1003,7 @@ function OrdersPageContent() {
             className="flex items-center justify-end gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            {canBook && (
+            {canBook && permWrite && (
               <Button
                 type="button"
                 size="sm"
@@ -1031,32 +1044,36 @@ function OrdersPageContent() {
                 >
                   Download Invoice
                 </DropdownMenuItem>
-                {canBook && (
+                {canBook && permWrite && (
                   <DropdownMenuItem onClick={() => setCourierOrder(order)}>
                     Book Courier (Steadfast)
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  onClick={() => {
-                    setShippingCostOrder(order);
-                    setNewShippingCost(order.shippingCost.toString());
-                    const costs: Record<string, string> = {};
-                    order.items.forEach((item) => {
-                      costs[item.id] = item.costPrice?.toString() || "";
-                    });
-                    setItemCosts(costs);
-                  }}
-                >
-                  Edit Order Costs
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setAmountOrder(order);
-                    setNewTotalAmount(order.totalAmount.toString());
-                  }}
-                >
-                  Edit Order Amount
-                </DropdownMenuItem>
+                {permRefund && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setShippingCostOrder(order);
+                      setNewShippingCost(order.shippingCost.toString());
+                      const costs: Record<string, string> = {};
+                      order.items.forEach((item) => {
+                        costs[item.id] = item.costPrice?.toString() || "";
+                      });
+                      setItemCosts(costs);
+                    }}
+                  >
+                    Edit Order Costs
+                  </DropdownMenuItem>
+                )}
+                {permRefund && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setAmountOrder(order);
+                      setNewTotalAmount(order.totalAmount.toString());
+                    }}
+                  >
+                    Edit Order Amount
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setLogDetailsOrder(order)}>
                   <History className="h-4 w-4 mr-2" />
                   Log Details
@@ -1074,7 +1091,7 @@ function OrdersPageContent() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                {canCancel && (
+                {canCancel && permCancel && (
                   <DropdownMenuItem
                     onClick={() => setCancelTarget(order)}
                     className="text-orange-600 focus:text-orange-600"
@@ -1083,7 +1100,7 @@ function OrdersPageContent() {
                     Cancel Order
                   </DropdownMenuItem>
                 )}
-                {canRefund && (
+                {canRefund && permRefund && (
                   <DropdownMenuItem onClick={() => openRefundDialog(order)}>
                     <RotateCcw className="h-4 w-4 mr-2" />
                     {(order.refundedAmount ?? 0) > 0
@@ -1091,13 +1108,17 @@ function OrdersPageContent() {
                       : "Refund Order"}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setDeleteOrderId(order.id)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  Delete Order
-                </DropdownMenuItem>
+                {permDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setDeleteOrderId(order.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      Delete Order
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1172,6 +1193,7 @@ function OrdersPageContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Order Management</h1>
 
+        {permBalance && (
         <div
           onClick={() => setShowBalance(!showBalance)}
           className="relative flex items-center h-12 w-[240px] rounded-full border border-[#00bfa5] bg-white dark:bg-slate-900 select-none cursor-pointer transition-all duration-200"
@@ -1224,6 +1246,7 @@ function OrdersPageContent() {
             </span>
           </div>
         </div>
+        )}
       </div>
 
       <Tabs
@@ -1312,7 +1335,8 @@ function OrdersPageContent() {
               Clear filter
             </Button>
           )}
-          {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
+          {permWrite &&
+            (statusFilter === "PENDING" || statusFilter === "TODAY") &&
             selectedOrders.length > 0 && (
               <Button
                 type="button"
@@ -1344,7 +1368,7 @@ function OrdersPageContent() {
               Print Selected ({selectedOrders.length})
             </Button>
           )}
-          {selectedOrders.length > 0 && (
+          {permDelete && selectedOrders.length > 0 && (
             <Button
               type="button"
               variant="destructive"
@@ -1394,20 +1418,22 @@ function OrdersPageContent() {
             data={filtered || []}
             onRowClick={openOrderDetails}
             actionSlot={
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshAllSteadfast}
-                disabled={isRefetchingSteadfast}
-                className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border bg-slate-50 dark:bg-muted/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
-                title="Re-fetch Steadfast Status"
-              >
-                <RefreshCw
-                  className={cn("h-3.5 w-3.5", isRefetchingSteadfast && "animate-spin")}
-                />
-                <span>Refresh Steadfast</span>
-              </Button>
+              permWrite ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshAllSteadfast}
+                  disabled={isRefetchingSteadfast}
+                  className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border bg-slate-50 dark:bg-muted/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                  title="Re-fetch Steadfast Status"
+                >
+                  <RefreshCw
+                    className={cn("h-3.5 w-3.5", isRefetchingSteadfast && "animate-spin")}
+                  />
+                  <span>Refresh Steadfast</span>
+                </Button>
+              ) : undefined
             }
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
@@ -1665,9 +1691,11 @@ function OrdersPageContent() {
                 const orderIsDelivered = isDelivered(target);
 
                 const canCancel =
+                  permCancel &&
                   !orderIsCancelled && !orderIsReturned && !orderIsDelivered;
 
                 const canRefund =
+                  permRefund &&
                   orderIsDelivered &&
                   (target.refundedAmount ?? 0) < target.totalAmount;
 

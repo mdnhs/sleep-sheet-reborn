@@ -6,21 +6,22 @@ import { db } from "@/db";
 import { expenseCategories, expenses } from "@/db/schema";
 import { eq, and, gte, lte, desc, sum, count, sql, type SQL } from "drizzle-orm";
 import cuid from "cuid";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can, type Action } from "@/lib/permissions";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
-const canManageExpenses = (
-  user: { role?: string; permissions?: string[] } | null | undefined
+const canExpenses = (
+  user: { role?: string; permissions?: string[] } | null | undefined,
+  action: Action
 ) =>
   !!user &&
   (user.role === "ADMIN" ||
     user.role === "MODERATOR" ||
-    hasPermission(user, PERMISSIONS.MANAGE_SETTINGS));
+    can(user, "expenses", action));
 
 const app = new Hono()
   .get("/categories", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!canManageExpenses(user)) {
+    if (!canExpenses(user, "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -39,7 +40,7 @@ const app = new Hono()
     zValidator("json", z.object({ name: z.string().min(1) })),
     async (c) => {
       const user = c.get("user");
-      if (!canManageExpenses(user)) {
+      if (!canExpenses(user, "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       try {
@@ -79,7 +80,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!canManageExpenses(user)) {
+      if (!canExpenses(user, "read")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       try {
@@ -130,7 +131,7 @@ const app = new Hono()
   )
   .get("/summary", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!canManageExpenses(user)) {
+    if (!canExpenses(user, "read")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -182,7 +183,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!canManageExpenses(user)) {
+      if (!canExpenses(user, "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       try {
@@ -225,7 +226,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!canManageExpenses(user)) {
+      if (!canExpenses(user, "write")) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       try {
@@ -271,7 +272,7 @@ const app = new Hono()
   )
   .delete("/:id", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!canManageExpenses(user)) {
+    if (!canExpenses(user, "write")) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {

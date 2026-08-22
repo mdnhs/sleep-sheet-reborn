@@ -2,11 +2,11 @@ import React from "react";
 import UpdateProductClient from "./update-product-client";
 import { getCurrentUser } from "@/lib/is-authenticated";
 import { redirect } from "next/navigation";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { can } from "@/lib/permissions";
 
 async function UpdateProduct() {
   const user = await getCurrentUser();
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !hasPermission(user, PERMISSIONS.MANAGE_PRODUCTS))) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
     redirect("/");
   }
 
