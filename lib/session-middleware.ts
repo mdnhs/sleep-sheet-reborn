@@ -11,6 +11,40 @@ import { authenticateApiKey } from '@/lib/api-keys'
 import { authenticateOAuthToken } from '@/lib/oauth'
 
 
+type SessionUser = {
+  id: string
+  email: string
+  name: string
+  role: string
+  permissions: string[]
+  landingUrl?: string | null
+  phone: string | null
+  address: string | null
+}
+
+// Every authenticated API request used to run a users lookup (plus its role
+// join) before the route handler even started — a dashboard page load fires
+// several requests, so that was several extra database round trips per page,
+// each one waking the serverless compute. The resolved session user is cached
+// in-process for a short window instead.
+//
+// TTL is deliberately short: a role or permission change takes effect within
+// SESSION_CACHE_TTL_MS everywhere, and immediately on the instance that made
+// the change (it calls invalidateSessionUser). The cache is per-instance, so
+// it never has to be correct across instances for longer than that window.
+const SESSION_CACHE_TTL_MS = 30_000
+const sessionCache = new Map<string, { user: SessionUser; expiresAt: number }>()
+
+/** Drop a user's cached session — call after changing their role/permissions. */
+export function invalidateSessionUser(userId: string) {
+  sessionCache.delete(userId)
+}
+
+/** Drop every cached session — call after editing a role many users share. */
+export function invalidateAllSessions() {
+  sessionCache.clear()
+}
+
 type CustomContext = {
   Variables: {
     db: typeof db
@@ -58,29 +92,39 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       email: string
     }
 
+    const cached = sessionCache.get(decoded.id)
+    if (cached && cached.expiresAt > Date.now()) {
+      c.set('user', cached.user)
+      return await next()
+    }
+
     const user = await db.query.users.findFirst({
       where: eq(users.id, decoded.id),
       with: { assignedRole: true },
     })
 
     if (!user) {
+      sessionCache.delete(decoded.id)
       c.set('user', null)
       deleteCookie(c, AUTH_COOKIE, { path: "/" })
       return await next()
     }
 
     const isSuperAdmin = user.email === process.env.SUPER_ADMIN_EMAIL;
-    
-    c.set('user', { 
-      id: user.id, 
-      email: user.email, 
-      name: user.name, 
-      role: isSuperAdmin ? 'ADMIN' : user.role, 
+
+    const sessionUser: SessionUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: isSuperAdmin ? 'ADMIN' : user.role,
       permissions: user.assignedRole ? user.assignedRole.permissions : [],
       landingUrl: user.assignedRole ? user.assignedRole.landingUrl : null,
       phone: user.phone,
-      address: user.address 
-    })
+      address: user.address
+    }
+
+    sessionCache.set(user.id, { user: sessionUser, expiresAt: Date.now() + SESSION_CACHE_TTL_MS })
+    c.set('user', sessionUser)
   } catch (err) {
     console.error('Invalid token', err)
     c.set('user', null)

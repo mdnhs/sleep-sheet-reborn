@@ -27,8 +27,14 @@ export function useSteadfastTrackingStatuses(orderIds: string[]) {
       const data = await res.json();
       return data.statuses as Record<string, SteadfastTrackingStatus>;
     },
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 15 * 60 * 1000,
+    // Courier status changes on the order of hours, not seconds. Even a
+    // 5-minute poll meant an orders tab left open all day woke the database
+    // ~288 times for data that had almost never changed; the "sync" buttons
+    // already fetch on demand when someone actually wants fresh numbers.
+    // Background polling stays off so a forgotten tab costs nothing.
+    refetchInterval: 30 * 60 * 1000,
+    refetchIntervalInBackground: false,
     enabled: orderIds.length > 0,
   });
 }

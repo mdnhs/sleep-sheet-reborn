@@ -8,6 +8,7 @@ import {
   json,
   pgEnum,
   unique,
+  index,
   AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -120,7 +121,9 @@ export const users = pgTable("User", {
   failedLoginAttempts: integer("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil", { precision: 3 }),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("User_roleId_idx").on(table.roleId),
+]);
 
 // Server-to-server credentials (MCP server, scripts, integrations) — an
 // alternative to the cookie/JWT session for callers that aren't a browser.
@@ -260,7 +263,10 @@ export const products = pgTable("products", {
   discount: doublePrecision("discount").default(0).notNull(),
   showLowestPriceAsDefault: boolean("showLowestPriceAsDefault").default(true).notNull(),
   defaultVariantName: text("defaultVariantName"),
-});
+}, (table) => [
+  index("products_categoryId_idx").on(table.categoryId),
+  index("products_createdAt_idx").on(table.createdAt),
+]);
 
 export const campaigns = pgTable("campaigns", {
   id: text("id")
@@ -282,7 +288,9 @@ export const campaigns = pgTable("campaigns", {
     .references(() => products.id),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("campaigns_productId_idx").on(table.productId),
+]);
 
 export const reviews = pgTable("product_reviews", {
   id: text("id")
@@ -298,7 +306,10 @@ export const reviews = pgTable("product_reviews", {
     .references(() => products.id),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("product_reviews_productId_idx").on(table.productId),
+  index("product_reviews_userId_idx").on(table.userId),
+]);
 
 export const specifications = pgTable("product_specifications", {
   id: text("id")
@@ -309,7 +320,9 @@ export const specifications = pgTable("product_specifications", {
   productId: text("productId")
     .notNull()
     .references(() => products.id),
-});
+}, (table) => [
+  index("product_specifications_productId_idx").on(table.productId),
+]);
 
 export const categories = pgTable("Category", {
   id: text("id").primaryKey(),
@@ -334,7 +347,9 @@ export const orderTimelineEvents = pgTable("order_timeline_events", {
   status: orderStatusEnum("status").notNull(),
   message: text("message"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("order_timeline_events_orderId_idx").on(table.orderId),
+]);
 
 export const orders = pgTable("orders", {
   id: text("id")
@@ -389,7 +404,15 @@ export const orders = pgTable("orders", {
   deviceOs: text("deviceOs"),
   browserName: text("browserName"),
   userAgent: text("userAgent"),
-});
+}, (table) => [
+  // Dashboard lists orders newest-first and filters by date range; the
+  // customer-facing pages look them up by user. Without these every such
+  // query was a full table scan.
+  index("orders_createdAt_idx").on(table.createdAt),
+  index("orders_userId_idx").on(table.userId),
+  index("orders_status_idx").on(table.status),
+  index("orders_guestPhone_idx").on(table.guestPhone),
+]);
 
 export const orderItems = pgTable("order_items", {
   id: text("id")
@@ -405,7 +428,10 @@ export const orderItems = pgTable("order_items", {
   size: text("size"),
   color: text("color"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("order_items_orderId_idx").on(table.orderId),
+  index("order_items_productId_idx").on(table.productId),
+]);
 
 export const payments = pgTable("payments", {
   id: text("id")
@@ -423,7 +449,9 @@ export const payments = pgTable("payments", {
   status: paymentStatusEnum("status").default("PENDING").notNull(),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("payments_orderId_idx").on(table.orderId),
+]);
 
 export const shippingMethods = pgTable("shipping_methods", {
   id: text("id")
@@ -445,7 +473,9 @@ export const carts = pgTable("carts", {
     .references(() => users.id),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("carts_userId_idx").on(table.userId),
+]);
 
 export const cartItems = pgTable(
   "cart_items",
@@ -694,7 +724,10 @@ export const expenses = pgTable("expenses", {
   note: text("note"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3 }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("expenses_categoryId_idx").on(table.categoryId),
+  index("expenses_date_idx").on(table.date),
+]);
 
 export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
   expenses: many(expenses),
@@ -710,22 +743,6 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
 export const rolesRelations = relations(roles, ({ many }) => ({
   users: many(users),
 }));
-
-export const trafficEvents = pgTable("traffic_events", {
-  id: text("id").primaryKey(),
-  type: text("type").notNull(),
-  path: text("path").notNull(),
-  label: text("label"),
-  meta: json("meta").$type<Record<string, string | number | boolean>>(),
-  ip: text("ip"),
-  userAgent: text("userAgent"),
-  browser: text("browser"),
-  device: text("device"),
-  country: text("country"),
-  city: text("city"),
-  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
-});
-
 
 export const activityLogs = pgTable("activity_logs", {
   id: text("id")
@@ -748,5 +765,23 @@ export const activityLogs = pgTable("activity_logs", {
   // For edits: the fields that actually changed, as a small human-readable
   // list of { label, from, to }. Null for creates/deletes/reads.
   changes: json("changes").$type<{ label: string; from?: string | null; to?: string | null }[]>(),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+}, (table) => [
+  index("activity_logs_createdAt_idx").on(table.createdAt),
+  index("activity_logs_userId_idx").on(table.userId),
+]);
+
+// Fraud control: IPs barred from placing orders. Populated from the order
+// action menu ("Block Customer IP") and checked at checkout before any order
+// row is written. One row per IP; `orderId` records the order that triggered
+// the block so the dashboard can show the context.
+export const blockedIps = pgTable("blocked_ips", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  ipAddress: text("ipAddress").notNull().unique(),
+  reason: text("reason"),
+  orderId: text("orderId").references(() => orders.id),
+  blockedById: text("blockedById").references(() => users.id),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 });

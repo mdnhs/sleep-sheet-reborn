@@ -43,6 +43,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useOrders } from "@/features/order/api/use-order";
 import { useActivityLogs } from "@/features/activity/api/use-activity-logs";
+import {
+  useBlockedIps,
+  useBlockIpMutations,
+} from "@/features/blocked-ips/api/use-blocked-ips";
 import type { Order } from "@/features/order/types";
 import {
   useBookCourier,
@@ -85,6 +89,8 @@ import {
   Globe,
   Smartphone,
   Laptop,
+  ShieldBan,
+  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -252,6 +258,9 @@ function OrdersPageContent() {
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [refundRestock, setRefundRestock] = useState(true);
+  // IP blocking (fraud control) targets, driven from the order action menu.
+  const [blockIpTarget, setBlockIpTarget] = useState<ShippingOrder | null>(null);
+  const [unblockIpTarget, setUnblockIpTarget] = useState<ShippingOrder | null>(null);
 
   const queryClient = useQueryClient();
   const bookCourier = useBookCourier();
@@ -290,6 +299,7 @@ function OrdersPageContent() {
   const permRefund = privileged || can(currentUser ?? null, "orders", "refund");
   const permDelete = privileged || can(currentUser ?? null, "orders", "delete");
   const permBalance = privileged || can(currentUser ?? null, "orders", "balance");
+  const permBlockIp = privileged || can(currentUser ?? null, "orders", "block_ip");
 
   // No read access → bounce to the dashboard instead of showing a broken
   // page that only fires 401s.
@@ -306,6 +316,13 @@ function OrdersPageContent() {
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
   const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
     useOrderMutations();
+  // Blocked IPs decide whether an order's menu offers "Block" or "Unblock".
+  const { data: blockedIpList } = useBlockedIps(permRead);
+  const blockedIpSet = React.useMemo(
+    () => new Set((blockedIpList ?? []).map((b) => b.ipAddress)),
+    [blockedIpList],
+  );
+  const { blockIp, unblockIp } = useBlockIpMutations();
   const { data: balanceData, isLoading: isBalanceLoading } =
     useSteadfastBalance(showBalance && permBalance);
   const syncBatch = useSyncBatchOrderStatus();
@@ -1121,6 +1138,25 @@ function OrdersPageContent() {
                       : "Refund Order"}
                   </DropdownMenuItem>
                 )}
+                {permBlockIp && order.ipAddress && (
+                  <>
+                    <DropdownMenuSeparator />
+                    {blockedIpSet.has(order.ipAddress) ? (
+                      <DropdownMenuItem onClick={() => setUnblockIpTarget(order)}>
+                        <ShieldCheck className="h-4 w-4 mr-2" />
+                        Unblock Customer IP
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => setBlockIpTarget(order)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <ShieldBan className="h-4 w-4 mr-2" />
+                        Block Customer IP
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
                 {permDelete && (
                   <>
                     <DropdownMenuSeparator />
@@ -1154,6 +1190,37 @@ function OrdersPageContent() {
         },
       },
     );
+  };
+
+  const handleBlockIp = () => {
+    const target = blockIpTarget;
+    if (!target?.ipAddress) return;
+    blockIp.mutate(
+      {
+        ipAddress: target.ipAddress,
+        reason: `Fake order ${target.orderNumber}`,
+        orderId: target.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`IP ${target.ipAddress} blocked from placing orders`);
+          setBlockIpTarget(null);
+        },
+        onError: (err: Error) => toast.error(err.message || "Failed to block IP"),
+      },
+    );
+  };
+
+  const handleUnblockIp = () => {
+    const target = unblockIpTarget;
+    if (!target?.ipAddress) return;
+    unblockIp.mutate(target.ipAddress, {
+      onSuccess: () => {
+        toast.success(`IP ${target.ipAddress} unblocked`);
+        setUnblockIpTarget(null);
+      },
+      onError: (err: Error) => toast.error(err.message || "Failed to unblock IP"),
+    });
   };
 
   const refundRemaining = (order: ShippingOrder) =>
@@ -1781,6 +1848,22 @@ function OrdersPageContent() {
         onConfirm={handleCancel}
         title="Cancel Order"
         description={`Cancel order ${cancelTarget?.orderNumber ?? ""}? All items will be restocked to inventory. This action cannot be undone.`}
+      />
+
+      <ConfirmDialog
+        open={!!blockIpTarget}
+        onOpenChange={(open) => !open && setBlockIpTarget(null)}
+        onConfirm={handleBlockIp}
+        title="Block Customer IP"
+        description={`Block IP ${blockIpTarget?.ipAddress ?? ""} (from order ${blockIpTarget?.orderNumber ?? ""})? Future checkouts from this IP will be rejected. Existing orders are not affected.`}
+      />
+
+      <ConfirmDialog
+        open={!!unblockIpTarget}
+        onOpenChange={(open) => !open && setUnblockIpTarget(null)}
+        onConfirm={handleUnblockIp}
+        title="Unblock Customer IP"
+        description={`Unblock IP ${unblockIpTarget?.ipAddress ?? ""}? Orders from this IP will be accepted again.`}
       />
 
       <ConfirmDialog

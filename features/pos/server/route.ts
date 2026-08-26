@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { orders, orderItems, payments, products, users } from '@/db/schema';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { can } from '@/lib/permissions';
 import { parseUserAgent } from '@/lib/user-agent-parser';
+import { decrementStock } from '@/lib/stock';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 async function generateOrderNumber(): Promise<string> {
@@ -150,11 +151,7 @@ const app = new Hono()
       });
     }
 
-    for (const item of items) {
-      await db.update(products)
-        .set({ stock: sql`${products.stock} - ${item.quantity}` })
-        .where(eq(products.id, item.productId));
-    }
+    await decrementStock(items);
 
     return c.json({
       success: true,

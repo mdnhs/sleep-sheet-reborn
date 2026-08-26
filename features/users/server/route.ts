@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db } from "@/db";
 import { users, orders, roles } from "@/db/schema";
 import { eq, ne, or, and, desc, isNull, isNotNull, sql } from "drizzle-orm";
-import { sessionMiddleware } from "@/lib/session-middleware";
+import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { can } from "@/lib/permissions";
@@ -154,6 +154,10 @@ const app = new Hono()
       const [updated] = await db.update(users).set({
         roleId,
       }).where(eq(users.id, id)).returning({ id: users.id });
+
+      // The session cache holds this user's permissions; drop it so the new
+      // role applies on their very next request instead of after the TTL.
+      invalidateSessionUser(id);
 
       setActivityMeta(c, {
         name: targetUser.name || targetUser.email,

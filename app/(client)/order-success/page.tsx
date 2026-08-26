@@ -70,7 +70,7 @@ function OrderSuccessContent() {
   // Purchase is tracked earlier in the funnel (on the checkout page) plus
   // server-side via the Conversions API at order creation, so firing it again
   // on this success page double-counted the conversion in Meta. This effect
-  // only records the internal `order_complete` traffic event.
+  // only sends the `order_complete` event to Google Analytics.
   useEffect(() => {
     if (!order || !orderId) return;
 

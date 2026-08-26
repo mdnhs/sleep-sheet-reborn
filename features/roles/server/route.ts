@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db } from "@/db";
 import { roles, users } from "@/db/schema";
 import { eq, count } from "drizzle-orm";
-import { sessionMiddleware } from "@/lib/session-middleware";
+import { sessionMiddleware, invalidateAllSessions } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { can } from "@/lib/permissions";
@@ -98,6 +98,11 @@ const app = new Hono()
       if (!updated) {
         return c.json({ error: "Role not found" }, 404);
       }
+
+      // Cached sessions carry the old permission list. Clearing the whole
+      // cache is cheap (it refills from one query per active user) and avoids
+      // having to look up who holds this role.
+      invalidateAllSessions();
 
       if (before) {
         const changes: ActivityChange[] = [];

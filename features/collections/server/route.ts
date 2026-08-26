@@ -67,6 +67,9 @@ const app = new Hono()
     .filter((collection) => collection.image)
     .slice(0, 10);
 
+  // Public storefront content — let the CDN serve repeat visitors so a
+  // browsing spike never turns into database queries.
+  c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
   return c.json({ success: true, collections });
 });
 

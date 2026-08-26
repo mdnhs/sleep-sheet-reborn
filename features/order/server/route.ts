@@ -64,7 +64,16 @@ const app = new Hono()
               columns: { id: true, name: true, email: true, phone: true }
             },
             items: {
-              with: { product: true }
+              // Only the product fields the orders dashboard actually renders.
+              // Pulling whole product rows dragged description, tags, features,
+              // care instructions and every variant/add-on blob along for every
+              // line item of every order — a large payload to scan, serialize
+              // and transfer on each dashboard load.
+              with: {
+                product: {
+                  columns: { id: true, name: true, images: true, price: true, sku: true }
+                }
+              }
             },
             shippingMethod: true,
             payment: true

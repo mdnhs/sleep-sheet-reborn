@@ -261,33 +261,41 @@ app.post('/bulk-delete', sessionMiddleware, async (c) => {
       return c.json({ error: "No product IDs provided" }, 400);
     }
 
-    const deletedNames: string[] = [];
+    // One query per TABLE instead of eight queries per PRODUCT: deleting 50
+    // products used to fire ~400 separate statements at the database.
+    const found = await db.query.products.findMany({
+      where: inArray(products.id, ids),
+      columns: { id: true, name: true, images: true },
+    });
 
-    for (const productId of ids) {
-      const product = await db.query.products.findFirst({
-        where: eq(products.id, productId),
-      });
-      if (!product) continue;
-      deletedNames.push(product.name);
-
-      for (const img of product.images) {
-        await deleteImageFromStorage(img);
-      }
-
-      await db.delete(campaigns).where(eq(campaigns.productId, productId));
-      await db.delete(wishlistItems).where(eq(wishlistItems.productId, productId));
-      await db.delete(cartItems).where(eq(cartItems.productId, productId));
-      await db.delete(reviews).where(eq(reviews.productId, productId));
-      await db.delete(specifications).where(eq(specifications.productId, productId));
-      await db.update(orderItems)
-        .set({ productId: null })
-        .where(eq(orderItems.productId, productId));
-      await db.delete(products).where(eq(products.id, productId));
+    if (found.length === 0) {
+      return c.json({ success: true, deleted: 0 });
     }
+
+    const deletedNames = found.map((product) => product.name);
+    const foundIds = found.map((product) => product.id);
+
+    // Image removal talks to object storage, not the database — run them
+    // together rather than one after another.
+    await Promise.all(
+      found.flatMap((product) => product.images.map((img) => deleteImageFromStorage(img)))
+    );
+
+    // The dependent rows don't reference each other, so they all travel in a
+    // single batched round trip; only the products delete has to wait.
+    await db.batch([
+      db.delete(campaigns).where(inArray(campaigns.productId, foundIds)),
+      db.delete(wishlistItems).where(inArray(wishlistItems.productId, foundIds)),
+      db.delete(cartItems).where(inArray(cartItems.productId, foundIds)),
+      db.delete(reviews).where(inArray(reviews.productId, foundIds)),
+      db.delete(specifications).where(inArray(specifications.productId, foundIds)),
+      db.update(orderItems).set({ productId: null }).where(inArray(orderItems.productId, foundIds)),
+    ]);
+    await db.delete(products).where(inArray(products.id, foundIds));
 
     invalidateFeed();
     setActivityMeta(c, { name: `${deletedNames.length} products: ${summarizeNames(deletedNames)}` });
-    return c.json({ success: true, deleted: ids.length });
+    return c.json({ success: true, deleted: foundIds.length });
   } catch (error) {
     console.error("Error bulk deleting products:", error);
     return c.json({ error: "Failed to delete products" }, 500);
@@ -308,21 +316,22 @@ app.delete('/:id', sessionMiddleware, async (c) => {
     });
     if (!product) return c.json({ error: "Product not found" }, 404);
 
-    for (const img of product.images) {
-      await deleteImageFromStorage(img);
-    }
+    await Promise.all(product.images.map((img) => deleteImageFromStorage(img)));
 
-      await db.delete(campaigns).where(eq(campaigns.productId, productId));
-      await db.delete(wishlistItems).where(eq(wishlistItems.productId, productId));
-      await db.delete(cartItems).where(eq(cartItems.productId, productId));
-      await db.delete(reviews).where(eq(reviews.productId, productId));
-      await db.delete(specifications).where(eq(specifications.productId, productId));
-      await db.update(orderItems)
-        .set({ productId: null })
-        .where(eq(orderItems.productId, productId));
-      await db.delete(products).where(eq(products.id, productId));
-      invalidateFeed();
-      setActivityMeta(c, { name: product.name });
+    // Independent of one another — sent as one batched round trip instead of
+    // six sequential ones.
+    await db.batch([
+      db.delete(campaigns).where(eq(campaigns.productId, productId)),
+      db.delete(wishlistItems).where(eq(wishlistItems.productId, productId)),
+      db.delete(cartItems).where(eq(cartItems.productId, productId)),
+      db.delete(reviews).where(eq(reviews.productId, productId)),
+      db.delete(specifications).where(eq(specifications.productId, productId)),
+      db.update(orderItems).set({ productId: null }).where(eq(orderItems.productId, productId)),
+    ]);
+    await db.delete(products).where(eq(products.id, productId));
+
+    invalidateFeed();
+    setActivityMeta(c, { name: product.name });
 
     return c.json({ success: true });
   } catch (error) {

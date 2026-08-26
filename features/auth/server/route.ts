@@ -9,7 +9,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { AUTH_COOKIE } from "../constants";
-import { sessionMiddleware } from "@/lib/session-middleware";
+import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
 import { z } from "zod";
 
 // Brute-force lockout: after this many wrong passwords in a row, the account
@@ -171,6 +171,9 @@ const app = new Hono()
       if (!valid) return c.json({ error: "Current password is incorrect" }, 400);
       updateData.password = await bcrypt.hash(body.newPassword, 10);
     }
+
+    // Cached session copies name/phone/address, so refresh it after an edit.
+    invalidateSessionUser(user.id);
 
     const [updated] = await db.update(users)
       .set(updateData)

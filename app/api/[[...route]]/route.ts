@@ -22,9 +22,9 @@ import reports from "@/features/reports/server/route";
 import expenses from "@/features/expenses/server/route";
 import roles from "@/features/roles/server/route";
 import users from "@/features/users/server/route";
-import traffic from "@/features/traffic/server/route";
 import activity from "@/features/activity/server/route";
 import apiKeys from "@/features/api-keys/server/route";
+import blockedIps from "@/features/blocked-ips/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 
@@ -55,9 +55,9 @@ const routes =app
 .route("/expenses",expenses)
 .route("/roles",roles)
 .route("/users",users)
-.route("/traffic",traffic)
 .route("/activity",activity)
 .route("/api-keys",apiKeys)
+.route("/blocked-ips",blockedIps)
 
 export const GET = handle(app)
 export const POST = handle(app)

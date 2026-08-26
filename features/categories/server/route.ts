@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { categories, products } from '@/db/schema';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, inArray } from 'drizzle-orm';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
@@ -236,18 +236,21 @@ const app = new Hono()
        return c.json({ error: "No category values provided" }, 400);
      }
 
-     const deletedLabels: string[] = [];
+     // Load every requested category (and whether it has children) in one
+     // query, then delete the eligible ones in one statement. This used to be
+     // two round trips per category.
+     const found = await db.query.categories.findMany({
+       where: inArray(categories.value, values),
+       with: { children: { columns: { id: true } } },
+     });
 
-     for (const value of values) {
-       const category = await db.query.categories.findFirst({
-         where: eq(categories.value, value),
-         with: { children: { columns: { id: true } } },
-       });
-       if (!category) continue;
-       if (category.children.length > 0) continue;
+     const deletable = found.filter((category) => category.children.length === 0);
+     const deletedLabels = deletable.map((category) => category.label);
 
-       await db.delete(categories).where(eq(categories.value, value));
-       deletedLabels.push(category.label);
+     if (deletable.length > 0) {
+       await db.delete(categories).where(
+         inArray(categories.value, deletable.map((category) => category.value))
+       );
      }
 
      invalidateFeed();

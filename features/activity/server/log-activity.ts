@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { db } from "@/db";
+import { sweepRetention } from "@/lib/data-retention";
 import { activityLogs } from "@/db/schema";
 
 type SessionUser = {
@@ -87,6 +88,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   categories: "category",
   reviews: "review",
   orders: "order",
+  "blocked-ips": "blocked IP",
   checkout: "checkout",
   collection: "collection",
   testimonials: "testimonial",
@@ -171,6 +173,7 @@ async function record(c: Context, user: SessionUser, status: number) {
     : null;
 
   try {
+    sweepRetention("activity");
     await db.insert(activityLogs).values({
       userId: user.id,
       userName: user.name,

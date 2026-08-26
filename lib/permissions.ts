@@ -44,6 +44,7 @@ export const MODULES = [
       { key: "cancel", label: "Cancel" },
       { key: "refund", label: "Refund / amounts" },
       { key: "delete", label: "Delete" },
+      { key: "block_ip", label: "Block customer IP" },
       { key: "balance", label: "Courier balance" },
     ],
   },

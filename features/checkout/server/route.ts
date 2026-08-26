@@ -4,6 +4,9 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { calculateItemUnitPrice } from "@/lib/utils";
 import { parseUserAgent } from "@/lib/user-agent-parser";
+import { isIpBlocked } from "@/lib/blocked-ip";
+import { decrementStock } from "@/lib/stock";
+import { getSetting } from "@/lib/settings-cache";
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -16,8 +19,8 @@ async function generateOrderNumber(): Promise<string> {
   return `ORD-${dd}${mm}${yy}-${randomSuffix}`;
 }
 import { db } from "@/db";
-import { siteSettings, carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
-import { eq, inArray, sql } from "drizzle-orm";
+import { carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
 import { purchaseEventId } from "@/lib/meta-purchase-event";
 import bcrypt from "bcryptjs";
@@ -52,8 +55,8 @@ const checkoutSchema = z.object({
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
-  const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) });
-  return setting ? Number(setting.value) : (zone === "outside_dhaka" ? 120 : 60);
+  const value = await getSetting(key);
+  return value !== undefined ? Number(value) : (zone === "outside_dhaka" ? 120 : 60);
 }
 
 /**
@@ -115,14 +118,22 @@ async function isPaymentMethodEnabled(method: string): Promise<boolean> {
   // once a PCI-compliant processor (e.g. SSLCommerz, bKash, Stripe) is
   // actually integrated — never re-add raw card storage.
   if (method === "card") return false;
-  const setting = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, "payment_method_cod") });
-  return setting ? setting.value !== "false" : true;
+  return (await getSetting("payment_method_cod", "true")) !== "false";
 }
 
 const app = new Hono()
 
 .post("/", sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
+
+  // Fraud control: an IP blocked from the order action menu can never create
+  // another order. Checked before anything is written, and before the
+  // idempotency lookup, so both the logged-in and guest paths below are covered.
+  const requestIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
+  if (await isIpBlocked(requestIp)) {
+    // Deliberately vague: don't tell the blocked party why it failed.
+    return c.json({ message: "Order could not be placed. Please contact support." }, 403);
+  }
 
   const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey } = c.req.valid("json");
 
@@ -236,11 +247,7 @@ const app = new Hono()
         }))
       );
 
-      for (const item of cartItemsForOrder) {
-        await db.update(products)
-          .set({ stock: sql`${products.stock} - ${item.quantity}` })
-          .where(eq(products.id, item.productId));
-      }
+      await decrementStock(cartItemsForOrder);
 
       await db.delete(cartItems)
         .where(eq(cartItems.cartId, cart.id));
@@ -387,11 +394,7 @@ const app = new Hono()
       }))
     );
 
-    for (const item of cartItemsForOrder) {
-      await db.update(products)
-        .set({ stock: sql`${products.stock} - ${item.quantity}` })
-        .where(eq(products.id, item.productId));
-    }
+    await decrementStock(cartItemsForOrder);
 
     // Server-side Purchase (CAPI). Fires at most once per order (guarded by
     // orders.metaPurchaseEventSentAt) and deduplicated against the browser Pixel.

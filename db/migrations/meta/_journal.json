@@ -71,6 +71,34 @@
       "when": 1784600000000,
       "tag": "0009_role_landing_url",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787000000000,
+      "tag": "0010_blocked_ips",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787000100000,
+      "tag": "0011_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787000200000,
+      "tag": "0012_login_lockout",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787000300000,
+      "tag": "0013_drop_traffic_events",
+      "breakpoints": true
     }
   ]
 }

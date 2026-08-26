@@ -57,6 +57,9 @@ const app = new Hono()
     .limit(limit)
     .offset((page - 1) * limit)
 
+    // Public storefront content — let the CDN serve repeat visitors so a
+    // browsing spike never turns into database queries.
+    c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
     return c.json({
       data: list,
       total: totalCount,
@@ -97,6 +100,9 @@ const app = new Hono()
       return c.json({ success: false, message: 'Post not found' }, 404);
     }
 
+    // Public storefront content — let the CDN serve repeat visitors so a
+    // browsing spike never turns into database queries.
+    c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
     return c.json({ success: true, post: postData[0] });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

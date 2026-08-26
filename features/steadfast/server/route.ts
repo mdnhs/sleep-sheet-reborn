@@ -10,7 +10,7 @@ import {
 import { db } from "@/db";
 import { orders, orderTimelineEvents, orderItems } from "@/db/schema";
 import type { OrderStatus } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { can } from "@/lib/permissions";
 
 // Once an order is in one of these, Steadfast will never move it again — see
@@ -119,11 +119,14 @@ const app = new Hono()
       if (!order) return c.json({ error: "Order not found" }, 404);
 
       if (costPrices && costPrices.length > 0) {
-        for (const item of costPrices) {
-          await db.update(orderItems)
-            .set({ costPrice: item.costPrice })
-            .where(eq(orderItems.id, item.orderItemId));
-        }
+        // One statement for every line item instead of an UPDATE per item —
+        // each of those was a separate round trip to the database.
+        const cases = costPrices.map(
+          (item) => sql`when ${orderItems.id} = ${item.orderItemId} then ${item.costPrice}`
+        );
+        await db.update(orderItems)
+          .set({ costPrice: sql`(case ${sql.join(cases, sql.raw(" "))} else ${orderItems.costPrice} end)` })
+          .where(inArray(orderItems.id, costPrices.map((i) => i.orderItemId)));
       }
 
       const address = [

@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { db } from "@/db";
+import { invalidateSettingsCache } from "@/lib/settings-cache";
 import { siteSettings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { can } from "@/lib/permissions";
@@ -151,16 +152,21 @@ const app = new Hono()
         : [];
       const beforeByKey = Object.fromEntries(before.map((r) => [r.key, r.value]));
 
-      await Promise.all(
-        updates.map(([key, value]) =>
-          db.insert(siteSettings)
-            .values({ key, value: String(value) })
-            .onConflictDoUpdate({
-              target: siteSettings.key,
-              set: { value: String(value), updatedAt: new Date() },
-            })
-        )
+      // All upserts in one batched round trip.
+      const upserts = updates.map(([key, value]) =>
+        db.insert(siteSettings)
+          .values({ key, value: String(value) })
+          .onConflictDoUpdate({
+            target: siteSettings.key,
+            set: { value: String(value), updatedAt: new Date() },
+          })
       );
+      if (upserts.length > 0) {
+        await db.batch(upserts as [(typeof upserts)[number], ...typeof upserts]);
+      }
+
+      // The in-process settings cache now holds stale values.
+      invalidateSettingsCache();
 
       // Never log raw secret values — show only that a credential changed.
       const prettifyKey = (key: string) =>

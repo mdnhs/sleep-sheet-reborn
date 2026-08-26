@@ -333,49 +333,6 @@ export function registerMcpTools(server: McpServer, ctx: McpToolContext) {
     async () => text(await api.get(`/analytics/most-purchased`))
   );
 
-  // --- Traffic (read-only) ---
-  server.registerTool(
-    "get_traffic_summary",
-    {
-      title: "Get traffic summary",
-      description:
-        "Visitor traffic breakdown by event type, attribution source (utm_source/campaign, when present), and country over a recent time window (default: last 24 hours). Useful for cross-checking against ad platform numbers.",
-      inputSchema: { hours: z.number().int().min(1).max(720).optional().describe("Lookback window in hours, default 24") },
-    },
-    async ({ hours }) => {
-      const params = new URLSearchParams({ hours: String(hours ?? 24) });
-      const events = await api.get<Array<{
-        type: string;
-        country?: string | null;
-        meta?: Record<string, string | number | boolean> | null;
-      }>>(`/traffic?${params.toString()}`);
-
-      const bump = (key: string, r: Record<string, number>) => { r[key] = (r[key] || 0) + 1; };
-      const byType: Record<string, number> = {};
-      const bySource: Record<string, number> = {};
-      const byCountry: Record<string, number> = {};
-
-      for (const e of events) {
-        bump(e.type, byType);
-        bump(e.country || "unknown", byCountry);
-        const source = e.meta?.utm_source || e.meta?.source || "direct";
-        const campaign = e.meta?.utm_campaign || e.meta?.campaign;
-        bump(campaign ? `${source} / ${campaign}` : String(source), bySource);
-      }
-
-      const rank = (r: Record<string, number>) =>
-        Object.entries(r).sort((a, b) => b[1] - a[1]).map(([key, count]) => ({ key, count }));
-
-      return text({
-        windowHours: hours ?? 24,
-        totalEvents: events.length,
-        byEventType: rank(byType),
-        bySourceCampaign: rank(bySource),
-        byCountry: rank(byCountry),
-      });
-    }
-  );
-
   // --- POS ---
   server.registerTool(
     "create_pos_order",
@@ -429,17 +386,6 @@ export function registerMcpTools(server: McpServer, ctx: McpToolContext) {
       inputSchema: { orderId: z.string() },
     },
     async ({ orderId }) => text(await api.get(`/steadfast/track/${encodeURIComponent(orderId)}`))
-  );
-
-  // --- Google Analytics 4 (GA4) ---
-  server.registerTool(
-    "get_ga4_realtime_metrics",
-    {
-      title: "Get GA4 Realtime Active Users",
-      description: "Get active users in last 30 mins and active page paths for GA4 Property 546802046.",
-      inputSchema: { propertyId: z.string().optional().describe("Default: 546802046") },
-    },
-    async ({ propertyId }) => text(await api.get(`/traffic?ga4=true&propertyId=${propertyId || "546802046"}`))
   );
 
   // --- Most-wishlisted (analytics) ---
