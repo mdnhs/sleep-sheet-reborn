@@ -71,7 +71,11 @@ export const useOrderMutations = () => {
 
   const deleteOrder = useMutation({
     mutationFn: async (id: string) => {
-      await client.api.orders[":id"].$delete({ param: { id } });
+      const response = await client.api.orders[":id"].$delete({ param: { id } });
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string };
+        throw new Error(body.error || "Failed to delete order");
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
@@ -79,7 +83,10 @@ export const useOrderMutations = () => {
   const bulkDeleteOrders = useMutation({
     mutationFn: async (ids: string[]) => {
       const response = await client.api.orders["bulk-delete"].$post({ json: { ids } });
-      if (!response.ok) throw new Error("Bulk delete failed");
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string };
+        throw new Error(body.error || "Bulk delete failed");
+      }
       return response.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),

@@ -1834,7 +1834,12 @@ function OrdersPageContent() {
         onOpenChange={() => setDeleteOrderId(null)}
         onConfirm={() => {
           if (deleteOrderId) {
-            deleteOrder.mutate(deleteOrderId);
+            deleteOrder.mutate(deleteOrderId, {
+              onSuccess: () => toast.success("Order deleted successfully"),
+              onError: (err: any) => {
+                toast.error(err.message || "Failed to delete order");
+              },
+            });
             setDeleteOrderId(null);
           }
         }}
