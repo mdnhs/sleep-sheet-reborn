@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db } from "@/db";
-import { orders, orderItems, payments, orderTimelineEvents, users, products } from "@/db/schema";
+import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
 import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -397,6 +397,11 @@ const app = new Hono()
         columns: { orderNumber: true },
       });
 
+      // blockedIps.orderId has no ON DELETE cascade, so a block record tied to
+      // this order would otherwise leave a dangling FK and fail the delete
+      // below with a constraint violation. Detach it instead of deleting it —
+      // the block itself (and its audit trail) should outlive the order.
+      await db.update(blockedIps).set({ orderId: null }).where(eq(blockedIps.orderId, id));
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
       await db.delete(payments).where(eq(payments.orderId, id));
       await db.delete(orderTimelineEvents).where(eq(orderTimelineEvents.orderId, id));
@@ -426,6 +431,8 @@ const app = new Hono()
         columns: { orderNumber: true },
       });
 
+      // See the single-order delete route above for why this is needed.
+      await db.update(blockedIps).set({ orderId: null }).where(inArray(blockedIps.orderId, ids));
       await db.delete(orderItems).where(inArray(orderItems.orderId, ids));
       await db.delete(payments).where(inArray(payments.orderId, ids));
       await db.delete(orderTimelineEvents).where(inArray(orderTimelineEvents.orderId, ids));
