@@ -5,13 +5,13 @@ const SHEET_NAME = "Sheet1";
 const HEADER_ROW = [
   "Date",
   "Order ID",
-  "Customer Name",
+  "Customer",
   "Phone",
   "Address",
   "Qty",
-  "Total Order Amount",
-  "Bought Cost",
-  "Shipping/Delivery Cost",
+  "Amount",
+  "Cost",
+  "Shipping",
 ];
 
 export interface SheetOrderRow {
@@ -53,7 +53,11 @@ async function ensureHeaderRow(
     range: `${SHEET_NAME}!A1:I1`,
   });
   const firstRow = res.data.values?.[0];
-  if (!firstRow || firstRow.length === 0) {
+  const headerMatches =
+    firstRow &&
+    firstRow.length === HEADER_ROW.length &&
+    HEADER_ROW.every((h, i) => firstRow[i] === h);
+  if (!headerMatches) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${SHEET_NAME}!A1`,
