@@ -65,6 +65,7 @@ export interface OrderItem {
     shippingPostalCode?: string | null;
     shippingCountry?: string | null;
     trackingNumber?: string | null;
+    sheetBookedAt?: string | null;
     cancellationReason?: string | null;
     refundedAmount?: number | null;
     refundReason?: string | null;

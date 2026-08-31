@@ -43,6 +43,7 @@
     "drizzle-orm": "^0.45.2",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "googleapis": "^176.0.0",
     "hono": "^4.12.18",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.3",

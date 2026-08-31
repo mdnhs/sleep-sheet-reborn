@@ -30,6 +30,9 @@ export function useSettingsSecrets() {
         steadfast_secret_key: string;
         cloudinary_api_key: string;
         cloudinary_api_secret: string;
+        google_sheets_client_email: string;
+        google_sheets_private_key: string;
+        google_sheets_spreadsheet_id: string;
       }>;
     },
     staleTime: 5 * 60 * 1000,
@@ -73,6 +76,9 @@ export function useUpdateSettings() {
       cloudinary_api_secret?: string;
       steadfast_api_key?: string;
       steadfast_secret_key?: string;
+      google_sheets_client_email?: string;
+      google_sheets_private_key?: string;
+      google_sheets_spreadsheet_id?: string;
       site_name?: string;
       logo_url?: string;
       hero_title?: string;

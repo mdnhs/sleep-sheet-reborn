@@ -25,6 +25,7 @@ import users from "@/features/users/server/route";
 import activity from "@/features/activity/server/route";
 import apiKeys from "@/features/api-keys/server/route";
 import blockedIps from "@/features/blocked-ips/server/route";
+import googleSheets from "@/features/google-sheets/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 
@@ -58,6 +59,7 @@ const routes =app
 .route("/activity",activity)
 .route("/api-keys",apiKeys)
 .route("/blocked-ips",blockedIps)
+.route("/google-sheets",googleSheets)
 
 export const GET = handle(app)
 export const POST = handle(app)

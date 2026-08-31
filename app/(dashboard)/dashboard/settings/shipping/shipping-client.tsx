@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShippingForm } from "@/features/settings/components/shipping-form";
 import { CourierForm } from "@/features/settings/components/courier-form";
+import { GoogleSheetsForm } from "@/features/settings/components/google-sheets-form";
 import { Truck } from "lucide-react";
 
 export function ShippingSettings() {
@@ -20,6 +21,7 @@ export function ShippingSettings() {
           <ShippingForm />
         </div>
         <CourierForm />
+        <GoogleSheetsForm />
       </div>
     </div>
   );

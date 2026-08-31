@@ -22,3 +22,12 @@ export async function getSteadfastConfig() {
     secretKey: map.steadfast_secret_key || "",
   };
 }
+
+export async function getGoogleSheetsConfig() {
+  const map = await getSettingsMap();
+  return {
+    clientEmail: map.google_sheets_client_email || "",
+    privateKey: map.google_sheets_private_key || "",
+    spreadsheetId: map.google_sheets_spreadsheet_id || "",
+  };
+}
