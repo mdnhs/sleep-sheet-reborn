@@ -34,6 +34,14 @@ export function BookCourierDialog({
   );
   const [note, setNote] = useState("");
   const [costs, setCosts] = useState<Record<string, string>>({});
+  const [addOnCosts, setAddOnCosts] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    order.items.forEach((item) => {
+      const suggested = calculateItemAddOnCost(item.color, item.product.addOns);
+      initial[item.id] = suggested > 0 ? suggested.toString() : "";
+    });
+    return initial;
+  });
   const { mutate, isPending } = useBookCourier();
   const { formatAmount } = useCurrency();
 
@@ -41,11 +49,17 @@ export function BookCourierDialog({
     setCosts((prev) => ({ ...prev, [itemId]: val }));
   };
 
+  const handleAddOnCostChange = (itemId: string, val: string) => {
+    setAddOnCosts((prev) => ({ ...prev, [itemId]: val }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const costPrices = order.items.map((item) => ({
       orderItemId: item.id,
-      costPrice: costs[item.id] ? parseFloat(costs[item.id]) : 0,
+      costPrice:
+        (costs[item.id] ? parseFloat(costs[item.id]) : 0) +
+        (addOnCosts[item.id] ? parseFloat(addOnCosts[item.id]) : 0),
     }));
     mutate(
       { orderId: order.id, recipient_phone: phone, note: note || undefined, costPrices },
@@ -114,23 +128,31 @@ export function BookCourierDialog({
                 <div className="flex-1 truncate">
                   <span className="font-medium">{item.product.name}</span>
                   <div className="text-muted-foreground text-xs">Qty: {item.quantity} | Sold: {formatAmount(item.price)}</div>
-                  {addOnCost > 0 && (
-                    <div className="text-amber-600 dark:text-amber-400 text-[11px]">
-                      + add-on cost ৳{addOnCost} — include in cost
-                    </div>
-                  )}
                 </div>
-                <div className="w-24 shrink-0">
+                <div className="flex gap-2 shrink-0">
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
                     placeholder="Cost"
+                    className="w-24"
                     value={costs[item.id] || ""}
                     onChange={(e) => handleCostChange(item.id, e.target.value)}
                     disabled={(item as any).costPrice !== null && (item as any).costPrice !== undefined}
                     required
                   />
+                  {addOnCost > 0 && (
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Add-on cost"
+                      className="w-24"
+                      value={addOnCosts[item.id] || ""}
+                      onChange={(e) => handleAddOnCostChange(item.id, e.target.value)}
+                      disabled={(item as any).costPrice !== null && (item as any).costPrice !== undefined}
+                    />
+                  )}
                 </div>
               </div>
               );
