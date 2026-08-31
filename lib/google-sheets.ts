@@ -12,6 +12,7 @@ const HEADER_ROW = [
   "Amount",
   "Cost",
   "Shipping",
+  "Profit",
 ];
 
 export interface SheetOrderRow {
@@ -24,6 +25,7 @@ export interface SheetOrderRow {
   totalAmount: number;
   boughtCost: number;
   shippingCost: number;
+  profit: number;
 }
 
 async function getSheetsClient() {
@@ -50,7 +52,7 @@ async function ensureHeaderRow(
 ) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${SHEET_NAME}!A1:I1`,
+    range: `${SHEET_NAME}!A1:J1`,
   });
   const firstRow = res.data.values?.[0];
   const headerMatches =
@@ -78,7 +80,11 @@ export async function appendOrdersToSheet(rows: SheetOrderRow[]): Promise<void> 
   await ensureHeaderRow(sheets, spreadsheetId);
 
   const values = rows.map((r) => [
-    r.date,
+    // Leading apostrophe forces USER_ENTERED to treat this as literal text
+    // instead of auto-parsing "2026-08-30" into a date serial number, which
+    // then rendered as a raw number (e.g. 46264) with no date format applied.
+    // ISO-formatted text still sorts correctly, so nothing is lost.
+    `'${r.date}`,
     r.orderNumber,
     r.customerName,
     r.phone,
@@ -87,6 +93,7 @@ export async function appendOrdersToSheet(rows: SheetOrderRow[]): Promise<void> 
     r.totalAmount,
     r.boughtCost,
     r.shippingCost,
+    r.profit,
   ]);
 
   await sheets.spreadsheets.values.append({
