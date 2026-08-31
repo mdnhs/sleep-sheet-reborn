@@ -63,7 +63,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { can } from "@/lib/permissions";
 import { useRouter } from "next/navigation";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
-import { cn, formatDate, calculateItemAddOnCost } from "@/lib/utils";
+import { cn, formatDate, calculateItemAddOnCost, colorHasAddOn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -2002,7 +2002,7 @@ function OrdersPageContent() {
                     }
                     placeholder="Enter bought price (excluding add-ons)"
                   />
-                  {addOnCost > 0 && (
+                  {colorHasAddOn(item.color) && (
                     <>
                       <label className="text-xs font-medium text-amber-600 dark:text-amber-400 block">
                         Add-on Bought Price (from {item.color})

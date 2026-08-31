@@ -618,6 +618,7 @@ function ProductCard({
   const [selectedAddOns, setSelectedAddOns] = useState<Record<string, number>>({})
   const [quantity, setQuantity] = useState(1)
   const [costPrice, setCostPrice] = useState("")
+  const [addOnCostPrice, setAddOnCostPrice] = useState("")
   const [shippingCost, setShippingCost] = useState("")
 
   const hasColors = product.colors && product.colors.length > 0
@@ -635,12 +636,15 @@ function ProductCard({
     return sum + (addOn ? addOn.price * qty : 0)
   }, 0)
 
+  const hasSelectedAddOns = Object.values(selectedAddOns).some((qty) => qty > 0)
+
   const displayPrice = basePrice + addOnsTotalPerUnit
 
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) { toast.error("Please select a size"); return }
     if (hasColors && !selectedColor) { toast.error("Please select a variant"); return }
     if (isDrawerOpen && costPrice !== "" && isNaN(Number(costPrice))) { toast.error("Bought price must be a number"); return }
+    if (isDrawerOpen && addOnCostPrice !== "" && isNaN(Number(addOnCostPrice))) { toast.error("Add-on bought price must be a number"); return }
     if (isDrawerOpen && shippingCost !== "" && isNaN(Number(shippingCost))) { toast.error("Shipping cost must be a number"); return }
 
     const selectedAddOnsSummary = Object.entries(selectedAddOns)
@@ -658,12 +662,14 @@ function ProductCard({
     const finalColor = colorWithAddOns || selectedColor || undefined
     const variant = finalColor ? { name: finalColor, price: displayPrice } : (currentVariant || undefined)
     const size = hasSizes ? selectedSize : undefined
-    const parsedCostPrice = costPrice !== "" ? Number(costPrice) : undefined
+    const parsedCostPrice = (costPrice !== "" ? Number(costPrice) : 0) + (addOnCostPrice !== "" ? Number(addOnCostPrice) : 0)
+    const finalCostPrice = costPrice !== "" || addOnCostPrice !== "" ? parsedCostPrice : undefined
     const parsedShippingCost = shippingCost !== "" ? Number(shippingCost) : undefined
 
-    onAdd(product, variant, size, parsedCostPrice, parsedShippingCost, quantity)
+    onAdd(product, variant, size, finalCostPrice, parsedShippingCost, quantity)
     setIsDrawerOpen(false)
     setCostPrice("")
+    setAddOnCostPrice("")
     setShippingCost("")
     setSelectedAddOns({})
     setQuantity(1)
@@ -874,14 +880,26 @@ function ProductCard({
             
             <div className="flex flex-col gap-1 mt-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Bought Price (Cost)</span>
-              <Input 
+              <Input
                 type="number"
                 placeholder="0.00"
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
               />
             </div>
-            
+
+            {hasSelectedAddOns && (
+              <div className="flex flex-col gap-1 mt-2">
+                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase">Add-on Bought Price</span>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={addOnCostPrice}
+                  onChange={(e) => setAddOnCostPrice(e.target.value)}
+                />
+              </div>
+            )}
+
             <div className="flex flex-col gap-1 mt-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Shipping Cost</span>
               <Input 
