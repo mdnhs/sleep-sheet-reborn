@@ -790,13 +790,12 @@ function OrdersPageContent() {
 
   const handleBulkBookToSheet = () => {
     setIsBulkSheetBookOpen(false);
-    const orderIds = selectedOrders
-      .filter((o) => !o.sheetBookedAt)
-      .map((o) => o.id);
-    if (orderIds.length === 0) {
-      toast.error("All selected orders are already booked to the sheet");
-      return;
-    }
+    // Always (re-)book everything selected, even orders already marked
+    // sheetBookedAt — the sheet is an external file the admin can edit or
+    // delete rows from at any time, so that flag can't be trusted to mean
+    // "still present in the sheet." Blocking on it just traps the admin
+    // when they need to restore a manually-deleted row.
+    const orderIds = selectedOrders.map((o) => o.id);
     bulkBookToSheet.mutate(
       { orderIds },
       {
@@ -1107,7 +1106,7 @@ function OrdersPageContent() {
                     Book Courier (Steadfast)
                   </DropdownMenuItem>
                 )}
-                {permWrite && !order.sheetBookedAt && (
+                {permWrite && (
                   <DropdownMenuItem
                     onClick={() =>
                       bookToSheet.mutate(
@@ -1126,7 +1125,7 @@ function OrdersPageContent() {
                       )
                     }
                   >
-                    Book to Google Sheet
+                    {order.sheetBookedAt ? "Re-book to Google Sheet" : "Book to Google Sheet"}
                   </DropdownMenuItem>
                 )}
                 {permRefund && (
@@ -1956,7 +1955,12 @@ function OrdersPageContent() {
         onOpenChange={setIsBulkSheetBookOpen}
         onConfirm={handleBulkBookToSheet}
         title="Book to Google Sheet"
-        description={`Append ${selectedOrders.filter((o) => !o.sheetBookedAt).length} of the ${selectedOrders.length} selected order(s) as rows in the Google Sheet order log? Orders already booked to the sheet will be skipped.`}
+        description={(() => {
+          const alreadyBooked = selectedOrders.filter((o) => o.sheetBookedAt).length;
+          return alreadyBooked > 0
+            ? `Append ${selectedOrders.length} order(s) as rows in the Google Sheet order log? ${alreadyBooked} of them were booked before and will be appended again as a new row.`
+            : `Append ${selectedOrders.length} order(s) as rows in the Google Sheet order log?`;
+        })()}
       />
       <Dialog
         open={!!shippingCostOrder}
