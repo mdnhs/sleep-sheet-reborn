@@ -66,12 +66,13 @@ const app = new Hono()
             items: {
               // Only the product fields the orders dashboard actually renders.
               // Pulling whole product rows dragged description, tags, features,
-              // care instructions and every variant/add-on blob along for every
-              // line item of every order — a large payload to scan, serialize
-              // and transfer on each dashboard load.
+              // care instructions and variants along for every line item of
+              // every order — a large payload to scan, serialize and transfer
+              // on each dashboard load. addOns is kept: its costPrice drives
+              // the add-on bought-price fields in the order cost dialogs.
               with: {
                 product: {
-                  columns: { id: true, name: true, images: true, price: true, sku: true }
+                  columns: { id: true, name: true, images: true, price: true, sku: true, addOns: true }
                 }
               }
             },
