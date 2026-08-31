@@ -4,16 +4,14 @@ import { getGoogleSheetsConfig } from "@/lib/server-config";
 const SHEET_NAME = "Sheet1";
 const HEADER_ROW = [
   "Date",
-  "Order Number",
+  "Order ID",
   "Customer Name",
   "Phone",
   "Address",
-  "Products",
   "Qty",
-  "Amount",
-  "Payment Method",
-  "Status",
-  "Tracking Number",
+  "Total Order Amount",
+  "Bought Cost",
+  "Shipping/Delivery Cost",
 ];
 
 export interface SheetOrderRow {
@@ -22,12 +20,10 @@ export interface SheetOrderRow {
   customerName: string;
   phone: string;
   address: string;
-  products: string;
   quantity: number;
-  amount: number;
-  paymentMethod: string;
-  status: string;
-  trackingNumber: string;
+  totalAmount: number;
+  boughtCost: number;
+  shippingCost: number;
 }
 
 async function getSheetsClient() {
@@ -54,7 +50,7 @@ async function ensureHeaderRow(
 ) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${SHEET_NAME}!A1:K1`,
+    range: `${SHEET_NAME}!A1:I1`,
   });
   const firstRow = res.data.values?.[0];
   if (!firstRow || firstRow.length === 0) {
@@ -83,12 +79,10 @@ export async function appendOrdersToSheet(rows: SheetOrderRow[]): Promise<void> 
     r.customerName,
     r.phone,
     r.address,
-    r.products,
     r.quantity,
-    r.amount,
-    r.paymentMethod,
-    r.status,
-    r.trackingNumber,
+    r.totalAmount,
+    r.boughtCost,
+    r.shippingCost,
   ]);
 
   await sheets.spreadsheets.values.append({
