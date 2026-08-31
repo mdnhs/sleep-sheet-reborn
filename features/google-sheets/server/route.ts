@@ -38,7 +38,6 @@ function toSheetRow(
     totalAmount: order.totalAmount,
     boughtCost,
     shippingCost: order.shippingCost,
-    profit: order.totalAmount - boughtCost - order.shippingCost,
   };
 }
 

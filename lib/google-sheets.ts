@@ -25,7 +25,6 @@ export interface SheetOrderRow {
   totalAmount: number;
   boughtCost: number;
   shippingCost: number;
-  profit: number;
 }
 
 async function getSheetsClient() {
@@ -93,14 +92,34 @@ export async function appendOrdersToSheet(rows: SheetOrderRow[]): Promise<void> 
     r.totalAmount,
     r.boughtCost,
     r.shippingCost,
-    r.profit,
+    // Profit (column J) is filled in below as a live =G-H-I formula once we
+    // know which row(s) these landed on, so editing Amount/Cost/Shipping by
+    // hand in the sheet keeps Profit correct instead of leaving it stale.
+    "",
   ]);
 
-  await sheets.spreadsheets.values.append({
+  const appendRes = await sheets.spreadsheets.values.append({
     spreadsheetId,
     range: `${SHEET_NAME}!A:A`,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
   });
+
+  const updatedRange = appendRes.data.updates?.updatedRange;
+  const startRowMatch = updatedRange?.match(/![A-Z]+(\d+):/);
+  if (startRowMatch) {
+    const startRow = Number(startRowMatch[1]);
+    const profitFormulas = rows.map((_, i) => {
+      const row = startRow + i;
+      return [`=G${row}-H${row}-I${row}`];
+    });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${SHEET_NAME}!J${startRow}:J${startRow + rows.length - 1}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: profitFormulas },
+    });
+  }
 }
