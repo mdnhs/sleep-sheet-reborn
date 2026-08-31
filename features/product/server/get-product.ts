@@ -45,7 +45,8 @@ async function fetchProductById(id: string): Promise<Product | null> {
     })),
     care: product.careInstruction || "",
     colors: product.variants,
-    addOns: product.addOns || [],
+    // Never leak costPrice through the public product detail response.
+    addOns: (product.addOns || []).map(({ name, price }) => ({ name, price })),
     sizes: product.sizes,
     features: product.features,
     isFeatured: product.isFeatured,

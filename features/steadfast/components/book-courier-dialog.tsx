@@ -16,6 +16,7 @@ import { useBookCourier } from "../api/use-steadfast";
 import { useCurrency } from "@/hooks/use-currency";
 import type { Order } from "@/features/order/types";
 import { Loader2, Truck } from "lucide-react";
+import { calculateItemAddOnCost } from "@/lib/utils";
 
 interface BookCourierDialogProps {
   order: Order & { shippingMethod?: { name: string; duration: string } | null };
@@ -106,11 +107,18 @@ export function BookCourierDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             <Label>Enter Bought Prices (Cost) for each item</Label>
-            {order.items.map((item) => (
+            {order.items.map((item) => {
+              const addOnCost = calculateItemAddOnCost(item.color, item.product.addOns);
+              return (
               <div key={item.id} className="flex items-center justify-between gap-3 text-sm border p-2 rounded-md">
                 <div className="flex-1 truncate">
                   <span className="font-medium">{item.product.name}</span>
                   <div className="text-muted-foreground text-xs">Qty: {item.quantity} | Sold: {formatAmount(item.price)}</div>
+                  {addOnCost > 0 && (
+                    <div className="text-amber-600 dark:text-amber-400 text-[11px]">
+                      + add-on cost ৳{addOnCost} — include in cost
+                    </div>
+                  )}
                 </div>
                 <div className="w-24 shrink-0">
                   <Input
@@ -125,7 +133,8 @@ export function BookCourierDialog({
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <Separator />

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Order } from "@/features/order/types";
 import { Loader2, X, Pencil } from "lucide-react";
+import { calculateItemAddOnCost } from "@/lib/utils";
 
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
@@ -145,7 +146,9 @@ export function BulkBookCourierDialog({
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {order.items?.map(item => (
+                  {order.items?.map(item => {
+                    const addOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
+                    return (
                     <div key={item.id} className="flex items-center gap-3">
                       <div className="h-10 w-10 shrink-0 bg-muted rounded-md overflow-hidden">
                         {item.product?.images?.[0] ? (
@@ -157,6 +160,11 @@ export function BulkBookCourierDialog({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.product?.name || "Unknown Product"}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                        {addOnCost > 0 && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                            + add-on cost ৳{addOnCost} — include in bought price
+                          </p>
+                        )}
                       </div>
                       <div className="w-28 shrink-0">
                         {(item as any).costPrice !== null && (item as any).costPrice !== undefined && !editingItems[item.id] ? (
@@ -183,7 +191,8 @@ export function BulkBookCourierDialog({
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}

@@ -302,6 +302,57 @@ app.post('/bulk-delete', sessionMiddleware, async (c) => {
   }
 })
 
+// Admin-only product fetch for the edit form. Deliberately separate from
+// the public GET /api/products/:id (features/product/server/get-product.ts):
+// that one is wrapped in a cross-request unstable_cache keyed only by id, so
+// it can never conditionally include costPrice without risking a public
+// visitor being served an admin's cached, cost-inclusive response.
+app.get('/:id', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  const productId = c.req.param("id");
+
+  try {
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+      with: { category: true, specifications: true },
+    });
+    if (!product) return c.json({ error: "Product not found" }, 404);
+
+    return c.json({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      sku: product.sku,
+      tags: product.tags,
+      images: product.images,
+      category: product.category.value,
+      categoryLabel: product.category.label,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+      specifications: product.specifications.map((s) => ({ key: s.key, value: s.value })),
+      care: product.careInstruction || "",
+      colors: product.variants,
+      addOns: product.addOns || [],
+      sizes: product.sizes,
+      features: product.features,
+      isFeatured: product.isFeatured,
+      discount: product.discount,
+      defaultVariantName: product.defaultVariantName || undefined,
+      reviews: [],
+      reviewCount: 0,
+    });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return c.json({ error: "Failed to fetch product" }, 500);
+  }
+});
+
 app.delete('/:id', sessionMiddleware, async (c) => {
   const user = c.get("user");
   if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
@@ -386,7 +437,7 @@ app.patch(
       sku: z.string().min(1).optional(),
       category: z.string().min(1).optional(),
       variants: z.array(z.object({ name: z.string(), price: z.number().nullable() })).optional(),
-      addOns: z.array(z.object({ name: z.string(), price: z.number() })).optional(),
+      addOns: z.array(z.object({ name: z.string(), price: z.number(), costPrice: z.number().optional() })).optional(),
       tags: z.array(z.string()).optional(),
       sizes: z.array(z.string()).optional(),
       features: z.array(z.string()).optional(),

@@ -32,6 +32,7 @@ export interface OrderItem {
     stock: number;
     sku: string;
     variants: string[];
+    addOns?: { name: string; price: number; costPrice?: number }[];
     tags: string[];
     sizes: string[];
     features: string[];

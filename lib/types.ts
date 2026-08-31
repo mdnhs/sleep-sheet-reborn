@@ -22,7 +22,10 @@ export interface Review {
     features: string[];
     images: string[];
     colors: { name: string; price: number | null }[];
-    addOns?: { name: string; price: number }[];
+    // costPrice is only ever populated for the admin-authenticated product
+    // fetch (features/dashboard/server/route.ts GET /:id) — the public
+    // product routes strip it before responding.
+    addOns?: { name: string; price: number; costPrice?: number }[];
     sizes: string[];
     tags: string[];
     stock: number;
