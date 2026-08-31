@@ -404,6 +404,11 @@ export const orders = pgTable("orders", {
   deviceOs: text("deviceOs"),
   browserName: text("browserName"),
   userAgent: text("userAgent"),
+  // Set the first time this order is exported as a row to the Google Sheets
+  // order log (see features/google-sheets). Gates the "Book to Sheet" action
+  // the same way `trackingNumber` gates Steadfast booking, so re-clicking
+  // doesn't append duplicate rows.
+  sheetBookedAt: timestamp("sheetBookedAt", { precision: 3 }),
 }, (table) => [
   // Dashboard lists orders newest-first and filters by date range; the
   // customer-facing pages look them up by user. Without these every such

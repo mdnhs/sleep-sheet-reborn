@@ -20,6 +20,9 @@ const SECRET_SETTING_KEYS = [
   "steadfast_secret_key",
   "cloudinary_api_key",
   "cloudinary_api_secret",
+  "google_sheets_client_email",
+  "google_sheets_private_key",
+  "google_sheets_spreadsheet_id",
 ] as const;
 
 // Safety net for credential-shaped rows that aren't in the list above (the
@@ -108,6 +111,9 @@ const app = new Hono()
         cloudinary_api_secret: z.string().optional(),
         steadfast_api_key: z.string().optional(),
         steadfast_secret_key: z.string().optional(),
+        google_sheets_client_email: z.string().optional(),
+        google_sheets_private_key: z.string().optional(),
+        google_sheets_spreadsheet_id: z.string().optional(),
         site_name: z.string().optional(),
         logo_url: z.string().optional(),
         hero_title: z.string().optional(),

@@ -57,6 +57,7 @@ import {
 } from "@/features/steadfast/api/use-steadfast";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
+import { useBookToSheet, useBulkBookToSheet } from "@/features/google-sheets/api/use-google-sheets";
 import { useCurrency } from "@/hooks/use-currency";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { can } from "@/lib/permissions";
@@ -91,6 +92,7 @@ import {
   Laptop,
   ShieldBan,
   ShieldCheck,
+  Sheet as SheetIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -242,6 +244,7 @@ function OrdersPageContent() {
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [isBulkBooking, setIsBulkBooking] = useState(false);
   const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
+  const [isBulkSheetBookOpen, setIsBulkSheetBookOpen] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const [shippingCostOrder, setShippingCostOrder] =
@@ -264,6 +267,8 @@ function OrdersPageContent() {
 
   const queryClient = useQueryClient();
   const bookCourier = useBookCourier();
+  const bookToSheet = useBookToSheet();
+  const bulkBookToSheet = useBulkBookToSheet();
 
   useEffect(() => {
     if (showBalance) {
@@ -783,6 +788,29 @@ function OrdersPageContent() {
     }
   };
 
+  const handleBulkBookToSheet = () => {
+    setIsBulkSheetBookOpen(false);
+    const orderIds = selectedOrders
+      .filter((o) => !o.sheetBookedAt)
+      .map((o) => o.id);
+    if (orderIds.length === 0) {
+      toast.error("All selected orders are already booked to the sheet");
+      return;
+    }
+    bulkBookToSheet.mutate(
+      { orderIds },
+      {
+        onSuccess: () => {
+          toast.success(`Booked ${orderIds.length} orders to Google Sheet`);
+          setRowSelection({});
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to book to Google Sheet");
+        },
+      },
+    );
+  };
+
   const todayCount =
     orders?.filter((o) => isToday(new Date(o.createdAt))).length ?? 0;
   const pendingCount = orders?.filter((o) => isPending(o)).length ?? 0;
@@ -1077,6 +1105,28 @@ function OrdersPageContent() {
                 {canBook && permWrite && (
                   <DropdownMenuItem onClick={() => setCourierOrder(order)}>
                     Book Courier (Steadfast)
+                  </DropdownMenuItem>
+                )}
+                {permWrite && !order.sheetBookedAt && (
+                  <DropdownMenuItem
+                    onClick={() =>
+                      bookToSheet.mutate(
+                        { orderId: order.id },
+                        {
+                          onSuccess: () =>
+                            toast.success(
+                              `${order.orderNumber} booked to Google Sheet`,
+                            ),
+                          onError: (err: any) => {
+                            toast.error(
+                              err.message || "Failed to book to Google Sheet",
+                            );
+                          },
+                        },
+                      )
+                    }
+                  >
+                    Book to Google Sheet
                   </DropdownMenuItem>
                 )}
                 {permRefund && (
@@ -1432,6 +1482,21 @@ function OrdersPageContent() {
                 Book Selected ({selectedOrders.length})
               </Button>
             )}
+          {permWrite && selectedOrders.length > 0 && (
+            <Button
+              type="button"
+              onClick={() => setIsBulkSheetBookOpen(true)}
+              disabled={bulkBookToSheet.isPending}
+              className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {bulkBookToSheet.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <SheetIcon className="h-3.5 w-3.5" />
+              )}
+              Book to Sheet ({selectedOrders.length})
+            </Button>
+          )}
           {selectedOrders.length > 0 && (
             <Button
               type="button"
@@ -1885,6 +1950,13 @@ function OrdersPageContent() {
         orders={selectedOrders}
         onConfirm={handleConfirmBulkBook}
         isBooking={isBulkBooking}
+      />
+      <ConfirmDialog
+        open={isBulkSheetBookOpen}
+        onOpenChange={setIsBulkSheetBookOpen}
+        onConfirm={handleBulkBookToSheet}
+        title="Book to Google Sheet"
+        description={`Append ${selectedOrders.filter((o) => !o.sheetBookedAt).length} of the ${selectedOrders.length} selected order(s) as rows in the Google Sheet order log? Orders already booked to the sheet will be skipped.`}
       />
       <Dialog
         open={!!shippingCostOrder}
