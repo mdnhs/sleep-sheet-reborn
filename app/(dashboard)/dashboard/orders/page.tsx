@@ -251,6 +251,7 @@ function OrdersPageContent() {
     useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
+  const [itemAddOnCosts, setItemAddOnCosts] = useState<Record<string, string>>({});
   const [amountOrder, setAmountOrder] = useState<ShippingOrder | null>(null);
   const [newTotalAmount, setNewTotalAmount] = useState("");
   const [profitBreakdownOrder, setProfitBreakdownOrder] =
@@ -1134,10 +1135,14 @@ function OrdersPageContent() {
                       setShippingCostOrder(order);
                       setNewShippingCost(order.shippingCost.toString());
                       const costs: Record<string, string> = {};
+                      const addOnCosts: Record<string, string> = {};
                       order.items.forEach((item) => {
                         costs[item.id] = item.costPrice?.toString() || "";
+                        const suggestedAddOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
+                        addOnCosts[item.id] = suggestedAddOnCost > 0 ? suggestedAddOnCost.toString() : "";
                       });
                       setItemCosts(costs);
+                      setItemAddOnCosts(addOnCosts);
                     }}
                   >
                     Edit Order Costs
@@ -1988,11 +1993,6 @@ function OrdersPageContent() {
                   <label className="text-sm font-medium text-muted-foreground truncate block">
                     Bought Price (Cost) for: {item.product?.name || "Item"}
                   </label>
-                  {addOnCost > 0 && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      This item includes add-on(s) worth ৳{addOnCost} in catalog cost (from {item.color}) — make sure the amount below includes it.
-                    </p>
-                  )}
                   <Input
                     type="number"
                     min="0"
@@ -2000,8 +2000,24 @@ function OrdersPageContent() {
                     onChange={(e) =>
                       setItemCosts({ ...itemCosts, [item.id]: e.target.value })
                     }
-                    placeholder="Enter bought price"
+                    placeholder="Enter bought price (excluding add-ons)"
                   />
+                  {addOnCost > 0 && (
+                    <>
+                      <label className="text-xs font-medium text-amber-600 dark:text-amber-400 block">
+                        Add-on Bought Price (from {item.color})
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={itemAddOnCosts[item.id] || ""}
+                        onChange={(e) =>
+                          setItemAddOnCosts({ ...itemAddOnCosts, [item.id]: e.target.value })
+                        }
+                        placeholder="Enter add-on bought price"
+                      />
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -2023,7 +2039,9 @@ function OrdersPageContent() {
 
                   const itemsToUpdate = shippingCostOrder.items.map((item) => ({
                     id: item.id,
-                    costPrice: parseFloat(itemCosts[item.id] || "0") || 0,
+                    costPrice:
+                      (parseFloat(itemCosts[item.id] || "0") || 0) +
+                      (parseFloat(itemAddOnCosts[item.id] || "0") || 0),
                   }));
 
                   try {

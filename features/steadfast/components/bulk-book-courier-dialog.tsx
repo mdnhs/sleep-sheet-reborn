@@ -31,6 +31,7 @@ export function BulkBookCourierDialog({
 }: BulkBookCourierDialogProps) {
   const [localOrders, setLocalOrders] = useState<ShippingOrder[]>([]);
   const [costPricesMap, setCostPricesMap] = useState<Record<string, string>>({});
+  const [addOnCostsMap, setAddOnCostsMap] = useState<Record<string, string>>({});
   const [shippingCostsMap, setShippingCostsMap] = useState<Record<string, string>>({});
   const [editingItems, setEditingItems] = useState<Record<string, boolean>>({});
 
@@ -38,6 +39,7 @@ export function BulkBookCourierDialog({
     if (open) {
       setLocalOrders(orders);
       const initialMap: Record<string, string> = {};
+      const initialAddOnMap: Record<string, string> = {};
       const initialCostsMap: Record<string, string> = {};
       orders.forEach(order => {
         initialCostsMap[order.id] = order.shippingCost.toString();
@@ -45,26 +47,33 @@ export function BulkBookCourierDialog({
           if ((item as any).costPrice !== null && (item as any).costPrice !== undefined) {
             initialMap[item.id] = (item as any).costPrice.toString();
           }
+          const suggestedAddOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
+          if (suggestedAddOnCost > 0) {
+            initialAddOnMap[item.id] = suggestedAddOnCost.toString();
+          }
         });
       });
       setCostPricesMap(initialMap);
+      setAddOnCostsMap(initialAddOnMap);
       setShippingCostsMap(initialCostsMap);
       setEditingItems({});
     }
   }, [open, orders]);
 
   const handleConfirm = () => {
-    const payload = Object.entries(costPricesMap)
-      .filter(([id, priceStr]) => {
-        const belongsToRemainingOrder = localOrders.some(order => 
-          order.items?.some(item => item.id === id)
-        );
-        return belongsToRemainingOrder && priceStr.trim() !== "" && !isNaN(Number(priceStr));
+    const itemIds = new Set<string>();
+    localOrders.forEach(order => order.items?.forEach(item => itemIds.add(item.id)));
+
+    const payload = Array.from(itemIds)
+      .map((id) => {
+        const baseStr = costPricesMap[id];
+        const addOnStr = addOnCostsMap[id];
+        const base = baseStr && baseStr.trim() !== "" && !isNaN(Number(baseStr)) ? Number(baseStr) : 0;
+        const addOn = addOnStr && addOnStr.trim() !== "" && !isNaN(Number(addOnStr)) ? Number(addOnStr) : 0;
+        return { orderItemId: id, costPrice: base + addOn, hasValue: Boolean(baseStr) || Boolean(addOnStr) };
       })
-      .map(([id, priceStr]) => ({
-        orderItemId: id,
-        costPrice: Number(priceStr)
-      }));
+      .filter(({ hasValue }) => hasValue)
+      .map(({ orderItemId, costPrice }) => ({ orderItemId, costPrice }));
 
     const shippingCostsPayload = Object.entries(shippingCostsMap)
       .filter(([id, costStr]) => {
@@ -82,6 +91,10 @@ export function BulkBookCourierDialog({
 
   const handlePriceChange = (id: string, value: string) => {
     setCostPricesMap(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleAddOnPriceChange = (id: string, value: string) => {
+    setAddOnCostsMap(prev => ({ ...prev, [id]: value }));
   };
 
   const handleShippingCostChange = (id: string, value: string) => {
@@ -160,13 +173,8 @@ export function BulkBookCourierDialog({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.product?.name || "Unknown Product"}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                        {addOnCost > 0 && (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                            + add-on cost ৳{addOnCost} — include in bought price
-                          </p>
-                        )}
                       </div>
-                      <div className="w-28 shrink-0">
+                      <div className="w-28 shrink-0 space-y-1">
                         {(item as any).costPrice !== null && (item as any).costPrice !== undefined && !editingItems[item.id] ? (
                           <div className="flex h-8 w-full items-center justify-between pl-2 pr-1 text-sm font-medium text-muted-foreground border rounded-md bg-muted/50 gap-1.5">
                             <span>৳{(item as any).costPrice}</span>
@@ -181,13 +189,24 @@ export function BulkBookCourierDialog({
                             </Button>
                           </div>
                         ) : (
-                          <Input
-                            type="number"
-                            placeholder="Bought Price"
-                            className="h-8 text-sm"
-                            value={costPricesMap[item.id] || ""}
-                            onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                          />
+                          <>
+                            <Input
+                              type="number"
+                              placeholder="Bought Price"
+                              className="h-8 text-sm"
+                              value={costPricesMap[item.id] || ""}
+                              onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                            />
+                            {addOnCost > 0 && (
+                              <Input
+                                type="number"
+                                placeholder="Add-on cost"
+                                className="h-8 text-sm"
+                                value={addOnCostsMap[item.id] || ""}
+                                onChange={(e) => handleAddOnPriceChange(item.id, e.target.value)}
+                              />
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
