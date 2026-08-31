@@ -63,7 +63,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { can } from "@/lib/permissions";
 import { useRouter } from "next/navigation";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, calculateItemAddOnCost } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -1981,22 +1981,30 @@ function OrdersPageContent() {
                 placeholder="Enter shipping cost"
               />
             </div>
-            {shippingCostOrder?.items.map((item) => (
-              <div key={item.id} className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground truncate block">
-                  Bought Price (Cost) for: {item.product?.name || "Item"}
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={itemCosts[item.id] || ""}
-                  onChange={(e) =>
-                    setItemCosts({ ...itemCosts, [item.id]: e.target.value })
-                  }
-                  placeholder="Enter bought price"
-                />
-              </div>
-            ))}
+            {shippingCostOrder?.items.map((item) => {
+              const addOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
+              return (
+                <div key={item.id} className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground truncate block">
+                    Bought Price (Cost) for: {item.product?.name || "Item"}
+                  </label>
+                  {addOnCost > 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      This item includes add-on(s) worth ৳{addOnCost} in catalog cost (from {item.color}) — make sure the amount below includes it.
+                    </p>
+                  )}
+                  <Input
+                    type="number"
+                    min="0"
+                    value={itemCosts[item.id] || ""}
+                    onChange={(e) =>
+                      setItemCosts({ ...itemCosts, [item.id]: e.target.value })
+                    }
+                    placeholder="Enter bought price"
+                  />
+                </div>
+              );
+            })}
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 variant="outline"
@@ -2158,6 +2166,7 @@ function OrdersPageContent() {
                             const itemProfit = revenue - cost;
                             const productImage =
                               item.images?.[0] || item.product.images?.[0];
+                            const addOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
                             return (
                               <TableRow key={item.id} className="group">
                                 <TableCell className="py-4">
@@ -2206,6 +2215,11 @@ function OrdersPageContent() {
                                   {item.costPrice != null
                                     ? formatAmount(item.costPrice)
                                     : "—"}
+                                  {addOnCost > 0 && (
+                                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-normal normal-case">
+                                      + add-on cost {formatAmount(addOnCost)}?
+                                    </div>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-right py-4 align-middle">
                                   <span

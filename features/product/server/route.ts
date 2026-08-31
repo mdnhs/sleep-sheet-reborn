@@ -200,7 +200,9 @@ const app = new Hono()
         tags: product.tags,
         images: product.images,
         colors: product.variants,
-        addOns: product.addOns || [],
+        // Never leak costPrice through the public product feed — strip it
+        // even though the DB column now carries it for admin cost tracking.
+        addOns: (product.addOns || []).map(({ name, price }) => ({ name, price })),
         sizes: product.sizes,
         category: product.categoryValue || "",
         categoryLabel: product.categoryLabel || "",

@@ -248,7 +248,7 @@ export const products = pgTable("products", {
   stock: integer("productStock").notNull(),
   sku: text("productSKU").unique().notNull(),
   variants: json("productVariants").$type<Array<{ name: string; price: number | null }>>().default([]).notNull(),
-  addOns: json("productAddOns").$type<Array<{ name: string; price: number }>>().default([]).notNull(),
+  addOns: json("productAddOns").$type<Array<{ name: string; price: number; costPrice?: number }>>().default([]).notNull(),
   tags: text("productTags").array().notNull(),
   images: text("productImages").array().notNull(),
   sizes: text("productSize").array().notNull(),

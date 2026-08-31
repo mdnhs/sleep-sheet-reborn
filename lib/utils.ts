@@ -259,6 +259,35 @@ export function calculateItemUnitPrice(
   return price;
 }
 
+// Bought-cost counterpart to calculateItemUnitPrice: parses the same
+// "BaseVariant (+ AddOnName xN)" encoding out of the stored `color` string
+// and sums each matched add-on's costPrice (not its selling price) so admins
+// entering an order item's bought price have a number to check against —
+// the order item's own costPrice is a single manually-entered field with no
+// separate slot for "this also included N curtains," so that cost is easy
+// to forget unless it's surfaced explicitly.
+export function calculateItemAddOnCost(
+  color: string | null | undefined,
+  addOns?: { name: string; price: number; costPrice?: number }[] | null
+): number {
+  if (!color || !addOns || addOns.length === 0) return 0;
+
+  let total = 0;
+  for (const addOn of addOns) {
+    if (!addOn.name || !addOn.costPrice) continue;
+    const escapedName = addOn.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`${escapedName}\\s+x(\\d+)`);
+    const match = color.match(regex);
+    if (match && match[1]) {
+      const qty = parseInt(match[1], 10);
+      if (!isNaN(qty) && qty > 0) {
+        total += addOn.costPrice * qty;
+      }
+    }
+  }
+  return total;
+}
+
 export function enrichColorWithAddOnPrices(
   color: string | undefined | null,
   addOns?: { name: string; price: number }[] | null,

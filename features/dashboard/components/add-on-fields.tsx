@@ -27,7 +27,7 @@ export function AddOnFields({ control }: AddOnFieldsProps) {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => append({ name: "", price: 0 })}
+          onClick={() => append({ name: "", price: 0, costPrice: 0 })}
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Add-on
@@ -57,7 +57,27 @@ export function AddOnFields({ control }: AddOnFieldsProps) {
                   <FormControl>
                     <Input
                       type="number"
-                      placeholder="Price (TK)"
+                      placeholder="Sell Price (TK)"
+                      {...formField}
+                      value={formField.value ?? ""}
+                      onChange={(e) =>
+                        formField.onChange(e.target.value ? Number(e.target.value) : 0)
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name={`productAddOns.${index}.costPrice`}
+              render={({ field: formField }) => (
+                <FormItem className="w-32">
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Cost Price (TK)"
                       {...formField}
                       value={formField.value ?? ""}
                       onChange={(e) =>
