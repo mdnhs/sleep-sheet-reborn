@@ -16,7 +16,7 @@ import { useBookCourier } from "../api/use-steadfast";
 import { useCurrency } from "@/hooks/use-currency";
 import type { Order } from "@/features/order/types";
 import { Loader2, Truck } from "lucide-react";
-import { calculateItemAddOnCost } from "@/lib/utils";
+import { calculateItemAddOnCost, colorHasAddOn } from "@/lib/utils";
 
 interface BookCourierDialogProps {
   order: Order & { shippingMethod?: { name: string; duration: string } | null };
@@ -122,7 +122,6 @@ export function BookCourierDialog({
           <div className="space-y-3">
             <Label>Enter Bought Prices (Cost) for each item</Label>
             {order.items.map((item) => {
-              const addOnCost = calculateItemAddOnCost(item.color, item.product.addOns);
               return (
               <div key={item.id} className="flex items-center justify-between gap-3 text-sm border p-2 rounded-md">
                 <div className="flex-1 truncate">
@@ -141,7 +140,7 @@ export function BookCourierDialog({
                     disabled={(item as any).costPrice !== null && (item as any).costPrice !== undefined}
                     required
                   />
-                  {addOnCost > 0 && (
+                  {colorHasAddOn(item.color) && (
                     <Input
                       type="number"
                       min="0"

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Order } from "@/features/order/types";
 import { Loader2, X, Pencil } from "lucide-react";
-import { calculateItemAddOnCost } from "@/lib/utils";
+import { calculateItemAddOnCost, colorHasAddOn } from "@/lib/utils";
 
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
@@ -160,7 +160,6 @@ export function BulkBookCourierDialog({
                 </div>
                 <div className="space-y-3">
                   {order.items?.map(item => {
-                    const addOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
                     return (
                     <div key={item.id} className="flex items-center gap-3">
                       <div className="h-10 w-10 shrink-0 bg-muted rounded-md overflow-hidden">
@@ -197,7 +196,7 @@ export function BulkBookCourierDialog({
                               value={costPricesMap[item.id] || ""}
                               onChange={(e) => handlePriceChange(item.id, e.target.value)}
                             />
-                            {addOnCost > 0 && (
+                            {colorHasAddOn(item.color) && (
                               <Input
                                 type="number"
                                 placeholder="Add-on cost"

@@ -288,6 +288,17 @@ export function calculateItemAddOnCost(
   return total;
 }
 
+// Whether the stored `color` string encodes at least one add-on selection
+// (e.g. "Red (+ Curtain x2)" or "Add-ons: Curtain x2"). Unlike
+// calculateItemAddOnCost, this doesn't depend on the product's catalog
+// add-ons being loaded or having a costPrice set — so admin cost-entry UIs
+// can still offer an add-on bought-price input (defaulting to blank) even
+// when there's nothing to suggest a number from.
+export function colorHasAddOn(color: string | null | undefined): boolean {
+  if (!color) return false;
+  return color.includes(" (+ ") || color.trim().startsWith("Add-ons:");
+}
+
 export function enrichColorWithAddOnPrices(
   color: string | undefined | null,
   addOns?: { name: string; price: number }[] | null,
