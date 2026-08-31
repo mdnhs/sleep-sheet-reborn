@@ -22,10 +22,11 @@ function toSheetRow(
     .filter(Boolean)
     .join(", ");
 
-  const products = order.items
-    .map((i) => `${i.product?.name || "Unknown Product"} x${i.quantity}`)
-    .join(", ");
   const quantity = order.items.reduce((sum, i) => sum + i.quantity, 0);
+  const boughtCost = order.items.reduce(
+    (sum, i) => sum + (i.costPrice ?? 0) * i.quantity,
+    0,
+  );
 
   return {
     date: order.createdAt.toISOString().slice(0, 10),
@@ -33,12 +34,10 @@ function toSheetRow(
     customerName: order.user?.name ?? order.guestName ?? "Guest",
     phone: order.user?.phone ?? order.guestPhone ?? "",
     address,
-    products,
     quantity,
-    amount: order.totalAmount,
-    paymentMethod: order.paymentMethod,
-    status: order.status,
-    trackingNumber: order.trackingNumber ?? "",
+    totalAmount: order.totalAmount,
+    boughtCost,
+    shippingCost: order.shippingCost,
   };
 }
 
