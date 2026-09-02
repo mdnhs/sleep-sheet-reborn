@@ -1,6 +1,12 @@
 # Translation — Route
 
 Route-based i18n using `next-intl` with App Router routing. All routes move under `app/[locale]/`.
+
+**Preferred over the non-route variant when the site has public pages** (hreflang needs one URL per
+locale — see the `seo` skill's `references/technical-seo.md`)**:** each locale is its own URL,
+so pages can be statically generated and served from the CDN with zero function invocations, and
+search engines can index each language. Pair it with `generateStaticParams` over `routing.locales`
+and call `setRequestLocale` in each layout/page so static rendering is not opted out.
 The root `app/layout.tsx` is a passthrough; the locale layout owns `<html>` and `<body>`.
 
 ---

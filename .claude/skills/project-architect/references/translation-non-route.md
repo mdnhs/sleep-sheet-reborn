@@ -1,8 +1,21 @@
 # Translation — Non-Route
 
 Non-route i18n using `next-intl`. The locale is resolved server-side from a cookie
-and does not appear in the URL — no middleware, no `[locale]` segment. Switching locale
+and does not appear in the URL — no proxy/middleware, no `[locale]` segment. Switching locale
 sets the cookie via a Server Action and refreshes the page.
+
+> **Cost trade-off — decide deliberately.** Reading the locale from `cookies()` makes every page
+> that renders a translation **dynamic**: no static generation, no CDN caching, a billed function
+> invocation on every visit including the marketing pages. That is the price of keeping the locale
+> out of the URL.
+>
+> If the site has public marketing/blog pages, prefer **route-based i18n**
+> (`translation-route.md`): each locale gets its own statically generated, CDN-served URL — better
+> for SEO and free to serve. Non-route is the right choice only for a fully authenticated app where
+> every page is dynamic anyway.
+>
+> Mixed approach: keep marketing routes untranslated (or route-based) and static, and use the
+> cookie only inside the authenticated dashboard.
 
 All translation code lives under `src/lib/translation/` for consistency with the Route variant.
 

@@ -24,6 +24,10 @@ The JSON above contains the project config and installed components. Use `npx sh
 2. **Compose, don't reinvent.** Settings page = Tabs + Card + form controls. Dashboard = Sidebar + Card + Chart + Table.
 3. **Use built-in variants before custom styles.** `variant="outline"`, `size="sm"`, etc.
 4. **Use semantic colors.** `bg-primary`, `text-muted-foreground` — never raw values like `bg-blue-500`.
+5. **Always init with `--pointer`.** `npx shadcn@latest init --pointer` — Tailwind v4 removed the
+   default `cursor: pointer` on `<button>`, so without it every button shows the arrow cursor.
+   The flag is stored as `"pointer": true` in `components.json` and inherited by later `add`s.
+   Existing project missing it? See *Retrofitting pointer cursors* in [cli.md](cli.md).
 
 ## Critical Rules
 
@@ -38,6 +42,9 @@ These rules are **always enforced**. Each links to a file with Incorrect/Correct
 - **No manual `dark:` color overrides.** Use semantic tokens (`bg-background`, `text-muted-foreground`).
 - **Use `cn()` for conditional classes.** Don't write manual template literal ternaries.
 - **No manual `z-index` on overlay components.** Dialog, Sheet, Popover, etc. handle their own stacking.
+- **Interactive elements show a pointer cursor.** Prefer the `--pointer` init flag over per-element
+  `cursor-pointer` classes; if the project was initialised without it, fix `components.json` and the
+  generated components once instead of sprinkling the class at every call site.
 
 ### Forms & Inputs → [forms.md](rules/forms.md)
 

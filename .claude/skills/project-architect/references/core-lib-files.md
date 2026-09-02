@@ -22,12 +22,15 @@ export function cn(...inputs: ClassValue[]) {
 ## `src/lib/routes/api-routes.ts`
 
 ```typescript
+// Paths are relative to `${NEXT_PUBLIC_API_PREFIX}${NEXT_PUBLIC_API_VERSION}` and are served by
+// the Hono app in src/server/api. Keep them in sync with the `.route()` chain there.
 export const API_ROUTES = {
   auth: {
-    login: '/login',
-    logout: '/logout',
-    me: '/me',
+    login: '/auth/login',
+    logout: '/auth/logout',
+    me: '/auth/me',
   },
+  health: '/health',
   // TODO: add feature route groups here as features are scaffolded
   // orders: {
   //   list: '/orders',
@@ -69,12 +72,13 @@ export interface ServiceResponse<T> {
   data: T | null;
   pagination?: PaginationType;
   status?: number;
-  causes?: CamelCaseKeys<ValidationCauses>;
+  // Field-level validation errors from the API: { email: ['Invalid email'] }
+  causes?: Record<string, string[]>;
 }
 
-// Mapped camelCase version used in app code
+// Mirrors PaginationMeta from src/server/lib/response.ts
 export interface PaginationType {
-  totalData: number;
+  total: number;
   totalPages: number;
   currentPage: number;
   limit: number;

@@ -13,6 +13,7 @@ See [customization.md](../customization.md) for theming, CSS variables, and addi
 - No manual dark: color overrides
 - Use cn() for conditional classes
 - No manual z-index on overlay components
+- Pointer cursor on interactive elements
 
 ---
 
@@ -159,3 +160,39 @@ import { cn } from "@/lib/utils"
 ## No manual z-index on overlay components
 
 `Dialog`, `Sheet`, `Drawer`, `AlertDialog`, `DropdownMenu`, `Popover`, `Tooltip`, `HoverCard` handle their own stacking. Never add `z-50` or `z-[999]`.
+
+---
+
+## Pointer cursor on interactive elements
+
+Tailwind v4 removed the browser default `cursor: pointer` on `<button>`. shadcn handles this with
+the `--pointer` init flag (`"pointer": true` in `components.json`), which bakes `cursor-pointer`
+into the generated components. Fix it at the source, not at the call site.
+
+**Incorrect** — patching each usage:
+
+```tsx
+<Button className='cursor-pointer'>Save</Button>
+<DropdownMenuItem className='cursor-pointer'>Edit</DropdownMenuItem>
+```
+
+**Correct** — the component already carries it:
+
+```tsx
+<Button>Save</Button>
+<DropdownMenuItem>Edit</DropdownMenuItem>
+```
+
+```bash
+# new project
+npx shadcn@latest init --pointer
+```
+
+Existing project without it: add `"pointer": true` to `components.json`, then add `cursor-pointer`
+to the base class of `buttonVariants` in `components/ui/button.tsx` and to the other interactive
+primitives (dropdown/select/tabs triggers and items, checkbox, switch, radio, accordion trigger,
+command items, pagination links, sidebar menu buttons). Full steps in [cli.md](../cli.md).
+
+`cursor-pointer` in a `className` is acceptable only for a genuinely custom clickable element that
+is not a shadcn primitive — a clickable card or table row, say. Those also need `role="button"` and
+keyboard handling.

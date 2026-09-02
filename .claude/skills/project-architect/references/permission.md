@@ -6,6 +6,16 @@ Bit-compressed permission system using base64-encoded bitfields for efficient st
 Permissions are stored as a compact `CompressedPermissions` string (base64 of a Uint8Array bitfield),
 reducing session payload size drastically compared to storing raw permission strings.
 
+**Why this design matters for cost:** permissions travel inside the signed session token, so
+authorising a request is pure CPU — no database read. A permission system that queries a
+`user_permissions` table per request would wake Neon on every page view and prevent the compute
+endpoint from ever suspending. Keep it that way: never add a DB lookup to the auth path.
+
+**Server-side checks are the real ones.** `PermissionGate` and `usePermissions` control what the UI
+shows; they are trivially bypassed. Every protected operation must also be gated on the server —
+`requirePermission('...')` on the Hono route (see `hono-api.md`), using the same permission keys
+defined here.
+
 ## Setup commands to append
 
 No additional packages required. The system uses built-in browser APIs (`btoa`/`atob`).
@@ -580,3 +590,9 @@ export const validateRouteAccess = (compressedPermissions: CompressedPermissions
 - `permissions.ts` is project-specific — replace the `PERMISSIONS` object with the actual permissions returned by your backend API.
 - `server-utils.ts` imports from `auth` — adjust the import path to match your NextAuth config location.
 - `ROUTE_PERMISSIONS` in `route-permissions.ts` maps Next.js route paths (not file paths) to required permissions. Add entries as you build features.
+- `validateRouteAccess` is called from **`proxy.ts`** — Next.js 16 renamed `middleware.ts`. Keep that
+  file free of database access: it runs on nearly every request, and each run is billed.
+- The bitfield is a snapshot taken at login. When a user's role or permissions change, the token
+  must be re-issued or invalidated — otherwise the old bitfield stays valid until it expires.
+- `btoa`/`atob` exist in both the Node and Edge runtimes; no polyfill needed. For binary-safe
+  round-tripping of the `Uint8Array`, keep the latin1 handling in `utils.ts` intact.

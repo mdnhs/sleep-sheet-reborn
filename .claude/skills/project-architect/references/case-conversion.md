@@ -1,10 +1,25 @@
 # Case Conversion
 
+> **Do you actually need this?** Only when the frontend talks to an **external** backend that
+> returns `snake_case`. When the Hono API in this project is the backend, Drizzle already returns
+> `camelCase` and every mapper call is dead code plus a wasted pass over every response object on
+> the server. Skip the feature in that case.
+
 Adds snake↔camel case conversion utilities. Enable this feature to get full implementations of
 `mapSnakeToCamel` / `mapCamelToSnake` in `src/lib/utils.ts` and the matching TypeScript type
 utilities in `src/types/index.ts`.
 
 No setup commands needed — pure TypeScript, no extra dependencies.
+
+The implementations below use `any` internally — the recursive shape cannot be expressed to the
+compiler without it. That is the one sanctioned exception to the project's no-`any` rule: keep it
+confined to these two functions, and let the exported types (`CamelCaseKeys` / `SnakeCaseKeys`) do
+the work at every call site. Add a scoped
+`/* eslint-disable @typescript-eslint/no-explicit-any */` at the top of the block rather than
+loosening the lint config.
+
+Skip conversion on hot paths where it is not needed: mapping a 1,000-row list on the server costs
+function duration on every request. Convert at the edges, once.
 
 ---
 

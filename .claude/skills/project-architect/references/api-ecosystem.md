@@ -7,6 +7,21 @@ Includes:
 - A unified REST API client (`src/lib/api-client/index.ts`) with auth header injection, timeout, IP forwarding, and standardised response parsing
 - A debug logger (`src/lib/api-client/debug.ts`) that logs requests/responses/errors in development
 
+## Which backend is this talking to?
+
+- **Internal Hono API (default in this architecture)** — the API is same-origin. Leave
+  `NEXT_PUBLIC_API_BASE_URL` empty in production; the client falls back to `NEXT_PUBLIC_APP_URL`
+  for server-side calls (an absolute URL is required there) and relative paths in the browser, which
+  avoids a DNS lookup and a CORS preflight. Responses use the Hono envelope
+  `{ success, data, pagination?, error? }` — see **Internal envelope** below. No case conversion is
+  needed: Drizzle already returns `camelCase`.
+- **External backend** — set `NEXT_PUBLIC_API_BASE_URL` and keep the legacy
+  `{ data, error, message }` envelope and the snake↔camel mapping below.
+
+Server Components must **not** use this client to call this project's own `/api` routes. Import the
+server service directly (`@/server/services/...`); a self-fetch costs a second function invocation
+and a full network round trip.
+
 Case conversion (snake↔camel) is **not** handled by the API client. It is done explicitly at the feature service layer using `mapCamelToSnake` / `mapSnakeToCamel` from `@/lib/utils`. See the case-conversion reference for the pattern.
 
 ---
@@ -73,7 +88,11 @@ export interface ApiClientConfig {
 }
 
 const DEFAULT_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000',
+  // Empty NEXT_PUBLIC_API_BASE_URL = same-origin internal Hono API.
+  BASE_URL:
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window === 'undefined' ? 'http://localhost:3000' : ''),
   API_PREFIX: process.env.NEXT_PUBLIC_API_PREFIX || '/api',
   API_VERSION: process.env.NEXT_PUBLIC_API_VERSION || '/v1',
   TIMEOUT: Number(process.env.NEXT_PUBLIC_API_TIMEOUT || 30000),
@@ -500,12 +519,54 @@ export const logError = (error: unknown, url: string, startTime: number): void =
   console.log('═════════════════════════════════════════════════════════════\n\n');
 };
 
+// Keep this false in production: logging every request/response body inflates the
+// Vercel log/observability meter and lengthens each billed invocation.
 export const isDebugEnabled = (): boolean =>
   process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_API === 'true';
 ```
 
+---
+
+## Internal envelope (Hono API)
+
+When the backend is the Hono API in this project, the client parses this shape instead of the
+legacy one. Keep it in sync with `src/server/lib/response.ts` — see `hono-api.md`.
+
+```typescript
+export interface PaginationMeta {
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export type ApiEnvelope<T> =
+  | { success: true; data: T; pagination?: PaginationMeta }
+  | { success: false; error: { code: string; message: string; causes?: Record<string, string[]> } };
+
+export const isSuccess = <T>(body: ApiEnvelope<T> | null): body is Extract<ApiEnvelope<T>, { success: true }> =>
+  body?.success === true;
+```
+
+Feature services unwrap this into `ServiceResponse<T>` — see the new-feature skill.
+
+Full type safety without hand-written generics is available via Hono RPC:
+
+```typescript
+import { hc } from 'hono/client';
+import type { ApiType } from '@/server/api';
+
+export const rpc = hc<ApiType>(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
+```
+
+Pick REST-client **or** RPC per project and stay consistent.
+
 ## Setup commands to append
 
 ```bash
-# No extra setup needed
+# No extra setup needed for the REST client.
+# Hono RPC client (optional, comes with hono):
+# pnpm add hono
 ```

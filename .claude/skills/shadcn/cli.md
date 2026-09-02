@@ -27,7 +27,8 @@ Initializes shadcn/ui in an existing project or creates a new project (when `--n
 
 | Flag                    | Short | Description                                               | Default |
 | ----------------------- | ----- | --------------------------------------------------------- | ------- |
-| `--template <template>` | `-t`  | Template (next, start, vite, next-monorepo, react-router) | —       |
+| `--template <template>` | `-t`  | Template (next, start, vite, react-router, laravel, astro) | —       |
+| `--base <base>`         | `-b`  | Component library (base, radix)                           | —       |
 | `--preset [name]`       | `-p`  | Preset configuration (named, code, or URL)                | —       |
 | `--yes`                 | `-y`  | Skip confirmation prompt                                  | `true`  |
 | `--defaults`            | `-d`  | Use defaults (`--template=next --preset=base-nova`)       | `false` |
@@ -35,12 +36,50 @@ Initializes shadcn/ui in an existing project or creates a new project (when `--n
 | `--cwd <cwd>`           | `-c`  | Working directory                                         | current |
 | `--name <name>`         | `-n`  | Name for new project                                      | —       |
 | `--silent`              | `-s`  | Mute output                                               | `false` |
+| `--css-variables`       |       | Use CSS variables for theming                             | `true`  |
+| `--no-css-variables`    |       | Use utility classes instead of CSS variables              | —       |
+| `--pointer`             |       | **Pointer cursor on buttons** — always pass this          | off     |
+| `--no-pointer`          |       | Disable pointer cursor on buttons                         | —       |
 | `--rtl`                 |       | Enable RTL support                                        | —       |
+| `--no-rtl`              |       | Disable RTL support                                       | —       |
 | `--reinstall`           |       | Re-install existing UI components                         | `false` |
 | `--monorepo`            |       | Scaffold a monorepo project                               | —       |
 | `--no-monorepo`         |       | Skip the monorepo prompt                                  | —       |
 
+> **Always init with `--pointer`.** Tailwind v4 dropped the browser's default
+> `cursor: pointer` on `<button>`, so without this flag every shadcn button shows the arrow
+> cursor and the UI feels dead. The flag persists as `"pointer": true` in `components.json`,
+> so components added later inherit it.
+>
+> ```bash
+> npx shadcn@latest init --pointer
+> ```
+>
+> `--pointer` exists on `init` only. For a project already initialised without it, see
+> **Retrofitting pointer cursors** below.
+
 `npx shadcn@latest create` is an alias for `npx shadcn@latest init`.
+
+#### Retrofitting pointer cursors
+
+If `components.json` has no `"pointer": true`, buttons were generated without a cursor. Fix both
+halves — the config (so future `add`s are correct) and the components already on disk:
+
+1. Add `"pointer": true` to `components.json`, next to `"rtl"`.
+2. Add `cursor-pointer` to the base class string of `buttonVariants` in `components/ui/button.tsx`,
+   alongside the existing `disabled:pointer-events-none`.
+3. Do the same for any other interactive primitive generated without it — `dropdown-menu` items,
+   `select` trigger, `tabs` trigger, `checkbox`, `switch`, `radio-group`, `accordion` trigger,
+   `command` items, `pagination` links, `sidebar` menu buttons.
+4. Or, to let the CLI do it, re-run init and re-pull the components:
+
+   ```bash
+   npx shadcn@latest init --pointer --force
+   npx shadcn@latest add button --overwrite   # repeat per component, review the diff first
+   ```
+
+   `--force`/`--overwrite` discards local edits to those files. Check `git diff` before committing;
+   if the components are customised, do step 1–3 by hand instead.
 
 ### `add` — Add components
 
