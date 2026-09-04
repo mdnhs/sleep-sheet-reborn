@@ -37,7 +37,7 @@ function toSheetRow(
     quantity,
     totalAmount: order.totalAmount,
     boughtCost,
-    shippingCost: order.shippingCost,
+    shippingCost: 200,
   };
 }
 
