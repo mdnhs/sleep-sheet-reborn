@@ -73,7 +73,10 @@ const app = new Hono()
       const [monthlyOrders, monthlyCosts, monthlyExpenses] = await db.batch([
         db.select({
             month: monthOf(orders.createdAt),
-            revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
+            // subtotal, not totalAmount — totalAmount is subtotal +
+            // shippingCost, so using it here would cancel out the
+            // shippingCost subtraction in the profit calc below.
+            revenue: sum(sql<number>`${orders.subtotal} - COALESCE(${orders.refundedAmount}, 0)`),
             shippingCost: sum(orders.shippingCost),
           })
           .from(orders)
@@ -213,6 +216,12 @@ const app = new Hono()
         await db.batch([
           db.select({
               revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
+              // subtotal, not totalAmount — totalAmount already has
+              // shippingCost folded in, which would cancel out the
+              // shippingCost subtraction in the profit calc below. Kept as a
+              // separate field so `revenue` (Total Net Sale) still reflects
+              // the full amount actually charged.
+              subtotalRevenue: sum(sql<number>`${orders.subtotal} - COALESCE(${orders.refundedAmount}, 0)`),
               shipping: sum(orders.shippingCost),
               orders: count(),
             })
@@ -329,6 +338,7 @@ const app = new Hono()
         ]);
 
       const totalRevenue = Number(orderTotals[0]?.revenue || 0);
+      const subtotalRevenue = Number(orderTotals[0]?.subtotalRevenue || 0);
       const totalShippingCost = Number(orderTotals[0]?.shipping || 0);
       const orderCount = Number(orderTotals[0]?.orders || 0);
       const totalCost = Number(costTotals[0]?.cost || 0);
@@ -342,7 +352,7 @@ const app = new Hono()
       const cancelledCost = grossCost - totalCost;
       const totalItemsSold = Number(itemTotals[0]?.items || 0);
 
-      const grossProfit = totalRevenue - (totalCost + totalShippingCost);
+      const grossProfit = subtotalRevenue - (totalCost + totalShippingCost);
       const netProfit = grossProfit - totalExpenseAmount;
 
       return c.json({

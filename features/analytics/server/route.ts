@@ -28,6 +28,11 @@ const app = new Hono()
     const orderStats = (start: Date, end: Date) =>
       db.select({
           revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
+          // subtotal, not totalAmount — totalAmount already has shippingCost
+          // folded in, which would cancel out the shippingCost subtraction
+          // in the profit calc below. Kept separate so `revenue` (used for
+          // AOV and the revenue tile) still reflects the full amount charged.
+          subtotalRevenue: sum(sql<number>`${orders.subtotal} - COALESCE(${orders.refundedAmount}, 0)`),
           shipping: sum(orders.shippingCost),
           orders: count(),
         })
@@ -98,11 +103,12 @@ const app = new Hono()
       ]);
 
     const totalRevenue = Number(currRes[0]?.revenue || 0);
+    const subtotalRevenue = Number(currRes[0]?.subtotalRevenue || 0);
     const totalShipping = Number(currRes[0]?.shipping || 0);
     const totalOrders = Number(currRes[0]?.orders || 0);
     const totalExpenses = Number(currExpenses[0]?.sum || 0);
     const totalCost = Number(currCost[0]?.sum || 0);
-    const netProfit = totalRevenue - totalCost - totalShipping - totalExpenses;
+    const netProfit = subtotalRevenue - totalCost - totalShipping - totalExpenses;
     const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     const totalCancelledOrders = Number(currCancelled[0]?.count || 0);
@@ -112,13 +118,14 @@ const app = new Hono()
     const grossSales = totalRevenue + cancelledAmount + returnedAmount;
 
     const prevRevenue = Number(prevRes[0]?.revenue || 0);
+    const prevSubtotalRevenue = Number(prevRes[0]?.subtotalRevenue || 0);
     const prevShipping = Number(prevRes[0]?.shipping || 0);
     const prevOrders = Number(prevRes[0]?.orders || 0);
     const prevCancelledAmount = Number(prevCancelled[0]?.amount || 0);
     const prevReturnedAmount = Number(prevReturned[0]?.amount || 0);
     const prevGrossSales = prevRevenue + prevCancelledAmount + prevReturnedAmount;
     const prevNetProfit =
-      prevRevenue - Number(prevCost[0]?.sum || 0) - prevShipping - Number(prevExpenses[0]?.sum || 0);
+      prevSubtotalRevenue - Number(prevCost[0]?.sum || 0) - prevShipping - Number(prevExpenses[0]?.sum || 0);
     const prevAov = prevOrders > 0 ? prevRevenue / prevOrders : 0;
 
     const pctChange = (curr: number, prev: number) =>
