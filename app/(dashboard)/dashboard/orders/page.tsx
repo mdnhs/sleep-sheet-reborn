@@ -623,17 +623,19 @@ function OrdersPageContent() {
   const getPhone = (order: ShippingOrder) =>
     (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "");
 
-  // Revenue is totalAmount (net of any refund), not subtotal — totalAmount
-  // already includes the shipping charge collected from the customer, which
-  // is what makes this match the reports page's aggregate profit formula
-  // (totalRevenue - totalCost - totalShippingCost) and what makes "Edit
-  // Order Amount" actually move the profit shown here.
+  // Revenue is subtotal (net of any refund), not totalAmount — totalAmount
+  // is subtotal + shippingCost (see "Edit Order Costs" and the POS route),
+  // so using it here would add the delivery cost into revenue and then
+  // subtract it right back out below, silently cancelling it out and making
+  // shippingCost have no real effect on profit no matter what it's set to.
+  // Basing revenue on subtotal instead means the shippingCost subtraction
+  // always actually lowers profit, regardless of who ends up paying for it.
   const getProfit = (order: ShippingOrder) => {
     const totalCost = order.items.reduce(
       (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
       0,
     );
-    const revenue = order.totalAmount - (order.refundedAmount ?? 0);
+    const revenue = order.subtotal - (order.refundedAmount ?? 0);
     return revenue - totalCost - order.shippingCost;
   };
 
@@ -2142,10 +2144,11 @@ function OrdersPageContent() {
               (() => {
                 const order = profitBreakdownOrder;
                 const refundedAmount = order.refundedAmount ?? 0;
-                // Revenue is totalAmount (net of refunds), not subtotal — see
-                // getProfit() above for why: it keeps this in sync with the
-                // reports page's aggregate formula and with "Edit Order Amount".
-                const itemsRevenue = order.totalAmount - refundedAmount;
+                // Revenue is subtotal (net of refunds), not totalAmount — see
+                // getProfit() above for why: totalAmount already has
+                // shippingCost folded in, which would cancel out the
+                // "Shipping Cost" deduction shown further down.
+                const itemsRevenue = order.subtotal - refundedAmount;
                 const itemsCost = order.items.reduce(
                   (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
                   0,
