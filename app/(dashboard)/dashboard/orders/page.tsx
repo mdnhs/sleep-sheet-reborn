@@ -955,6 +955,29 @@ function OrdersPageContent() {
       cell: ({ row }) => <span>{formatAmount(row.original.totalAmount)}</span>,
     },
     {
+      id: "boughtPrice",
+      header: "Bought Price",
+      cell: ({ row }) => {
+        const order = row.original;
+        const hasCostData = order.items.some(
+          (i) => i.costPrice !== null && i.costPrice !== undefined,
+        );
+        if (!hasCostData) {
+          return <span className="text-muted-foreground text-xs">—</span>;
+        }
+        const boughtPrice = order.items.reduce(
+          (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
+          0,
+        );
+        return <span>{formatAmount(boughtPrice)}</span>;
+      },
+    },
+    {
+      accessorKey: "shippingCost",
+      header: "Delivery Charge",
+      cell: ({ row }) => <span>{formatAmount(row.original.shippingCost)}</span>,
+    },
+    {
       id: "profit",
       header: "Profit",
       cell: ({ row }) => {
