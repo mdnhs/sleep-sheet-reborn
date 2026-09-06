@@ -21,6 +21,7 @@ import {
   IconCategory,
   IconLayoutDashboard,
   IconPackage,
+  IconPhoto,
   IconSettings,
   IconShoppingCart,
   IconChartBar,
@@ -65,6 +66,7 @@ const navGroups: GatedGroup[] = [
     items: [
       { title: "Products", url: "/dashboard/products", icon: <IconPackage />, module: "products" },
       { title: "Categories", url: "/dashboard/categories", icon: <IconCategory />, module: "products" },
+      { title: "Images", url: "/dashboard/images", icon: <IconPhoto />, module: "products" },
       { title: "Blog", url: "/dashboard/blog", icon: <IconArticle />, module: "blog" },
       { title: "Testimonials", url: "/dashboard/testimonials", icon: <IconBed />, module: "testimonials" },
     ],
