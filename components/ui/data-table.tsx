@@ -29,8 +29,17 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -193,12 +202,35 @@ export function DataTable<TData, TValue>({
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 py-1">
-        <div className="text-xs text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length > 0 ? (
-            `${table.getFilteredSelectedRowModel().rows.length} of ${table.getFilteredRowModel().rows.length} row(s) selected.`
-          ) : (
-            `Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount() || 1}`
-          )}
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-muted-foreground">
+            {table.getFilteredSelectedRowModel().rows.length > 0 ? (
+              `${table.getFilteredSelectedRowModel().rows.length} of ${table.getFilteredRowModel().rows.length} row(s) selected.`
+            ) : (
+              `Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount() || 1}`
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Rows per page</span>
+            <Select
+              value={table.getState().pagination.pageSize.toString()}
+              onValueChange={(value) => {
+                if (!value) return
+                table.setPageSize(Number(value))
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px] rounded-lg text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl">
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={size.toString()} className="text-xs font-medium">
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex items-center space-x-1.5 overflow-x-auto max-w-full overflow-y-hidden py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Button
