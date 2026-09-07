@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Copy, Download, ImageOff } from "lucide-react";
+import { Copy, Download, ImageOff, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -10,7 +10,17 @@ import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useGetInfiniteProducts } from "@/features/product/api/use-get-products";
+import { useSyncProductsToSheet } from "@/features/google-sheets/api/use-google-sheets";
 
 interface ImageRow {
   productId: string;
@@ -23,6 +33,9 @@ interface ImageRow {
 export default function ImagesClientPage() {
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
+  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+  const [syncCategories, setSyncCategories] = useState<Record<string, boolean>>({});
+  const syncProductsToSheet = useSyncProductsToSheet();
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useGetInfiniteProducts({ admin: "true", limit: "100", sort: "newest" });
@@ -60,6 +73,39 @@ export default function ImagesClientPage() {
   }, [rows, search]);
 
   const selectedRows = filteredRows.filter((_, index) => rowSelection[index.toString()]);
+
+  // Categories the sync dialog can offer, with how many images each has —
+  // derived from the same data already loaded for the table, so it always
+  // matches what's visible here.
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    rows.forEach((r) => counts.set(r.categoryLabel, (counts.get(r.categoryLabel) || 0) + 1));
+    return Array.from(counts.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [rows]);
+
+  const selectedSyncCategories = Object.keys(syncCategories).filter((c) => syncCategories[c]);
+
+  const handleSync = () => {
+    if (selectedSyncCategories.length === 0) {
+      toast.error("Select at least one category to sync");
+      return;
+    }
+    syncProductsToSheet.mutate(
+      { categories: selectedSyncCategories },
+      {
+        onSuccess: (result) => {
+          toast.success(`Synced ${result.count} image(s) to the sheet`);
+          setIsSyncDialogOpen(false);
+          setSyncCategories({});
+        },
+        onError: (error) => {
+          toast.error(error.message || "Failed to sync products to Google Sheet");
+        },
+      },
+    );
+  };
 
   const handleCopy = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -201,20 +247,89 @@ export default function ImagesClientPage() {
             />
           }
           actionSlot={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={selectedRows.length === 0}
-              className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border bg-slate-50 dark:bg-muted/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Download Selected ({selectedRows.length})</span>
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={selectedRows.length === 0}
+                className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border bg-slate-50 dark:bg-muted/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download Selected ({selectedRows.length})</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setIsSyncDialogOpen(true)}
+                title="Sync to Google Sheet"
+                className="rounded-full shrink-0 h-8 w-8 border bg-slate-50 dark:bg-muted/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            </>
           }
         />
       )}
+
+      <Dialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sync Products to Google Sheet</DialogTitle>
+            <DialogDescription>
+              Pick the categories to sync. This replaces everything currently
+              in the sheet&apos;s &quot;products&quot; tab with just these
+              categories&apos; images.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[50vh] overflow-y-auto space-y-1 py-2">
+            {categoryOptions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No categories found.</p>
+            ) : (
+              categoryOptions.map((cat) => (
+                <label
+                  key={cat.label}
+                  className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-muted/50 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Checkbox
+                      checked={!!syncCategories[cat.label]}
+                      onCheckedChange={(checked) =>
+                        setSyncCategories((prev) => ({ ...prev, [cat.label]: checked === true }))
+                      }
+                    />
+                    <span className="text-sm font-medium">{cat.label}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{cat.count} image(s)</span>
+                </label>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsSyncDialogOpen(false)}
+              disabled={syncProductsToSheet.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSync}
+              disabled={syncProductsToSheet.isPending || selectedSyncCategories.length === 0}
+              className="gap-1.5"
+            >
+              {syncProductsToSheet.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Sync {selectedSyncCategories.length > 0 ? `(${selectedSyncCategories.length})` : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

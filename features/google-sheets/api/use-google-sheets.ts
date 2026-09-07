@@ -32,3 +32,16 @@ export function useBulkBookToSheet() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 }
+
+export function useSyncProductsToSheet() {
+  return useMutation({
+    mutationFn: async (data: { categories: string[] }) => {
+      const response = await client.api["google-sheets"]["sync-products"].$post({ json: data });
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string };
+        throw new Error(body.error || "Failed to sync products to Google Sheet");
+      }
+      return response.json();
+    },
+  });
+}

@@ -3,8 +3,9 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { appendOrdersToSheet, type SheetOrderRow } from "@/lib/google-sheets";
+import { replaceProductsSheet, type ProductSheetRow } from "@/lib/google-sheets-products";
 import { db } from "@/db";
-import { orders } from "@/db/schema";
+import { orders, products, categories } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { can } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames } from "@/features/activity/server/log-activity";
@@ -120,6 +121,55 @@ const app = new Hono()
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to book to Google Sheet";
         console.error("Google Sheets bulk book error:", err);
+        return c.json({ error: msg }, 500);
+      }
+    }
+  )
+
+  .post(
+    "/sync-products",
+    sessionMiddleware,
+    zValidator("json", z.object({ categories: z.array(z.string()).min(1) })),
+    async (c) => {
+      const user = c.get("user");
+      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      const { categories: categoryLabels } = c.req.valid("json");
+
+      try {
+        const matchedCategories = await db.query.categories.findMany({
+          where: inArray(categories.label, categoryLabels),
+        });
+        const categoryIds = matchedCategories.map((cat) => cat.id);
+
+        const productsList = categoryIds.length
+          ? await db.query.products.findMany({
+              where: inArray(products.categoryId, categoryIds),
+              with: { category: true },
+            })
+          : [];
+
+        const rows: ProductSheetRow[] = productsList.flatMap((product) =>
+          (product.images || []).map((imageUrl) => ({
+            name: product.name,
+            category: product.category?.label ?? "Uncategorized",
+            price: product.price,
+            isAvailable: product.stock > 0,
+            imageUrl,
+          })),
+        );
+
+        await replaceProductsSheet(rows);
+
+        setActivityMeta(c, {
+          name: `${categoryLabels.length} categor${categoryLabels.length === 1 ? "y" : "ies"}: ${summarizeNames(categoryLabels)}`,
+        });
+        return c.json({ success: true, count: rows.length });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to sync products to Google Sheet";
+        console.error("Google Sheets product sync error:", err);
         return c.json({ error: msg }, 500);
       }
     }
