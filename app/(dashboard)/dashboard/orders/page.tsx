@@ -77,6 +77,7 @@ import {
   History,
   Loader2,
   MoreVertical,
+  Package,
   Pointer,
   Printer,
   RefreshCw,
@@ -247,6 +248,7 @@ function OrdersPageContent() {
   const [isBulkSheetBookOpen, setIsBulkSheetBookOpen] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
+  const [isGeneratingPackingList, setIsGeneratingPackingList] = useState(false);
   const [shippingCostOrder, setShippingCostOrder] =
     useState<ShippingOrder | null>(null);
   const [newShippingCost, setNewShippingCost] = useState("");
@@ -560,6 +562,71 @@ function OrdersPageContent() {
       toast.error("Failed to generate bulk invoices");
     } finally {
       setIsBulkPrinting(false);
+    }
+  };
+
+  // Aggregates selected orders' items down to one row per unique product
+  // (quantities summed across every selected order) so warehouse staff get a
+  // single pick-list instead of working order-by-order.
+  const handleDownloadPackingList = async () => {
+    if (selectedOrders.length === 0) return;
+    setIsGeneratingPackingList(true);
+    try {
+      const [{ pdf }, { PackingListPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/checkout/components/invoice-pdf"),
+      ]);
+
+      const quantityByProduct = new Map<
+        string,
+        { name: string; image: string | null; quantity: number }
+      >();
+      selectedOrders.forEach((order) => {
+        order.items.forEach((item: any) => {
+          const key = item.product?.id ?? "unknown";
+          const existing = quantityByProduct.get(key);
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            quantityByProduct.set(key, {
+              name: item.product?.name || "Unknown Product",
+              image: item.product?.images?.[0] || null,
+              quantity: item.quantity,
+            });
+          }
+        });
+      });
+
+      const items = Array.from(quantityByProduct.values()).sort(
+        (a, b) => b.quantity - a.quantity,
+      );
+
+      const doc = (
+        <PackingListPDF
+          items={items}
+          siteName={siteName}
+          logoUrl={logoUrl}
+          orderCount={selectedOrders.length}
+          filterLabel={statusFilter === "TODAY" ? "Today" : "Pending"}
+        />
+      );
+
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Packing-List-${statusFilter}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Packing list downloaded successfully");
+    } catch (error) {
+      console.error("Packing list PDF generation failed:", error);
+      toast.error("Failed to generate packing list");
+    } finally {
+      setIsGeneratingPackingList(false);
     }
   };
 
@@ -1509,6 +1576,23 @@ function OrdersPageContent() {
                   <Truck className="h-3.5 w-3.5" />
                 )}
                 Book Selected ({selectedOrders.length})
+              </Button>
+            )}
+          {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
+            selectedOrders.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDownloadPackingList}
+                disabled={isGeneratingPackingList}
+                className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+              >
+                {isGeneratingPackingList ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Package className="h-3.5 w-3.5" />
+                )}
+                Packing List ({selectedOrders.length})
               </Button>
             )}
           {permWrite && selectedOrders.length > 0 && (

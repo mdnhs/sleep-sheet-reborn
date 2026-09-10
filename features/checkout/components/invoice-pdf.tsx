@@ -423,3 +423,142 @@ export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl, phoneNumbe
     </Document>
   );
 };
+
+const packingListStyles = StyleSheet.create({
+  page: {
+    padding: 24,
+    fontFamily: "Hind Siliguri",
+    fontSize: 9,
+    color: "#334155",
+    backgroundColor: "#ffffff",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: "#e2e8f0",
+  },
+  title: {
+    fontFamily: "Space Grotesk",
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#0f172a",
+  },
+  subtitle: {
+    fontSize: 8,
+    color: "#64748b",
+    marginTop: 2,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  card: {
+    width: "33.33%",
+    padding: 6,
+  },
+  cardInner: {
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+    borderRadius: 8,
+    padding: 8,
+    alignItems: "center",
+  },
+  productImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 6,
+    objectFit: "cover",
+    marginBottom: 6,
+    backgroundColor: "#f1f5f9",
+  },
+  productName: {
+    fontSize: 8.5,
+    fontWeight: "bold",
+    color: "#1e293b",
+    textAlign: "center",
+  },
+  qtyBadge: {
+    marginTop: 5,
+    backgroundColor: "#0f172a",
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "bold",
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+});
+
+export interface PackingListItem {
+  name: string;
+  image: string | null;
+  quantity: number;
+}
+
+interface PackingListPDFProps {
+  items: PackingListItem[];
+  siteName: string;
+  logoUrl: string;
+  orderCount: number;
+  filterLabel: string;
+}
+
+// One combined pick-list for a batch of selected orders: unique products
+// only, with quantities summed across every selected order — so warehouse
+// staff pull each product once, in the right total quantity, instead of
+// working order-by-order.
+export const PackingListPDF = ({
+  items,
+  siteName,
+  logoUrl,
+  orderCount,
+  filterLabel,
+}: PackingListPDFProps) => {
+  const generatedAt = new Date().toLocaleString("en-BD", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return (
+    <Document>
+      <Page size="A4" style={packingListStyles.page}>
+        <View style={packingListStyles.header}>
+          {logoUrl && (
+            <Image
+              source={{ uri: getPdfFriendlyImageUrl(logoUrl, true) }}
+              style={{ width: 36, height: 36, marginRight: 10, objectFit: "contain" }}
+            />
+          )}
+          <View>
+            <Text style={packingListStyles.title}>{siteName} — Packing List</Text>
+            <Text style={packingListStyles.subtitle}>
+              {filterLabel} orders • {orderCount} order(s) • {items.length} product(s) • {generatedAt}
+            </Text>
+          </View>
+        </View>
+
+        <View style={packingListStyles.grid}>
+          {items.map((item, index) => (
+            <View key={index} style={packingListStyles.card}>
+              <View style={packingListStyles.cardInner}>
+                {item.image ? (
+                  <Image
+                    source={{ uri: getPdfFriendlyImageUrl(item.image, false) }}
+                    style={packingListStyles.productImage}
+                  />
+                ) : (
+                  <View style={packingListStyles.productImage} />
+                )}
+                <Text style={packingListStyles.productName}>{clampText(item.name, 40)}</Text>
+                <Text style={packingListStyles.qtyBadge}>Qty: {item.quantity}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </Page>
+    </Document>
+  );
+};
