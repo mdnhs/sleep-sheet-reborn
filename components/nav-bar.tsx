@@ -312,6 +312,11 @@ function MobileBottomNav({
 }
 
 function Navbar() {
+  const pathname = usePathname();
+  const isCheckout = pathname.includes("/checkout");
+  const isProductDetail = pathname.startsWith("/shop/") && pathname.replace("/shop/", "").length > 0;
+  const hideMobileSearch = isCheckout || isProductDetail;
+
   const { siteName, logoUrl } = useWebsiteSettings();
   const isMobile = useIsMobile();
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -358,7 +363,7 @@ function Navbar() {
       <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md">
         <div className="container mx-auto px-4">
           {isMobile ? (
-            <div className="flex flex-col py-2 gap-2">
+            <div className={`flex flex-col ${hideMobileSearch ? "py-1" : "py-2 gap-2"}`}>
               <div className="flex h-14 items-center justify-between">
                 <Button
                   variant="ghost"
@@ -376,24 +381,26 @@ function Navbar() {
                   <MobileThemeToggle hasMounted={hasMounted} />
                 </div>
               </div>
-              {/* Search Input for Mobile Viewports */}
-              <form onSubmit={handleSearch} className="relative w-full mb-2">
-                <input
-                  type="text"
-                  placeholder={t("searchPlaceholder")}
-                  aria-label={t("searchPlaceholder")}
-                  value={inputVal}
-                  onChange={(e) => setInputVal(e.target.value)}
-                  className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
-                />
-                <button
-                  type="submit"
-                  aria-label="Search"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
-              </form>
+              {/* Search Input for Mobile Viewports (hidden on product detail & checkout for clean viewport) */}
+              {!hideMobileSearch && (
+                <form onSubmit={handleSearch} className="relative w-full mb-2">
+                  <input
+                    type="text"
+                    placeholder={t("searchPlaceholder")}
+                    aria-label={t("searchPlaceholder")}
+                    value={inputVal}
+                    onChange={(e) => setInputVal(e.target.value)}
+                    className="w-full rounded-full border-none bg-slate-100 dark:bg-slate-800/50 py-2.5 pl-5 pr-12 text-sm text-foreground placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800"
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Search"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                </form>
+              )}
             </div>
           ) : (
             <div className="flex h-16 items-center justify-between gap-4">
