@@ -19,7 +19,7 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 
 export function ProductAccordion({ product }: ProductAccordionProps) {
-  const { data: settings } = useSettings();
+  const { data: settings, isLoading: isSettingsLoading } = useSettings();
   const { formatAmount } = useCurrency();
   const { t } = useLanguage();
 
@@ -66,7 +66,11 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
                 
                 <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <span className="text-[13px] font-medium text-slate-500 dark:text-slate-400">{t("shippingCost")}</span>
-                  <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">{formatAmount(insideCost)}</span>
+                  {isSettingsLoading ? (
+                    <span className="h-[15px] w-10 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                  ) : (
+                    <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">{formatAmount(insideCost)}</span>
+                  )}
                 </div>
                 
                 <div className="mt-3 bg-primary/10 text-primary text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5">
@@ -89,7 +93,11 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
                 
                 <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <span className="text-[13px] font-medium text-slate-500 dark:text-slate-400">{t("shippingCost")}</span>
-                  <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">{formatAmount(outsideCost)}</span>
+                  {isSettingsLoading ? (
+                    <span className="h-[15px] w-10 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                  ) : (
+                    <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">{formatAmount(outsideCost)}</span>
+                  )}
                 </div>
                 
                 <div className="mt-3 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5">

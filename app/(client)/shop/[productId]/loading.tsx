@@ -50,10 +50,26 @@ export default function ProductLoading() {
               <Skeleton className="h-12 w-full rounded-full" />
               <Skeleton className="h-12 w-full rounded-full" />
             </div>
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className={`w-full rounded-2xl ${i === 0 ? 'h-28' : 'h-14'}`} />
-              ))}
+            <div className="border border-border/50 rounded-2xl px-5 py-5 bg-white dark:bg-slate-900 shadow-sm">
+              <Skeleton className="h-5 w-40 mb-5" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="flex flex-col p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-2.5 w-20" />
+                        <Skeleton className="h-3.5 w-28" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                      <Skeleton className="h-3.5 w-20" />
+                      <Skeleton className="h-3.5 w-10" />
+                    </div>
+                    <Skeleton className="mt-3 h-8 w-full rounded-xl" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
