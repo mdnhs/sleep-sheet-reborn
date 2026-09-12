@@ -34,6 +34,62 @@ export default function SeoContentBody() {
         </Link>
       </div>
 
+      <div className="mt-6 pt-6 border-t border-border/40">
+        <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground mb-3">
+          {t("seoPopularSearches")}
+        </p>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <Link
+            href="/categories/comforters"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            কম্ফোর্টার সেট প্রাইজ ইন বাংলাদেশ
+          </Link>
+          <Link
+            href="/categories/bedsheet"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            বিছানার চাদর অনলাইন শপ
+          </Link>
+          <Link
+            href="/shop?search=king"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            কিং সাইজ বেডশিট দাম
+          </Link>
+          <Link
+            href="/shop?search=waterproof"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            ওয়াটারপ্রুফ স্লিপ শিট
+          </Link>
+          <Link
+            href="/shop?search=twill"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            টুইল কটন বিছানার চাদর
+          </Link>
+          <Link
+            href="/categories/comforters"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            শীতের কম্ফোর্টার কালেকশন
+          </Link>
+          <Link
+            href="/shop?search=baby"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            বেবি স্লিপ শিট
+          </Link>
+          <Link
+            href="/shop"
+            className="px-3 py-1.5 rounded-full bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/40 transition-colors"
+          >
+            ক্যাশ অন ডেলিভারি বেডিং
+          </Link>
+        </div>
+      </div>
+
       <h2 className="font-heading text-xl lg:text-2xl font-semibold tracking-tight text-foreground mt-10 mb-4">
         {t("seoFaqHeading")}
       </h2>

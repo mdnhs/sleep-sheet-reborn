@@ -1,9 +1,9 @@
 export const seoConfig = {
   siteName: "Sleep Sheet",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://www.sleepsheetbd.com",
-  defaultTitle: "Sleep Sheet - Premium Comforter & Bed Sheet Price in Bangladesh",
+  defaultTitle: "Sleep Sheet - Premium Comforter & Bed Sheet Price in Bangladesh | সেরা বিছানার চাদর ও কম্ফোর্টার অনলাইন শপ",
   defaultDescription:
-    "Shop premium comforter sets, bed sheets, and pillow covers online in Bangladesh. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh. Best comforter price in Bangladesh.",
+    "বাংলাদেশে প্রিমিয়াম কম্ফোর্টার সেট প্রাইজ, ১০০% টুইল কটন কিং সাইজ বেডশিট ও ওয়াটারপ্রুফ স্লিপ শিট কিনুন সবচেয়ে সাশ্রয়ী মূল্যে। ক্যাশ অন ডেলিভারি ও ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি সহ সারা বাংলাদেশে হোম ডেলিভারি। Shop premium comforter sets & bed sheets in Bangladesh.",
   defaultImage: "/logo.png",
   defaultLocale: "en_US",
   twitterHandle: "@sleepsheet2025",

@@ -109,13 +109,14 @@ export const translations = {
     errorCvvLength: "CVV must be 3 digits",
     errorNameOnCardRequired: "Name on card is required",
     errorAgreeToTerms: "You must agree to the terms",
-    seoAboutHeading: "Premium Comforter & Bed Sheet Sets in Bangladesh",
+    seoAboutHeading: "Premium Comforter Set & Bed Sheet Online Shop in Bangladesh",
     seoAboutPara1:
-      "Sleep Sheet is an online bedding store in Bangladesh offering premium-quality comforters and bed sheets made from 100% twill cotton fabric. Our 5-piece comforter sets come with a matching bed sheet, pillow covers, and kolbalish cover — a complete bedroom makeover in one package.",
+      "Sleep Sheet is Bangladesh's trusted online bedding store offering premium twill cotton bed sheets, waterproof sleep sheets, and 5-piece comforter sets at the best comforter set price in Bangladesh. Each luxury set comes with a matching bed sheet, pillow covers, and bolster cover for a complete bedroom makeover.",
     seoAboutPara2:
-      "Order with zero advance payment and pay cash on delivery anywhere in Bangladesh. Every product ships with a 7-day replacement guarantee, so you can shop with complete confidence.",
+      "Shop king size bed sheets and winter comforters with zero advance payment and cash on delivery anywhere in Bangladesh. Every product comes with a 7-day easy replacement guarantee.",
     seoBrowseComforters: "Browse Comforters",
     seoBrowseBedSheets: "Shop Bed Sheets",
+    seoPopularSearches: "Popular Searches",
     seoFaqHeading: "Frequently Asked Questions",
     faqQ1: "What is included in the Sleep Sheet 5-piece comforter set?",
     faqA1:
@@ -235,13 +236,14 @@ export const translations = {
     errorCvvLength: "সিভিভি (CVV) অবশ্যই ৩ ডিজিটের হতে হবে",
     errorNameOnCardRequired: "কার্ডে থাকা নাম আবশ্যক",
     errorAgreeToTerms: "শর্তাবলীতে সম্মত হওয়া আবশ্যক",
-    seoAboutHeading: "বাংলাদেশে প্রিমিয়াম কমফোর্টার ও বেডশীট সেট",
+    seoAboutHeading: "কম্ফোর্টার সেট প্রাইজ ইন বাংলাদেশ ও সেরা বিছানার চাদর অনলাইন শপ",
     seoAboutPara1:
-      "স্লিপ শীট বাংলাদেশের একটি অনলাইন বেডিং স্টোর, যেখানে ১০০% টুইল কটন ফেব্রিকে তৈরি প্রিমিয়াম মানের কমফোর্টার ও বেডশীট পাওয়া যায়। আমাদের ৫ পিস কমফোর্টার সেটে থাকছে ম্যাচিং বেডশীট, বালিশের কভার এবং কোলবালিশ কভার — এক প্যাকেজেই সম্পূর্ণ বেডরুম মেকওভার।",
+      "স্লিপ শীট বাংলাদেশের সবচেয়ে নির্ভরযোগ্য অনলাইন বেডিং স্টোর, যেখানে সাশ্রয়ী কম্ফোর্টার সেট প্রাইজ ইন বাংলাদেশ সহ ১০০% টুইল কটন বিছানার চাদর, ওয়াটারপ্রুফ স্লিপ শিট ও কিং সাইজ বেডশিট পাওয়া যায়। আমাদের প্রিমিয়াম ৫ পিস কম্ফোর্টার সেটে থাকছে ম্যাচিং বেডশীট, বালিশের কভার এবং কোলবালিশ কভার — এক প্যাকেজেই সম্পূর্ণ বেডরুম মেকওভার।",
     seoAboutPara2:
-      "শূন্য অগ্রিম পেমেন্টে অর্ডার করুন এবং বাংলাদেশের যেকোনো জায়গায় ক্যাশ অন ডেলিভারিতে মূল্য পরিশোধ করুন। প্রতিটি পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি, তাই নিশ্চিন্তে কেনাকাটা করুন।",
-    seoBrowseComforters: "কমফোর্টার দেখুন",
-    seoBrowseBedSheets: "বেডশীট কিনুন",
+      "বিশ্বস্ত বিছানার চাদর অনলাইন শপ হিসেবে আমরা দিচ্ছি শূন্য অগ্রিম পেমেন্টে ক্যাশ অন ডেলিভারি এবং ৭ দিনের সহজ রিপ্লেসমেন্ট গ্যারান্টি। সেরা কোয়ালিটির কিং সাইজ বেডশিট দাম ও ওয়াটারপ্রুফ স্লিপ শিটের জন্য আজই নিশ্চিন্তে অর্ডার করুন।",
+    seoBrowseComforters: "কমফোর্টার কালেকশন",
+    seoBrowseBedSheets: "বিছানার চাদর কিনুন",
+    seoPopularSearches: "জনপ্রিয় অনুসন্ধান",
     seoFaqHeading: "সচরাচর জিজ্ঞাসিত প্রশ্ন",
     faqQ1: "স্লিপ শীট ৫ পিস কমফোর্টার সেটে কী কী থাকে?",
     faqA1:
