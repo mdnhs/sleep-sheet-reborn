@@ -77,18 +77,6 @@ export function trackGtmEcommerce(
     ...extraData,
     ecommerce,
   });
-
-  // If direct gtag exists (GA4 fallback tag), also call gtag to guarantee delivery
-  if (typeof window.gtag === "function") {
-    try {
-      window.gtag("event", event, {
-        ...extraData,
-        ...ecommerce,
-      });
-    } catch {
-      // ignore gtag error
-    }
-  }
 }
 
 /**
@@ -292,12 +280,5 @@ export function trackGtmSearch(searchTerm: string): void {
     event: "search",
     search_term: term,
   });
-  if (typeof window.gtag === "function") {
-    try {
-      window.gtag("event", "search", { search_term: term });
-    } catch {
-      // ignore
-    }
-  }
 }
 
