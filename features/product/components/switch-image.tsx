@@ -39,6 +39,7 @@ function SwitchImage({ product }: SwitchImageProps) {
           alt={product.name}
           fill
           priority={true}
+          sizes="(max-width: 1024px) 100vw, 50vw"
           className="object-cover transition-transform duration-700"
         />
       </button>
@@ -58,6 +59,7 @@ function SwitchImage({ product }: SwitchImageProps) {
             <Image
               src={image}
               fill
+              sizes="(max-width: 640px) 56px, 96px"
               alt={`${product.name} view ${index + 1}`}
               className="object-cover"
             />

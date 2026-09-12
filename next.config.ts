@@ -22,9 +22,8 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    formats: ["image/avif", "image/webp"],
-    qualities: [75, 90],
-    minimumCacheTTL: 60 * 60 * 24 * 30,
+    loader: "custom",
+    loaderFile: "./lib/image-loader.ts",
     remotePatterns: [
       {
         protocol: "https",
