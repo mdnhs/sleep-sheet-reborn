@@ -418,6 +418,12 @@ export const orders = pgTable("orders", {
   // the same way `trackingNumber` gates Steadfast booking, so re-clicking
   // doesn't append duplicate rows.
   sheetBookedAt: timestamp("sheetBookedAt", { precision: 3 }),
+  // Meta click-id captured client-side at checkout (see lib/meta-pixel/fbclid.ts)
+  // and sent explicitly to the Purchase CAPI call's user_data.fbc. Persisted
+  // here (rather than only read live off the request's Cookie header) so the
+  // value survives even when the Pixel's own `_fbc` cookie hasn't been set yet
+  // by checkout time, and so a failed/retried CAPI send can reuse it.
+  fbc: text("fbc"),
 }, (table) => [
   // Dashboard lists orders newest-first and filters by date range; the
   // customer-facing pages look them up by user. Without these every such

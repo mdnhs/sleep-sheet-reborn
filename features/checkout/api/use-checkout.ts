@@ -11,6 +11,7 @@ import {
   clearCheckoutIdempotencyKey,
 } from "@/lib/checkout-idempotency";
 import { usePixelTracking } from "@/lib/meta-pixel";
+import { getCapturedFbc } from "@/lib/meta-pixel/fbclid";
 import type { PurchaseTrackingPayload } from "@/lib/meta-purchase-event";
 import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
 
@@ -47,6 +48,10 @@ export const UseCheckout = () => {
         // Same key for every submit of this cart, so a duplicate submit returns
         // the existing order instead of creating a second one.
         idempotencyKey: getOrCreateCheckoutIdempotencyKey(),
+        // Meta click-id, captured client-side on landing (see fbclid.ts) —
+        // sent explicitly so the server-side Purchase CAPI call doesn't have
+        // to depend on the Pixel's own _fbc cookie having been set in time.
+        fbc: getCapturedFbc(),
       };
 
       const response = await client.api.checkout.$post({ json: payload });

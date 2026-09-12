@@ -122,6 +122,15 @@ export interface CapiPurchaseInput {
     phone?: string | null;
     fullName?: string | null;
   };
+  // Stable per-customer identifier (the `users.id` behind the order, guest
+  // or logged-in) — improves Meta's identity resolution across a customer's
+  // repeat purchases. Hashed the same way as the other user_data fields.
+  externalId?: string | null;
+  // Click-id captured client-side at checkout (lib/meta-pixel/fbclid.ts),
+  // persisted on the order. Takes priority over the live Cookie header
+  // (ctx.cookieHeader) below, which is kept only as a fallback for callers
+  // that don't have a captured value.
+  fbc?: string | null;
 }
 
 /** Build the request context from a Hono/Fetch request's headers. */
@@ -157,8 +166,9 @@ export async function sendPurchaseEvent(
     ph: arr(hashPhone(input.customer?.phone)),
     fn: arr(hash(firstName)),
     ln: arr(hash(lastName)),
+    external_id: arr(hash(input.externalId)),
     fbp: readCookie(ctx.cookieHeader, "_fbp"),
-    fbc: readCookie(ctx.cookieHeader, "_fbc"),
+    fbc: input.fbc || readCookie(ctx.cookieHeader, "_fbc"),
     client_ip_address: ctx.ipAddress,
     client_user_agent: ctx.userAgent,
   };

@@ -4,6 +4,7 @@ import { createContext, useEffect, useRef, useState, type ReactNode } from "reac
 import { usePathname } from "next/navigation"
 import { saveAttribution, getAttribution } from "./storage"
 import { parseAttributionFromUrl, debugLog } from "./utils"
+import { captureFbclid } from "./fbclid"
 import { initPixel, track, getActivePixelId } from "./tracker"
 import { PIXEL_CONFIG, applyPixelOverrides } from "./config"
 import { setRuntimeMappings } from "./pixel-mapping"
@@ -50,6 +51,11 @@ export function PixelProvider({
   const initialized = useRef(false)
 
   useEffect(() => {
+    // Independent of the admin pixel toggle below: CAPI purchase events are
+    // sent server-side regardless of whether the browser Pixel is enabled,
+    // so the fbc click-id should still be captured either way.
+    captureFbclid()
+
     if (!enabled) {
       debugLog("init", { message: "Pixel tracking disabled by admin settings" })
       // eslint-disable-next-line react-hooks/set-state-in-effect -- `enabled` arrives from an async settings fetch; isReady can only flip once that resolves.

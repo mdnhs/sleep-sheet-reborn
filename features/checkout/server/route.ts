@@ -53,6 +53,9 @@ const checkoutSchema = z.object({
     color: z.string().optional(),
   })).optional(),
   idempotencyKey: z.string().optional(),
+  // Meta click-id captured client-side (lib/meta-pixel/fbclid.ts) — passed
+  // through to the Purchase CAPI call and persisted on the order.
+  fbc: z.string().optional(),
 });
 
 async function getShippingCost(zone: string): Promise<number> {
@@ -137,7 +140,7 @@ const app = new Hono()
     return c.json({ message: "Order could not be placed. Please contact support." }, 403);
   }
 
-  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey } = c.req.valid("json");
+  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey, fbc } = c.req.valid("json");
 
   // Order-creation idempotency key: one UUID per checkout attempt, generated
   // client-side and stored in sessionStorage, so a double-click, a slow-network
@@ -244,6 +247,7 @@ const app = new Hono()
           deviceOs: parsedUa.os,
           browserName: parsedUa.browser,
           userAgent: userAgentHeader,
+          fbc: fbc || null,
         }).returning(),
         db.insert(orderItems).values(
           cartItemsForOrder.map((item) => ({
@@ -282,6 +286,11 @@ const app = new Hono()
             phone: shippingInfo.phone,
             fullName: shippingInfo.fullName,
           },
+          // Stable per-customer id (reused across repeat orders by the same
+          // account) and the click-id captured at landing — see
+          // lib/meta-capi's userData builder for how these get hashed/sent.
+          externalId: user.id,
+          fbc: fbc || null,
         },
         capiContextFromHeaders(c.req.raw.headers),
       );
@@ -397,6 +406,7 @@ const app = new Hono()
         deviceOs: parsedUa.os,
         browserName: parsedUa.browser,
         userAgent: userAgentHeader,
+        fbc: fbc || null,
       }).returning(),
       db.insert(orderItems).values(
         cartItemsForOrder.map((item) => ({
@@ -433,6 +443,8 @@ const app = new Hono()
           phone: shippingInfo.phone,
           fullName: shippingInfo.fullName,
         },
+        externalId: guestUserId,
+        fbc: fbc || null,
       },
       capiContextFromHeaders(c.req.raw.headers),
     );
