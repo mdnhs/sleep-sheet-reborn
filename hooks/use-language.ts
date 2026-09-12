@@ -219,7 +219,7 @@ export const translations = {
     searching: "অনুসন্ধান করা হচ্ছে...",
     noOrdersFound: "এই ফোন নম্বরে কোনো অর্ডার পাওয়া যায়নি।",
     orderNumberLabel2: "অর্ডার নম্বর:",
-    orderIn: "আর মাত্র",
+    orderIn: "",
     toGet: "এর মধ্যে অর্ডার করলেই পাচ্ছেন",
     sameDayShipment: "আগামীকাল ডেলিভারি",
     shipmentTomorrow: "আগামীপরশু ডেলিভারি",
