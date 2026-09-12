@@ -28,7 +28,7 @@ export function MobileFilterSheet({ side = "bottom", initialCategory }: { side?:
   const selectedPrice = price || null;
 
   return (
-    <div>
+    <div className="lg:hidden">
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger
           render={
