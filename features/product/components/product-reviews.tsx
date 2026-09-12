@@ -1,15 +1,20 @@
 "use client";
 
+import React, { useState } from "react";
 import { Product } from "@/lib/types";
 import { formatDate, toTitleCase } from "@/lib/utils";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 import Image from "next/image";
+import ReviewForm from "./review-form";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ProductReviewsProps {
   product: Product;
 }
 
 export function ProductReviews({ product }: ProductReviewsProps) {
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
   const averageRating =
     product.reviews.length > 0
       ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
@@ -22,7 +27,28 @@ export function ProductReviews({ product }: ProductReviewsProps) {
 
   return (
     <div className="w-full mt-20">
-      <h2 className="text-2xl font-semibold mb-8 text-foreground tracking-tight">Rating & Reviews</h2>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <h2 className="text-2xl font-semibold text-foreground tracking-tight">Rating & Reviews</h2>
+        <Button
+          variant="outline"
+          onClick={() => setIsReviewOpen(true)}
+          className="rounded-full px-5 font-semibold text-sm border-border hover:bg-secondary/50"
+        >
+          <Star className="h-4 w-4 mr-1.5 text-yellow-500 fill-yellow-500" />
+          Write a Review
+        </Button>
+      </div>
+
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Write a Review</DialogTitle>
+          </DialogHeader>
+          <div className="pt-2">
+            <ReviewForm productId={product.id} />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-12 lg:gap-24 items-center">
 
@@ -89,8 +115,16 @@ export function ProductReviews({ product }: ProductReviewsProps) {
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full border border-dashed border-border rounded-2xl p-8 text-muted-foreground text-sm">
-              No reviews yet. Be the first to review!
+            <div className="flex flex-col items-center justify-center h-full border border-dashed border-border rounded-2xl p-8 text-center text-muted-foreground text-sm gap-3">
+              <p>No reviews yet. Be the first to review!</p>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setIsReviewOpen(true)}
+                className="rounded-full font-medium"
+              >
+                Write the first review
+              </Button>
             </div>
           )}
 

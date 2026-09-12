@@ -481,7 +481,7 @@ function ProductPicker({ product }: ProductPickerProps) {
 
       {/* Smart Sticky Bottom Bar */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-md border-t border-border py-3 sm:py-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transform transition-transform duration-300 z-50 ${
+        className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border py-3 pb-safe sm:py-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.15)] transform transition-transform duration-300 z-50 ${
           showStickyBar ? "translate-y-0" : "translate-y-full"
         }`}
       >

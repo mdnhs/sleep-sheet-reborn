@@ -87,8 +87,8 @@ export default function GoogleAnalytics() {
         </>
       )}
 
-      {/* Google Analytics (GA4) fallback if GA ID is present */}
-      {gaId && !gaId.startsWith("GTM-") && (
+      {/* Google Analytics (GA4) fallback only when GTM is NOT present */}
+      {!gtmWebId && gaId && !gaId.startsWith("GTM-") && (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
@@ -107,7 +107,7 @@ export default function GoogleAnalytics() {
         </>
       )}
 
-      {gaId && (
+      {!gtmWebId && gaId && (
         <Suspense fallback={null}>
           <GoogleAnalyticsTracker gaId={gaId} />
         </Suspense>

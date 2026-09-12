@@ -254,6 +254,14 @@ function MobileBottomNav({
   const { data: wishlist } = useWishlist();
   const wishlistItemsCount = wishlist?.items?.length || 0;
 
+  // On checkout pages and product detail pages (/shop/[productId]), hide the generic
+  // bottom nav so:
+  // 1) Checkout remains distraction-free and doesn't block form submission
+  // 2) Product detail page's sticky "Add to Cart" / "Buy Now" CTA bar is fully accessible and not covered
+  const isCheckout = pathname.includes("/checkout");
+  const isProductDetail = pathname.startsWith("/shop/") && pathname.replace("/shop/", "").length > 0;
+  if (isCheckout || isProductDetail) return null;
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-background border-t shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-between px-6 h-16 pb-safe">
       {/* Home */}

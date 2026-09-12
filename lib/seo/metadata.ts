@@ -27,7 +27,10 @@ export function generateMetadata({
 }: MetadataParams): Metadata {
   const fullTitle = `${title} | ${seoConfig.siteName}`
   const canonicalUrl = canonical || seoConfig.siteUrl
-  const ogImage = "/logo.png"
+  const rawImage = openGraph?.image || seoConfig.defaultImage || "/logo.png"
+  const ogImageUrl = rawImage.startsWith("http")
+    ? rawImage
+    : `${seoConfig.siteUrl}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`
 
   return {
     // { absolute } opts out of the root layout's `%s | ${siteName}` title
@@ -47,16 +50,14 @@ export function generateMetadata({
       description: openGraph?.description || description,
       url: canonicalUrl,
       siteName: seoConfig.siteName,
-      images: ogImage
-        ? [
-            {
-              url: ogImage,
-              width: 1200,
-              height: 630,
-              alt: openGraph?.imageAlt || title,
-            },
-          ]
-        : [],
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: openGraph?.imageAlt || title,
+        },
+      ],
       locale: openGraph?.locale || seoConfig.defaultLocale,
       // Coerce to a type Next's Metadata validator accepts; anything else
       // (e.g. "product") throws "Invalid OpenGraph type" at runtime.
@@ -70,7 +71,7 @@ export function generateMetadata({
       creator: twitter?.creator || seoConfig.twitterHandle,
       title: twitter?.card ? undefined : fullTitle,
       description: twitter?.card ? undefined : description,
-      images: twitter?.image || ogImage ? [twitter?.image || ogImage] : [],
+      images: [twitter?.image || ogImageUrl],
     },
     appleWebApp: {
       capable: true,
