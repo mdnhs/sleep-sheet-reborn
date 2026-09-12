@@ -37,6 +37,7 @@ export function BulkBookCourierDialog({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeds the dialog's editable local copy of `orders` each time it opens; local edits must not leak back until saved.
       setLocalOrders(orders);
       const initialMap: Record<string, string> = {};
       const initialAddOnMap: Record<string, string> = {};
@@ -44,8 +45,8 @@ export function BulkBookCourierDialog({
       orders.forEach(order => {
         initialCostsMap[order.id] = order.shippingCost.toString();
         order.items?.forEach(item => {
-          if ((item as any).costPrice !== null && (item as any).costPrice !== undefined) {
-            initialMap[item.id] = (item as any).costPrice.toString();
+          if (item.costPrice !== null && item.costPrice !== undefined) {
+            initialMap[item.id] = item.costPrice.toString();
           }
           const suggestedAddOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
           if (suggestedAddOnCost > 0) {
@@ -174,15 +175,15 @@ export function BulkBookCourierDialog({
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <div className="w-28 shrink-0 space-y-1">
-                        {(item as any).costPrice !== null && (item as any).costPrice !== undefined && !editingItems[item.id] ? (
+                        {item.costPrice !== null && item.costPrice !== undefined && !editingItems[item.id] ? (
                           <div className="flex h-8 w-full items-center justify-between pl-2 pr-1 text-sm font-medium text-muted-foreground border rounded-md bg-muted/50 gap-1.5">
-                            <span>৳{(item as any).costPrice}</span>
+                            <span>৳{item.costPrice}</span>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded"
-                              onClick={() => startEditing(item.id, (item as any).costPrice)}
+                              onClick={() => startEditing(item.id, item.costPrice!)}
                             >
                               <Pencil className="h-3 w-3" />
                             </Button>

@@ -20,6 +20,7 @@ export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
 
   useEffect(() => {
     if (faqs[0]?.question && value.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- defaults the first FAQ open once `faqs` arrives async; `value` stays user-toggleable afterward.
       setValue([faqs[0].question]);
     }
   }, [faqs]);

@@ -24,6 +24,7 @@ function OrderSummeryCard() {
   const total = subtotal + shipping;
 
   const [hasMounted, setHasMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe mount flag; must flip after the client-side effect runs once, there's no value to derive it from.
   useEffect(() => setHasMounted(true), []);
 
   if (!hasMounted) return null;
@@ -55,7 +56,7 @@ function OrderSummeryCard() {
                 <div className="flex items-center gap-1.5 lg:gap-2 mt-0.5 text-[9px] lg:text-[10px] font-medium text-muted-foreground">
                   <span>{t("qty")}: {cartItem.quantity}</span>
                   <span className="w-0.5 h-0.5 rounded-full bg-border"></span>
-                  <span>{enrichColorWithAddOnPrices(cartItem.color, cartItem.addOns || (cartItem as any).product?.addOns, formatAmount)}</span>
+                  <span>{enrichColorWithAddOnPrices(cartItem.color, cartItem.addOns || (cartItem as unknown as { product?: { addOns?: { name: string; price: number }[] } }).product?.addOns, formatAmount)}</span>
                   {cartItem.size && (
                     <>
                       <span className="w-0.5 h-0.5 rounded-full bg-border"></span>

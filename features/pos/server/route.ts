@@ -8,8 +8,9 @@ import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { can } from '@/lib/permissions';
 import { parseUserAgent } from '@/lib/user-agent-parser';
-import { decrementStock } from '@/lib/stock';
+import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache } from '@/lib/stock';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
+import cuid from 'cuid';
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -47,6 +48,8 @@ const app = new Hono()
     return c.json({ success: false, error: 'Unauthorized' }, 403);
   }
 
+  let productMap = new Map<string, typeof products.$inferSelect>();
+
   try {
     const { customerName, customerPhone, customerAddress, paymentMethod, reference, note, items, shippingType, shippingCost } = c.req.valid('json');
 
@@ -54,7 +57,7 @@ const app = new Hono()
     const productsList = await db.query.products.findMany({
       where: inArray(products.id, productIds),
     });
-    const productMap = new Map(productsList.map(p => [p.id, p]));
+    productMap = new Map(productsList.map(p => [p.id, p]));
 
     for (const item of items) {
       const product = productMap.get(item.productId);
@@ -106,7 +109,16 @@ const app = new Hono()
     const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
     const parsedUa = parseUserAgent(userAgentHeader);
 
-    const [order] = await db.insert(orders).values({
+    const orderId = cuid();
+    setActivityMeta(c, { name: `#${orderNumber}` });
+
+    // Order + its line items + the card payment record + the stock decrement
+    // must all succeed or all fail together. db.batch runs every statement as
+    // one Postgres transaction in a single HTTP round trip (the neon-http
+    // driver has no interactive db.transaction()); stockDecrementQuery raises
+    // if any item is short on stock, which rolls the whole batch back.
+    const orderInsert = db.insert(orders).values({
+      id: orderId,
       orderNumber,
       userId: finalUserId,
       guestName: customerName,
@@ -128,11 +140,9 @@ const app = new Hono()
       userAgent: userAgentHeader,
     }).returning();
 
-    setActivityMeta(c, { name: `#${orderNumber}` });
-
-    await db.insert(orderItems).values(
+    const orderItemsInsert = db.insert(orderItems).values(
       items.map(item => ({
-        orderId: order.id,
+        orderId,
         productId: item.productId,
         quantity: item.quantity,
         price: item.price,
@@ -142,16 +152,23 @@ const app = new Hono()
       }))
     );
 
-    if (paymentMethod === 'CARD') {
-      await db.insert(payments).values({
-        orderId: order.id,
-        amount: totalAmount,
-        method: 'CARD',
-        status: 'COMPLETED',
-      });
-    }
+    const stockDecrement = db.execute(stockDecrementQuery(items));
 
-    await decrementStock(items);
+    const [[order]] = paymentMethod === 'CARD'
+      ? await db.batch([
+          orderInsert,
+          orderItemsInsert,
+          db.insert(payments).values({
+            orderId,
+            amount: totalAmount,
+            method: 'CARD',
+            status: 'COMPLETED',
+          }),
+          stockDecrement,
+        ])
+      : await db.batch([orderInsert, orderItemsInsert, stockDecrement]);
+
+    invalidateStockCache();
 
     return c.json({
       success: true,
@@ -163,6 +180,11 @@ const app = new Hono()
       },
     }, 201);
   } catch (error) {
+    const shortProductId = insufficientStockProductId(error);
+    if (shortProductId) {
+      const shortProduct = productMap.get(shortProductId);
+      return c.json({ success: false, error: `Insufficient stock for ${shortProduct?.name ?? "an item"}` }, 400);
+    }
     console.error('POS order error:', error);
     return c.json({ success: false, error: 'Failed to create POS order' }, 500);
   }

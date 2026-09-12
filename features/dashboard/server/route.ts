@@ -8,7 +8,7 @@ import { imageStorage } from '@/lib/imageStorage';
 import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { invalidateFeed } from '@/lib/meta-catalog/cache';
-import { can } from "@/lib/permissions";
+import { can, isAllowed } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono();
@@ -75,7 +75,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
         productId: newProduct.id,
       }));
 
-      let insertedSpecs: any[] = [];
+      let insertedSpecs: (typeof specifications.$inferSelect)[] = [];
       if (specsToInsert.length > 0) {
         insertedSpecs = await db.insert(specifications).values(specsToInsert).returning();
       }
@@ -195,7 +195,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       await db.delete(specifications).where(eq(specifications.productId, productId));
 
       const specList = JSON.parse(formData.get("specifications") as string) as { key: string; value: string }[];
-      let insertedSpecs: any[] = [];
+      let insertedSpecs: (typeof specifications.$inferSelect)[] = [];
       if (specList.length > 0) {
         insertedSpecs = await db.insert(specifications).values(
           specList.map((spec) => ({
@@ -251,7 +251,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
 
 app.post('/bulk-delete', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+  if (!isAllowed(user, "products", "write", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -309,7 +309,7 @@ app.post('/bulk-delete', sessionMiddleware, async (c) => {
 // visitor being served an admin's cached, cost-inclusive response.
 app.get('/:id', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+  if (!isAllowed(user, "products", "write", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -355,7 +355,7 @@ app.get('/:id', sessionMiddleware, async (c) => {
 
 app.delete('/:id', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+  if (!isAllowed(user, "products", "write", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -393,7 +393,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
 
 app.patch('/bulk-feature', sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+  if (!isAllowed(user, "products", "write", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -450,7 +450,7 @@ app.patch(
   ),
   async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+    if (!isAllowed(user, "products", "write", ["MODERATOR"])) {
       return c.json({ error: "Unauthorized" }, 403);
     }
 

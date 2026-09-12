@@ -95,6 +95,7 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs prev/next button state from the embla carousel instance, an external library that only exists after this effect runs.
     onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)

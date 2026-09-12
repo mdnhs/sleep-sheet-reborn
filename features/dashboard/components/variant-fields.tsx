@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import React from "react";
 import { useFieldArray, Control, UseFormSetValue } from "react-hook-form";
+import type { ProductFormValues } from "@/features/dashboard/schema";
 
 interface VariantFieldsProps {
-  control: Control<any>;
-  setValue: UseFormSetValue<any>;
+  control: Control<ProductFormValues>;
+  setValue: UseFormSetValue<ProductFormValues>;
 }
 
 export function VariantFields({ control, setValue }: VariantFieldsProps) {

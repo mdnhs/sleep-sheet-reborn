@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { products, categories, reviews, specifications, users, orderItems, orders } from '@/db/schema';
-import { eq, and, or, lte, gte, ilike, sql, desc, asc, inArray, ne } from 'drizzle-orm';
+import { eq, and, or, lte, gte, ilike, sql, desc, asc, inArray, ne, type SQL } from 'drizzle-orm';
 import { Product } from '@/lib/types';
 import { getProductById } from './get-product';
 
@@ -49,7 +49,7 @@ const app = new Hono()
   const admin = c.req.query("admin");
   const limit = Math.min(parseInt(c.req.query("limit") || "8", 10) || 8, 100);
 
-  const filterConditions: any[] = [];
+  const filterConditions: SQL[] = [];
 
   if (category) {
     const categoryList = category.split(",").map(c => c.trim()).filter(Boolean);
@@ -109,11 +109,11 @@ const app = new Hono()
         ilike(products.name, `%${search}%`),
         ilike(products.description, `%${search}%`),
         ilike(categories.label, `%${search}%`)
-      )
+      )!
     );
   }
 
-  const orderConditions: any[] = admin === "true" ? [] : [desc(products.isFeatured)];
+  const orderConditions: SQL[] = admin === "true" ? [] : [desc(products.isFeatured)];
   switch (sort) {
     case "newest":
       orderConditions.push(desc(products.createdAt));

@@ -35,19 +35,19 @@ const SubcategoryProducts = () => {
   }
 
   // Filter for subcategories (categories that have a parentId)
-  const subcategories = categories.filter((c: any) => c.parentId !== null);
+  const subcategories = categories.filter((c) => c.parentId !== null);
 
   // If there are no subcategories, maybe fallback to all categories or just render nothing
   const displayCategories = subcategories.length > 0 ? subcategories : categories;
 
   return (
     <>
-      {displayCategories.map((category: any, index: number) => (
+      {displayCategories.map((category, index: number) => (
         <CategoryCarousel
           key={category.id}
           categoryLabel={category.label}
           categoryValue={category.value}
-          categoryImage={category.image}
+          categoryImage={category.image ?? undefined}
           isEven={index % 2 !== 0}
         />
       ))}

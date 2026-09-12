@@ -5,12 +5,21 @@ import {
   boolean,
   integer,
   doublePrecision,
+  numeric,
   json,
   pgEnum,
   unique,
   index,
   AnyPgColumn,
 } from "drizzle-orm/pg-core";
+
+// Money columns: exact-decimal storage (Postgres numeric) instead of
+// doublePrecision, so repeated updates (refund accumulation, stock/price
+// edits) can't drift the stored value with float rounding error the way
+// `refundedAmount = refundedAmount + x` could. `mode: "number"` keeps the
+// JS-side type a plain number (parsed with parseFloat on read) so none of
+// the arithmetic/formatting call sites need to change.
+const money = (name: string) => numeric(name, { precision: 12, scale: 2, mode: "number" });
 import { relations } from "drizzle-orm";
 import cuid from "cuid";
 
@@ -244,7 +253,7 @@ export const products = pgTable("products", {
     .$defaultFn(() => cuid()),
   name: text("productName").notNull(),
   description: text("productDescription").notNull(),
-  price: doublePrecision("productPrice").notNull(),
+  price: money("productPrice").notNull(),
   stock: integer("productStock").notNull(),
   sku: text("productSKU").unique().notNull(),
   variants: json("productVariants").$type<Array<{ name: string; price: number | null }>>().default([]).notNull(),
@@ -360,10 +369,10 @@ export const orders = pgTable("orders", {
   guestName: text("guestName"),
   guestPhone: text("guestPhone"),
   guestEmail: text("guestEmail"),
-  totalAmount: doublePrecision("totalAmount").notNull(),
-  subtotal: doublePrecision("subtotal").notNull(),
-  shippingCost: doublePrecision("shippingCost").notNull(),
-  tax: doublePrecision("tax").notNull(),
+  totalAmount: money("totalAmount").notNull(),
+  subtotal: money("subtotal").notNull(),
+  shippingCost: money("shippingCost").notNull(),
+  tax: money("tax").notNull(),
   paymentMethod: text("paymentMethod").notNull(),
   paymentStatus: paymentStatusEnum("paymentStatus").default("PENDING").notNull(),
   shippingAddress: text("shippingAddress").notNull(),
@@ -396,7 +405,7 @@ export const orders = pgTable("orders", {
   // Refunds. `refundedAmount` accumulates across partial refunds (0 = none).
   // When it reaches `totalAmount` the order is fully refunded. `refundReason`
   // holds the most recent reason; per-refund history lives in the timeline.
-  refundedAmount: doublePrecision("refundedAmount").default(0).notNull(),
+  refundedAmount: money("refundedAmount").default(0).notNull(),
   refundReason: text("refundReason"),
   refundedAt: timestamp("refundedAt", { precision: 3 }),
   // Customer Device & Location metadata captured at checkout
@@ -428,8 +437,8 @@ export const orderItems = pgTable("order_items", {
     .references(() => orders.id),
   productId: text("productId").references(() => products.id),
   quantity: integer("quantity").notNull(),
-  price: doublePrecision("price").notNull(),
-  costPrice: doublePrecision("costPrice"),
+  price: money("price").notNull(),
+  costPrice: money("costPrice"),
   size: text("size"),
   color: text("color"),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
@@ -446,7 +455,7 @@ export const payments = pgTable("payments", {
     .unique()
     .notNull()
     .references(() => orders.id),
-  amount: doublePrecision("amount").notNull(),
+  amount: money("amount").notNull(),
   method: paymentMethodEnum("method").notNull(),
   transactionId: text("transactionId"),
   last4Digits: text("last4Digits"),
@@ -463,7 +472,7 @@ export const shippingMethods = pgTable("shipping_methods", {
     .primaryKey()
     .$defaultFn(() => cuid()),
   name: text("name").notNull(),
-  cost: doublePrecision("cost").notNull(),
+  cost: money("cost").notNull(),
   duration: text("duration").notNull(),
   active: boolean("active").default(true).notNull(),
 });
@@ -723,7 +732,7 @@ export const expenseCategories = pgTable("expense_categories", {
 
 export const expenses = pgTable("expenses", {
   id: text("id").primaryKey(),
-  amount: doublePrecision("amount").notNull(),
+  amount: money("amount").notNull(),
   categoryId: text("categoryId").references(() => expenseCategories.id).notNull(),
   date: timestamp("date", { precision: 3 }).defaultNow().notNull(),
   note: text("note"),

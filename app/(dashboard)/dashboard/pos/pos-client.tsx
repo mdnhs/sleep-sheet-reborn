@@ -101,6 +101,7 @@ export default function PosClientPage() {
 
   useEffect(() => {
     if (settings && !enabledMethods.find(m => m.value === paymentMethod)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resets an invalid payment method once settings load; paymentMethod is also user-editable afterward, so it can't be purely derived.
       setPaymentMethod(enabledMethods[0]?.value || "COD")
     }
   }, [settings, enabledMethods])
@@ -145,6 +146,7 @@ export default function PosClientPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchCategories is an async fetch-on-mount; its setCategories call happens after an awaited response, not synchronously in this effect.
     fetchCategories()
   }, [fetchCategories])
 
@@ -564,7 +566,7 @@ export default function PosClientPage() {
 
               {!hasNextPage && products.length > 0 && (
                 <div className="w-full text-center py-6 mt-4 text-muted-foreground text-sm">
-                  You've reached the end!
+                  You&apos;ve reached the end!
                 </div>
               )}
             </>

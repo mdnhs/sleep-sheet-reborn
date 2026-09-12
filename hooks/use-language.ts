@@ -267,6 +267,7 @@ export function useLanguage() {
     // Read initial value from localStorage
     const saved = localStorage.getItem("language") as Language;
     if (saved === "en" || saved === "bn") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage isn't available during SSR render, so the saved language can only be read client-side in an effect.
       setLanguageState(saved);
     } else {
       // Default to 'bn'

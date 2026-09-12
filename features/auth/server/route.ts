@@ -10,6 +10,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 // Brute-force lockout: after this many wrong passwords in a row, the account
@@ -25,7 +26,7 @@ const app = new Hono()
 
     return c.json({data:user});
 })
-  .post("/register", zValidator("json", RegisterSchema), async (c) => {
+  .post("/register", rateLimit("register", 5, 15 * 60_000), zValidator("json", RegisterSchema), async (c) => {
     const { name, email, password } = c.req.valid("json");
 
     try {
@@ -51,7 +52,7 @@ const app = new Hono()
       return c.json({ error: "Internal Server Error" }, 500);
     }
   })
-  .post("/login", zValidator("json", LoginSchema), async (c) => {
+  .post("/login", rateLimit("login", 10, 5 * 60_000), zValidator("json", LoginSchema), async (c) => {
     const { email, password } = c.req.valid("json");
 
     try {
@@ -115,7 +116,6 @@ const app = new Hono()
 
       return c.json({
         message: "Logged in successfully",
-        token,
         user: {
           id: user.id,
           email: user.email,
@@ -156,7 +156,7 @@ const app = new Hono()
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const body = c.req.valid("json");
 
-    const updateData: Record<string, any> = {};
+    const updateData: Partial<typeof users.$inferInsert> = {};
     if (body.name) updateData.name = body.name;
     if (body.phone !== undefined) updateData.phone = body.phone;
     if (body.address !== undefined) updateData.address = body.address;

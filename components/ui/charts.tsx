@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 
 interface SimpleChartData {
   name: string;
@@ -122,7 +123,7 @@ export function RevenueAnalyticsBarChart({ data, currencySymbol = "$" }: { data:
           tick={{ fontSize: 12, fill: "#888888" }}
         />
         <Tooltip
-          formatter={(value: any) => [`${currencySymbol}${Number(value).toLocaleString()}`, "Revenue"]}
+          formatter={(value: ValueType | undefined) => [`${currencySymbol}${Number(value).toLocaleString()}`, "Revenue"]}
           cursor={{ fill: "rgba(0, 0, 0, 0.04)" }}
           contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
         />
@@ -166,7 +167,7 @@ export function ProfitLossStackedChart({ data, currencySymbol = "$" }: { data: P
           tick={{ fontSize: 12, fill: "#888888" }}
         />
         <Tooltip
-          formatter={(value: any, name: any) => [
+          formatter={(value: ValueType | undefined, name: NameType | undefined) => [
             `${currencySymbol}${Number(value).toLocaleString()}`,
             name === "cost" ? "Cost / Loss" : "Net Profit",
           ]}

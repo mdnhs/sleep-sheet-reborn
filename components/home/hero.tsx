@@ -137,7 +137,7 @@ function Hero() {
                   // opacity 0, so leaving them non-priority (default lazy) keeps
                   // bandwidth on the one that paints first.
                   priority={index === 0}
-                  {...({ fetchPriority: index === 0 ? "high" : "low" } as any)}
+                  {...({ fetchPriority: index === 0 ? "high" : "low" } as { fetchPriority: "high" | "low" })}
                   className="object-cover transition-transform duration-[15000ms] ease-linear scale-100 group-hover:scale-110"
                 />
               </div>

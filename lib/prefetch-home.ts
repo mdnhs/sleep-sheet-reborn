@@ -1,5 +1,9 @@
 import { unstable_cache } from "next/cache";
 import settingsApp from "@/features/settings/server/route";
+import type { ProductSummary } from "@/lib/types";
+import type { BlogPost } from "@/app/(client)/blog/blog-client";
+import type { Testimonial } from "@/features/testimonials/api/use-get-testimonials";
+import type { PublicCategory } from "@/features/categories/api/use-get-category";
 
 // Runs the public settings Hono GET handler in-process (no HTTP round trip)
 // so the (client) layout can seed the ["settings"] React Query cache before
@@ -28,7 +32,7 @@ export const getPublicSettings = unstable_cache(
 );
 
 export const getPublicCategories = unstable_cache(
-  () => fromRoute<{ success: boolean; categories: any[] }>(categoriesApp, "/category"),
+  () => fromRoute<{ success: boolean; categories: PublicCategory[] }>(categoriesApp, "/category"),
   ["prefetch-categories"],
   { revalidate: 300, tags: ["categories"] }
 );
@@ -37,19 +41,19 @@ import blogApp from "@/features/blog/server/route";
 import testimonialsApp from "@/features/testimonials/server/route";
 
 export const getPublicProducts = unstable_cache(
-  () => fromRoute<{ data: any[] }>(productsApp, "/?sort=newest&limit=8"),
+  () => fromRoute<{ data: ProductSummary[] }>(productsApp, "/?sort=newest&limit=8"),
   ["prefetch-products"],
   { revalidate: 300, tags: ["products"] }
 );
 
 export const getPublicBlogPosts = unstable_cache(
-  () => fromRoute<{ data: any[] }>(blogApp, "/"),
+  () => fromRoute<{ data: BlogPost[] }>(blogApp, "/"),
   ["prefetch-blog"],
   { revalidate: 300, tags: ["blog"] }
 );
 
 export const getPublicTestimonials = unstable_cache(
-  () => fromRoute<{ data: any[]; total: number; hasNextPage: boolean; totalPages: number }>(
+  () => fromRoute<{ data: Testimonial[]; total: number; hasNextPage: boolean; totalPages: number }>(
     testimonialsApp,
     "/?page=1&limit=12",
   ),

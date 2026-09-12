@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { posts, users } from '@/db/schema';
-import { eq, desc, ilike, or, sql, and, inArray } from 'drizzle-orm';
+import { eq, desc, ilike, or, sql, and, inArray, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
@@ -18,14 +18,14 @@ const app = new Hono()
     const limit = Math.min(parseInt(c.req.query('limit') || '100', 10), 100)
     const search = c.req.query('search')
 
-    const filterConditions: any[] = []
+    const filterConditions: SQL[] = []
 
     if (search) {
       filterConditions.push(
         or(
           ilike(posts.title, `%${search}%`),
           ilike(posts.summary, `%${search}%`),
-        )
+        )!
       )
     }
 

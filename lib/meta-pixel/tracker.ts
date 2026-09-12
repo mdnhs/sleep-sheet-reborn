@@ -9,15 +9,27 @@ import type {
 } from "./events"
 import { generateEventId, debugLog } from "./utils"
 
+// The Pixel bootstrap function comes with extra properties bolted on (Meta's
+// own snippet shape) — queue/callMethod/etc. aren't part of a plain function
+// type, hence this dedicated interface instead of a bare function signature.
+interface FbqFunction {
+  (...args: unknown[]): void
+  callMethod?: (...args: unknown[]) => void
+  queue: IArguments[]
+  push: FbqFunction
+  loaded: boolean
+  version: string
+}
+
 declare global {
   interface Window {
-    fbq?: (...args: unknown[]) => void
-    _fbq?: (...args: unknown[]) => void
+    fbq?: FbqFunction
+    _fbq?: FbqFunction
   }
 }
 
 let sdkLoaded = false
-let initializedPixels = new Set<string>()
+const initializedPixels = new Set<string>()
 
 function loadSDK(): Promise<void> {
   if (sdkLoaded) return Promise.resolve()
@@ -77,13 +89,19 @@ function ensureFbq(): void {
   if (typeof window === "undefined") return
   if (window.fbq) return
 
+  // Meta's official Pixel bootstrap snippet, kept verbatim (including its
+  // arguments/.apply() shape) — this is third-party vendor code, not ours to
+  // restyle, and any behavior change here fails silently (broken ad tracking
+  // with no test coverage to catch it).
+  /* eslint-disable prefer-rest-params, prefer-spread */
   const n = (window.fbq = function () {
     if (n.callMethod) {
       n.callMethod.apply(n, arguments as unknown as unknown[])
     } else {
       n.queue.push(arguments)
     }
-  } as any)
+  } as FbqFunction)
+  /* eslint-enable prefer-rest-params, prefer-spread */
 
   if (!window._fbq) window._fbq = n
   n.push = n

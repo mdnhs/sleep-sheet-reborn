@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { getOptimizedImageUrl, extractTags } from '@/lib/utils';
 import { seoConfig, articleSchema, breadcrumbSchema, structuredDataScript } from '@/lib/seo';
+import type { BlogPost } from '@/app/(client)/blog/blog-client';
 
 const TAGS = [
   'Sleep Quality',
@@ -37,7 +38,7 @@ const TAGS = [
   'Decor & Styling',
 ];
 
-export default function BlogPostClient({ slug, initialPost }: { slug: string; initialPost?: any }) {
+export default function BlogPostClient({ slug, initialPost }: { slug: string; initialPost?: BlogPost }) {
   const { data: fetchedPost, isLoading } = useGetPost(slug);
   const { data: allPostsData } = useGetPosts({ limit: '5' });
   const [isLiked, setIsLiked] = useState(false);
@@ -47,7 +48,7 @@ export default function BlogPostClient({ slug, initialPost }: { slug: string; in
 
   const relatedPosts =
     allPostsData?.data?.filter(
-      (p: any) => p.slug !== slug && p.id !== post?.id && p.isPublished !== false
+      (p) => p.slug !== slug && p.id !== post?.id && p.isPublished !== false
     ).slice(0, 3) || [];
 
   if (isLoading && !post) {
@@ -352,7 +353,7 @@ export default function BlogPostClient({ slug, initialPost }: { slug: string; in
                   Related Blogs
                 </h3>
                 <div className="space-y-3">
-                  {relatedPosts.map((relPost: any) => (
+                  {relatedPosts.map((relPost) => (
                     <Link
                       key={relPost.id}
                       href={`/blog/${relPost.slug || relPost.id}`}

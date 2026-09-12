@@ -1,7 +1,8 @@
 import BlogPostClient from './blog-post-client';
+import type { BlogPost } from '@/app/(client)/blog/blog-client';
 import { seoConfig } from "@/lib/seo";
 import { db } from "@/db";
-import { posts } from "@/db/schema";
+import { posts, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { extractTags } from "@/lib/utils";
 
@@ -58,15 +59,29 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  let post: any = null;
+  let post: BlogPost | undefined;
 
   try {
     const [dbPost] = await db
-      .select()
+      .select({
+        id: posts.id,
+        title: posts.title,
+        slug: posts.slug,
+        summary: posts.summary,
+        content: posts.content,
+        coverImage: posts.coverImage,
+        isPublished: posts.isPublished,
+        createdAt: posts.createdAt,
+        author: {
+          id: users.id,
+          name: users.name,
+        },
+      })
       .from(posts)
+      .leftJoin(users, eq(posts.authorId, users.id))
       .where(eq(posts.slug, slug))
       .limit(1);
-    post = dbPost || null;
+    post = dbPost ? { ...dbPost, createdAt: dbPost.createdAt.toISOString() } : undefined;
   } catch {}
 
   return <BlogPostClient slug={slug} initialPost={post} />;

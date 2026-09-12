@@ -12,8 +12,8 @@ export * from "./events";
 
 declare global {
   interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
+    dataLayer: Record<string, unknown>[];
+    gtag: (...args: unknown[]) => void;
   }
 }
 
@@ -49,7 +49,7 @@ export function splitFullName(name?: string | null): { first_name?: string; last
 /**
  * Safely push an event or object to Google Tag Manager dataLayer.
  */
-export function pushToDataLayer(payload: Record<string, any>): void {
+export function pushToDataLayer(payload: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
   try {
     window.dataLayer = window.dataLayer || [];
@@ -66,8 +66,8 @@ export function pushToDataLayer(payload: Record<string, any>): void {
  */
 export function trackGtmEcommerce(
   event: "purchase" | "add_to_cart" | "remove_from_cart" | "begin_checkout" | "view_item" | string,
-  ecommerce: Record<string, any>,
-  extraData?: Record<string, any>
+  ecommerce: Record<string, unknown>,
+  extraData?: Record<string, unknown>
 ): void {
   if (typeof window === "undefined") return;
 
@@ -143,7 +143,7 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
   };
 
   // Google Ads Enhanced Conversions payload
-  const userData: Record<string, any> | undefined = payload.user_data
+  const userData: Record<string, unknown> | undefined = payload.user_data
     ? {
         email: payload.user_data.email || undefined,
         phone_number: formatE164Phone(payload.user_data.phone_number),

@@ -17,7 +17,7 @@ interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
-function clientLayout({ children }: ClientLayoutProps) {
+function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const { footerPhone } = useWebsiteSettings();
@@ -71,4 +71,4 @@ function clientLayout({ children }: ClientLayoutProps) {
   );
 }
 
-export default clientLayout;
+export default ClientLayout;

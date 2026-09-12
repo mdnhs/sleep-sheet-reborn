@@ -22,6 +22,7 @@ function CheckoutClinet({ initialSettings }: CheckoutClientProps) {
   const hasTrackedCheckoutRef = useRef(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe mount flag; there's no external store to derive this from, it must flip after the client-side effect runs once.
     setMounted(true);
     // Establish the order-creation idempotency key once, when the checkout
     // page loads, so every submit for this cart carries the same key.

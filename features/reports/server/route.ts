@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { orders, orderItems, products, expenses, expenseCategories, users } from "@/db/schema";
 import { eq, ne, and, gte, lte, desc, sum, count, isNotNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import { can } from "@/lib/permissions";
+import { isAllowed } from "@/lib/permissions";
 
 const BREAKDOWN_LIMIT = 200;
 
@@ -23,7 +23,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "reports", "read"))) {
+      if (!isAllowed(user, "reports", "read", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -141,7 +141,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "reports", "read"))) {
+      if (!isAllowed(user, "reports", "read", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

@@ -44,6 +44,14 @@ export interface Review {
     defaultVariantName?: string;
   }
 
+  // The list/card views (home sections, category browsing, POS) fetch a
+  // lighter product shape than the detail page — no features/care copy,
+  // specifications, or full review objects, just the aggregate rating.
+  // ProductCard never reads those fields, so it takes this narrower type
+  // instead of forcing every list endpoint to fake them in just to satisfy
+  // the full `Product` shape.
+  export type ProductSummary = Omit<Product, "features" | "care" | "specifications" | "reviews">;
+
   export type ProductColumn = {
     id: string;
     name: string;

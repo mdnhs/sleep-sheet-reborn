@@ -19,7 +19,7 @@ import Autoplay from "embla-carousel-autoplay";
 export default function BlogCarousel() {
   const { data: postsData, isLoading } = useGetPosts({ limit: "10" });
 
-  const publishedPosts = postsData?.data?.filter((post: any) => post.isPublished !== false) || [];
+  const publishedPosts = postsData?.data?.filter((post) => post.isPublished !== false) || [];
 
   if (isLoading) {
     return (
@@ -89,7 +89,7 @@ export default function BlogCarousel() {
           className="w-full relative group/carousel"
         >
           <CarouselContent className="-ml-4">
-            {publishedPosts.map((post: any) => (
+            {publishedPosts.map((post) => (
               <CarouselItem
                 key={post.id}
                 className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"

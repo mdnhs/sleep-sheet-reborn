@@ -5,8 +5,10 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { calculateItemUnitPrice } from "@/lib/utils";
 import { parseUserAgent } from "@/lib/user-agent-parser";
 import { isIpBlocked } from "@/lib/blocked-ip";
-import { decrementStock } from "@/lib/stock";
+import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache } from "@/lib/stock";
 import { getSetting } from "@/lib/settings-cache";
+import { rateLimit } from "@/lib/rate-limit";
+import cuid from "cuid";
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -123,7 +125,7 @@ async function isPaymentMethodEnabled(method: string): Promise<boolean> {
 
 const app = new Hono()
 
-.post("/", sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
+.post("/", rateLimit("checkout", 20, 5 * 60_000), sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
 
   // Fraud control: an IP blocked from the order action menu can never create
@@ -165,7 +167,7 @@ const app = new Hono()
     return c.json({ message: `Payment method "${selectedMethod}" is currently unavailable` }, 400);
   }
 
-  let cartItemsForOrder: {
+  const cartItemsForOrder: {
     productId: string;
     quantity: number;
     size?: string | null;
@@ -211,46 +213,54 @@ const app = new Hono()
     const parsedUa = parseUserAgent(userAgentHeader);
 
     try {
-      let createdOrder: any = null;
       const orderNumber = await generateOrderNumber();
-      const [order] = await db.insert(orders).values({
-        orderNumber,
-        userId: user.id,
-        guestName: shippingInfo.fullName,
-        guestPhone: shippingInfo.phone,
-        guestEmail: shippingInfo.email || null,
-        subtotal,
-        totalAmount,
-        tax: 0,
-        shippingCost,
-        shippingAddress: shippingInfo.address,
-        paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
-        saleType: 'WEBSITE',
-        note: shippingInfo.notes || null,
-        idempotencyKey: idempotencyKey ?? null,
-        ipAddress: clientIp,
-        deviceOs: parsedUa.os,
-        browserName: parsedUa.browser,
-        userAgent: userAgentHeader,
-      }).returning();
+      const orderId = cuid();
 
-      createdOrder = order;
+      // Order + its line items + the stock decrement + clearing the cart must
+      // all succeed or all fail together — otherwise a mid-way failure can
+      // leave an order with no items, or decremented stock with no order.
+      // db.batch runs every statement as one Postgres transaction in a single
+      // HTTP round trip (the neon-http driver has no interactive
+      // db.transaction()); stockDecrementQuery raises if any item is short on
+      // stock, which rolls the whole batch back.
+      const [[order]] = await db.batch([
+        db.insert(orders).values({
+          id: orderId,
+          orderNumber,
+          userId: user.id,
+          guestName: shippingInfo.fullName,
+          guestPhone: shippingInfo.phone,
+          guestEmail: shippingInfo.email || null,
+          subtotal,
+          totalAmount,
+          tax: 0,
+          shippingCost,
+          shippingAddress: shippingInfo.address,
+          paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+          saleType: 'WEBSITE',
+          note: shippingInfo.notes || null,
+          idempotencyKey: idempotencyKey ?? null,
+          ipAddress: clientIp,
+          deviceOs: parsedUa.os,
+          browserName: parsedUa.browser,
+          userAgent: userAgentHeader,
+        }).returning(),
+        db.insert(orderItems).values(
+          cartItemsForOrder.map((item) => ({
+            orderId,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            size: item.size || null,
+            color: item.color || null,
+          }))
+        ),
+        db.execute(stockDecrementQuery(cartItemsForOrder)),
+        db.delete(cartItems).where(eq(cartItems.cartId, cart.id)),
+      ]);
 
-      await db.insert(orderItems).values(
-        cartItemsForOrder.map((item) => ({
-          orderId: order.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          size: item.size || null,
-          color: item.color || null,
-        }))
-      );
-
-      await decrementStock(cartItemsForOrder);
-
-      await db.delete(cartItems)
-        .where(eq(cartItems.cartId, cart.id));
+      const createdOrder = order;
+      invalidateStockCache();
 
       // Server-side Purchase (CAPI). Fires at most once per order (guarded by
       // orders.metaPurchaseEventSentAt) and is deduplicated against the browser
@@ -303,6 +313,11 @@ const app = new Hono()
         if (existing) {
           return c.json({ message: "Order already placed", order: existing, orderId: existing.id });
         }
+      }
+      const shortProductId = insufficientStockProductId(error);
+      if (shortProductId) {
+        const shortItem = cart.items.find((i) => i.productId === shortProductId);
+        return c.json({ message: `Insufficient stock for ${shortItem?.product.name ?? "an item"}` }, 400);
       }
       console.error("Error placing order:", error);
       return c.json({ message: "Error placing order" }, 500);
@@ -358,43 +373,46 @@ const app = new Hono()
       address: shippingInfo.address,
     });
 
-    let guestOrderId = "";
     const orderNumber = await generateOrderNumber();
-    const [order] = await db.insert(orders).values({
-      orderNumber,
-      userId: guestUserId,
-      guestName: shippingInfo.fullName,
-      guestPhone: shippingInfo.phone,
-      guestEmail: shippingInfo.email || null,
-      subtotal,
-      totalAmount,
-      tax: 0,
-      shippingCost,
-      shippingAddress: shippingInfo.address,
-      paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
-      saleType: 'WEBSITE',
-      note: shippingInfo.notes || null,
-      idempotencyKey: idempotencyKey ?? null,
-      ipAddress: clientIp,
-      deviceOs: parsedUa.os,
-      browserName: parsedUa.browser,
-      userAgent: userAgentHeader,
-    }).returning();
+    const orderId = cuid();
 
-    guestOrderId = order.id;
+    const [[order]] = await db.batch([
+      db.insert(orders).values({
+        id: orderId,
+        orderNumber,
+        userId: guestUserId,
+        guestName: shippingInfo.fullName,
+        guestPhone: shippingInfo.phone,
+        guestEmail: shippingInfo.email || null,
+        subtotal,
+        totalAmount,
+        tax: 0,
+        shippingCost,
+        shippingAddress: shippingInfo.address,
+        paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+        saleType: 'WEBSITE',
+        note: shippingInfo.notes || null,
+        idempotencyKey: idempotencyKey ?? null,
+        ipAddress: clientIp,
+        deviceOs: parsedUa.os,
+        browserName: parsedUa.browser,
+        userAgent: userAgentHeader,
+      }).returning(),
+      db.insert(orderItems).values(
+        cartItemsForOrder.map((item) => ({
+          orderId,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          size: item.size ?? null,
+          color: item.color ?? null,
+        }))
+      ),
+      db.execute(stockDecrementQuery(cartItemsForOrder)),
+    ]);
 
-    await db.insert(orderItems).values(
-      cartItemsForOrder.map((item) => ({
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size ?? null,
-        color: item.color ?? null,
-      }))
-    );
-
-    await decrementStock(cartItemsForOrder);
+    const guestOrderId = order.id;
+    invalidateStockCache();
 
     // Server-side Purchase (CAPI). Fires at most once per order (guarded by
     // orders.metaPurchaseEventSentAt) and deduplicated against the browser Pixel.
@@ -445,6 +463,11 @@ const app = new Hono()
       if (existing) {
         return c.json({ message: "Order already placed", order: existing, orderId: existing.id });
       }
+    }
+    const shortProductId = insufficientStockProductId(error);
+    if (shortProductId) {
+      const shortItem = productMap.get(shortProductId);
+      return c.json({ message: `Insufficient stock for ${shortItem?.name ?? "an item"}` }, 400);
     }
     console.error("Error placing guest order:", error);
     return c.json({ message: "Error placing order" }, 500);

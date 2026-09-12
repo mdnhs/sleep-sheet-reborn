@@ -42,6 +42,7 @@ export function CatalogSettings() {
   } | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- window.location isn't available during SSR render, so the real origin can only be read client-side in an effect.
     setBaseUrl(getBaseUrl());
   }, []);
 

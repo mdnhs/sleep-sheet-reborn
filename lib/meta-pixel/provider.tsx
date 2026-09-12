@@ -52,6 +52,7 @@ export function PixelProvider({
   useEffect(() => {
     if (!enabled) {
       debugLog("init", { message: "Pixel tracking disabled by admin settings" })
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- `enabled` arrives from an async settings fetch; isReady can only flip once that resolves.
       setIsReady(true)
       return
     }

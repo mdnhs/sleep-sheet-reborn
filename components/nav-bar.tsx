@@ -337,6 +337,7 @@ function Navbar() {
 
   // Sync local input value if url changes (e.g. from page transition or clear)
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- inputVal is also user-typed between URL changes, so it can't be purely derived from searchQuery.
     setInputVal(searchQuery);
   }, [searchQuery]);
 

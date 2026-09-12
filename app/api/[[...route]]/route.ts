@@ -29,8 +29,25 @@ import googleSheets from "@/features/google-sheets/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 
+// Browser requests here carry the session cookie, so allowing every origin
+// (the previous `cors()` default) let any site read cookie-authenticated
+// responses via a logged-in visitor's browser. Server-to-server callers
+// (MCP clients, the API-key/OAuth Bearer paths in sessionMiddleware) aren't
+// browsers and were never subject to CORS anyway, so restricting this to a
+// known-origin allowlist only affects the credentialed browser path.
+const trustedOrigins = [
+  process.env.NEXT_PUBLIC_APP_URL,
+  ...(process.env.TRUSTED_ORIGINS?.split(",").map((o) => o.trim()) ?? []),
+].filter((origin): origin is string => Boolean(origin));
+
 const app = new Hono().basePath("/api");
-app.use("*", cors());
+app.use(
+  "*",
+  cors({
+    origin: (origin) => (trustedOrigins.includes(origin) ? origin : undefined),
+    credentials: true,
+  })
+);
 // Audit trail: records every mutating request made by a dashboard user.
 app.use("*", logActivity);
 

@@ -1,12 +1,12 @@
 import { Hono } from 'hono'
 import { db } from '@/db'
 import { testimonials } from '@/db/schema'
-import { desc, eq, ilike, inArray, or, sql, and } from 'drizzle-orm'
+import { desc, eq, ilike, inArray, or, sql, and, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { uploadImage } from '@/lib/cloudinary'
 import { sessionMiddleware } from '@/lib/session-middleware'
-import { can } from '@/lib/permissions'
+import { isAllowed } from '@/lib/permissions'
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
@@ -17,14 +17,14 @@ const app = new Hono()
     const limit = Math.min(parseInt(c.req.query('limit') || '10', 10), 100)
     const search = c.req.query('search')
 
-    const filterConditions: any[] = []
+    const filterConditions: SQL[] = []
 
     if (search) {
       filterConditions.push(
         or(
           ilike(testimonials.name, `%${search}%`),
           ilike(testimonials.message, `%${search}%`),
-        )
+        )!
       )
     }
 
@@ -78,7 +78,7 @@ const app = new Hono()
   ),
   async (c) => {
     const user = c.get('user')
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR' && !can(user, 'testimonials', 'write'))) {
+    if (!isAllowed(user, 'testimonials', 'write', ["MODERATOR"])) {
       return c.json({ success: false, error: 'Unauthorized' }, 401)
     }
 
@@ -99,7 +99,7 @@ const app = new Hono()
 
 .post('/upload-image', sessionMiddleware, async (c) => {
   const user = c.get('user')
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR' && !can(user, 'testimonials', 'write'))) {
+  if (!isAllowed(user, 'testimonials', 'write', ["MODERATOR"])) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
@@ -120,7 +120,7 @@ const app = new Hono()
 
 .post('/bulk-delete', sessionMiddleware, zValidator('json', z.object({ ids: z.array(z.string()) })), async (c) => {
   const user = c.get('user')
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR' && !can(user, 'testimonials', 'write'))) {
+  if (!isAllowed(user, 'testimonials', 'write', ["MODERATOR"])) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
@@ -155,7 +155,7 @@ const app = new Hono()
   sessionMiddleware,
   async (c) => {
     const user = c.get('user')
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR' && !can(user, 'testimonials', 'write'))) {
+    if (!isAllowed(user, 'testimonials', 'write', ["MODERATOR"])) {
       return c.json({ success: false, error: 'Unauthorized' }, 401)
     }
 
@@ -194,7 +194,7 @@ const app = new Hono()
   ),
   async (c) => {
     const user = c.get('user')
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR' && !can(user, 'testimonials', 'write'))) {
+    if (!isAllowed(user, 'testimonials', 'write', ["MODERATOR"])) {
       return c.json({ success: false, error: 'Unauthorized' }, 401)
     }
 

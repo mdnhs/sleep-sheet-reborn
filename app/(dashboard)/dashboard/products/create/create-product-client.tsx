@@ -43,6 +43,10 @@ function AddProductClient() {
   const { data: duplicateProduct } = useGetProduct({ id: duplicateId ?? "" })
 
   const form = useForm<z.infer<typeof ProductSchema>>({
+    // zodResolver's inferred input type (pre z.coerce) vs react-hook-form's
+    // output type (post z.coerce) don't line up here — a known friction point
+    // between @hookform/resolvers and zod v4's coerce schemas, not a careless any.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(ProductSchema) as any,
     defaultValues: {
       productName: "",
@@ -302,8 +306,8 @@ function AddProductClient() {
 
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <div className="w-full">
-                    <VariantFields control={form.control as any} setValue={form.setValue} />
-                    <AddOnFields control={form.control as any} setValue={form.setValue} />
+                    <VariantFields control={form.control} setValue={form.setValue} />
+                    <AddOnFields control={form.control} setValue={form.setValue} />
                   </div>
 
                   <FormField
@@ -409,6 +413,7 @@ function AddProductClient() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="">None (Use base product price)</SelectItem>
+                            {/* eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form's watch() called during render is its documented usage; not compiler-optimizable, but correct. */}
                             {form.watch("productVariants")?.map((variant) => (
                               <SelectItem key={variant.name} value={variant.name}>
                                 {variant.name}

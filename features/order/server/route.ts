@@ -5,14 +5,14 @@ import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql } from "drizzle-o
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { can } from "@/lib/permissions";
+import { isAllowed } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
 
 .get("/", sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "read"))) {
+  if (!isAllowed(user, "orders", "read", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -101,7 +101,7 @@ const app = new Hono()
   })).optional()
 })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+  if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -111,12 +111,7 @@ const app = new Hono()
   // Changing money (shipping, total, item cost) needs the refund/amounts perm.
   const changesAmounts =
     shippingCost !== undefined || totalAmount !== undefined || (items?.length ?? 0) > 0;
-  if (
-    changesAmounts &&
-    user.role !== "ADMIN" &&
-    user.role !== "MODERATOR" &&
-    !can(user, "orders", "refund")
-  ) {
+  if (changesAmounts && !isAllowed(user, "orders", "refund", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -137,7 +132,7 @@ const app = new Hono()
       return c.json({ error: "Order not found" }, 404);
     }
 
-    const updateFields: any = {};
+    const updateFields: Partial<typeof orders.$inferInsert> = {};
     if (status !== undefined) updateFields.status = status;
     if (paymentStatus !== undefined) updateFields.paymentStatus = paymentStatus;
     
@@ -204,7 +199,7 @@ const app = new Hono()
   restock: z.boolean().optional().default(true),
 })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "cancel"))) {
+  if (!isAllowed(user, "orders", "cancel", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -281,7 +276,7 @@ const app = new Hono()
   restock: z.boolean().optional().default(true),
 })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "refund"))) {
+  if (!isAllowed(user, "orders", "refund", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -326,7 +321,7 @@ const app = new Hono()
     // never restock the same order twice across repeated partial refunds.
     const becameFull = isFull && alreadyRefunded < order.totalAmount - EPS;
 
-    const updateFields: any = {
+    const updateFields: Partial<typeof orders.$inferInsert> = {
       refundedAmount: newRefunded,
       refundReason: reason ?? order.refundReason ?? null,
       refundedAt: new Date(),
@@ -386,7 +381,7 @@ const app = new Hono()
 
 .delete("/:id", sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "delete"))) {
+  if (!isAllowed(user, "orders", "delete", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -419,7 +414,7 @@ const app = new Hono()
 
 .post("/bulk-delete", sessionMiddleware, zValidator("json", z.object({ ids: z.array(z.string()) })), async (c) => {
   const user = c.get("user");
-  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "delete"))) {
+  if (!isAllowed(user, "orders", "delete", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 

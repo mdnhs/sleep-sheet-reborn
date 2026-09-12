@@ -54,10 +54,10 @@ export function registerGa4Tools(server: McpServer) {
           totalActiveUsers,
           activeRealtimeBreakdown: rows.slice(0, 20),
         });
-      } catch (err: any) {
+      } catch (err) {
         return text({
           error: "Failed to query GA4 Realtime API",
-          details: err?.message || String(err),
+          details: err instanceof Error ? err.message : String(err),
           propertyId: propertyId || DEFAULT_PROPERTY_ID,
           note: "Ensure Google Cloud Service Account credentials (GOOGLE_APPLICATION_CREDENTIALS) are configured and granted Read Access on GA4 Property 546802046.",
         });
@@ -109,10 +109,10 @@ export function registerGa4Tools(server: McpServer) {
           dateRange: { startDate, endDate },
           dailyBreakdown: reportData,
         });
-      } catch (err: any) {
+      } catch (err) {
         return text({
           error: "Failed to query GA4 Report API",
-          details: err?.message || String(err),
+          details: err instanceof Error ? err.message : String(err),
           propertyId: propertyId || DEFAULT_PROPERTY_ID,
         });
       }
@@ -154,10 +154,10 @@ export function registerGa4Tools(server: McpServer) {
           propertyId: propId,
           trafficSources: channels,
         });
-      } catch (err: any) {
+      } catch (err) {
         return text({
           error: "Failed to query GA4 Traffic Sources",
-          details: err?.message || String(err),
+          details: err instanceof Error ? err.message : String(err),
           propertyId: propertyId || DEFAULT_PROPERTY_ID,
         });
       }

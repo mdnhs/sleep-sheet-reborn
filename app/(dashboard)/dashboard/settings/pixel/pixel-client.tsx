@@ -120,6 +120,7 @@ export function PixelSettings() {
         meta_capi_access_token: "",
         meta_capi_test_event_code: data.meta_capi_test_event_code || "",
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding local state from the fetched settings, same as the form.reset() calls above.
       setMappings(parseMappings(data.meta_pixel_mappings));
     }
   }, [data, form, capiForm]);

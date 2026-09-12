@@ -517,7 +517,7 @@ function ReportsContent() {
                               <TableHead className="text-right font-medium h-10">Total Cost</TableHead>
                             </TableRow>
                           )}
-                          renderRow={(item: any, i: number) => (
+                          renderRow={(item, i: number) => (
                             <TableRow
                               key={`${item.orderId}-${i}`}
                               onClick={() => setSelectedOrderId(item.orderId)}
@@ -583,7 +583,7 @@ function ReportsContent() {
                               <TableHead className="text-right font-medium h-10">Net Sale Amount</TableHead>
                             </TableRow>
                           )}
-                          renderRow={(item: any, i: number) => (
+                          renderRow={(item, i: number) => (
                             <TableRow
                               key={`rev-${item.orderId}-${i}`}
                               onClick={() => setSelectedOrderId(item.orderId)}
@@ -644,7 +644,7 @@ function ReportsContent() {
                               <TableHead className="text-right font-medium h-10">Delivery Charge</TableHead>
                             </TableRow>
                           )}
-                          renderRow={(item: any, i: number) => (
+                          renderRow={(item, i: number) => (
                             <TableRow
                               key={`ship-${item.orderId}-${i}`}
                               onClick={() => setSelectedOrderId(item.orderId)}
@@ -707,7 +707,7 @@ function ReportsContent() {
                               <TableHead className="text-right font-medium h-10">Amount</TableHead>
                             </TableRow>
                           )}
-                          renderRow={(item: any, i: number) => (
+                          renderRow={(item, i: number) => (
                             <TableRow key={`exp-${item.id}-${i}`} className="group">
                               <TableCell className="py-3 text-muted-foreground align-middle">
                                 {format(new Date(item.date), "MMM d, yyyy")}
@@ -843,7 +843,7 @@ function OrderDetailDialog({
                   Order Items ({order.items?.length || 0})
                 </h4>
                 <div className="space-y-2">
-                  {order.items?.map((item: any) => (
+                  {order.items?.map((item) => (
                     <div
                       key={item.id}
                       className="flex items-center gap-3 p-3 bg-slate-50/60 dark:bg-card border border-slate-100 dark:border-slate-800 rounded-xl text-xs"

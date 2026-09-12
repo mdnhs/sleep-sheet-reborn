@@ -51,6 +51,7 @@ export function PromoBannersManager() {
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating local banner state from the form's stored value once, on mount.
           setBanners(parsed);
         }
       } catch (e) {

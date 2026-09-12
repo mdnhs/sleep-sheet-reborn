@@ -8,19 +8,15 @@ const nextConfig: NextConfig = {
       { source: "/facebook-feed.json", destination: "/facebook-feed?format=json" },
     ]
   },
-  async headers() {
-    return [
-      {
-        source: "/api/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,DELETE,PATCH,POST,PUT,OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
-        ],
-      },
-    ];
-  },
+  // CORS for /api/** (the Hono catch-all) is handled per-request in
+  // app/api/[[...route]]/route.ts against a trusted-origin allowlist. This
+  // used to also set `Access-Control-Allow-Origin: *` with
+  // `-Allow-Credentials: true` here — a wildcard origin combined with
+  // credentials is a real hole (any site could read a logged-in visitor's
+  // cookie-authenticated API responses in their browser), not just spec-
+  // invalid; browsers actually reject that exact combination, so it was
+  // silently doing nothing anyway. /api/mcp isn't browser-called (MCP
+  // clients are server-to-server), so it doesn't need CORS headers either.
   images: {
     loader: "custom",
     loaderFile: "./lib/image-loader.ts",

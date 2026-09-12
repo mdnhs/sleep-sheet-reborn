@@ -30,8 +30,9 @@ export default function UpdateBlogClient({ id }: { id: string }) {
   const [isPublished, setIsPublished] = useState(false);
 
   useEffect(() => {
-    const post = singlePost || postsData?.data?.find((p: any) => p.id === id || p.slug === id);
+    const post = singlePost || postsData?.data?.find((p) => p.id === id || p.slug === id);
     if (post) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable form fields once the post arrives from the async query; the fields must stay independently editable afterward, so they can't be derived during render.
       setTitle(post.title || '');
       setSlug(post.slug || '');
       setSummary(post.summary || '');

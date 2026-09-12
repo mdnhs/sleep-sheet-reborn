@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 type ResponseType = {
   message: string;
-  token: string;
   user: {
     id: string;
     email: string;
@@ -36,10 +35,6 @@ export const useLogin = () => {
       }
 
       const result: ResponseType = await response.json();
-
-      if (!result.token) {
-        throw new Error("Invalid login response: Missing token");
-      }
 
       return result;
     },

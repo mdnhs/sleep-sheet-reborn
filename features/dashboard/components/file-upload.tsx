@@ -35,7 +35,7 @@ export function FileUpload<T extends FieldValues>({
     (acceptedFiles: File[]) => {
       const newFiles = [...files, ...acceptedFiles];
       if (form && name) {
-        form.setValue(name, newFiles as any);
+        form.setValue(name, newFiles as FieldPathValue<T, Path<T>>);
       }
       if (onChange) {
         onChange(newFiles);
@@ -74,7 +74,7 @@ export function FileUpload<T extends FieldValues>({
       const newFiles = [...files];
       newFiles[replaceIndex] = file;
       if (form && name) {
-        form.setValue(name, newFiles as any);
+        form.setValue(name, newFiles as FieldPathValue<T, Path<T>>);
       }
       if (onChange) {
         onChange(newFiles);

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useMemo, useRef } from "react"
+import { useMemo, useState } from "react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -43,7 +43,11 @@ export function NavMain({
   groups: NavGroup[]
 }) {
   const pathname = usePathname()
-  const initialPathname = useRef(pathname).current
+  // Frozen at first render — React guarantees a lazy useState initializer
+  // runs exactly once, unlike reading ref.current during render (flagged by
+  // the compiler: refs aren't guaranteed consistent there, e.g. under
+  // Strict Mode's double-render).
+  const [initialPathname] = useState(() => pathname)
   const { setOpenMobile } = useSidebar()
 
   const defaultOpen = useMemo(() => {

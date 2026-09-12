@@ -104,7 +104,7 @@ export function ProductReviews({ product }: ProductReviewsProps) {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 mb-4">
-                    "{review.comment}"
+                    &quot;{review.comment}&quot;
                   </p>
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-secondary overflow-hidden">

@@ -7,7 +7,7 @@ import { replaceProductsSheet, type ProductSheetRow } from "@/lib/google-sheets-
 import { db } from "@/db";
 import { orders, products, categories } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { can } from "@/lib/permissions";
+import { isAllowed } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames } from "@/features/activity/server/log-activity";
 
 function toSheetRow(
@@ -60,7 +60,7 @@ const app = new Hono()
     zValidator("json", z.object({ orderId: z.string() })),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+      if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -90,7 +90,7 @@ const app = new Hono()
     zValidator("json", z.object({ orderIds: z.array(z.string()).min(1).max(200) })),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+      if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -132,7 +132,7 @@ const app = new Hono()
     zValidator("json", z.object({ categories: z.array(z.string()).min(1) })),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "products", "write"))) {
+      if (!isAllowed(user, "products", "write", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

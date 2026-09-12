@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 
+export type Role = NonNullable<
+  Awaited<ReturnType<typeof useGetRoles>>["data"]
+>[number];
+
 export const useGetRoles = () => {
   const query = useQuery({
     queryKey: ["roles"],

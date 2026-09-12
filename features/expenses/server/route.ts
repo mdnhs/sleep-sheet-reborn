@@ -6,17 +6,13 @@ import { db } from "@/db";
 import { expenseCategories, expenses } from "@/db/schema";
 import { eq, and, gte, lte, desc, sum, count, sql, type SQL } from "drizzle-orm";
 import cuid from "cuid";
-import { can, type Action } from "@/lib/permissions";
+import { isAllowed, type Action } from "@/lib/permissions";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 const canExpenses = (
   user: { role?: string; permissions?: string[] } | null | undefined,
   action: Action
-) =>
-  !!user &&
-  (user.role === "ADMIN" ||
-    user.role === "MODERATOR" ||
-    can(user, "expenses", action));
+) => isAllowed(user ?? null, "expenses", action, ["MODERATOR"]);
 
 const app = new Hono()
   .get("/categories", sessionMiddleware, async (c) => {

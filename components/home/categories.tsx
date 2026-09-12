@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetCategory } from "@/features/categories/api/use-get-category";
+import { useGetCategory, type PublicCategory } from "@/features/categories/api/use-get-category";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -15,7 +15,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CategoriesProps {
-  initialData?: any[];
+  initialData?: PublicCategory[];
 }
 
 const Categories = ({ initialData }: CategoriesProps) => {

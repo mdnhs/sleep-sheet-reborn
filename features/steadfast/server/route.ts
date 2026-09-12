@@ -11,7 +11,7 @@ import { db } from "@/db";
 import { orders, orderTimelineEvents, orderItems } from "@/db/schema";
 import type { OrderStatus } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
-import { can } from "@/lib/permissions";
+import { isAllowed } from "@/lib/permissions";
 
 // Once an order is in one of these, Steadfast will never move it again — see
 // the switch below (nothing maps to REFUNDED, and DELIVERED/CANCELLED are
@@ -76,7 +76,7 @@ const app = new Hono()
 
   .get("/balance", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "balance"))) {
+    if (!isAllowed(user, "orders", "balance", ["MODERATOR"])) {
       return c.json({ error: "Unauthorized" }, 401);
     }
     try {
@@ -105,7 +105,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+      if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -176,7 +176,7 @@ const app = new Hono()
 
   .get("/track/:orderId", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "read"))) {
+    if (!isAllowed(user, "orders", "read", ["MODERATOR"])) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -210,7 +210,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+      if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
@@ -249,7 +249,7 @@ const app = new Hono()
 
   .post("/sync/:orderId", sessionMiddleware, async (c) => {
     const user = c.get("user");
-    if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+    if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
@@ -284,7 +284,7 @@ const app = new Hono()
     ),
     async (c) => {
       const user = c.get("user");
-      if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR" && !can(user, "orders", "write"))) {
+      if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 

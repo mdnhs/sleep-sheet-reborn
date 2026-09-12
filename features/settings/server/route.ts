@@ -150,7 +150,7 @@ const app = new Hono()
       }
 
       const body = c.req.valid("json");
-      const updates = Object.entries(body).filter(([, v]) => v !== undefined) as [string, any][];
+      const updates = Object.entries(body).filter(([, v]) => v !== undefined) as [string, string | number][];
 
       const changedKeys = updates.map(([key]) => key);
       const before = changedKeys.length

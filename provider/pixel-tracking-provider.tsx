@@ -11,6 +11,7 @@ interface PixelTrackingProviderProps {
 export function PixelTrackingProvider({ children }: PixelTrackingProviderProps) {
   const { data: settings, isLoading } = useSettings();
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- the compiler's inferred dep would be the whole `settings` object (less precise); the explicit `settings?.meta_pixel_mappings` dep is correct as written.
   const pageMappings = useMemo(() => {
     if (!settings?.meta_pixel_mappings) return undefined;
     try {

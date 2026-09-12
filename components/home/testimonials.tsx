@@ -73,7 +73,7 @@ const Testimonials = () => {
             className="w-full"
           >
             <CarouselContent className="-ml-4">
-              {data.data.map((testimonial: any, index: number) => (
+              {data.data.map((testimonial, index: number) => (
                 <CarouselItem key={index} className="pl-4 basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
                   {testimonial.screenshot ? (
                     <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden border border-border/50 group cursor-grab active:cursor-grabbing bg-muted shadow-sm hover:shadow-md transition-shadow">

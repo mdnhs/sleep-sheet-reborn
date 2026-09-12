@@ -313,7 +313,7 @@ export default function DashBoardClientPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentOrders.map((order: any) => (
+                    {recentOrders.map((order) => (
                       <TableRow key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-muted/40">
                         <TableCell className="px-3 py-3 text-xs font-semibold whitespace-nowrap">
                           <Link href={`/dashboard/orders/${order.id}`} className="hover:underline hover:text-indigo-600">
@@ -370,7 +370,7 @@ export default function DashBoardClientPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {lowStock.map((product: any) => (
+                    {lowStock.map((product) => (
                       <TableRow key={product.id} className="hover:bg-slate-50/50 dark:hover:bg-muted/40">
                         <TableCell className="px-3 py-3 font-medium text-xs truncate max-w-[180px]">
                           <Link href={`/dashboard/products/${product.id}/edit`} className="hover:underline flex items-center gap-2">

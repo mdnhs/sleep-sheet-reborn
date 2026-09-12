@@ -176,7 +176,7 @@ export function generatePaginatedMetadata(
       description: baseDescription,
       canonical,
     }),
-    ...(prevUrl ? { alternates: { canonical, ...({ prev: prevUrl } as any) } } : {}),
-    ...(nextUrl ? { alternates: { canonical, ...({ next: nextUrl } as any) } } : {}),
+    ...(prevUrl ? { alternates: { canonical, ...({ prev: prevUrl } as Record<string, unknown>) } } : {}),
+    ...(nextUrl ? { alternates: { canonical, ...({ next: nextUrl } as Record<string, unknown>) } } : {}),
   }
 }

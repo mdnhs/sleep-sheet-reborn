@@ -48,6 +48,7 @@ import {
   useBlockIpMutations,
 } from "@/features/blocked-ips/api/use-blocked-ips";
 import type { Order } from "@/features/order/types";
+import type { PlacedOrder, ShippingInfo } from "@/features/checkout/types";
 import {
   useBookCourier,
   useSteadfastBalance,
@@ -387,7 +388,7 @@ function OrdersPageContent() {
           ? Number(order.trackingNumber)
           : null);
 
-      const placedOrderData: any = {
+      const placedOrderData: PlacedOrder = {
         orderNumber: order.orderNumber,
         subtotal: order.subtotal,
         shippingCost: order.shippingCost,
@@ -399,7 +400,7 @@ function OrdersPageContent() {
           trackingStatuses?.[order.id]?.tracking_code ||
           null,
         consignmentId: consignmentId,
-        items: order.items.map((i: any) => ({
+        items: order.items.map((i) => ({
           name: i.product.name,
           price: i.price,
           quantity: i.quantity,
@@ -409,7 +410,7 @@ function OrdersPageContent() {
         })),
       };
 
-      const shippingInfoData: any = {
+      const shippingInfoData: ShippingInfo = {
         fullName: order.user?.name || order.guestName || "Customer",
         phone: order.user?.phone || order.guestPhone || "",
         email: order.user?.email || order.guestEmail || "",
@@ -423,7 +424,7 @@ function OrdersPageContent() {
           .filter(Boolean)
           .join(", "),
         shippingZone: "inside_dhaka",
-        notes: order.note,
+        notes: order.note ?? undefined,
       };
 
       const doc = (
@@ -480,7 +481,7 @@ function OrdersPageContent() {
             ? Number(order.trackingNumber)
             : null);
 
-        const placedOrderData: any = {
+        const placedOrderData: PlacedOrder = {
           orderNumber: order.orderNumber,
           subtotal: order.subtotal,
           shippingCost: order.shippingCost,
@@ -492,7 +493,7 @@ function OrdersPageContent() {
             trackingStatuses?.[order.id]?.tracking_code ||
             null,
           consignmentId: consignmentId,
-          items: order.items.map((i: any) => ({
+          items: order.items.map((i) => ({
             name: i.product.name,
             price: i.price,
             quantity: i.quantity,
@@ -502,7 +503,7 @@ function OrdersPageContent() {
           })),
         };
 
-        const shippingInfoData: any = {
+        const shippingInfoData: ShippingInfo = {
           fullName: order.user?.name || order.guestName || "Customer",
           phone: order.user?.phone || order.guestPhone || "",
           email: order.user?.email || order.guestEmail || "",
@@ -516,7 +517,7 @@ function OrdersPageContent() {
             .filter(Boolean)
             .join(", "),
           shippingZone: "inside_dhaka",
-          notes: order.note,
+          notes: order.note ?? undefined,
         };
 
         return {
@@ -542,6 +543,7 @@ function OrdersPageContent() {
       if (action === "download") {
         const link = document.createElement("a");
         link.href = url;
+        // eslint-disable-next-line react-hooks/purity -- inside a click handler (handleBulkPrint), not render; Date.now() here just makes the downloaded filename unique.
         link.download = `Invoices-Bulk-${Date.now()}.pdf`;
         document.body.appendChild(link);
         link.click();
@@ -582,7 +584,7 @@ function OrdersPageContent() {
         { name: string; image: string | null; quantity: number }
       >();
       selectedOrders.forEach((order) => {
-        order.items.forEach((item: any) => {
+        order.items.forEach((item) => {
           const key = item.product?.id ?? "unknown";
           const existing = quantityByProduct.get(key);
           if (existing) {
@@ -638,7 +640,7 @@ function OrdersPageContent() {
         setRowSelection({});
         setConfirmBulkDelete(false);
       },
-      onError: (err: any) => {
+      onError: (err: Error) => {
         toast.error(err.message || "Failed to delete selected orders");
       },
     });
@@ -827,7 +829,7 @@ function OrdersPageContent() {
           }
 
           // filter the costPrices for this specific order
-          const orderItemIds = order.items.map((i: any) => i.id);
+          const orderItemIds = order.items.map((i) => i.id);
           const orderCostPrices = costPrices.filter((c) =>
             orderItemIds.includes(c.orderItemId),
           );
@@ -849,9 +851,9 @@ function OrdersPageContent() {
           "No selected orders could be booked (invalid phone or already booked)",
         );
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error(
-        error.message || "Failed to complete booking for some orders",
+        error instanceof Error ? error.message : "Failed to complete booking for some orders",
       );
     } finally {
       setIsBulkBooking(false);
@@ -873,7 +875,7 @@ function OrdersPageContent() {
           toast.success(`Booked ${orderIds.length} orders to Google Sheet`);
           setRowSelection({});
         },
-        onError: (err: any) => {
+        onError: (err: Error) => {
           toast.error(err.message || "Failed to book to Google Sheet");
         },
       },
@@ -1209,7 +1211,7 @@ function OrdersPageContent() {
                             toast.success(
                               `${order.orderNumber} booked to Google Sheet`,
                             ),
-                          onError: (err: any) => {
+                          onError: (err: Error) => {
                             toast.error(
                               err.message || "Failed to book to Google Sheet",
                             );
@@ -2014,7 +2016,7 @@ function OrdersPageContent() {
           if (deleteOrderId) {
             deleteOrder.mutate(deleteOrderId, {
               onSuccess: () => toast.success("Order deleted successfully"),
-              onError: (err: any) => {
+              onError: (err: Error) => {
                 toast.error(err.message || "Failed to delete order");
               },
             });
@@ -2642,7 +2644,7 @@ function OrderLogDetailsDialog({
             </div>
           ) : (
             <div className="space-y-3">
-              {logs.map((log: any) => (
+              {logs.map((log) => (
                 <div
                   key={log.id}
                   className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4 space-y-2 text-xs"
@@ -2689,7 +2691,7 @@ function OrderLogDetailsDialog({
                         Recorded Changes:
                       </p>
                       <div className="space-y-1">
-                        {log.changes.map((change: any, idx: number) => (
+                        {log.changes?.map((change, idx: number) => (
                           <div
                             key={idx}
                             className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 bg-white/70 dark:bg-card/50 px-2 py-1 rounded-md"

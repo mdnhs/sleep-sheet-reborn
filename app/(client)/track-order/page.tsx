@@ -32,6 +32,7 @@ interface Order {
   guestPhone?: string | null;
   createdAt: string;
   guestName?: string | null;
+  note?: string | null;
   items: OrderItem[];
   trackingNumber?: string | null;
 }
@@ -94,6 +95,7 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
 
   useEffect(() => {
     if (phoneParam && (!initialOrders || initialOrders.length === 0)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing the editable phone input from the URL param this effect already has to run for (performSearch is a required side effect, not derivable during render).
       setPhone(phoneParam);
       performSearch(phoneParam);
     }
@@ -137,7 +139,7 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
         phone: order.guestPhone || phone || "",
         address: order.shippingAddress,
         shippingZone: "inside_dhaka" as const,
-        notes: (order as any).note,
+        notes: order.note ?? undefined,
       };
       const doc = (
         <InvoicePDF

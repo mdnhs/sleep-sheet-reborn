@@ -7,6 +7,10 @@ interface TestimonialQueryParams {
   limit?: string;
 }
 
+export type Testimonial = NonNullable<
+  Awaited<ReturnType<typeof useGetTestimonials>>["data"]
+>["data"][number];
+
 export const useGetTestimonials = (params?: TestimonialQueryParams) => {
   return useQuery({
     queryKey: ["testimonials", params],

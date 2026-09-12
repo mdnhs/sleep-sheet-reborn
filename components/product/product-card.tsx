@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { Heart, Star, ChevronUp, ShoppingCart, X, Minus, Plus, Tag, ArrowUpCircle, Zap } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { toast } from "sonner";
-import { Product } from "@/lib/types";
+import { ProductSummary } from "@/lib/types";
 import { useWishlistToggle } from "@/lib/helpers";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
@@ -17,7 +17,7 @@ import { getOptimizedImageUrl } from "@/lib/utils";
 import { trackGtmAddToCart, trackGtmBeginCheckout } from "@/lib/gtm";
 
 interface ProductCardProps {
-  product: Product & {
+  product: ProductSummary & {
     discountTag?: string;
   };
   priority?: boolean;

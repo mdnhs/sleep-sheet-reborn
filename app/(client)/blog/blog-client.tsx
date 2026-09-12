@@ -8,22 +8,25 @@ import { useQueryState } from 'nuqs';
 import { X } from 'lucide-react';
 import { extractTags } from '@/lib/utils';
 
+type PostsData = NonNullable<ReturnType<typeof useGetPosts>['data']>;
+export type BlogPost = PostsData['data'][number];
+
 interface BlogClientPageProps {
-  initialPosts?: any[];
+  initialPosts?: BlogPost[];
 }
 
 export default function BlogClientPage({ initialPosts }: BlogClientPageProps = {}) {
   const { data: postsData, isLoading } = useGetPosts();
   const [activeTag, setActiveTag] = useQueryState('tag', { defaultValue: '' });
 
-  const fetchedPosts = postsData?.data?.filter((p: any) => p.isPublished) || [];
+  const fetchedPosts = postsData?.data?.filter((p) => p.isPublished) || [];
   const publishedPosts = fetchedPosts.length > 0 ? fetchedPosts : (initialPosts || []);
 
   // Match against the same derived tags the post page renders, so a tag chip always
   // finds at least the post it was clicked from. Tags come from extractTags(), not
   // a DB column, so this can't be pushed into the query.
   const visiblePosts = activeTag
-    ? publishedPosts.filter((p: any) =>
+    ? publishedPosts.filter((p) =>
         extractTags(p.title, p.content).some(
           (t: string) => t.toLowerCase() === activeTag.toLowerCase()
         )
@@ -93,7 +96,7 @@ export default function BlogClientPage({ initialPosts }: BlogClientPageProps = {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {visiblePosts.map((post: any) => (
+          {visiblePosts.map((post) => (
             <Link href={`/blog/${post.slug}`} key={post.id} className="group flex flex-col gap-4">
               <div className="overflow-hidden rounded-2xl aspect-video bg-muted relative">
                 {post.coverImage ? (

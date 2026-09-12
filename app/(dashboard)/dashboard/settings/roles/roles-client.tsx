@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Edit, Trash2, CheckCircle2, ShieldAlert, Eye, Pencil } from "lucide-react";
-import { useGetRoles } from "@/features/roles/api/use-get-roles";
+import { useGetRoles, type Role } from "@/features/roles/api/use-get-roles";
 import { useCreateRole } from "@/features/roles/api/use-create-role";
 import { useUpdateRole } from "@/features/roles/api/use-update-role";
 import { useDeleteRole } from "@/features/roles/api/use-delete-role";
@@ -41,7 +41,7 @@ export function RolesClient() {
   const deleteRole = useDeleteRole();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<any>(null);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
 
   // Form State — a set of granular "module:action" strings.
   const [name, setName] = useState("");
@@ -56,7 +56,7 @@ export function RolesClient() {
     setIsOpen(true);
   };
 
-  const handleOpenEdit = (role: any) => {
+  const handleOpenEdit = (role: Role) => {
     setEditingRole(role);
     setName(role.name);
     setPermissions(toGranular(role.permissions));
@@ -83,7 +83,7 @@ export function RolesClient() {
     });
   };
 
-  const updateRole = useUpdateRole(editingRole?.id);
+  const updateRole = useUpdateRole(editingRole?.id ?? "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +138,7 @@ export function RolesClient() {
         </div>
 
         {/* Custom Roles */}
-        {roles?.map((role: any) => {
+        {roles?.map((role) => {
           const badges = summarizeRole(role.permissions);
           return (
             <div key={role.id} className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex flex-col justify-between space-y-4">

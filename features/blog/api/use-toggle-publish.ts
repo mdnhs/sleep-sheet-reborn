@@ -2,8 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/rpc';
 import { toast } from 'sonner';
 import { InferResponseType } from 'hono';
+import type { BlogPost } from '@/app/(client)/blog/blog-client';
 
 type ResponseType = InferResponseType<(typeof client.api.blog)[':id']['publish']['$patch']>;
+type PostsCacheData = { data: BlogPost[]; total: number; hasNextPage: boolean; totalPages: number };
 
 interface TogglePublishVariables {
   id: string;
@@ -34,11 +36,11 @@ export const useTogglePublish = () => {
       // Every ['posts', params] cache entry, since the list is paginated + searched.
       const previous = queryClient.getQueriesData({ queryKey: ['posts'] });
 
-      queryClient.setQueriesData({ queryKey: ['posts'] }, (old: any) => {
+      queryClient.setQueriesData<PostsCacheData>({ queryKey: ['posts'] }, (old) => {
         if (!old?.data) return old;
         return {
           ...old,
-          data: old.data.map((post: any) =>
+          data: old.data.map((post) =>
             post.id === id ? { ...post, isPublished } : post
           ),
         };

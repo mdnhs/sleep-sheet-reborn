@@ -137,7 +137,7 @@ export function BookCourierDialog({
                     className="w-24"
                     value={costs[item.id] || ""}
                     onChange={(e) => handleCostChange(item.id, e.target.value)}
-                    disabled={(item as any).costPrice !== null && (item as any).costPrice !== undefined}
+                    disabled={item.costPrice !== null && item.costPrice !== undefined}
                     required
                   />
                   {colorHasAddOn(item.color) && (
@@ -149,7 +149,7 @@ export function BookCourierDialog({
                       className="w-24"
                       value={addOnCosts[item.id] || ""}
                       onChange={(e) => handleAddOnCostChange(item.id, e.target.value)}
-                      disabled={(item as any).costPrice !== null && (item as any).costPrice !== undefined}
+                      disabled={item.costPrice !== null && item.costPrice !== undefined}
                     />
                   )}
                 </div>

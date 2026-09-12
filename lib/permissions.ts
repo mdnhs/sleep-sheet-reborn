@@ -168,9 +168,9 @@ export function expandPermissions(raw?: string[] | null): Set<string> {
   // write implies read + every fine-grained extra on the same module
   for (const p of [...out]) {
     if (p.endsWith(":write")) {
-      const module = p.slice(0, -":write".length);
-      out.add(`${module}:read`);
-      for (const extra of WRITE_IMPLIES[module] ?? []) out.add(extra);
+      const moduleKey = p.slice(0, -":write".length);
+      out.add(`${moduleKey}:read`);
+      for (const extra of WRITE_IMPLIES[moduleKey] ?? []) out.add(extra);
     }
   }
 
@@ -189,6 +189,26 @@ export function can(
   if (!user) return false;
   if (user.role === "ADMIN") return true;
   return expandPermissions(user.permissions).has(`${module}:${action}`);
+}
+
+/**
+ * `can()` plus an explicit list of roles that bypass the permission check
+ * entirely for this call (most commonly `["MODERATOR"]` — MODERATOR is not a
+ * blanket bypass like ADMIN, it's granted per-module by whichever route calls
+ * this with it in `bypassRoles`). Centralizes the
+ * `role !== "ADMIN" && role !== "MODERATOR" && !can(...)` check that used to
+ * be copy-pasted at every guard — same authorization decision, one place to
+ * read it.
+ */
+export function isAllowed(
+  user: AuthUser,
+  module: ModuleKey,
+  action: Action | (string & {}) = "read",
+  bypassRoles: readonly string[] = []
+): boolean {
+  if (!user) return false;
+  if (user.role && bypassRoles.includes(user.role)) return true;
+  return can(user, module, action);
 }
 
 /**

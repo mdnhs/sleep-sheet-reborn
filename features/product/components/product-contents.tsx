@@ -11,6 +11,7 @@ import { useInView } from "react-intersection-observer";
 import { Loader2 } from "lucide-react";
 
 import { MobileFilterSheet } from "./products-sidebar";
+import type { ProductSummary } from "@/lib/types";
 
 interface ProductContentsProps {
   // Seeds the category filter for routes like /categories/[value] without
@@ -20,7 +21,7 @@ interface ProductContentsProps {
   // Same idea, for routes like /bestsellers that default to a specific sort
   // without needing a ?sort= query string.
   initialSort?: string;
-  initialProducts?: any[];
+  initialProducts?: ProductSummary[];
 }
 
 function ProductContents({ initialCategory, initialSort, initialProducts }: ProductContentsProps = {}) {
@@ -89,7 +90,7 @@ function ProductContents({ initialCategory, initialSort, initialProducts }: Prod
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {allProducts.map((product: any, index: number) => (
+            {allProducts.map((product, index: number) => (
               <ProductCard key={product.id} product={product} priority={index < 4} />
             ))}
           </div>
@@ -100,7 +101,7 @@ function ProductContents({ initialCategory, initialSort, initialProducts }: Prod
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
               </div>
               <h3 className="text-2xl font-semibold tracking-tight">No products found</h3>
-              <p className="text-muted-foreground max-w-[300px]">Try adjusting your filters or search query to find what you're looking for.</p>
+              <p className="text-muted-foreground max-w-[300px]">Try adjusting your filters or search query to find what you&apos;re looking for.</p>
             </div>
           )}
         </>
@@ -119,7 +120,7 @@ function ProductContents({ initialCategory, initialSort, initialProducts }: Prod
 
       {!hasNextPage && allProducts.length > 0 && (
         <div className="w-full text-center py-10 mt-4 text-muted-foreground text-sm pb-24">
-          You've reached the end!
+          You&apos;ve reached the end!
         </div>
       )}
 

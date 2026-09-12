@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TableKit } from "@tiptap/extension-table";
 import { marked } from "marked";
@@ -71,7 +71,7 @@ const MenuBar = ({
   setIsCodeMode,
   insertTable,
 }: {
-  editor: any;
+  editor: Editor | null;
   isCodeMode: boolean;
   setIsCodeMode: (val: boolean) => void;
   insertTable: () => void;
@@ -187,7 +187,7 @@ const MenuBar = ({
               variant="ghost"
               size="sm"
               className="h-8 px-2 text-xs gap-1"
-              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              onClick={() => editor!.chain().focus().addColumnAfter().run()}
               title="Add column"
             >
               <Columns3 className="h-4 w-4" />
@@ -198,7 +198,7 @@ const MenuBar = ({
               variant="ghost"
               size="sm"
               className="h-8 px-2 text-xs gap-1"
-              onClick={() => editor.chain().focus().addRowAfter().run()}
+              onClick={() => editor!.chain().focus().addRowAfter().run()}
               title="Add row"
             >
               <Rows3 className="h-4 w-4" />
@@ -209,7 +209,7 @@ const MenuBar = ({
               variant="ghost"
               size="sm"
               className="h-8 px-2 text-xs gap-1 text-destructive"
-              onClick={() => editor.chain().focus().deleteTable().run()}
+              onClick={() => editor!.chain().focus().deleteTable().run()}
               title="Delete table"
             >
               <Trash2 className="h-4 w-4" />
