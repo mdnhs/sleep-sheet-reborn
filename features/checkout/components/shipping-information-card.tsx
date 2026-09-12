@@ -67,7 +67,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
       phone: currentUser?.phone ?? "",
       email: currentUser?.email ?? "",
       address: currentUser?.address ?? "",
-      shippingZone: "" as any,
+      shippingZone: "inside_dhaka",
       paymentMethod: defaultMethod,
       cardNumber: "",
       cvv: "",

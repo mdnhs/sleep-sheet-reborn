@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronRight, ShoppingBag, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronRight, ShoppingBag, Loader2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -225,6 +225,22 @@ function OrderSuccessContent() {
             </div>
             <ShoppingBag className="h-5 w-5 text-muted-foreground/60" />
           </div>
+
+          {/* WhatsApp Direct Order Confirmation */}
+          <a
+            href={`https://wa.me/${footerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
+              `আসসালামু আলাইকুম Sleep Sheet! আমি একটি নতুন অর্ডার করেছি।\n\nঅর্ডার নম্বর: #${order.orderNumber}\nনাম: ${order.guestName || "Customer"}\nমোট টাকা: ৳${order.totalAmount}\nঠিকানা: ${order.shippingAddress}\n\nদয়া করে অর্ডারটি কনফার্ম করুন।`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full mb-4"
+          >
+            <Button className="w-full h-12 rounded-full font-bold text-sm bg-[#25D366] text-white hover:bg-[#20bd5a] shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              {language === "bn" ? "হোয়াটসঅ্যাপে অর্ডার কনফার্ম করুন" : "Confirm Order on WhatsApp"}
+            </Button>
+          </a>
+
           <div className="flex flex-col sm:flex-row gap-3 w-full mb-6">
             <Link href={`/track-order?phone=${encodeURIComponent(order.guestPhone || phone || "")}`} className="flex-1">
               <Button variant="outline" className="w-full h-11 rounded-full font-bold text-sm border-border/60 hover:bg-muted/40">

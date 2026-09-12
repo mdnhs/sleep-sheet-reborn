@@ -3,8 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { printReceipt } from "@/lib/print-receipt";
 import { useCurrency } from "@/hooks/use-currency";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
+import { MessageCircle } from "lucide-react";
 
 interface OrderActionButtonsProps {
   order: {
@@ -27,6 +29,7 @@ interface OrderActionButtonsProps {
 
 export function OrderActionButtons({ order }: OrderActionButtonsProps) {
   const { symbol: currencySymbol } = useCurrency();
+  const { footerPhone } = useWebsiteSettings();
 
   const handlePrintReceipt = () => {
     printReceipt({
@@ -70,14 +73,16 @@ export function OrderActionButtons({ order }: OrderActionButtonsProps) {
           Request Return
         </Button>
       )}
-      <Button
-        nativeButton={false}
-        render={
-          <a href={`mailto:support@example.com?subject=Help%20with%20Order%20${order.orderNumber}`} />
-        }
+      <a
+        href={`https://wa.me/${(footerPhone || "+8801570241052").replace(/\D/g, "")}?text=${encodeURIComponent(`Hello Sleep Sheet, I need help with Order #${order.orderNumber}`)}`}
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        Need Help?
-      </Button>
+        <Button className="bg-[#25D366] text-white hover:bg-[#20bd5a] font-semibold">
+          <MessageCircle className="h-4 w-4 mr-1.5" />
+          Need Help?
+        </Button>
+      </a>
     </div>
   );
 }

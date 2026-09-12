@@ -11,6 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { useLanguage } from "@/hooks/use-language";
+import { seoConfig } from "@/lib/seo";
 
 const Footer = () => {
   const {
@@ -39,36 +40,40 @@ const Footer = () => {
               {footerBrandDesc}
             </p>
             <div className="flex space-x-3 pt-2">
-              {(socialInstagram || true) && (
+              <a
+                href={socialInstagram || seoConfig.socialLinks.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
+              >
+                <IconBrandInstagram className="h-5 w-5" />
+              </a>
+              <a
+                href={socialFacebook || seoConfig.socialLinks.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
+              >
+                <IconBrandFacebook className="h-5 w-5" />
+              </a>
+              {(socialTwitter || seoConfig.socialLinks.twitter) && (
                 <a
-                  href={socialInstagram || "#"}
-                  aria-label="Instagram"
-                  className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
-                >
-                  <IconBrandInstagram className="h-5 w-5" />
-                </a>
-              )}
-              {(socialFacebook || true) && (
-                <a
-                  href={socialFacebook || "#"}
-                  aria-label="Facebook"
-                  className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
-                >
-                  <IconBrandFacebook className="h-5 w-5" />
-                </a>
-              )}
-              {(socialTwitter || true) && (
-                <a
-                  href={socialTwitter || "#"}
+                  href={socialTwitter || seoConfig.socialLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Twitter"
                   className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
                 >
                   <IconBrandTwitter className="h-5 w-5" />
                 </a>
               )}
-              {(socialYoutube || true) && (
+              {(socialYoutube || seoConfig.socialLinks.youtube) && (
                 <a
-                  href={socialYoutube || "#"}
+                  href={socialYoutube || seoConfig.socialLinks.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="YouTube"
                   className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 text-white/85 hover:bg-white hover:text-foreground transition-all duration-300"
                 >

@@ -13,7 +13,14 @@ export type ShippingZone = keyof typeof SHIPPING_ZONES;
 export function createShippingInformationSchema(t: TranslateFn) {
   return z.object({
     fullName: z.string().trim().min(1, t("errorFullNameRequired")),
-    phone: z.string().trim().min(1, t("errorPhoneRequired")),
+    phone: z
+      .string()
+      .trim()
+      .min(1, t("errorPhoneRequired"))
+      .refine(
+        (val) => /^(?:\+?8801|8801|01)[3-9]\d{8}$/.test(val.replace(/[\s-]/g, "")),
+        t("errorInvalidPhone"),
+      ),
     email: z.string().email(t("errorInvalidEmail")).optional().or(z.literal("")),
     address: z.string().trim().min(1, t("errorAddressRequired")),
     shippingZone: z.enum(["inside_dhaka", "outside_dhaka"], {
