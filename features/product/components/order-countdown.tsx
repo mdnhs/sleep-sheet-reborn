@@ -48,7 +48,7 @@ export function OrderCountdown() {
     <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 border border-border rounded-full px-2 py-1.5 bg-background w-fit max-w-full">
       <Clock className="text-muted-foreground shrink-0 h-3.5 w-3.5" />
       <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-        {t("orderIn") ? `${t("orderIn")} ` : ""}<span className="font-semibold text-foreground">
+        <span className="font-semibold text-foreground">
           {timeLeft.hours} {t("hour")} {timeLeft.minutes} {t("min")}
         </span>{" "}
         {t("toGet")}{" "}

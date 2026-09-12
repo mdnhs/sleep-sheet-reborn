@@ -91,7 +91,6 @@ export const translations = {
     searching: "Searching...",
     noOrdersFound: "No orders found for this phone number.",
     orderNumberLabel2: "Order Number:",
-    orderIn: "Order in",
     toGet: "to get",
     sameDayShipment: "next day delivery",
     shipmentTomorrow: "delivery day after tomorrow",
@@ -219,7 +218,6 @@ export const translations = {
     searching: "অনুসন্ধান করা হচ্ছে...",
     noOrdersFound: "এই ফোন নম্বরে কোনো অর্ডার পাওয়া যায়নি।",
     orderNumberLabel2: "অর্ডার নম্বর:",
-    orderIn: "",
     toGet: "এর মধ্যে অর্ডার করলেই পাচ্ছেন",
     sameDayShipment: "আগামীকাল ডেলিভারি",
     shipmentTomorrow: "আগামীপরশু ডেলিভারি",
@@ -294,7 +292,8 @@ export function useLanguage() {
   };
 
   const t = (key: keyof typeof translations["en"]) => {
-    return translations[language][key] || translations["bn"][key] || key;
+    const val = translations[language]?.[key] ?? translations["bn"]?.[key];
+    return val !== undefined ? val : key;
   };
 
   return { language, setLanguage, t };
