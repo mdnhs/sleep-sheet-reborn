@@ -24,10 +24,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `pnpm lint` isn't run here yet: the repo currently has ~143
-      # pre-existing eslint errors outside today's changes (mcp-server/,
-      # lib/seo/, refactor.js, ...) that would make this gate fail on the
-      # first commit. Add it back once that's cleaned up.
+      - name: Lint
+        run: pnpm lint
+
       - name: Typecheck
         run: pnpm typecheck
 
