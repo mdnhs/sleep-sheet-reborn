@@ -155,31 +155,31 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/sustainability"
+                  href="/contact"
                   prefetch={false}
                   className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
-                  Sustainability
+                  Contact Us
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/careers"
+                  href="/track-order"
                   prefetch={false}
                   className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
-                  Careers
+                  Track Order
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/press"
+                  href="/blog"
                   prefetch={false}
                   className="text-sm text-white/85 hover:text-white transition-colors flex items-center gap-2 group"
                 >
-                  Press
+                  Blog
                   <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 hidden md:inline-block" />
                 </Link>
               </li>
