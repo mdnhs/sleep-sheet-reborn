@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Clock } from "lucide-react";
+import { Truck } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 
 export function OrderCountdown() {
@@ -42,17 +42,24 @@ export function OrderCountdown() {
     return () => clearInterval(interval);
   }, [isReady]);
 
-  if (!isReady) return null;
+  if (!isReady) {
+    return (
+      <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 w-fit max-w-full animate-pulse">
+        <div className="h-3.5 w-3.5 rounded-full bg-muted shrink-0" />
+        <div className="h-3 sm:h-3.5 w-40 sm:w-52 rounded bg-muted" />
+      </div>
+    );
+  }
 
   return (
-    <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 border border-border rounded-full px-2 py-1.5 bg-background w-fit max-w-full">
-      <Clock className="text-muted-foreground shrink-0 h-3.5 w-3.5" />
-      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-        <span className="font-semibold text-foreground">
+    <div className="mb-2 lg:mb-4 inline-flex items-center gap-2 border border-primary/30 rounded-full px-2.5 py-1.5 bg-primary/10 w-fit max-w-full">
+      <Truck className="text-primary shrink-0 h-3.5 w-3.5" />
+      <p className="text-[10px] sm:text-xs text-foreground truncate">
+        <span className="font-bold text-primary">
           {timeLeft.hours} {t("hour")} {timeLeft.minutes} {t("min")}
         </span>{" "}
         {t("toGet")}{" "}
-        <span className="font-semibold text-foreground">
+        <span className="font-bold text-primary">
           {isSameDay ? t("sameDayShipment") : t("shipmentTomorrow")}
         </span>
       </p>
