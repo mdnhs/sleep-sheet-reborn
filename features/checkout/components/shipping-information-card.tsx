@@ -339,12 +339,12 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
           <div className="flex justify-end pt-1">
             <Button
               type="submit"
-              disabled={isPending || !form.formState.isValid}
+              disabled={isPending}
               id="checkout-purchase-button"
               data-testid="checkout-purchase-button"
               className={cn(
-                "w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md",
-                !isPending && form.formState.isValid && "animate-cta-wiggle"
+                "w-full h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md cursor-pointer",
+                !isPending && "animate-cta-wiggle"
               )}
             >
               {isPending ? (
