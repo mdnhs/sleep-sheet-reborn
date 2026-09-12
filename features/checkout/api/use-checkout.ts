@@ -59,6 +59,11 @@ export const UseCheckout = () => {
     },
 
     onSuccess: (data, variables) => {
+      // Capture cart items snapshot before clearing to populate actual product names & variants in GTM
+      const cartSnapshot = [
+        ...useCartStore.getState().items,
+        ...useCartStore.getState().guestItems,
+      ];
       toast.success("Order placed successfully!");
       clearCart();
       clearGuestCart();
@@ -119,13 +124,19 @@ export const UseCheckout = () => {
                 country: "BD",
               },
             },
-            items: purchase.contents.map((c, idx) => ({
-              item_id: c.id,
-              item_name: `Product ${c.id}`,
-              price: c.item_price,
-              quantity: c.quantity,
-              index: idx + 1,
-            })),
+            items: purchase.contents.map((c, idx) => {
+              const matched = cartSnapshot.find(
+                (item) => item.productId === c.id || item.id === c.id
+              );
+              return {
+                item_id: c.id,
+                item_name: matched?.name || `Product ${c.id}`,
+                price: c.item_price,
+                quantity: c.quantity,
+                item_variant: [matched?.size, matched?.color].filter(Boolean).join(" / ") || undefined,
+                index: idx + 1,
+              };
+            }),
           });
         }
       }
