@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { trackEvent } from "@/lib/traffic-tracker";
+import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
 
 interface OrderItem {
   id: string;
@@ -69,10 +70,39 @@ function OrderSuccessContent() {
   // NOTE: The Meta Pixel Purchase event is intentionally NOT fired here.
   // Purchase is tracked earlier in the funnel (on the checkout page) plus
   // server-side via the Conversions API at order creation, so firing it again
-  // on this success page double-counted the conversion in Meta. This effect
-  // only sends the `order_complete` event to Google Analytics.
+  // on this success page double-counted the conversion in Meta.
+  // Here we fire Google Analytics / GTM / Google Ads standard ecommerce `purchase`
+  // with deduplication guard so it reliably captures all items and order totals.
   useEffect(() => {
     if (!order || !orderId) return;
+
+    const { first_name, last_name } = splitFullName(order.guestName);
+    // Track standard GA4 & Google Ads Ecommerce purchase event with Enhanced Conversions
+    trackGtmPurchase({
+      transaction_id: order.orderNumber || order.id,
+      order_id: order.id,
+      value: order.totalAmount,
+      currency: "BDT",
+      shipping: order.shippingCost,
+      tax: 0,
+      user_data: {
+        phone_number: order.guestPhone || undefined,
+        address: {
+          first_name,
+          last_name,
+          street: order.shippingAddress,
+          country: "BD",
+        },
+      },
+      items: order.items.map((item, idx) => ({
+        item_id: item.product?.id || item.id,
+        item_name: item.product?.name || "Product",
+        price: item.price,
+        quantity: item.quantity,
+        item_variant: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
+        index: idx + 1,
+      })),
+    });
 
     const orderGuardKey = `traffic_order_tracked_${orderId}`;
     if (typeof window !== "undefined" && !sessionStorage.getItem(orderGuardKey)) {

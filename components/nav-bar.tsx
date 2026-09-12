@@ -30,6 +30,7 @@ const useHasMounted = () =>
 import { useLanguage } from "@/hooks/use-language";
 import CartDrawer from "./cart/cart-drawer";
 import { Button } from "./ui/button";
+import { trackGtmSearch } from "@/lib/gtm";
 
 const NAV_LINKS = [
   { id: 1, name: "home" as const, path: "/" },
@@ -328,12 +329,16 @@ function Navbar() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const query = inputVal.trim();
+    if (query) {
+      trackGtmSearch(query);
+    }
     const isProductsPage = window.location.pathname === "/shop";
     if (isProductsPage) {
-      setSearchQuery(inputVal.trim() || null);
+      setSearchQuery(query || null);
     } else {
-      if (inputVal.trim()) {
-        router.push(`/shop?search=${encodeURIComponent(inputVal.trim())}`);
+      if (query) {
+        router.push(`/shop?search=${encodeURIComponent(query)}`);
       } else {
         router.push(`/shop`);
       }

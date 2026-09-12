@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
 
 interface OrderItem {
   id: string;
@@ -65,6 +66,37 @@ function OrderSuccessContent() {
 
     fetchOrder();
   }, [orderId, router]);
+
+  useEffect(() => {
+    if (!order || !orderId) return;
+
+    const { first_name, last_name } = splitFullName(order.guestName);
+    trackGtmPurchase({
+      transaction_id: order.orderNumber || order.id,
+      order_id: order.id,
+      value: order.totalAmount,
+      currency: "BDT",
+      shipping: order.shippingCost,
+      tax: 0,
+      user_data: {
+        phone_number: order.guestPhone || undefined,
+        address: {
+          first_name,
+          last_name,
+          street: order.shippingAddress,
+          country: "BD",
+        },
+      },
+      items: order.items.map((item, idx) => ({
+        item_id: item.id,
+        item_name: item.product?.name || "Product",
+        price: item.price,
+        quantity: item.quantity,
+        item_variant: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
+        index: idx + 1,
+      })),
+    });
+  }, [order?.id, orderId]);
 
   const handleDownloadInvoice = async () => {
     if (!order) {

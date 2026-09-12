@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
+import { trackGtmViewItem } from "@/lib/gtm";
 import type { Product } from "@/lib/types";
 
 /**
@@ -29,6 +30,20 @@ export function ProductViewTracker({ product }: { product: Product }) {
       content_category: product.category,
       value: product.price,
       currency: "BDT",
+    });
+
+    trackGtmViewItem({
+      currency: "BDT",
+      value: product.price,
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category,
+          price: product.price,
+          quantity: 1,
+        },
+      ],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, product.id]);

@@ -3,10 +3,11 @@ import OrderSummeryCard from "@/features/checkout/components/order-summery-card"
 import ShippingInformationCard from "@/features/checkout/components/shipping-information-card";
 
 import { useCartStore } from "@/features/cart/state/use-cart-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { getOrCreateCheckoutIdempotencyKey } from "@/lib/checkout-idempotency";
+import { trackGtmBeginCheckout } from "@/lib/gtm";
 
 interface CheckoutClientProps {
   initialSettings?: Record<string, string> | null;
@@ -18,6 +19,7 @@ function CheckoutClinet({ initialSettings }: CheckoutClientProps) {
   const guestItems = useCartStore((state) => state.guestItems);
   const totalItems = [...cartItems, ...guestItems];
   const [mounted, setMounted] = useState(false);
+  const hasTrackedCheckoutRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -25,6 +27,29 @@ function CheckoutClinet({ initialSettings }: CheckoutClientProps) {
     // page loads, so every submit for this cart carries the same key.
     getOrCreateCheckoutIdempotencyKey();
   }, []);
+
+  useEffect(() => {
+    if (!mounted || totalItems.length === 0 || hasTrackedCheckoutRef.current) return;
+    hasTrackedCheckoutRef.current = true;
+
+    const totalValue = totalItems.reduce(
+      (acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+      0
+    );
+
+    trackGtmBeginCheckout({
+      currency: "BDT",
+      value: totalValue,
+      items: totalItems.map((item, idx) => ({
+        item_id: item.productId || item.id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        item_variant: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
+        index: idx + 1,
+      })),
+    });
+  }, [mounted, totalItems]);
 
   if (!mounted) {
     return null;

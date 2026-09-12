@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import { useCurrency } from "@/hooks/use-currency";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
+import { trackGtmBeginCheckout, trackGtmRemoveFromCart } from "@/lib/gtm";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -36,6 +37,22 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
   };
 
   const handleRemoveItem = (id: string) => {
+    const itemToRemove = cartItems.find((item) => item.id === id);
+    if (itemToRemove) {
+      trackGtmRemoveFromCart({
+        currency: "BDT",
+        value: itemToRemove.price * itemToRemove.quantity,
+        items: [
+          {
+            item_id: itemToRemove.productId || itemToRemove.id,
+            item_name: itemToRemove.name,
+            price: itemToRemove.price,
+            quantity: itemToRemove.quantity,
+            item_variant: [itemToRemove.size, itemToRemove.color].filter(Boolean).join(" / ") || undefined,
+          },
+        ],
+      });
+    }
     removeFromCart(id);
   };
 
@@ -44,6 +61,22 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
     0
   );
   const total = subtotal;
+
+  const handleProceedToCheckout = () => {
+    trackGtmBeginCheckout({
+      currency: "BDT",
+      value: total,
+      items: cartItems.map((item, idx) => ({
+        item_id: item.productId || item.id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        item_variant: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
+        index: idx + 1,
+      })),
+    });
+    onClose();
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -85,7 +118,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
               <Button
                 className="w-full py-6"
                 nativeButton={false}
-                render={<Link href="/checkout" onClick={onClose} />}
+                render={<Link href="/checkout" onClick={handleProceedToCheckout} />}
               >
                 {t("proceedToCheckout")}
               </Button>

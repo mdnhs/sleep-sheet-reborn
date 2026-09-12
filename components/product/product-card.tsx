@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { getOptimizedImageUrl } from "@/lib/utils";
+import { trackGtmAddToCart, trackGtmBeginCheckout } from "@/lib/gtm";
 
 interface ProductCardProps {
   product: Product & {
@@ -97,6 +98,20 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       currency: "BDT",
       quantity,
     });
+    trackGtmAddToCart({
+      currency: "BDT",
+      value: displayPrice * quantity,
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category,
+          price: displayPrice,
+          quantity,
+          item_variant: [selectedSize, finalColor].filter(Boolean).join(" / ") || undefined,
+        },
+      ],
+    });
     trackEvent("add_to_cart", `/shop/${product.id}`, product.name, {
       productId: product.id,
       quantity,
@@ -119,6 +134,19 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         currency: "BDT",
         num_items: quantity,
         contents: [{ id: product.id, quantity, item_price: displayPrice }],
+      });
+      trackGtmBeginCheckout({
+        currency: "BDT",
+        value: displayPrice * quantity,
+        items: [
+          {
+            item_id: product.id,
+            item_name: product.name,
+            item_category: product.category,
+            price: displayPrice,
+            quantity,
+          },
+        ],
       });
       trackEvent("buy_now", `/shop/${product.id}`, product.name, {
         productId: product.id,
@@ -169,6 +197,20 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       currency: "BDT",
       num_items: quantity,
       contents: [{ id: product.id, quantity, item_price: displayPrice }],
+    });
+    trackGtmBeginCheckout({
+      currency: "BDT",
+      value: displayPrice * quantity,
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category,
+          price: displayPrice,
+          quantity,
+          item_variant: [selectedSize, selectedColor].filter(Boolean).join(" / ") || undefined,
+        },
+      ],
     });
     trackEvent("buy_now", `/shop/${product.id}`, product.name, {
       productId: product.id,

@@ -67,6 +67,7 @@ export default function GoogleAnalytics() {
           <Script id="google-tag-manager" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
+              window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
               ${gtmServerId ? `window.dataLayer.push({ 'gtm.serverContainerId': '${gtmServerId}' });` : ''}
               (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
               new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

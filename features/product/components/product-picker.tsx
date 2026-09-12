@@ -16,6 +16,7 @@ import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { seoConfig } from "@/lib/seo";
+import { trackGtmAddToCart, trackGtmBeginCheckout } from "@/lib/gtm";
 
 interface ProductPickerProps {
   product: Product;
@@ -139,6 +140,20 @@ function ProductPicker({ product }: ProductPickerProps) {
       currency: "BDT",
       quantity,
     });
+    trackGtmAddToCart({
+      currency: "BDT",
+      value: displayPrice * quantity,
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category,
+          price: displayPrice,
+          quantity,
+          item_variant: [selectedSize, finalColor].filter(Boolean).join(" / ") || undefined,
+        },
+      ],
+    });
     trackEvent("add_to_cart", `/shop/${product.id}`, product.name, {
       productId: product.id,
       quantity,
@@ -186,6 +201,20 @@ function ProductPicker({ product }: ProductPickerProps) {
       currency: "BDT",
       num_items: quantity,
       contents: [{ id: product.id, quantity, item_price: displayPrice }],
+    });
+    trackGtmBeginCheckout({
+      currency: "BDT",
+      value: displayPrice * quantity,
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category,
+          price: displayPrice,
+          quantity,
+          item_variant: [selectedSize, finalColor].filter(Boolean).join(" / ") || undefined,
+        },
+      ],
     });
     trackEvent("buy_now", `/shop/${product.id}`, product.name, {
       productId: product.id,

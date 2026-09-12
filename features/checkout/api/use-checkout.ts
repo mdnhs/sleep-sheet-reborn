@@ -12,6 +12,7 @@ import {
 } from "@/lib/checkout-idempotency";
 import { usePixelTracking } from "@/lib/meta-pixel";
 import type { PurchaseTrackingPayload } from "@/lib/meta-purchase-event";
+import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
 
 const trackedBrowserPurchaseOrderIds = new Set<string>();
 
@@ -101,6 +102,31 @@ export const UseCheckout = () => {
             },
             { eventId: purchase.eventId },
           );
+
+          const { first_name, last_name } = splitFullName(variables.shippingInfo.fullName);
+          trackGtmPurchase({
+            transaction_id: purchase.orderId,
+            order_id: purchase.orderId,
+            value: purchase.value,
+            currency: purchase.currency || "BDT",
+            user_data: {
+              email: variables.shippingInfo.email || undefined,
+              phone_number: variables.shippingInfo.phone,
+              address: {
+                first_name,
+                last_name,
+                street: variables.shippingInfo.address,
+                country: "BD",
+              },
+            },
+            items: purchase.contents.map((c, idx) => ({
+              item_id: c.id,
+              item_name: `Product ${c.id}`,
+              price: c.item_price,
+              quantity: c.quantity,
+              index: idx + 1,
+            })),
+          });
         }
       }
 
