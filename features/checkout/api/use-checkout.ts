@@ -128,6 +128,7 @@ export const UseCheckout = () => {
                 street: variables.shippingInfo.address,
                 country: "BD",
               },
+              fbc: getCapturedFbc(),
             },
             items: purchase.contents.map((c, idx) => {
               const matched = cartSnapshot.find(

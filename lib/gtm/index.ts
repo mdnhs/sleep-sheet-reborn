@@ -142,7 +142,9 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
     })),
   };
 
-  // Google Ads Enhanced Conversions payload
+  // Google Ads Enhanced Conversions payload (fbc rides along for a GTM
+  // Data Layer Variable to feed the Facebook Pixel tag's Advanced Matching —
+  // Google Ads itself ignores the field).
   const userData: Record<string, unknown> | undefined = payload.user_data
     ? {
         email: payload.user_data.email || undefined,
@@ -158,6 +160,7 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
               country: payload.user_data.address.country || "BD",
             }
           : undefined,
+        fbc: payload.user_data.fbc || undefined,
       }
     : undefined;
 
