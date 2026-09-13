@@ -122,10 +122,17 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
     }
   }
 
-  const currency = payload.currency || "BDT";
+  const currency = (payload.currency || "BDT")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 3) || "BDT";
+  const rawValue = Number(payload.value);
+  const safeValue = !isNaN(rawValue) && rawValue > 0 ? Number(rawValue.toFixed(2)) : 0;
+
   const ecommerceData = {
     transaction_id: orderId,
-    value: Number(payload.value) || 0,
+    value: safeValue,
     currency,
     tax: payload.tax !== undefined ? Number(payload.tax) : 0,
     shipping: payload.shipping !== undefined ? Number(payload.shipping) : 0,
@@ -178,10 +185,32 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
 export function trackGtmAddToCart(payload: GtmAddToCartPayload): void {
   if (!payload || !payload.items?.length) return;
 
-  const currency = payload.currency || "BDT";
+  if (typeof window !== "undefined") {
+    try {
+      const firstId = payload.items[0]?.item_id || "";
+      const key = `gtm_add_to_cart_${firstId}`;
+      const last = sessionStorage.getItem(key);
+      const now = Date.now();
+      if (last && now - Number(last) < 2000) {
+        return;
+      }
+      sessionStorage.setItem(key, String(now));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const currency = (payload.currency || "BDT")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 3) || "BDT";
+  const numValue = payload.value !== undefined ? Number(payload.value) : undefined;
+  const safeValue = numValue !== undefined && !isNaN(numValue) && numValue > 0 ? Number(numValue.toFixed(2)) : undefined;
+
   const ecommerceData = {
     currency,
-    value: payload.value !== undefined ? Number(payload.value) : undefined,
+    value: safeValue,
     items: payload.items.map((item, idx) => ({
       item_id: String(item.item_id),
       item_name: item.item_name,
@@ -203,10 +232,31 @@ export function trackGtmAddToCart(payload: GtmAddToCartPayload): void {
 export function trackGtmBeginCheckout(payload: GtmBeginCheckoutPayload): void {
   if (!payload || !payload.items?.length) return;
 
-  const currency = payload.currency || "BDT";
+  if (typeof window !== "undefined") {
+    try {
+      const last = sessionStorage.getItem("gtm_begin_checkout_ts");
+      const now = Date.now();
+      if (last && now - Number(last) < 8000) {
+        // Skip duplicate begin_checkout if fired within 8s (e.g. Buy Now button followed by /checkout page load)
+        return;
+      }
+      sessionStorage.setItem("gtm_begin_checkout_ts", String(now));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const currency = (payload.currency || "BDT")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 3) || "BDT";
+  const numValue = payload.value !== undefined ? Number(payload.value) : undefined;
+  const safeValue = numValue !== undefined && !isNaN(numValue) && numValue > 0 ? Number(numValue.toFixed(2)) : undefined;
+
   const ecommerceData = {
     currency,
-    value: payload.value !== undefined ? Number(payload.value) : undefined,
+    value: safeValue,
     coupon: payload.coupon,
     items: payload.items.map((item, idx) => ({
       item_id: String(item.item_id),

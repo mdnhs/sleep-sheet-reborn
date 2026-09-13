@@ -57,7 +57,18 @@ export const UseCheckout = () => {
       const response = await client.api.checkout.$post({ json: payload });
 
       if (!response.ok) {
-        throw new Error("Failed to checkout");
+        let errorMsg = "Failed to checkout";
+        try {
+          const errorData = (await response.json()) as { message?: string; error?: string };
+          if (errorData?.message) {
+            errorMsg = errorData.message;
+          } else if (typeof errorData?.error === "string") {
+            errorMsg = errorData.error;
+          }
+        } catch {
+          // ignore json parse error
+        }
+        throw new Error(errorMsg);
       }
 
       return response.json();

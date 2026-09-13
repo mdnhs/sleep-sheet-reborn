@@ -147,6 +147,27 @@ export function track<E extends MetaEventName>(
 
   const eventPayload: Record<string, unknown> = { ...params } as Record<string, unknown>
 
+  // Meta parameters sanitization:
+  // - Value must be a valid numeric value greater than 0
+  // - Currency must be a clean 3-letter ISO code (e.g. "BDT") without extra numbers/symbols
+  if ("value" in eventPayload && eventPayload.value !== undefined) {
+    const rawVal = Number(eventPayload.value)
+    if (!isNaN(rawVal) && rawVal > 0) {
+      eventPayload.value = Number(rawVal.toFixed(2))
+    } else {
+      delete eventPayload.value
+    }
+  }
+
+  if ("currency" in eventPayload && eventPayload.currency !== undefined) {
+    const cleanCurrency = String(eventPayload.currency || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, 3)
+    eventPayload.currency = cleanCurrency.length === 3 ? cleanCurrency : "BDT"
+  }
+
   // The dedup key MUST be passed as the 4th argument to fbq (the event
   // options object) — NOT inside the custom-data payload. Meta only reads
   // `eventID` from this options object when matching against a Conversions
