@@ -30,14 +30,25 @@ export function setCachedFeed(format: FeedFormat, data: string): CacheEntry {
   return entry
 }
 
-import { revalidateTag, revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 
+// Called from product/category writes and from every stock decrement, so it
+// runs on each sale. It used to also call revalidatePath("/", "layout"), which
+// per the Next docs invalidates that layout, every layout under it and every
+// page under those — the entire storefront, thrown away on each order, leaving
+// the next visitor to re-render every page against the database. The tags below
+// already reach the same pages (getPublicProducts/getPublicCategories and the
+// product detail cache are all tagged), so the path sweep only added the cost.
+//
+// { expire: 0 } rather than a named profile: these run inside Hono route
+// handlers, and the docs single that case out — a profile like "default" marks
+// the entry stale on the profile's own schedule (15 minutes for "default"),
+// while expire 0 drops it now, which is what an edit needs.
 export function invalidateFeed(): void {
   store.clear();
   try {
-    revalidateTag("products", "default");
-    revalidateTag("categories", "default");
-    revalidatePath("/", "layout");
+    revalidateTag("products", { expire: 0 });
+    revalidateTag("categories", { expire: 0 });
   } catch {
     /* Ignore if invoked outside Next.js request lifecycle */
   }

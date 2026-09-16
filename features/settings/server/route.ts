@@ -192,7 +192,8 @@ const app = new Hono()
       });
 
       try {
-        revalidateTag("settings", "default");
+        // expire 0, not a named profile: see lib/meta-catalog/cache.ts.
+        revalidateTag("settings", { expire: 0 });
       } catch {
         /* Ignore if called outside Next request context */
       }

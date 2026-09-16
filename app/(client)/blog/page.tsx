@@ -1,3 +1,8 @@
+// Kept at half an hour while the rest of the storefront sits at a day: the
+// lowest revalidate across a route's layout and page wins, and nothing calls
+// revalidateTag for blog posts, so this timer is its only path to fresh content.
+export const revalidate = 1800;
+
 import React, { Suspense } from 'react';
 import BlogClientPage from './blog-client';
 import BlogListFallback from './blog-list-fallback';

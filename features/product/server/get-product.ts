@@ -81,7 +81,7 @@ async function fetchProductById(id: string): Promise<Product | null> {
 const getCachedProductById = unstable_cache(
   fetchProductById,
   ["product-by-id"],
-  { revalidate: 3600, tags: ["products"] },
+  { revalidate: 86400, tags: ["products"] },
 );
 
 export const getProductById = cache(

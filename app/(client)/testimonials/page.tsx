@@ -1,3 +1,8 @@
+// Kept at half an hour while the rest of the storefront sits at a day: the
+// lowest revalidate across a route's layout and page wins, and nothing calls
+// revalidateTag for testimonials, so this timer is its only path to fresh content.
+export const revalidate = 1800;
+
 import { Suspense } from "react";
 import TestimonialsClientPage from "./testimonials-client";
 import { seoConfig, generateMetadata, webpageSchema, structuredDataScript } from "@/lib/seo";
