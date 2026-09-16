@@ -8,7 +8,7 @@ import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { can } from '@/lib/permissions';
 import { parseUserAgent } from '@/lib/user-agent-parser';
-import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache } from '@/lib/stock';
+import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache, soldOutProductIds } from '@/lib/stock';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import { findOrCreateCustomerByPhone } from '@/lib/customers';
 import { withOrderNumber } from '@/lib/order-number';
@@ -97,7 +97,7 @@ const app = new Hono()
     // if any item is short on stock, which rolls the whole batch back. That is
     // also what makes the order-number retry safe: a collision rolls the whole
     // thing back, so the retry starts clean.
-    const order = await withOrderNumber('POS', async (orderNumber) => {
+    const { order, stockResult } = await withOrderNumber('POS', async (orderNumber) => {
       const orderId = cuid();
       setActivityMeta(c, { name: `#${orderNumber}` });
 
@@ -138,7 +138,10 @@ const app = new Hono()
 
       const stockDecrement = db.execute(stockDecrementQuery(items));
 
-      const [[order]] = paymentMethod === 'CARD'
+      // A card sale inserts a payment row too, so the batch is four statements
+      // instead of three. The stock decrement is last either way, which is
+      // what the sold-out list is read off.
+      const results = paymentMethod === 'CARD'
         ? await db.batch([
             orderInsert,
             orderItemsInsert,
@@ -152,10 +155,11 @@ const app = new Hono()
           ])
         : await db.batch([orderInsert, orderItemsInsert, stockDecrement]);
 
-      return order;
+      const [[order]] = results;
+      return { order, stockResult: results[results.length - 1] };
     });
 
-    invalidateStockCache();
+    invalidateStockCache(soldOutProductIds(stockResult));
 
     return c.json({
       success: true,

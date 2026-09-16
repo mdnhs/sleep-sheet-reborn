@@ -134,6 +134,13 @@
       "when": 1787000800000,
       "tag": "0018_user_phone_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787000900000,
+      "tag": "0019_stock_decrement_reports_sold_out",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { calculateItemUnitPrice } from "@/lib/utils";
 import { parseUserAgent } from "@/lib/user-agent-parser";
 import { isIpBlocked } from "@/lib/blocked-ip";
-import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache } from "@/lib/stock";
+import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache, soldOutProductIds } from "@/lib/stock";
 import { getSetting } from "@/lib/settings-cache";
 import { rateLimit } from "@/lib/rate-limit";
 import cuid from "cuid";
@@ -178,9 +178,9 @@ const app = new Hono()
       // db.transaction()); stockDecrementQuery raises if any item is short on
       // stock, which rolls the whole batch back. That is also what makes the
       // order-number retry below safe: a collision rolls the whole thing back.
-      const { order, orderNumber } = await withOrderNumber("ORD", async (orderNumber) => {
+      const { order, orderNumber, stockResult } = await withOrderNumber("ORD", async (orderNumber) => {
         const orderId = cuid();
-        const [[order]] = await db.batch([
+        const [[order], , stockResult] = await db.batch([
           db.insert(orders).values({
             id: orderId,
             orderNumber,
@@ -216,11 +216,11 @@ const app = new Hono()
           db.execute(stockDecrementQuery(cartItemsForOrder)),
           db.delete(cartItems).where(eq(cartItems.cartId, cart.id)),
         ]);
-        return { order, orderNumber };
+        return { order, orderNumber, stockResult };
       });
 
       const createdOrder = order;
-      invalidateStockCache();
+      invalidateStockCache(soldOutProductIds(stockResult));
 
       notifyNewOrder({
         orderId: order.id,
@@ -355,9 +355,9 @@ const app = new Hono()
       emailDomain: "guest.local",
     });
 
-    const { order, orderNumber } = await withOrderNumber("ORD", async (orderNumber) => {
+    const { order, orderNumber, stockResult } = await withOrderNumber("ORD", async (orderNumber) => {
       const orderId = cuid();
-      const [[order]] = await db.batch([
+      const [[order], , stockResult] = await db.batch([
         db.insert(orders).values({
           id: orderId,
           orderNumber,
@@ -392,11 +392,11 @@ const app = new Hono()
         ),
         db.execute(stockDecrementQuery(cartItemsForOrder)),
       ]);
-      return { order, orderNumber };
+      return { order, orderNumber, stockResult };
     });
 
     const guestOrderId = order.id;
-    invalidateStockCache();
+    invalidateStockCache(soldOutProductIds(stockResult));
 
     notifyNewOrder({
       orderId: order.id,

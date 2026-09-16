@@ -36,10 +36,44 @@ export function insufficientStockProductId(error: unknown): string | null {
 }
 
 /**
- * Product reads are served from the "products" cache tag, so a sale has to
- * drop it — otherwise a sold-out item keeps showing its old stock until the
- * cache window expires. Call after a stock-decrementing batch commits.
+ * The product ids a decrement took to zero, read off the batch result.
+ *
+ * `decrement_stock_or_fail` returns them as a jsonb array (see
+ * db/migrations/0019_stock_decrement_reports_sold_out.sql). Anything
+ * unexpected in the result shape yields an empty list rather than throwing:
+ * this runs after the order has already committed, and a parsing problem must
+ * not turn a completed sale into a failed request.
  */
-export function invalidateStockCache() {
+export function soldOutProductIds(result: unknown): string[] {
+  const rows = (result as { rows?: Array<Record<string, unknown>> })?.rows;
+  const value = rows?.[0]?.decrement_stock_or_fail;
+  if (!Array.isArray(value)) return [];
+  return value.filter((id): id is string => typeof id === "string");
+}
+
+/**
+ * Drop the storefront's cached product data — but only when a sale actually
+ * changed what the cache can show.
+ *
+ * This used to run on every sale. It calls invalidateFeed(), which fires
+ * revalidateTag("products") and revalidateTag("categories"), throwing away
+ * the cached home, shop, category, product detail and feed pages so the next
+ * visitor regenerates all of them. Doing that because a stock count went from
+ * 10 to 9 was the single largest source of ISR writes — the deploy's own
+ * usage showed more cache writes than cache reads, which defeats the point of
+ * caching at all.
+ *
+ * The storefront never renders the number. It uses `stock > 0` for the
+ * in/out-of-stock state and caps the quantity picker at `stock`, and that cap
+ * is enforced again server-side by stockDecrementQuery, so a stale cap cannot
+ * oversell — the worst it can do is let someone pick a quantity the server
+ * then refuses. The only cache-visible change a sale can make is crossing to
+ * zero, so that is the only case worth paying for.
+ *
+ * Product and category edits still invalidate unconditionally: those change
+ * names, prices and images, which the cache very much does render.
+ */
+export function invalidateStockCache(soldOut: string[]) {
+  if (soldOut.length === 0) return;
   invalidateFeed();
 }
