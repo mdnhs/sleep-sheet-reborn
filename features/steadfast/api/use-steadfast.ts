@@ -9,36 +9,6 @@ type BookRequestType = InferRequestType<
   typeof client.api.steadfast.book["$post"]
 >;
 
-export interface SteadfastTrackingStatus {
-  delivery_status: string;
-  consignment_id?: number;
-  tracking_code?: string;
-}
-
-export function useSteadfastTrackingStatuses(orderIds: string[]) {
-  return useQuery({
-    queryKey: ["steadfast-tracking", ...orderIds.sort()],
-    queryFn: async () => {
-      if (orderIds.length === 0) return {} as Record<string, SteadfastTrackingStatus>;
-      const res = await client.api.steadfast["track-batch"]["$post"]({
-        json: { orderIds },
-      });
-      if (!res.ok) throw new Error("Failed to fetch tracking statuses");
-      const data = await res.json();
-      return data.statuses as Record<string, SteadfastTrackingStatus>;
-    },
-    staleTime: 15 * 60 * 1000,
-    // Courier status changes on the order of hours, not seconds. Even a
-    // 5-minute poll meant an orders tab left open all day woke the database
-    // ~288 times for data that had almost never changed; the "sync" buttons
-    // already fetch on demand when someone actually wants fresh numbers.
-    // Background polling stays off so a forgotten tab costs nothing.
-    refetchInterval: 30 * 60 * 1000,
-    refetchIntervalInBackground: false,
-    enabled: orderIds.length > 0,
-  });
-}
-
 export function useTrackSingleOrder() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -53,7 +23,6 @@ export function useTrackSingleOrder() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["steadfast-tracking"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (err: Error) => {

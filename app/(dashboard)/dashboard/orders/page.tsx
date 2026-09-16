@@ -52,7 +52,6 @@ import type { PlacedOrder, ShippingInfo } from "@/features/checkout/types";
 import {
   useBookCourier,
   useSteadfastBalance,
-  useSteadfastTrackingStatuses,
   useSyncBatchOrderStatus,
   useTrackSingleOrder,
 } from "@/features/steadfast/api/use-steadfast";
@@ -362,7 +361,6 @@ function OrdersPageContent() {
     try {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["steadfast-tracking-statuses"] }),
         queryClient.invalidateQueries({ queryKey: ["steadfast-balance"] }),
       ]);
       const trackedOrders = orders?.filter(isTrackable) ?? [];
@@ -382,12 +380,18 @@ function OrdersPageContent() {
 
   const orders = rawOrders as ShippingOrder[] | undefined;
 
-  // Excludes delivered/cancelled/refunded orders — their courier status is
-  // final, so there's nothing left to poll every 60s (see isTrackable above).
-  const trackedOrderIds =
-    orders?.filter(isTrackable).map((o) => o.id) ?? [];
-  const { data: trackingStatuses } =
-    useSteadfastTrackingStatuses(trackedOrderIds);
+  // The courier's status now comes off the order row, recorded at the last
+  // sync, instead of being refetched from Steadfast every time this page
+  // loads — that fan-out was one API call per tracked, unfinished order, 47 of
+  // them on the current data, to re-learn what had almost never changed.
+  // "Refresh Steadfast" still fetches live on demand.
+  //
+  // Scoped exactly as the old fetch was: isTrackable decided which orders it
+  // asked about, so anything outside it had no courier status then and must
+  // have none now. The server reads the column under the same condition, so
+  // the buckets below agree with the ones the API already filtered on.
+  const courierStatusOf = (o: ShippingOrder) =>
+    isTrackable(o) ? o.courierStatus ?? undefined : undefined;
 
   const handlePrint = async (
     order: Order,
@@ -401,7 +405,6 @@ function OrdersPageContent() {
         import("@/features/checkout/components/invoice-pdf"),
       ]);
       const consignmentId =
-        trackingStatuses?.[order.id]?.consignment_id ||
         (order.trackingNumber && /^\d+$/.test(order.trackingNumber)
           ? Number(order.trackingNumber)
           : null);
@@ -413,10 +416,7 @@ function OrdersPageContent() {
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,
         paymentMethod: order.paymentMethod || "COD",
-        trackingNumber:
-          order.trackingNumber ||
-          trackingStatuses?.[order.id]?.tracking_code ||
-          null,
+        trackingNumber: order.trackingNumber || null,
         consignmentId: consignmentId,
         items: order.items.map((i) => ({
           name: i.product.name,
@@ -494,7 +494,6 @@ function OrdersPageContent() {
       ]);
       const ordersData = selectedOrders.map((order) => {
         const consignmentId =
-          trackingStatuses?.[order.id]?.consignment_id ||
           (order.trackingNumber && /^\d+$/.test(order.trackingNumber)
             ? Number(order.trackingNumber)
             : null);
@@ -506,10 +505,7 @@ function OrdersPageContent() {
           totalAmount: order.totalAmount,
           createdAt: order.createdAt,
           paymentMethod: order.paymentMethod || "COD",
-          trackingNumber:
-            order.trackingNumber ||
-            trackingStatuses?.[order.id]?.tracking_code ||
-            null,
+          trackingNumber: order.trackingNumber || null,
           consignmentId: consignmentId,
           items: order.items.map((i) => ({
             name: i.product.name,
@@ -694,15 +690,13 @@ function OrdersPageContent() {
 
   const getSteadfastDisplay = (order: ShippingOrder) => {
     if (!order.trackingNumber) return null;
-    const tracking = trackingStatuses?.[order.id];
-    if (!tracking) return null;
+    const sfStatus = courierStatusOf(order);
+    if (!sfStatus) return null;
     return {
-      status: tracking.delivery_status,
-      label:
-        STEADFAST_STATUS_LABELS[tracking.delivery_status] ??
-        tracking.delivery_status,
+      status: sfStatus,
+      label: STEADFAST_STATUS_LABELS[sfStatus] ?? sfStatus,
       color:
-        STEADFAST_STATUS_COLORS[tracking.delivery_status] ??
+        STEADFAST_STATUS_COLORS[sfStatus] ??
         "bg-gray-500/20 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-700",
     };
   };
@@ -727,7 +721,7 @@ function OrdersPageContent() {
   };
 
   const isCancelled = (o: ShippingOrder) => {
-    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    const sfStatus = courierStatusOf(o);
     return (
       o.status === "CANCELLED" ||
       sfStatus === "cancelled" ||
@@ -736,7 +730,7 @@ function OrdersPageContent() {
   };
 
   const isReturned = (o: ShippingOrder) => {
-    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    const sfStatus = courierStatusOf(o);
     return (
       o.status === "REFUNDED" ||
       (o.refundedAmount ?? 0) > 0 ||
@@ -749,7 +743,7 @@ function OrdersPageContent() {
 
   const isDelivered = (o: ShippingOrder) => {
     if (isCancelled(o) || isReturned(o)) return false;
-    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    const sfStatus = courierStatusOf(o);
     return (
       o.status === "DELIVERED" ||
       sfStatus === "delivered" ||
@@ -768,7 +762,7 @@ function OrdersPageContent() {
 
     if (isPosShowroom) return true;
 
-    const sfStatus = trackingStatuses?.[o.id]?.delivery_status;
+    const sfStatus = courierStatusOf(o);
     const isBookedInSteadfast = Boolean(o.trackingNumber);
     const isProcessingOrShipped =
       o.status === "PROCESSING" || o.status === "SHIPPED";
@@ -1810,19 +1804,16 @@ function OrdersPageContent() {
                         {selectedOrder.trackingNumber}
                       </span>
                     </div>
-                    {trackingStatuses?.[selectedOrder.id] && (
+                    {courierStatusOf(selectedOrder) && (
                       <Badge
                         variant="outline"
                         className={cn(
                           "ml-auto text-xs border",
-                          STEADFAST_STATUS_COLORS[
-                            trackingStatuses[selectedOrder.id].delivery_status
-                          ] ?? "",
+                          STEADFAST_STATUS_COLORS[courierStatusOf(selectedOrder)!] ?? "",
                         )}
                       >
-                        {STEADFAST_STATUS_LABELS[
-                          trackingStatuses[selectedOrder.id].delivery_status
-                        ] ?? trackingStatuses[selectedOrder.id].delivery_status}
+                        {STEADFAST_STATUS_LABELS[courierStatusOf(selectedOrder)!] ??
+                          courierStatusOf(selectedOrder)}
                       </Badge>
                     )}
                   </div>

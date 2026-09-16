@@ -66,6 +66,9 @@ export interface OrderItem {
     shippingPostalCode?: string | null;
     shippingCountry?: string | null;
     trackingNumber?: string | null;
+    // The courier's own delivery_status as of the last sync, verbatim.
+    // Null until an order has been synced at least once.
+    courierStatus?: string | null;
     sheetBookedAt?: string | null;
     cancellationReason?: string | null;
     refundedAmount?: number | null;
