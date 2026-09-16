@@ -24,6 +24,7 @@ import { db } from "@/db";
 import { carts, cartItems, products, orders, orderItems, shippingMethods, users } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
+import { notifyNewOrder } from "@/lib/n8n-notify";
 import { purchaseEventId } from "@/lib/meta-purchase-event";
 import bcrypt from "bcryptjs";
 
@@ -266,6 +267,21 @@ const app = new Hono()
       const createdOrder = order;
       invalidateStockCache();
 
+      notifyNewOrder({
+        orderId: order.id,
+        orderNumber,
+        customerName: shippingInfo.fullName,
+        customerPhone: shippingInfo.phone,
+        address: shippingInfo.address,
+        paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+        totalAmount,
+        items: cart.items.map((i) => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          price: i.product.price,
+        })),
+      });
+
       // Server-side Purchase (CAPI). Fires at most once per order (guarded by
       // orders.metaPurchaseEventSentAt) and is deduplicated against the browser
       // Pixel via a shared event_id. No-op unless CAPI env is configured.
@@ -423,6 +439,20 @@ const app = new Hono()
 
     const guestOrderId = order.id;
     invalidateStockCache();
+
+    notifyNewOrder({
+      orderId: order.id,
+      orderNumber,
+      customerName: shippingInfo.fullName,
+      customerPhone: shippingInfo.phone,
+      address: shippingInfo.address,
+      paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
+      totalAmount,
+      items: guestItems.map((i: { productId: string; quantity: number }) => {
+        const product = productMap.get(i.productId);
+        return { name: product?.name ?? "Unknown", quantity: i.quantity, price: product?.price ?? 0 };
+      }),
+    });
 
     // Server-side Purchase (CAPI). Fires at most once per order (guarded by
     // orders.metaPurchaseEventSentAt) and deduplicated against the browser Pixel.

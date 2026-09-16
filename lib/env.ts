@@ -34,6 +34,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_BING_VERIFICATION: z.string().optional(),
   NEXT_PUBLIC_YANDEX_VERIFICATION: z.string().optional(),
   GA4_PROPERTY_ID: z.string().optional(),
+
+  // n8n webhook for realtime order alerts (e.g. to Telegram) — optional,
+  // feature no-ops when unset. See lib/n8n-notify.
+  N8N_ORDER_WEBHOOK_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
