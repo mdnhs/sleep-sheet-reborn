@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
 import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
-import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql, count } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql, count, isNull } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -16,10 +16,31 @@ const app = new Hono()
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const { search, from, to, limit, offset } = c.req.query();
+  const { search, from, to, limit, offset, status } = c.req.query();
 
   try {
     const conditions = [];
+
+    // Narrowing, not classification. The dashboard's status buckets fold in
+    // live Steadfast delivery state, which lives in the courier's API and not
+    // in this table, so the client stays the authority on what a bucket holds
+    // and re-filters whatever it receives. Every condition here therefore has
+    // to be NECESSARY for its bucket rather than sufficient: a bucket that
+    // narrows too far drops orders out of the view couriers are booked from,
+    // and nothing about that failure is visible. Only the two buckets the bulk
+    // actions run on are narrowed — the rest cannot be decided without the
+    // courier data, so they are left to the client.
+    if (status === "PENDING") {
+      // An order the dashboard calls pending has status PENDING and has not
+      // been booked; any tracking number at all makes it "confirmed" there.
+      conditions.push(eq(orders.status, "PENDING"));
+      conditions.push(or(isNull(orders.trackingNumber), eq(orders.trackingNumber, "")));
+    } else if (status === "TODAY") {
+      // Deliberately two days wide. The client decides "today" against the
+      // browser's clock, which in Bangladesh runs six hours ahead of UTC, so a
+      // literal UTC day boundary here would hide this morning's orders.
+      conditions.push(gte(orders.createdAt, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)));
+    }
 
     if (search) {
       // Matching a customer's name or email needs the users join, which the

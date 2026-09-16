@@ -54,6 +54,10 @@ interface DataTableProps<TData, TValue> {
   onPaginationChange?: (updater: Updater<PaginationState>) => void
   onRowClick?: (row: TData) => void
   columnVisibility?: VisibilityState
+  // Without this, TanStack keys rowSelection by the row's position, so sorting
+  // or paging the table remaps every existing selection onto different rows.
+  // Tables whose selection drives an action should pass a stable id.
+  getRowId?: (row: TData, index: number) => string
 }
 
 export function DataTable<TData, TValue>({
@@ -69,6 +73,7 @@ export function DataTable<TData, TValue>({
   onPaginationChange,
   onRowClick,
   columnVisibility: initialColumnVisibility,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {})
   const [internalPagination, setInternalPagination] = useState<PaginationState>({
@@ -86,6 +91,7 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    ...(getRowId ? { getRowId } : {}),
     ...(manualPagination
       ? { pageCount: pageCount ?? -1, manualPagination: true as const }
       : { getPaginationRowModel: getPaginationRowModel() }),

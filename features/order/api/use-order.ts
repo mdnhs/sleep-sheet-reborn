@@ -10,13 +10,22 @@ export interface OrderDateRangeFilter {
 export const useOrders = (
   search?: string,
   range?: OrderDateRangeFilter,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; status?: string }
 ) => {
+  const status = options?.status;
   return useQuery({
-    queryKey: ["orders", search, range],
+    // `status` only narrows what the server sends — the dashboard still runs
+    // its own bucket predicates over the result, because those also depend on
+    // live courier state the API cannot see. It belongs in the key regardless,
+    // since a different status means a different response.
+    queryKey: ["orders", search, range, status],
     queryFn: async () => {
       const response = await client.api.orders.$get({
-        query: range ? { search, from: range.from, to: range.to } : { search },
+        query: {
+          search,
+          status,
+          ...(range ? { from: range.from, to: range.to } : {}),
+        },
       });
       if (!response.ok) throw new Error("Failed to fetch orders");
       const data = await response.json();

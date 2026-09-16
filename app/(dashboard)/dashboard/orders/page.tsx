@@ -333,6 +333,11 @@ function OrdersPageContent() {
 
   const { data: rawOrders, isLoading } = useOrders(debouncedSearch, rangeFilter, {
     enabled: permRead,
+    // Narrows the fetch for the two buckets the server can safely recognise —
+    // PENDING is both the default view and the one couriers are booked from,
+    // and it stays small no matter how many orders the shop accumulates. The
+    // client-side bucket filter below still runs on whatever comes back.
+    status: statusFilter,
   });
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
@@ -805,8 +810,12 @@ function OrdersPageContent() {
                   ? orders?.filter((o) => isReturned(o))
                   : orders;
 
-  const selectedOrders =
-    filtered?.filter((_, index) => rowSelection[index.toString()]) || [];
+  // Keyed by order id, matching the getRowId handed to the table below. It
+  // used to key on the row's position, which silently pointed the selection at
+  // different orders as soon as the table was sorted — and would do the same
+  // on every page change once this list is paginated. Booking couriers off a
+  // mismatched selection is not a mistake that announces itself.
+  const selectedOrders = filtered?.filter((o) => rowSelection[o.id]) || [];
 
   const handleBulkBook = () => {
     if (selectedOrders.length === 0) return;
@@ -1710,6 +1719,7 @@ function OrdersPageContent() {
             }
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
+            getRowId={(order) => order.id}
             columnVisibility={{
               orderNumber: false,
               reference: false,
