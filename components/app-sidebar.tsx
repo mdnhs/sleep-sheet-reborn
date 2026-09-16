@@ -92,7 +92,6 @@ const navGroups: GatedGroup[] = [
           { title: "Currency", url: "/dashboard/settings/currency" },
           { title: "Payments", url: "/dashboard/settings/payments" },
           { title: "Shipping", url: "/dashboard/settings/shipping" },
-          { title: "Meta Pixel", url: "/dashboard/settings/pixel" },
           { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
           { title: "SEO", url: "/dashboard/settings/seo" },
           { title: "CDN", url: "/dashboard/settings/cdn" },

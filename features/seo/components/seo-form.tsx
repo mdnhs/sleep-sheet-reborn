@@ -21,11 +21,7 @@ const seoSchema = z.object({
   seo_default_image: z.string().optional(),
   seo_google_verification: z.string().optional(),
   seo_bing_verification: z.string().optional(),
-  google_analytics_id: z.string().optional(),
-  ga4_property_id: z.string().optional(),
   gtm_web_id: z.string().optional(),
-  gtm_server_id: z.string().optional(),
-  gtm_server_url: z.string().optional(),
   seo_twitter_handle: z.string().optional(),
   seo_robots_ai_block: z.boolean(),
 });
@@ -45,30 +41,13 @@ export function SeoForm() {
       seo_default_image: data?.seo_default_image || "",
       seo_google_verification: data?.seo_google_verification || "",
       seo_bing_verification: data?.seo_bing_verification || "",
-      google_analytics_id: data?.google_analytics_id || "",
-      ga4_property_id: data?.ga4_property_id || "546802046",
       gtm_web_id: data?.gtm_web_id || "",
-      gtm_server_id: data?.gtm_server_id || "",
-      gtm_server_url: data?.gtm_server_url || "",
       seo_twitter_handle: data?.seo_twitter_handle || "@sleepsheet2025",
       seo_robots_ai_block: data?.seo_robots_ai_block !== "false",
     },
   });
 
-  function extractGaId(input?: string): string {
-    if (!input) return "";
-    const trimmed = input.trim();
-    const gaMatch = trimmed.match(/G-[A-Z0-9]+/i);
-    if (gaMatch) return gaMatch[0].toUpperCase();
-    const gtmMatch = trimmed.match(/GTM-[A-Z0-9]+/i);
-    if (gtmMatch) return gtmMatch[0].toUpperCase();
-    const uaMatch = trimmed.match(/UA-\d+-\d+/i);
-    if (uaMatch) return uaMatch[0].toUpperCase();
-    return trimmed;
-  }
-
   function onSubmit(values: SeoFormValues) {
-    const cleanGaId = extractGaId(values.google_analytics_id);
     mutate({
       seo_site_name: values.seo_site_name,
       seo_default_title: values.seo_default_title,
@@ -76,11 +55,7 @@ export function SeoForm() {
       seo_default_image: values.seo_default_image || undefined,
       seo_google_verification: values.seo_google_verification || undefined,
       seo_bing_verification: values.seo_bing_verification || undefined,
-      google_analytics_id: cleanGaId || undefined,
-      ga4_property_id: values.ga4_property_id || undefined,
       gtm_web_id: values.gtm_web_id?.trim() || undefined,
-      gtm_server_id: values.gtm_server_id?.trim() || undefined,
-      gtm_server_url: values.gtm_server_url?.trim() || undefined,
       seo_twitter_handle: values.seo_twitter_handle || undefined,
       seo_robots_ai_block: values.seo_robots_ai_block ? "true" : "false",
     });
@@ -192,7 +167,7 @@ export function SeoForm() {
             <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
               <div className="flex items-center gap-2">
                 <BarChart2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                <h2 className="text-base font-bold tracking-tight">Google Analytics & Search Console</h2>
+                <h2 className="text-base font-bold tracking-tight">Google Tag Manager & Search Console</h2>
               </div>
               <div className="space-y-4">
                 <FormField
@@ -207,52 +182,7 @@ export function SeoForm() {
                       <FormControl>
                         <Input {...field} placeholder="e.g. GTM-XXXXXXX" className="rounded-xl font-mono text-sm" />
                       </FormControl>
-                      <FormDescription>Loads GTM on the storefront. This is the only field here that switches tracking on or off.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="gtm_server_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <span>Google Tag Manager (Server Container ID)</span>
-                        <span className="text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-semibold px-2 py-0.5 rounded-md">Server Container</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g. GTM-XXXXXXX" className="rounded-xl font-mono text-sm" />
-                      </FormControl>
-                      <FormDescription>Recorded for reference only — it changes nothing. Server-side tagging is switched on inside the web container itself, by the <code>server_container_url</code> parameter on the GA4 Config tag.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="gtm_server_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>GTM Server Tagging URL (Optional Custom Domain)</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g. https://sgtm.sleepsheetbd.com" className="rounded-xl font-mono text-sm" />
-                      </FormControl>
-                      <FormDescription>Serves gtm.js from your own domain instead of googletagmanager.com, which adblockers and Safari block less often. It does <strong>not</strong> control whether events reach the server container. Leave empty unless that domain is reliable: if it stops responding, GTM fails to load and all tracking stops silently.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="google_analytics_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Google Analytics (GA4) Measurement ID</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g. G-Y62ZKHQGLV or paste full Google Tag script" className="rounded-xl font-mono text-sm" />
-                      </FormControl>
-                      <FormDescription>Enter your GA4 Measurement ID (e.g. G-Y62ZKHQGLV)</FormDescription>
+                      <FormDescription>Loads GTM on the storefront. All tracking (Google Analytics, Meta Pixel, conversions) runs through this container.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

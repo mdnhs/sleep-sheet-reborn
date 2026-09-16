@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Eye, Search, Image as ImageIcon, Globe, ArrowRight, Shield, KeyRound } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Search, Image as ImageIcon, Globe, ArrowRight, Shield, KeyRound } from "lucide-react";
 
 const sections = [
   {
@@ -23,12 +23,6 @@ const sections = [
     description: "Configure delivery charges for different zones",
     href: "/dashboard/settings/shipping",
     icon: Truck,
-  },
-  {
-    title: "Meta Pixel",
-    description: "Manage Facebook Pixel tracking, page mappings, and debug mode",
-    href: "/dashboard/settings/pixel",
-    icon: Eye,
   },
   {
     title: "SEO",

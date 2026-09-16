@@ -1,10 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
 import { useSettings } from "@/features/settings/api/use-settings";
-
 
 declare global {
   interface Window {
@@ -13,115 +10,39 @@ declare global {
   }
 }
 
-function extractMeasurementId(input?: string | null): string {
-  if (!input) return "";
-  const trimmed = input.trim();
-  const gaMatch = trimmed.match(/G-[A-Z0-9]+/i);
-  if (gaMatch) return gaMatch[0].toUpperCase();
-  const gtmMatch = trimmed.match(/GTM-[A-Z0-9]+/i);
-  if (gtmMatch) return gtmMatch[0].toUpperCase();
-  const uaMatch = trimmed.match(/UA-\d+-\d+/i);
-  if (uaMatch) return uaMatch[0].toUpperCase();
-  return trimmed;
-}
-
-function GoogleAnalyticsTracker({ gaId }: { gaId: string }) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (!gaId || typeof window === "undefined") return;
-
-    const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
-
-    if (window.gtag) {
-      window.gtag("config", gaId, {
-        page_path: url,
-      });
-    }
-  }, [pathname, searchParams, gaId]);
-
-  return null;
-}
-
 export default function GoogleAnalytics() {
   const { data: settings } = useSettings();
 
-  // Extract GTM Web Container ID
-  const rawGtmWebId = settings?.gtm_web_id?.trim();
-  const rawGaId = settings?.google_analytics_id?.trim() || process.env.NEXT_PUBLIC_GA_ID || "";
-  
-  const gtmWebId = rawGtmWebId || (rawGaId.startsWith("GTM-") ? rawGaId : "");
-  // gtm_server_id is deliberately not read here.
-  //
-  // This used to push `{ 'gtm.serverContainerId': <id> }` into the dataLayer,
-  // which does nothing: GTM has no such key, so nothing ever consumed it.
-  // Server-side tagging is not wired up from this app at all — the web
-  // container's GA4 Config tag carries a `server_container_url` parameter,
-  // and that is what routes events to the tagging server. An id typed into
-  // the admin panel cannot switch that on or off.
-  //
-  // Worth stating plainly because the dead push made the opposite look true,
-  // and cost real time during a tracking investigation: clearing the field
-  // appeared to disable server-side tracking when it changed nothing.
-  const gtmServerUrl = settings?.gtm_server_url?.trim().replace(/\/$/, "");
+  // GTM Web Container ID from DB settings (fallback to env)
+  const gtmWebId =
+    settings?.gtm_web_id?.trim() ||
+    process.env.NEXT_PUBLIC_GTM_ID ||
+    "";
 
-  const gaId = extractMeasurementId(rawGaId);
-
-  const gtmDomain = gtmServerUrl || "https://www.googletagmanager.com";
+  if (!gtmWebId) return null;
 
   return (
     <>
-      {/* Google Tag Manager (Web Container / Server Tagging URL) */}
-      {gtmWebId && (
-        <>
-          <Script id="google-tag-manager" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
-              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-              '${gtmDomain}/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-              })(window,document,'script','dataLayer','${gtmWebId}');
-            `}
-          </Script>
-          <noscript>
-            <iframe
-              src={`${gtmDomain}/ns.html?id=${gtmWebId}`}
-              height="0"
-              width="0"
-              style={{ display: "none", visibility: "hidden" }}
-            />
-          </noscript>
-        </>
-      )}
-
-      {/* Google Analytics (GA4) fallback only when GTM is NOT present */}
-      {!gtmWebId && gaId && !gaId.startsWith("GTM-") && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaId}', {
-                page_path: window.location.pathname,
-              });
-            `}
-          </Script>
-        </>
-      )}
-
-      {!gtmWebId && gaId && (
-        <Suspense fallback={null}>
-          <GoogleAnalyticsTracker gaId={gaId} />
-        </Suspense>
-      )}
+      {/* Google Tag Manager (Web Container) */}
+      <Script id="google-tag-manager" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
+          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','${gtmWebId}');
+        `}
+      </Script>
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmWebId}`}
+          height="0"
+          width="0"
+          style={{ display: "none", visibility: "hidden" }}
+        />
+      </noscript>
     </>
   );
 }
