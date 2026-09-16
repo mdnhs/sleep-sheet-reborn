@@ -118,7 +118,17 @@ const app = new Hono()
       setCookie(c, AUTH_COOKIE, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        // "Lax", not "Strict". Strict withholds the cookie on every
+        // cross-site top-level navigation, including the one an MCP client
+        // makes when it sends the user to /oauth/authorize — so an already
+        // logged-in user was bounced to the login form on every connector
+        // authorization instead of landing on the consent screen.
+        //
+        // Lax still withholds it from cross-site POST/PATCH/DELETE, which is
+        // where the CSRF risk actually is; what it permits is a top-level GET
+        // navigation, and a cross-origin page still can't read the response
+        // (the /api CORS allowlist in app/api/[[...route]]/route.ts).
+        sameSite: "Lax",
         path: "/",
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });

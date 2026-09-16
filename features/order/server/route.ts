@@ -642,8 +642,25 @@ const app = new Hono()
   }
 })
 
-.get("/:id", async (c) => {
+// Reachable without a session on purpose: the order-success page fetches it
+// straight after checkout, when a guest has no account and nothing to
+// authenticate with. The order id (a cuid) is the capability.
+//
+// What that cannot justify is the rest of the row. This used to return the
+// order wholesale, including the fraud metadata captured at checkout —
+// ipAddress, userAgent, deviceOs, browserName — plus the linked account's
+// email and the internal timeline. None of it is shown to the customer, and
+// order ids leak in ways the order itself does not: a Referer header, a
+// support screenshot, a link pasted into a chat. A staff-only field should
+// not ride along on a link a customer can forward.
+//
+// So the row is filtered by what the caller is allowed to see. Staff with
+// orders:read get everything; anyone else gets the fields the success page
+// and the invoice actually render.
+.get("/:id", sessionMiddleware, async (c) => {
   const id = c.req.param("id");
+  const user = c.get("user");
+  const isStaff = isAllowed(user, "orders", "read", ["MODERATOR"]);
 
   try {
     const order = await db.query.orders.findFirst({
@@ -667,7 +684,27 @@ const app = new Hono()
       return c.json({ error: "Order not found" }, 404);
     }
 
-    return c.json({ order });
+    if (isStaff) {
+      return c.json({ order });
+    }
+
+    // Blanked rather than deleted, so the response keeps one shape whoever
+    // asks for it — the RPC client types off this handler, and a union of
+    // two shapes would push `order.user?` checks onto the dashboard, which
+    // always has the real values anyway.
+    return c.json({
+      order: {
+        ...order,
+        ipAddress: null,
+        userAgent: null,
+        deviceOs: null,
+        browserName: null,
+        fbc: null,
+        idempotencyKey: null,
+        user: null,
+        OrderTimelineEvent: [],
+      },
+    });
   } catch (error) {
     console.error("Failed to fetch order:", error);
     return c.json({ error: "Failed to fetch order" }, 500);
