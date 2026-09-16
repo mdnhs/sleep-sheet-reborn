@@ -53,8 +53,34 @@ function mapSteadfastStatus(s: string): OrderStatus | null {
 // caller passes rows straight from the orders table, whose column type
 // includes values like REFUNDED that this narrower alias doesn't — the value
 // is only ever compared with `!==` here, never written back as-is.
+// Every path below pays for a Steadfast round trip, so every path records what
+// it got back. mapSteadfastStatus keeps only what fits this table's status
+// enum and drops the rest, which is exactly the vocabulary the orders
+// dashboard buckets on — storing the raw value is what lets the server decide
+// those buckets itself. One statement for the whole batch: /track-batch can
+// carry fifty orders, and fifty separate updates would undo the point of
+// batching the fetches.
+async function recordCourierStatuses(
+  rows: { orderId: string; deliveryStatus: string }[],
+) {
+  if (rows.length === 0) return;
+  const values = sql.join(
+    rows.map((r) => sql`(${r.orderId}, ${r.deliveryStatus})`),
+    sql`, `,
+  );
+  await db.execute(sql`
+    UPDATE ${orders} AS o
+    SET "courierStatus" = v.status, "courierStatusAt" = now()
+    FROM (VALUES ${values}) AS v(id, status)
+    WHERE o.id = v.id
+  `);
+}
+
 async function syncOrderStatus(order: { id: string; orderNumber: string; status: string }) {
   const data = await getSteadfastStatusByInvoice(order.orderNumber);
+  await recordCourierStatuses([
+    { orderId: order.id, deliveryStatus: data.delivery_status },
+  ]);
   const mapped = mapSteadfastStatus(data.delivery_status);
   const updated = !!mapped && mapped !== order.status;
 
@@ -187,6 +213,9 @@ const app = new Hono()
 
     try {
       const data = await getSteadfastStatusByInvoice(order.orderNumber);
+      await recordCourierStatuses([
+        { orderId: order.id, deliveryStatus: data.delivery_status },
+      ]);
       return c.json({
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -241,6 +270,13 @@ const app = new Hono()
             // Skip failed fetches silently
           }
         })
+      );
+
+      await recordCourierStatuses(
+        Object.entries(results).map(([orderId, r]) => ({
+          orderId,
+          deliveryStatus: r.delivery_status,
+        })),
       );
 
       return c.json({ statuses: results });

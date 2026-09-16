@@ -424,6 +424,16 @@ export const orders = pgTable("orders", {
   // value survives even when the Pixel's own `_fbc` cookie hasn't been set yet
   // by checkout time, and so a failed/retried CAPI send can reuse it.
   fbc: text("fbc"),
+  // Raw Steadfast delivery_status as of the last sync, stored verbatim rather
+  // than mapped. mapSteadfastStatus folds the courier's vocabulary down to
+  // this table's own status enum and returns null for everything it has no
+  // slot for — "returned", "not_delivered", "fast-track" and friends — so the
+  // distinctions the orders dashboard buckets on were being thrown away. With
+  // the raw value here the server can decide which bucket an order belongs to
+  // on its own, instead of the page fetching courier state for every tracked
+  // order on load just to classify rows. NULL means never synced.
+  courierStatus: text("courierStatus"),
+  courierStatusAt: timestamp("courierStatusAt", { precision: 3 }),
 }, (table) => [
   // Dashboard lists orders newest-first and filters by date range; the
   // customer-facing pages look them up by user. Without these every such

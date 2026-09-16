@@ -120,6 +120,13 @@
       "when": 1787000600000,
       "tag": "0016_orders_fbc_column",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787000700000,
+      "tag": "0017_orders_courier_status",
+      "breakpoints": true
     }
   ]
 }
