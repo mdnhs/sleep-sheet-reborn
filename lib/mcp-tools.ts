@@ -199,14 +199,22 @@ export function registerMcpTools(server: McpServer, ctx: McpToolContext) {
     "list_orders",
     {
       title: "List orders",
-      description: "List orders, newest first. Optionally search by order number or customer, or filter by date range.",
-      inputSchema: { search: z.string().optional(), from: z.string().optional(), to: z.string().optional() },
+      description: "List orders, newest first. Optionally search by order number or customer, or filter by date range. Pass limit (and offset to page) unless you genuinely need every match — the response carries each order's full items, customer and payment details, and `total` reports how many matched.",
+      inputSchema: {
+        search: z.string().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+        offset: z.number().int().min(0).optional(),
+      },
     },
-    async ({ search, from, to }) => {
+    async ({ search, from, to, limit, offset }) => {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (from) params.set("from", from);
       if (to) params.set("to", to);
+      if (limit !== undefined) params.set("limit", String(limit));
+      if (offset !== undefined) params.set("offset", String(offset));
       return text(await api.get(`/orders?${params.toString()}`));
     }
   );

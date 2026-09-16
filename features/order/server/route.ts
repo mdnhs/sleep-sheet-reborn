@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
 import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
-import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql, count } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -16,27 +16,29 @@ const app = new Hono()
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const { search, from, to } = c.req.query();
+  const { search, from, to, limit, offset } = c.req.query();
 
   try {
-    let matchingOrderIds: string[] = [];
-    let hasSearched = false;
+    const conditions = [];
 
     if (search) {
-      hasSearched = true;
-      const matching = await db.select({ id: orders.id })
-        .from(orders)
-        .leftJoin(users, eq(orders.userId, users.id))
-        .where(or(
-          ilike(orders.orderNumber, `%${search}%`),
-          ilike(users.name, `%${search}%`),
-          ilike(users.email, `%${search}%`)
-        ));
-      matchingOrderIds = matching.map(o => o.id);
+      // Matching a customer's name or email needs the users join, which the
+      // relational query below cannot express in its own where clause. As a
+      // subquery it resolves inside the same statement, rather than the round
+      // trip that fetching every matching id up front used to cost.
+      conditions.push(inArray(
+        orders.id,
+        db.select({ id: orders.id })
+          .from(orders)
+          .leftJoin(users, eq(orders.userId, users.id))
+          .where(or(
+            ilike(orders.orderNumber, `%${search}%`),
+            ilike(users.name, `%${search}%`),
+            ilike(users.email, `%${search}%`)
+          )),
+      ));
     }
 
-    const conditions = [];
-    if (hasSearched) conditions.push(inArray(orders.id, matchingOrderIds));
     let fromDate: Date | null = null;
     if (from) {
       const d = new Date(from);
@@ -56,34 +58,50 @@ const app = new Hono()
     if (fromDate) conditions.push(gte(orders.createdAt, fromDate));
     if (toDate) conditions.push(lte(orders.createdAt, toDate));
 
-    const ordersList = (!hasSearched || matchingOrderIds.length > 0)
-      ? await db.query.orders.findMany({
-          where: conditions.length > 0 ? and(...conditions) : undefined,
-          with: {
-            user: {
-              columns: { id: true, name: true, email: true, phone: true }
-            },
-            items: {
-              // Only the product fields the orders dashboard actually renders.
-              // Pulling whole product rows dragged description, tags, features,
-              // care instructions and variants along for every line item of
-              // every order — a large payload to scan, serialize and transfer
-              // on each dashboard load. addOns is kept: its costPrice drives
-              // the add-on bought-price fields in the order cost dialogs.
-              with: {
-                product: {
-                  columns: { id: true, name: true, images: true, price: true, sku: true, addOns: true }
-                }
-              }
-            },
-            shippingMethod: true,
-            payment: true
-          },
-          orderBy: (fields, { desc }) => [desc(fields.createdAt)]
-        })
-      : [];
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    return c.json({ orders: ordersList });
+    // Unbounded by default, because the orders dashboard applies its status
+    // filter and its bulk selection across the whole result set client-side —
+    // capping here would silently shrink what "select all" covers. Callers
+    // that only render a page (the Telegram lookup bot) pass limit instead of
+    // pulling every order and discarding most of it.
+    const take = limit ? Math.min(Math.max(parseInt(limit, 10) || 0, 1), 200) : undefined;
+    const skip = offset ? Math.max(parseInt(offset, 10) || 0, 0) : 0;
+
+    const ordersList = await db.query.orders.findMany({
+      where,
+      ...(take !== undefined ? { limit: take } : {}),
+      ...(skip > 0 ? { offset: skip } : {}),
+      with: {
+        user: {
+          columns: { id: true, name: true, email: true, phone: true }
+        },
+        items: {
+          // Only the product fields the orders dashboard actually renders.
+          // Pulling whole product rows dragged description, tags, features,
+          // care instructions and variants along for every line item of
+          // every order — a large payload to scan, serialize and transfer
+          // on each dashboard load. addOns is kept: its costPrice drives
+          // the add-on bought-price fields in the order cost dialogs.
+          with: {
+            product: {
+              columns: { id: true, name: true, images: true, price: true, sku: true, addOns: true }
+            }
+          }
+        },
+        shippingMethod: true,
+        payment: true
+      },
+      orderBy: (fields, { desc }) => [desc(fields.createdAt)]
+    });
+
+    // Only worth a second query when the caller asked for a slice; an
+    // unbounded response already holds every matching row.
+    const total = take === undefined
+      ? ordersList.length
+      : Number((await db.select({ value: count() }).from(orders).where(where))[0]?.value ?? 0);
+
+    return c.json({ orders: ordersList, total });
   } catch (error) {
     console.error("Failed to fetch orders:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);
