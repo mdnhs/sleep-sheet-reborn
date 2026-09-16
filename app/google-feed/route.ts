@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { FeedBuilder } from "@/lib/meta-catalog/feed-builder"
 import { fetchAllProducts } from "@/lib/meta-catalog/db"
 import { getCachedFeed } from "@/lib/meta-catalog/cache"
 
-export const dynamic = "force-dynamic"
-export const revalidate = 300
+// Regenerated hourly. "force-dynamic" plus an unused request argument made this
+// route dynamic, so every Merchant/crawler fetch rebuilt the feed from the
+// database — the in-memory cache below only ever helped within one instance.
+export const revalidate = 3600
 
 const builder = new FeedBuilder(fetchAllProducts)
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const cached = getCachedFeed("xml")
   if (cached) {
     return new NextResponse(cached.data, {

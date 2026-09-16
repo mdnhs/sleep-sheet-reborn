@@ -2,9 +2,11 @@ import { getPublicSettings } from "@/lib/prefetch-home";
 import { SettingsSeed } from "@/provider/settings-seed";
 import ClientLayout from "./client-layout";
 
-// Refresh the baked-in settings for static storefront pages every 5 minutes.
-// The homepage's own revalidate = 60 still wins for that route.
-export const revalidate = 300;
+// Storefront pages regenerate hourly. A shorter window here is the single
+// biggest reason the database never suspends: every expiry turns the next
+// visitor (or crawler) into a fresh set of queries. Content edits do not wait
+// for it — they invalidate by tag, see lib/prefetch-home.ts.
+export const revalidate = 3600;
 
 // Server layout: fetches the public site settings once (cached server-side)
 // and seeds the ["settings"] React Query cache BEFORE the client layout

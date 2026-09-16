@@ -25,16 +25,22 @@ import productsApp from "@/features/product/server/route";
 
 // Server-side data cache so per-request SSR pages don't hit the database for
 // layout settings on every render.
+// The revalidate windows below are deliberately long. Each one is a timer that
+// wakes the database when it expires, and with steady crawler traffic a short
+// window means the compute never gets to suspend. Everything tagged here is
+// also invalidated on write (revalidateTag in the settings route and in
+// invalidateFeed), so edits still appear immediately — the timer is only the
+// fallback for changes that bypass those paths.
 export const getPublicSettings = unstable_cache(
   () => fromRoute<Record<string, string>>(settingsApp, "/"),
   ["prefetch-settings"],
-  { revalidate: 300, tags: ["settings"] },
+  { revalidate: 3600, tags: ["settings"] },
 );
 
 export const getPublicCategories = unstable_cache(
   () => fromRoute<{ success: boolean; categories: PublicCategory[] }>(categoriesApp, "/category"),
   ["prefetch-categories"],
-  { revalidate: 300, tags: ["categories"] }
+  { revalidate: 3600, tags: ["categories"] }
 );
 
 import blogApp from "@/features/blog/server/route";
@@ -43,13 +49,15 @@ import testimonialsApp from "@/features/testimonials/server/route";
 export const getPublicProducts = unstable_cache(
   () => fromRoute<{ data: ProductSummary[] }>(productsApp, "/?sort=newest&limit=8"),
   ["prefetch-products"],
-  { revalidate: 300, tags: ["products"] }
+  { revalidate: 3600, tags: ["products"] }
 );
 
+// Blog and testimonials are the two entries nothing calls revalidateTag for,
+// so this timer is their only refresh path — kept shorter than the rest.
 export const getPublicBlogPosts = unstable_cache(
   () => fromRoute<{ data: BlogPost[] }>(blogApp, "/"),
   ["prefetch-blog"],
-  { revalidate: 300, tags: ["blog"] }
+  { revalidate: 1800, tags: ["blog"] }
 );
 
 export const getPublicTestimonials = unstable_cache(
@@ -58,5 +66,5 @@ export const getPublicTestimonials = unstable_cache(
     "/?page=1&limit=12",
   ),
   ["prefetch-testimonials"],
-  { revalidate: 300, tags: ["testimonials"] }
+  { revalidate: 1800, tags: ["testimonials"] }
 );

@@ -77,11 +77,11 @@ async function fetchProductById(id: string): Promise<Product | null> {
 //
 // The "products" tag is already revalidated whenever a product is written
 // (see lib/meta-catalog/cache.ts), so edits show up immediately rather than
-// waiting out the 5-minute window.
+// waiting out the window.
 const getCachedProductById = unstable_cache(
   fetchProductById,
   ["product-by-id"],
-  { revalidate: 300, tags: ["products"] },
+  { revalidate: 3600, tags: ["products"] },
 );
 
 export const getProductById = cache(

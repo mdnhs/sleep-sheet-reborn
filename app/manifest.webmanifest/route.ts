@@ -1,7 +1,5 @@
 import { seoConfig } from "@/lib/seo"
 
-export const dynamic = "force-dynamic"
-
 export async function GET() {
   const manifest = {
     name: seoConfig.siteName,

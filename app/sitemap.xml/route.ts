@@ -1,6 +1,8 @@
 import { generateMainSitemap } from "@/lib/seo/sitemap"
 
-export const dynamic = "force-dynamic"
+// Cached for a day: crawlers hit these around the clock, and "force-dynamic"
+// meant every one of those hits became a fresh database query.
+export const revalidate = 86400
 
 export async function GET() {
   const xml = await generateMainSitemap()
