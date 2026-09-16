@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
 import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
-import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql, count, isNull } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql, count } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -21,25 +21,69 @@ const app = new Hono()
   try {
     const conditions = [];
 
-    // Narrowing, not classification. The dashboard's status buckets fold in
-    // live Steadfast delivery state, which lives in the courier's API and not
-    // in this table, so the client stays the authority on what a bucket holds
-    // and re-filters whatever it receives. Every condition here therefore has
-    // to be NECESSARY for its bucket rather than sufficient: a bucket that
-    // narrows too far drops orders out of the view couriers are booked from,
-    // and nothing about that failure is visible. Only the two buckets the bulk
-    // actions run on are narrowed — the rest cannot be decided without the
-    // courier data, so they are left to the client.
-    if (status === "PENDING") {
-      // An order the dashboard calls pending has status PENDING and has not
-      // been booked; any tracking number at all makes it "confirmed" there.
-      conditions.push(eq(orders.status, "PENDING"));
-      conditions.push(or(isNull(orders.trackingNumber), eq(orders.trackingNumber, "")));
-    } else if (status === "TODAY") {
-      // Deliberately two days wide. The client decides "today" against the
-      // browser's clock, which in Bangladesh runs six hours ahead of UTC, so a
-      // literal UTC day boundary here would hide this morning's orders.
-      conditions.push(gte(orders.createdAt, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)));
+    // The dashboard's status buckets, resolved here instead of in the browser.
+    // They depend on the courier's own delivery_status as well as this table's
+    // status column, which is why they used to be decided client-side; that
+    // value is now persisted on the row (see the Steadfast route), so the
+    // server can finally answer "which orders are in this bucket" on its own.
+    // Until it can, the list cannot be paginated at all — a set the server
+    // cannot define is a set it cannot page through.
+    //
+    // Two things these expressions have to get exactly right, both of which
+    // silently misfile orders when missed:
+    //
+    //   Buckets overlap. isConfirmed returns true for a POS showroom sale
+    //   before it ever considers delivery, so such an order legitimately
+    //   appears under both CONFIRMED and DELIVERED. They are not a partition.
+    //
+    //   NULL is not false. courierStatus is NULL for anything never synced,
+    //   and `NULL IN (...)` is NULL, so `NOT (that)` is NULL too — which drops
+    //   the row rather than keeping it. Every courier test is wrapped in
+    //   coalesce(..., false) for that reason.
+    //
+    // Verified against all 201 production rows: adding the courier terms moves
+    // no order out of the bucket the client already put it in.
+    if (status && status !== "ALL") {
+      // The client only ever holds courier status for orders it would have
+      // fetched it for — tracked, and not already finished. Mirroring that
+      // here keeps this classification identical to the one on screen.
+      const courier = sql`(CASE WHEN ${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> ''
+        AND ${orders.status} NOT IN ('DELIVERED','CANCELLED','REFUNDED')
+        THEN ${orders.courierStatus} END)`;
+
+      const cancelled = sql`(${orders.status} = 'CANCELLED'
+        OR coalesce(${courier} IN ('cancelled','cancelled_approval_pending'), false))`;
+
+      const returned = sql`(${orders.status} = 'REFUNDED'
+        OR coalesce(${orders.refundedAmount}, 0) > 0
+        OR coalesce(${courier} IN ('returned','partial-return','not_delivered','partial-not-delivered'), false))`;
+
+      const delivered = sql`(NOT ${cancelled} AND NOT ${returned}
+        AND (${orders.status} = 'DELIVERED'
+          OR coalesce(${courier} IN ('delivered','partial_delivered','delivered_approval_pending','partial_delivered_approval_pending'), false)))`;
+
+      const confirmed = sql`(NOT ${cancelled} AND NOT ${returned}
+        AND ((${orders.saleType} = 'POS'
+              AND (${orders.status} = 'DELIVERED'
+                   OR coalesce(${orders.shippingAddress} ILIKE '%In-store pickup%', false)))
+          OR (${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> '')
+          OR ${orders.status} IN ('PROCESSING','SHIPPED')
+          OR coalesce(${courier} IN ('pending','in_review','hold','fast-track','hub-transfer','office-delivery'), false)))`;
+
+      const pending = sql`(NOT ${cancelled} AND NOT ${returned} AND NOT ${confirmed} AND NOT ${delivered}
+        AND ${orders.status} = 'PENDING')`;
+
+      if (status === "PENDING") conditions.push(pending);
+      else if (status === "CONFIRMED") conditions.push(confirmed);
+      else if (status === "DELIVERED") conditions.push(delivered);
+      else if (status === "CANCELLED") conditions.push(cancelled);
+      else if (status === "RETURNED") conditions.push(returned);
+      else if (status === "TODAY") {
+        // Deliberately two days wide. "Today" is decided against the browser's
+        // clock, six hours ahead of UTC here, so a literal UTC day boundary
+        // would hide this morning's orders. The client narrows it exactly.
+        conditions.push(gte(orders.createdAt, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)));
+      }
     }
 
     if (search) {
@@ -81,11 +125,12 @@ const app = new Hono()
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Unbounded by default, because the orders dashboard applies its status
-    // filter and its bulk selection across the whole result set client-side —
-    // capping here would silently shrink what "select all" covers. Callers
-    // that only render a page (the Telegram lookup bot) pass limit instead of
-    // pulling every order and discarding most of it.
+    // Unbounded by default. The dashboard's bulk selection still runs over
+    // the whole result set in the browser, so a cap here would silently
+    // shrink what "select all" covers before a courier booking. Paging this
+    // safely needs the selection to travel as a filter rather than a list of
+    // ids; until then, callers that only render a page (the Telegram lookup
+    // bot) opt in with limit instead of pulling every order to discard most.
     const take = limit ? Math.min(Math.max(parseInt(limit, 10) || 0, 1), 200) : undefined;
     const skip = offset ? Math.max(parseInt(offset, 10) || 0, 0) : 0;
 
