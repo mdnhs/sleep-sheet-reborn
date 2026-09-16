@@ -205,9 +205,9 @@ export function SeoForm() {
                         <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold px-2 py-0.5 rounded-md">Web Container</span>
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g. GTM-PQ667JWQ" className="rounded-xl font-mono text-sm" />
+                        <Input {...field} placeholder="e.g. GTM-XXXXXXX" className="rounded-xl font-mono text-sm" />
                       </FormControl>
-                      <FormDescription>Your Web Container ID from GTM dashboard (e.g. GTM-PQ667JWQ)</FormDescription>
+                      <FormDescription>Loads GTM on the storefront. This is the only field here that switches tracking on or off.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -222,9 +222,9 @@ export function SeoForm() {
                         <span className="text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-semibold px-2 py-0.5 rounded-md">Server Container</span>
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g. GTM-PZQMNK4K" className="rounded-xl font-mono text-sm" />
+                        <Input {...field} placeholder="e.g. GTM-XXXXXXX" className="rounded-xl font-mono text-sm" />
                       </FormControl>
-                      <FormDescription>Your Server Container ID for Server-Side Tracking (e.g. GTM-PZQMNK4K)</FormDescription>
+                      <FormDescription>Recorded for reference only — it changes nothing. Server-side tagging is switched on inside the web container itself, by the <code>server_container_url</code> parameter on the GA4 Config tag.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -238,7 +238,7 @@ export function SeoForm() {
                       <FormControl>
                         <Input {...field} placeholder="e.g. https://sgtm.sleepsheetbd.com" className="rounded-xl font-mono text-sm" />
                       </FormControl>
-                      <FormDescription>Custom tagging server endpoint URL if hosting your GTM server container</FormDescription>
+                      <FormDescription>Serves gtm.js from your own domain instead of googletagmanager.com, which adblockers and Safari block less often. It does <strong>not</strong> control whether events reach the server container. Leave empty unless that domain is reliable: if it stops responding, GTM fails to load and all tracking stops silently.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -52,7 +52,18 @@ export default function GoogleAnalytics() {
   const rawGaId = settings?.google_analytics_id?.trim() || process.env.NEXT_PUBLIC_GA_ID || "";
   
   const gtmWebId = rawGtmWebId || (rawGaId.startsWith("GTM-") ? rawGaId : "");
-  const gtmServerId = settings?.gtm_server_id?.trim();
+  // gtm_server_id is deliberately not read here.
+  //
+  // This used to push `{ 'gtm.serverContainerId': <id> }` into the dataLayer,
+  // which does nothing: GTM has no such key, so nothing ever consumed it.
+  // Server-side tagging is not wired up from this app at all — the web
+  // container's GA4 Config tag carries a `server_container_url` parameter,
+  // and that is what routes events to the tagging server. An id typed into
+  // the admin panel cannot switch that on or off.
+  //
+  // Worth stating plainly because the dead push made the opposite look true,
+  // and cost real time during a tracking investigation: clearing the field
+  // appeared to disable server-side tracking when it changed nothing.
   const gtmServerUrl = settings?.gtm_server_url?.trim().replace(/\/$/, "");
 
   const gaId = extractMeasurementId(rawGaId);
@@ -68,7 +79,6 @@ export default function GoogleAnalytics() {
             {`
               window.dataLayer = window.dataLayer || [];
               window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
-              ${gtmServerId ? `window.dataLayer.push({ 'gtm.serverContainerId': '${gtmServerId}' });` : ''}
               (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
               new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
               j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
