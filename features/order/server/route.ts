@@ -16,18 +16,16 @@ const app = new Hono()
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const { search, from, to, limit, offset, status } = c.req.query();
+  const { search, from, to, limit, offset, status, tzOffset } = c.req.query();
 
   try {
-    const conditions = [];
-
     // The dashboard's status buckets, resolved here instead of in the browser.
     // They depend on the courier's own delivery_status as well as this table's
     // status column, which is why they used to be decided client-side; that
     // value is now persisted on the row (see the Steadfast route), so the
-    // server can finally answer "which orders are in this bucket" on its own.
-    // Until it can, the list cannot be paginated at all — a set the server
-    // cannot define is a set it cannot page through.
+    // server can answer "which orders are in this bucket" on its own. Until it
+    // could, this list was impossible to paginate — a set the server cannot
+    // define is a set it cannot page through.
     //
     // Two things these expressions have to get exactly right, both of which
     // silently misfile orders when missed:
@@ -43,55 +41,63 @@ const app = new Hono()
     //
     // Verified against all 201 production rows: adding the courier terms moves
     // no order out of the bucket the client already put it in.
-    if (status && status !== "ALL") {
-      // The client only ever holds courier status for orders it would have
-      // fetched it for — tracked, and not already finished. Mirroring that
-      // here keeps this classification identical to the one on screen.
-      const courier = sql`(CASE WHEN ${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> ''
-        AND ${orders.status} NOT IN ('DELIVERED','CANCELLED','REFUNDED')
-        THEN ${orders.courierStatus} END)`;
+    //
+    // The client only ever held courier status for orders it would have
+    // fetched it for — tracked, and not already finished. Mirroring that here
+    // keeps this classification identical to the one the page used to compute.
+    const courier = sql`(CASE WHEN ${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> ''
+      AND ${orders.status} NOT IN ('DELIVERED','CANCELLED','REFUNDED')
+      THEN ${orders.courierStatus} END)`;
 
-      const cancelled = sql`(${orders.status} = 'CANCELLED'
-        OR coalesce(${courier} IN ('cancelled','cancelled_approval_pending'), false))`;
+    const isCancelledSql = sql`(${orders.status} = 'CANCELLED'
+      OR coalesce(${courier} IN ('cancelled','cancelled_approval_pending'), false))`;
 
-      const returned = sql`(${orders.status} = 'REFUNDED'
-        OR coalesce(${orders.refundedAmount}, 0) > 0
-        OR coalesce(${courier} IN ('returned','partial-return','not_delivered','partial-not-delivered'), false))`;
+    const isReturnedSql = sql`(${orders.status} = 'REFUNDED'
+      OR coalesce(${orders.refundedAmount}, 0) > 0
+      OR coalesce(${courier} IN ('returned','partial-return','not_delivered','partial-not-delivered'), false))`;
 
-      const delivered = sql`(NOT ${cancelled} AND NOT ${returned}
-        AND (${orders.status} = 'DELIVERED'
-          OR coalesce(${courier} IN ('delivered','partial_delivered','delivered_approval_pending','partial_delivered_approval_pending'), false)))`;
+    const isDeliveredSql = sql`(NOT ${isCancelledSql} AND NOT ${isReturnedSql}
+      AND (${orders.status} = 'DELIVERED'
+        OR coalesce(${courier} IN ('delivered','partial_delivered','delivered_approval_pending','partial_delivered_approval_pending'), false)))`;
 
-      const confirmed = sql`(NOT ${cancelled} AND NOT ${returned}
-        AND ((${orders.saleType} = 'POS'
-              AND (${orders.status} = 'DELIVERED'
-                   OR coalesce(${orders.shippingAddress} ILIKE '%In-store pickup%', false)))
-          OR (${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> '')
-          OR ${orders.status} IN ('PROCESSING','SHIPPED')
-          OR coalesce(${courier} IN ('pending','in_review','hold','fast-track','hub-transfer','office-delivery'), false)))`;
+    const isConfirmedSql = sql`(NOT ${isCancelledSql} AND NOT ${isReturnedSql}
+      AND ((${orders.saleType} = 'POS'
+            AND (${orders.status} = 'DELIVERED'
+                 OR coalesce(${orders.shippingAddress} ILIKE '%In-store pickup%', false)))
+        OR (${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> '')
+        OR ${orders.status} IN ('PROCESSING','SHIPPED')
+        OR coalesce(${courier} IN ('pending','in_review','hold','fast-track','hub-transfer','office-delivery'), false)))`;
 
-      const pending = sql`(NOT ${cancelled} AND NOT ${returned} AND NOT ${confirmed} AND NOT ${delivered}
-        AND ${orders.status} = 'PENDING')`;
+    const isPendingSql = sql`(NOT ${isCancelledSql} AND NOT ${isReturnedSql}
+      AND NOT ${isConfirmedSql} AND NOT ${isDeliveredSql}
+      AND ${orders.status} = 'PENDING')`;
 
-      if (status === "PENDING") conditions.push(pending);
-      else if (status === "CONFIRMED") conditions.push(confirmed);
-      else if (status === "DELIVERED") conditions.push(delivered);
-      else if (status === "CANCELLED") conditions.push(cancelled);
-      else if (status === "RETURNED") conditions.push(returned);
-      else if (status === "TODAY") {
-        // Deliberately two days wide. "Today" is decided against the browser's
-        // clock, six hours ahead of UTC here, so a literal UTC day boundary
-        // would hide this morning's orders. The client narrows it exactly.
-        conditions.push(gte(orders.createdAt, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)));
-      }
-    }
+    // "Today" belongs to whoever is looking at the screen, and only their
+    // browser knows which day that is — six hours ahead of UTC here, so a UTC
+    // day boundary would hide this morning's orders. The client sends its
+    // getTimezoneOffset(); shifting by it, truncating, and shifting back gives
+    // the instants bracketing the viewer's own day. Absent the offset this
+    // falls back to UTC rather than guessing.
+    const offsetMin = Number.parseInt(tzOffset ?? "", 10);
+    const shift = Number.isFinite(offsetMin) ? offsetMin * 60_000 : 0;
+    const dayStart = new Date(Date.now() - shift);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const todayFrom = new Date(dayStart.getTime() + shift);
+    const todayTo = new Date(todayFrom.getTime() + 24 * 60 * 60 * 1000);
+    const isTodaySql = sql`(${orders.createdAt} >= ${todayFrom} AND ${orders.createdAt} < ${todayTo})`;
+
+    // Search and date range narrow what the whole screen is about; the status
+    // bucket then picks one slice of that. They are kept apart because the
+    // filter tabs count every bucket within the current search, so those
+    // counts must not themselves be filtered down to one bucket.
+    const baseConditions = [];
 
     if (search) {
       // Matching a customer's name or email needs the users join, which the
       // relational query below cannot express in its own where clause. As a
       // subquery it resolves inside the same statement, rather than the round
       // trip that fetching every matching id up front used to cost.
-      conditions.push(inArray(
+      baseConditions.push(inArray(
         orders.id,
         db.select({ id: orders.id })
           .from(orders)
@@ -120,17 +126,50 @@ const app = new Hono()
         toDate = d;
       }
     }
-    if (fromDate) conditions.push(gte(orders.createdAt, fromDate));
-    if (toDate) conditions.push(lte(orders.createdAt, toDate));
+    if (fromDate) baseConditions.push(gte(orders.createdAt, fromDate));
+    if (toDate) baseConditions.push(lte(orders.createdAt, toDate));
 
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const bucket =
+      status === "PENDING" ? isPendingSql
+      : status === "CONFIRMED" ? isConfirmedSql
+      : status === "DELIVERED" ? isDeliveredSql
+      : status === "CANCELLED" ? isCancelledSql
+      : status === "RETURNED" ? isReturnedSql
+      : status === "TODAY" ? isTodaySql
+      : undefined;
 
-    // Unbounded by default. The dashboard's bulk selection still runs over
-    // the whole result set in the browser, so a cap here would silently
-    // shrink what "select all" covers before a courier booking. Paging this
-    // safely needs the selection to travel as a filter rather than a list of
-    // ids; until then, callers that only render a page (the Telegram lookup
-    // bot) opt in with limit instead of pulling every order to discard most.
+    const baseWhere = baseConditions.length > 0 ? and(...baseConditions) : undefined;
+    const where = bucket ? and(...baseConditions, bucket) : baseWhere;
+
+    // Every bucket counted in one pass over the search/date scope. These feed
+    // the filter tabs, which have to keep showing "Confirmed (194)" while you
+    // are looking at the pending ones — and the count for the bucket in view
+    // doubles as the row total the pager needs, so this replaces rather than
+    // adds to the queries a page load already made.
+    const [counts] = await db
+      .select({
+        all: count(),
+        today: sql<number>`count(*) FILTER (WHERE ${isTodaySql})`.mapWith(Number),
+        pending: sql<number>`count(*) FILTER (WHERE ${isPendingSql})`.mapWith(Number),
+        confirmed: sql<number>`count(*) FILTER (WHERE ${isConfirmedSql})`.mapWith(Number),
+        delivered: sql<number>`count(*) FILTER (WHERE ${isDeliveredSql})`.mapWith(Number),
+        cancelled: sql<number>`count(*) FILTER (WHERE ${isCancelledSql})`.mapWith(Number),
+        returned: sql<number>`count(*) FILTER (WHERE ${isReturnedSql})`.mapWith(Number),
+      })
+      .from(orders)
+      .where(baseWhere);
+
+    const total =
+      status === "PENDING" ? counts.pending
+      : status === "CONFIRMED" ? counts.confirmed
+      : status === "DELIVERED" ? counts.delivered
+      : status === "CANCELLED" ? counts.cancelled
+      : status === "RETURNED" ? counts.returned
+      : status === "TODAY" ? counts.today
+      : counts.all;
+
+    // A page is only taken when the caller asks for one. The Telegram lookup
+    // bot and the dashboard both do; anything else still gets the full set.
     const take = limit ? Math.min(Math.max(parseInt(limit, 10) || 0, 1), 200) : undefined;
     const skip = offset ? Math.max(parseInt(offset, 10) || 0, 0) : 0;
 
@@ -161,13 +200,7 @@ const app = new Hono()
       orderBy: (fields, { desc }) => [desc(fields.createdAt)]
     });
 
-    // Only worth a second query when the caller asked for a slice; an
-    // unbounded response already holds every matching row.
-    const total = take === undefined
-      ? ordersList.length
-      : Number((await db.select({ value: count() }).from(orders).where(where))[0]?.value ?? 0);
-
-    return c.json({ orders: ordersList, total });
+    return c.json({ orders: ordersList, total, counts });
   } catch (error) {
     console.error("Failed to fetch orders:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);

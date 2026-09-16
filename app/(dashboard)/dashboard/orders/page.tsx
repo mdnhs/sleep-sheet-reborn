@@ -7,7 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
-import { isToday, format, parseISO, startOfDay, endOfDay } from "date-fns";
+import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -65,7 +65,7 @@ import { useRouter } from "next/navigation";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { cn, formatDate, calculateItemAddOnCost, colorHasAddOn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, PaginationState, RowSelectionState, Updater } from "@tanstack/react-table";
 import {
   Ban,
   Check,
@@ -243,6 +243,11 @@ function OrdersPageContent() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  // The bulk actions need whole orders, not ids: two of them build their PDF
+  // in the browser from the items and product names. With one page in memory
+  // at a time, a row selected on page 1 would otherwise be unreachable from
+  // page 2, so each selected row is kept here as it is ticked.
+  const [selectedById, setSelectedById] = useState<Record<string, ShippingOrder>>({});
   const [isBulkBooking, setIsBulkBooking] = useState(false);
   const [isBulkBookDialogOpen, setIsBulkBookDialogOpen] = useState(false);
   const [isBulkSheetBookOpen, setIsBulkSheetBookOpen] = useState(false);
@@ -330,14 +335,39 @@ function OrdersPageContent() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data: rawOrders, isLoading } = useOrders(debouncedSearch, rangeFilter, {
+  // Server-side paging. The table only ever holds one page now, which is why
+  // everything below that used to reason over "all orders" — the bucket
+  // filter, the tab counts, the bulk selection — had to move or be rebuilt.
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 25,
+  });
+
+  // Any change to what is being filtered invalidates the page number: page 4
+  // of the confirmed orders is rarely a page at all once you switch to
+  // pending, and an out-of-range offset just returns nothing. Adjusted during
+  // render against the previous filter rather than in an effect — React
+  // re-runs this render before committing, where an effect would paint the
+  // stale page first and then a second time to correct it.
+  const filterKey = `${debouncedSearch}|${statusFilter}|${fromStr}|${toStr}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (lastFilterKey !== filterKey) {
+    setLastFilterKey(filterKey);
+    if (pagination.pageIndex !== 0) setPagination({ ...pagination, pageIndex: 0 });
+  }
+
+  const { data: ordersResult, isLoading } = useOrders(debouncedSearch, rangeFilter, {
     enabled: permRead,
-    // Narrows the fetch for the two buckets the server can safely recognise —
-    // PENDING is both the default view and the one couriers are booked from,
-    // and it stays small no matter how many orders the shop accumulates. The
-    // client-side bucket filter below still runs on whatever comes back.
+    limit: pagination.pageSize,
+    offset: pagination.pageIndex * pagination.pageSize,
+    // The bucket is now resolved by the API, so this decides which rows come
+    // back rather than which of them get shown.
     status: statusFilter,
   });
+  const rawOrders = ordersResult?.orders;
+  const totalOrders = ordersResult?.total ?? 0;
+  const bucketCounts = ordersResult?.counts;
+  const pageCount = Math.max(1, Math.ceil(totalOrders / pagination.pageSize));
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
   const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
@@ -651,7 +681,7 @@ function OrdersPageContent() {
     bulkDeleteOrders.mutate(ids, {
       onSuccess: () => {
         toast.success("Successfully deleted selected orders");
-        setRowSelection({});
+        clearSelection();
         setConfirmBulkDelete(false);
       },
       onError: (err: Error) => {
@@ -787,29 +817,35 @@ function OrdersPageContent() {
     return o.status === "PENDING";
   };
 
-  const filtered =
-    statusFilter === "ALL"
-      ? orders
-      : statusFilter === "TODAY"
-        ? orders?.filter((o) => isToday(new Date(o.createdAt)))
-        : statusFilter === "PENDING"
-          ? orders?.filter((o) => isPending(o))
-          : statusFilter === "CONFIRMED"
-            ? orders?.filter((o) => isConfirmed(o))
-            : statusFilter === "DELIVERED"
-              ? orders?.filter((o) => isDelivered(o))
-              : statusFilter === "CANCELLED"
-                ? orders?.filter((o) => isCancelled(o))
-                : statusFilter === "RETURNED"
-                  ? orders?.filter((o) => isReturned(o))
-                  : orders;
+  // The rows on screen are exactly what the API returned: it now resolves the
+  // status buckets itself, so filtering again here would only shrink the page
+  // below its own size.
+  const filtered = orders;
 
-  // Keyed by order id, matching the getRowId handed to the table below. It
-  // used to key on the row's position, which silently pointed the selection at
-  // different orders as soon as the table was sorted — and would do the same
-  // on every page change once this list is paginated. Booking couriers off a
-  // mismatched selection is not a mistake that announces itself.
-  const selectedOrders = filtered?.filter((o) => rowSelection[o.id]) || [];
+  const selectedOrders = Object.values(selectedById);
+
+  // Mirrors rowSelection exactly — anything unticked is dropped rather than
+  // left behind to be acted on later — while filling in rows from the page in
+  // view. Selections made on earlier pages survive because their orders are
+  // already in the map.
+  const handleRowSelectionChange = (updater: Updater<RowSelectionState>) => {
+    const next = typeof updater === "function" ? updater(rowSelection) : updater;
+    setRowSelection(next);
+    setSelectedById((prev) => {
+      const out: Record<string, ShippingOrder> = {};
+      for (const [id, picked] of Object.entries(next)) {
+        if (!picked) continue;
+        const known = prev[id] ?? orders?.find((o) => o.id === id);
+        if (known) out[id] = known;
+      }
+      return out;
+    });
+  };
+
+  const clearSelection = () => {
+    setRowSelection({});
+    setSelectedById({});
+  };
 
   const handleBulkBook = () => {
     if (selectedOrders.length === 0) return;
@@ -861,7 +897,7 @@ function OrdersPageContent() {
       }
       if (successCount > 0) {
         toast.success(`Successfully booked ${successCount} orders`);
-        setRowSelection({});
+        clearSelection();
       } else {
         toast.error(
           "No selected orders could be booked (invalid phone or already booked)",
@@ -889,7 +925,7 @@ function OrdersPageContent() {
       {
         onSuccess: () => {
           toast.success(`Booked ${orderIds.length} orders to Google Sheet`);
-          setRowSelection({});
+          clearSelection();
         },
         onError: (err: Error) => {
           toast.error(err.message || "Failed to book to Google Sheet");
@@ -898,13 +934,15 @@ function OrdersPageContent() {
     );
   };
 
-  const todayCount =
-    orders?.filter((o) => isToday(new Date(o.createdAt))).length ?? 0;
-  const pendingCount = orders?.filter((o) => isPending(o)).length ?? 0;
-  const confirmedCount = orders?.filter((o) => isConfirmed(o)).length ?? 0;
-  const deliveredCount = orders?.filter((o) => isDelivered(o)).length ?? 0;
-  const cancelledCount = orders?.filter((o) => isCancelled(o)).length ?? 0;
-  const returnedCount = orders?.filter((o) => isReturned(o)).length ?? 0;
+  // Counted by the database across the whole search, not by the browser across
+  // one page — otherwise every tab would report the size of whatever page you
+  // happened to be looking at.
+  const todayCount = bucketCounts?.today ?? 0;
+  const pendingCount = bucketCounts?.pending ?? 0;
+  const confirmedCount = bucketCounts?.confirmed ?? 0;
+  const deliveredCount = bucketCounts?.delivered ?? 0;
+  const cancelledCount = bucketCounts?.cancelled ?? 0;
+  const returnedCount = bucketCounts?.returned ?? 0;
 
   const columns: ColumnDef<ShippingOrder>[] = [
     {
@@ -1712,8 +1750,12 @@ function OrdersPageContent() {
               ) : undefined
             }
             rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
+            onRowSelectionChange={handleRowSelectionChange}
             getRowId={(order) => order.id}
+            manualPagination
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            pageCount={pageCount}
             columnVisibility={{
               orderNumber: false,
               reference: false,
