@@ -8,7 +8,7 @@ import { siteSettings } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { can } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 // Credentials that must never leave the server through the public GET.
 // The public endpoint exposes only a "<key>_set" flag for each so the admin
@@ -34,9 +34,16 @@ const isSecretKey = (key: string) =>
   (SECRET_SETTING_KEYS as readonly string[]).includes(key) ||
   SECRET_KEY_PATTERN.test(key);
 
-const app = new Hono()
-
-  .get("/", async (c) => {
+/**
+ * The public settings map — every non-secret row, plus a `<key>_set` flag for
+ * each credential so the admin UI can show configured state without the value.
+ *
+ * Wrapped in the Next data cache under the same "settings" tag the PATCH
+ * invalidates, so the read is shared across requests and across instances
+ * instead of hitting Postgres on every CDN miss.
+ */
+const getCachedPublicSettings = unstable_cache(
+  async () => {
     const settings = await db.select().from(siteSettings);
     const map: Record<string, string> = {};
     const secretValues: Record<string, string> = {};
@@ -44,13 +51,34 @@ const app = new Hono()
       if (isSecretKey(key)) secretValues[key] = value;
       else map[key] = value;
     }
-    // Configured-state flags so the admin UI can indicate presence without
-    // ever seeing the raw values on this public endpoint.
     for (const key of SECRET_SETTING_KEYS) {
       map[`${key}_set`] = secretValues[key] ? "true" : "false";
     }
-    // Shared-cache only (s-maxage): the CDN absorbs repeat traffic while
-    // browsers always revalidate, so admin edits still show up quickly.
+    return map;
+  },
+  ["public-settings"],
+  { revalidate: 86400, tags: ["settings"] },
+);
+
+const app = new Hono()
+
+  .get("/", async (c) => {
+    // Cached across requests, not just at the CDN.
+    //
+    // This endpoint is called by useSettings() from the client layout — via
+    // google-analytics.tsx and seo-verification.tsx — so it runs on every
+    // storefront page view. The CDN absorbs most of that, but s-maxage=300
+    // still lets one request per five minutes *per edge region* through to
+    // the origin, and each one used to run `db.select()` against a sleeping
+    // database. Neon bills a five-minute minimum every time the compute
+    // wakes, so a table that changes a few times a month was keeping it
+    // awake through the whole trading day.
+    //
+    // A long revalidate costs nothing in freshness: the PATCH below calls
+    // revalidateTag("settings", { expire: 0 }), so an admin edit drops this
+    // entry immediately. The timer is only the fallback for changes that
+    // bypass that path (a direct DB edit, a seed script).
+    const map = await getCachedPublicSettings();
     c.header("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
     return c.json(map);
   })
