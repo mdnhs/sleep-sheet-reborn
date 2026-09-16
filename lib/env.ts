@@ -22,7 +22,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 
   // Meta Pixel / Conversions API — optional, features no-op when unset.
-  NEXT_PUBLIC_DEFAULT_PIXEL_ID: z.string().optional(),
   META_PIXEL_ID: z.string().optional(),
   META_CAPI_ACCESS_TOKEN: z.string().optional(),
   META_TEST_EVENT_CODE: z.string().optional(),

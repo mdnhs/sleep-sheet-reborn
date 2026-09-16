@@ -174,7 +174,7 @@ track("Lead", { value: 50, currency: "BDT" })
 
 | Variable | Description |
 |---|---|
-| `NEXT_PUBLIC_DEFAULT_PIXEL_ID` | Fallback pixel when no attribution exists |
+| `meta_pixel_default_id` (admin setting) | Fallback pixel when no attribution exists. Not an env var: the GTM container carries its own Meta Pixel tags, so an env-configured pixel would double-count. |
 
 ## Debug Mode
 

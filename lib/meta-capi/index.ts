@@ -56,11 +56,13 @@ async function loadCapiConfig(): Promise<CapiConfig> {
     // rather than leaving it as it was. Server-side Purchase events are not
     // something a database hiccup should start sending on its own.
     enabled: map.meta_capi_enabled === "true",
+    // NEXT_PUBLIC_DEFAULT_PIXEL_ID is deliberately not in this chain: it is a
+    // client-side variable, and having it select the server's pixel meant one
+    // env var silently configured both halves of the integration at once.
     pixelId:
       map.meta_capi_pixel_id ||
       map.meta_pixel_default_id ||
       process.env.META_PIXEL_ID ||
-      process.env.NEXT_PUBLIC_DEFAULT_PIXEL_ID ||
       "",
     accessToken:
       map.meta_capi_access_token || process.env.META_CAPI_ACCESS_TOKEN || "",

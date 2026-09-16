@@ -18,7 +18,20 @@ export interface PixelRuntimeConfig {
 export const PIXEL_CONFIG: PixelRuntimeConfig = {
   debug: process.env.NODE_ENV === "development",
 
-  defaultPixelId: process.env.NEXT_PUBLIC_DEFAULT_PIXEL_ID || "",
+  // Empty by default, and deliberately not read from an env var.
+  //
+  // This used to fall back to NEXT_PUBLIC_DEFAULT_PIXEL_ID. That variable was
+  // the one thing standing between the app's own Pixel and the Meta Pixel
+  // tags already in the GTM container: with no pixel id, getActivePixelId()
+  // returns null and the SDK is never loaded, so setting it anywhere — a
+  // deploy env, a preview branch, a copied .env — would have been enough to
+  // start double-counting PageView, ViewContent, AddToCart, InitiateCheckout,
+  // Purchase and Search.
+  //
+  // The real value arrives through applyPixelOverrides() from the
+  // meta_pixel_default_id admin setting, so the database stays the single
+  // place this is configured.
+  defaultPixelId: "",
 
   cookieName: "_mp_attr",
 
