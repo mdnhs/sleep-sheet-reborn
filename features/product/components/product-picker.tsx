@@ -12,7 +12,6 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { seoConfig } from "@/lib/seo";
@@ -31,7 +30,6 @@ function ProductPicker({ product }: ProductPickerProps) {
   const addToCart = useCartStore((state) => state.addToCart);
   const router = useRouter();
   const { formatAmount } = useCurrency();
-  const { track } = usePixelTracking();
   // Same number as the floating WhatsApp button (footer_phone site setting).
   const { footerPhone } = useWebsiteSettings();
   // Prefill the WhatsApp chat with the product name and link so the seller
@@ -132,14 +130,6 @@ function ProductPicker({ product }: ProductPickerProps) {
       },
     });
 
-    track("AddToCart", {
-      content_ids: [product.id],
-      content_type: "product",
-      content_name: product.name,
-      value: displayPrice * quantity,
-      currency: "BDT",
-      quantity,
-    });
     trackGtmAddToCart({
       currency: "BDT",
       value: displayPrice * quantity,
@@ -194,14 +184,6 @@ function ProductPicker({ product }: ProductPickerProps) {
       },
     });
 
-    track("InitiateCheckout", {
-      content_ids: [product.id],
-      content_type: "product",
-      value: displayPrice * quantity,
-      currency: "BDT",
-      num_items: quantity,
-      contents: [{ id: product.id, quantity, item_price: displayPrice }],
-    });
     trackGtmBeginCheckout({
       currency: "BDT",
       value: displayPrice * quantity,

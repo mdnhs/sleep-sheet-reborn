@@ -32,7 +32,7 @@ export interface GtmUserData {
     postal_code?: string;
     country?: string;
   };
-  // Meta click-id (see lib/meta-pixel/fbclid.ts). Not used by Google Ads
+  // Meta click-id (see lib/meta-fbc.ts). Not used by Google Ads
   // Enhanced Conversions — carried here so a GTM Data Layer Variable can
   // pick it up for the Facebook Pixel tag's Advanced Matching, once that
   // variable is wired up in the GTM container.

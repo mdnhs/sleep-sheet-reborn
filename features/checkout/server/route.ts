@@ -45,7 +45,7 @@ const checkoutSchema = z.object({
     color: z.string().optional(),
   })).optional(),
   idempotencyKey: z.string().optional(),
-  // Meta click-id captured client-side (lib/meta-pixel/fbclid.ts) — passed
+  // Meta click-id captured client-side (lib/meta-fbc.ts) — passed
   // through to the Purchase CAPI call and persisted on the order.
   fbc: z.string().optional(),
 });

@@ -10,8 +10,7 @@ import {
   getOrCreateCheckoutIdempotencyKey,
   clearCheckoutIdempotencyKey,
 } from "@/lib/checkout-idempotency";
-import { usePixelTracking } from "@/lib/meta-pixel";
-import { getCapturedFbc } from "@/lib/meta-pixel/fbclid";
+import { getCapturedFbc } from "@/lib/meta-fbc";
 import type { PurchaseTrackingPayload } from "@/lib/meta-purchase-event";
 import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
 
@@ -27,7 +26,6 @@ export const UseCheckout = () => {
   const guestItems = useCartStore((state) => state.guestItems);
   const clearCart = useCartStore((state) => state.clearCart);
   const clearGuestCart = useCartStore((state) => state.clearGuestCart);
-  const { track } = usePixelTracking();
 
   return useMutation({
     mutationFn: async ({
@@ -48,7 +46,7 @@ export const UseCheckout = () => {
         // Same key for every submit of this cart, so a duplicate submit returns
         // the existing order instead of creating a second one.
         idempotencyKey: getOrCreateCheckoutIdempotencyKey(),
-        // Meta click-id, captured client-side on landing (see fbclid.ts) —
+        // Meta click-id, captured client-side on landing (see meta-fbc.ts) —
         // sent explicitly so the server-side Purchase CAPI call doesn't have
         // to depend on the Pixel's own _fbc cookie having been set in time.
         fbc: getCapturedFbc(),
@@ -110,20 +108,10 @@ export const UseCheckout = () => {
             /* sessionStorage unavailable */
           }
 
-          track(
-            "Purchase",
-            {
-              value: purchase.value,
-              currency: purchase.currency,
-              order_id: purchase.orderId,
-              content_type: "product",
-              content_ids: purchase.contents.map((c) => c.id),
-              contents: purchase.contents,
-              quantity: purchase.numItems,
-            },
-            { eventId: purchase.eventId },
-          );
-
+          // The browser Purchase is fired by the GTM web container's Meta
+          // Pixel tag off the dataLayer push below, deduplicated against the
+          // server container's CAPI tag by the shared event_id. The app
+          // firing its own was a second, uncoordinated copy.
           const { first_name, last_name } = splitFullName(variables.shippingInfo.fullName);
           trackGtmPurchase({
             transaction_id: purchase.orderId,

@@ -1,36 +1,30 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { trackGtmViewItem } from "@/lib/gtm";
 import type { Product } from "@/lib/types";
 
 /**
- * Fires the Meta Pixel ViewContent event for a product. Kept as a tiny
- * client leaf so the product page itself can stay a Server Component.
+ * Pushes the GA4 view_item event for a product. Kept as a tiny client leaf so
+ * the product page itself can stay a Server Component.
+ *
+ * The Meta Pixel ViewContent this used to fire alongside is gone: the GTM web
+ * container fires it from this same dataLayer push, and the app firing its
+ * own was a second, uncoordinated copy of the event.
  */
 export function ProductViewTracker({ product }: { product: Product }) {
-  const { track, isReady } = usePixelTracking();
   const firedForProduct = useRef<string | null>(null);
 
   useEffect(() => {
-    // Wait until the Pixel SDK is initialized. On this server-rendered page
-    // the tracker mounts before the PixelProvider finishes init, so firing
-    // immediately would hit an uninitialized `fbq`.
-    if (!isReady) return;
+    // This used to wait on the Pixel SDK being initialized, which also held
+    // the GA4 push back for no reason — the dataLayer needs nothing from the
+    // Pixel. With the Pixel gone the push happens on mount.
+    //
     // Guards against React StrictMode's dev-mode double-invoke of this
-    // effect, which otherwise fires ViewContent twice per page load.
+    // effect, which otherwise fires view_item twice per page load.
     if (firedForProduct.current === product.id) return;
     firedForProduct.current = product.id;
-    track("ViewContent", {
-      content_ids: [product.id],
-      content_type: "product",
-      content_name: product.name,
-      content_category: product.category,
-      value: product.price,
-      currency: "BDT",
-    });
 
     trackGtmViewItem({
       currency: "BDT",
@@ -46,7 +40,7 @@ export function ProductViewTracker({ product }: { product: Product }) {
       ],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, product.id]);
+  }, [product.id]);
 
   useEffect(() => {
     const guardKey = `traffic_pv_tracked_${product.id}`;

@@ -11,7 +11,6 @@ import { useWishlistToggle } from "@/lib/helpers";
 import { useLanguage } from "@/hooks/use-language";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { usePixelTracking } from "@/lib/meta-pixel";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import { trackGtmAddToCart, trackGtmBeginCheckout } from "@/lib/gtm";
@@ -32,7 +31,6 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const { formatAmount } = useCurrency();
   const addToCart = useCartStore((state) => state.addToCart);
   const router = useRouter();
-  const { track } = usePixelTracking();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [dialogAction, setDialogAction] = useState<"cart" | "buy" | null>(null);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
@@ -90,14 +88,6 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       },
     });
 
-    track("AddToCart", {
-      content_ids: [product.id],
-      content_type: "product",
-      content_name: product.name,
-      value: displayPrice * quantity,
-      currency: "BDT",
-      quantity,
-    });
     trackGtmAddToCart({
       currency: "BDT",
       value: displayPrice * quantity,
@@ -127,14 +117,6 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       setIsDrawerOpen(!isDrawerOpen);
     } else {
       dispatchAddToCart();
-      track("InitiateCheckout", {
-        content_ids: [product.id],
-        content_type: "product",
-        value: displayPrice * quantity,
-        currency: "BDT",
-        num_items: quantity,
-        contents: [{ id: product.id, quantity, item_price: displayPrice }],
-      });
       trackGtmBeginCheckout({
         currency: "BDT",
         value: displayPrice * quantity,
@@ -190,14 +172,6 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
     }
     
     dispatchAddToCart();
-    track("InitiateCheckout", {
-      content_ids: [product.id],
-      content_type: "product",
-      value: displayPrice * quantity,
-      currency: "BDT",
-      num_items: quantity,
-      contents: [{ id: product.id, quantity, item_price: displayPrice }],
-    });
     trackGtmBeginCheckout({
       currency: "BDT",
       value: displayPrice * quantity,

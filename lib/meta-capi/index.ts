@@ -131,7 +131,7 @@ export interface CapiPurchaseInput {
   // or logged-in) — improves Meta's identity resolution across a customer's
   // repeat purchases. Hashed the same way as the other user_data fields.
   externalId?: string | null;
-  // Click-id captured client-side at checkout (lib/meta-pixel/fbclid.ts),
+  // Click-id captured client-side at checkout (lib/meta-fbc.ts),
   // persisted on the order. Takes priority over the live Cookie header
   // (ctx.cookieHeader) below, which is kept only as a fallback for callers
   // that don't have a captured value.

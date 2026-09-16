@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/provider/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { PixelTrackingProvider } from "@/provider/pixel-tracking-provider";
+import { FbcCapture } from "@/provider/fbc-capture";
 import { seoConfig, websiteSchema, organizationSchema, structuredDataScript } from "@/lib/seo";
 
 // Only two fonts are on the storefront critical path: Figtree (body) and
@@ -169,10 +169,9 @@ export default function RootLayout({
             <QueryProvider>
               <SeoVerification />
               <GoogleAnalytics />
+              <FbcCapture />
               <NuqsAdapter>
-                <PixelTrackingProvider>
-                  {children}
-                </PixelTrackingProvider>
+                {children}
               </NuqsAdapter>
             </QueryProvider>
           </TooltipProvider>
