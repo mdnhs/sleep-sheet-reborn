@@ -47,6 +47,51 @@ export function splitFullName(name?: string | null): { first_name?: string; last
 }
 
 /**
+ * A deduplication key for one occurrence of a tracking event.
+ *
+ * Meta treats a browser Pixel event and a Conversions API event as the same
+ * event only when both carry the same `event_id`. This store sends both: the
+ * web container fires the Meta Pixel in the browser, and the same dataLayer
+ * push travels on to the server container (ss.sleepsheetbd.com), whose Stape
+ * CAPI tag fires on every GA4 event. Without a shared id, Meta counts each
+ * one twice — every AddToCart, ViewContent, InitiateCheckout and Search was
+ * being double counted, and Purchase too, because the browser tag prefixed
+ * the transaction id with "purchase_" while the server tag read the raw
+ * transaction id off the ecommerce object.
+ *
+ * Generating it here, once per push, is what makes the two sides agree:
+ * both read the same value out of the same dataLayer event.
+ */
+function randomEventId(event: string): string {
+  const unique =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${event}_${unique}`;
+}
+
+/**
+ * The Purchase dedup key, derived from the transaction id rather than random.
+ *
+ * Deterministic on purpose: a customer refreshing the success page, or
+ * arriving at it twice, must produce the same id so Meta collapses the
+ * repeats instead of counting another sale.
+ *
+ * The `purchase_` prefix matches exactly what the web container's Meta Pixel
+ * Purchase tag already builds from `{{dlv - ecommerce.transaction_id}}`, so
+ * this is correct whether or not that tag is switched over to read
+ * `event_id` — there is no moment where the two disagree.
+ *
+ * Distinct from purchaseEventId() in lib/meta-purchase-event.ts, which keys
+ * off the order's database id for the in-house CAPI path. This one keys off
+ * the transaction id the dataLayer actually carries (the order number).
+ */
+export function purchaseGtmEventId(transactionId: string): string {
+  const id = String(transactionId);
+  return id.startsWith("purchase_") ? id : `purchase_${id}`;
+}
+
+/**
  * Safely push an event or object to Google Tag Manager dataLayer.
  */
 export function pushToDataLayer(payload: Record<string, unknown>): void {
@@ -67,13 +112,18 @@ export function pushToDataLayer(payload: Record<string, unknown>): void {
 export function trackGtmEcommerce(
   event: "purchase" | "add_to_cart" | "remove_from_cart" | "begin_checkout" | "view_item" | string,
   ecommerce: Record<string, unknown>,
-  extraData?: Record<string, unknown>
+  extraData?: Record<string, unknown>,
+  /** Override the generated dedup key. Purchase passes a deterministic one. */
+  eventId?: string,
 ): void {
   if (typeof window === "undefined") return;
 
   pushToDataLayer({ ecommerce: null });
   pushToDataLayer({
     event,
+    // Read by the web container's Meta Pixel tags as `eventID`, and forwarded
+    // to the server container so its CAPI tag sends the same `event_id`.
+    event_id: eventId || randomEventId(event),
     ...extraData,
     ecommerce,
   });
@@ -174,7 +224,8 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
   trackGtmEcommerce(
     "purchase",
     ecommerceData,
-    userData ? { user_data: userData } : undefined
+    userData ? { user_data: userData } : undefined,
+    purchaseGtmEventId(orderId),
   );
   return true;
 }
@@ -331,6 +382,7 @@ export function trackGtmSearch(searchTerm: string): void {
   const term = searchTerm.trim();
   pushToDataLayer({
     event: "search",
+    event_id: randomEventId("search"),
     search_term: term,
   });
 }
