@@ -10,6 +10,7 @@ import {
   pgEnum,
   unique,
   index,
+  uniqueIndex,
   AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
@@ -20,7 +21,7 @@ import {
 // JS-side type a plain number (parsed with parseFloat on read) so none of
 // the arithmetic/formatting call sites need to change.
 const money = (name: string) => numeric(name, { precision: 12, scale: 2, mode: "number" });
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import cuid from "cuid";
 
 // Enums
@@ -132,6 +133,14 @@ export const users = pgTable("User", {
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 }, (table) => [
   index("User_roleId_idx").on(table.roleId),
+  // One customer per phone. Guest checkout and POS both identify a customer
+  // by phone and insert when the lookup misses, so without this two
+  // concurrent orders from the same number raced each other (see
+  // db/migrations/0018_user_phone_unique.sql). Partial: staff accounts and
+  // POS walk-ins with no phone are exempt.
+  uniqueIndex("User_phone_key")
+    .on(table.phone)
+    .where(sql`${table.phone} is not null and ${table.phone} <> ''`),
 ]);
 
 // Server-to-server credentials (MCP server, scripts, integrations) — an

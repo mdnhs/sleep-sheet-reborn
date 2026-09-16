@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '@/db';
 import { orders, orderItems, payments, products, users } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { zValidator } from '@hono/zod-validator';
@@ -10,6 +10,7 @@ import { can } from '@/lib/permissions';
 import { parseUserAgent } from '@/lib/user-agent-parser';
 import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache } from '@/lib/stock';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
+import { findOrCreateCustomerByPhone } from '@/lib/customers';
 import cuid from 'cuid';
 
 async function generateOrderNumber(): Promise<string> {
@@ -76,23 +77,14 @@ const app = new Hono()
     let finalUserId: string | null = null;
     
     if (customerPhone) {
-      const existingUser = await db.query.users.findFirst({
-        where: eq(users.phone, customerPhone),
+      // Shared with guest checkout — same match-or-create, and race-safe
+      // against a concurrent sale to the same number (see lib/customers.ts).
+      finalUserId = await findOrCreateCustomerByPhone({
+        fullName: customerName,
+        phone: customerPhone,
+        address: customerAddress,
+        emailDomain: "pos.local",
       });
-      
-      if (existingUser) {
-        finalUserId = existingUser.id;
-      } else {
-        const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
-        const [newUser] = await db.insert(users).values({
-          name: customerName,
-          email: `${customerPhone}@pos.local`,
-          phone: customerPhone,
-          password: hashedPassword,
-          address: customerAddress || null,
-        }).returning();
-        finalUserId = newUser.id;
-      }
     } else {
       const randomSuffix = Math.random().toString(36).substring(2, 8);
       const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);

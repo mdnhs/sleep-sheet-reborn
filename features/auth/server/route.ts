@@ -158,8 +158,22 @@ const app = new Hono()
 
     const updateData: Partial<typeof users.$inferInsert> = {};
     if (body.name) updateData.name = body.name;
-    if (body.phone !== undefined) updateData.phone = body.phone;
     if (body.address !== undefined) updateData.address = body.address;
+
+    if (body.phone !== undefined) {
+      const phone = body.phone.trim();
+      // A phone number identifies exactly one customer — guest checkout and
+      // POS both look accounts up by it (see lib/customers.ts), and it is
+      // uniquely indexed. Claiming a number that already belongs to another
+      // account would otherwise surface as an unexplained 500.
+      if (phone) {
+        const taken = await db.query.users.findFirst({ where: eq(users.phone, phone) });
+        if (taken && taken.id !== user.id) {
+          return c.json({ error: "That phone number is already in use" }, 409);
+        }
+      }
+      updateData.phone = phone || null;
+    }
 
     if (body.newPassword) {
       if (!body.currentPassword) {
