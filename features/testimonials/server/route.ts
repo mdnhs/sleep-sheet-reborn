@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { invalidateTestimonials } from '@/lib/content-cache';
 import { db } from '@/db'
 import { testimonials } from '@/db/schema'
 import { desc, eq, ilike, inArray, or, sql, and, type SQL } from 'drizzle-orm'
@@ -89,6 +90,7 @@ const app = new Hono()
 
       setActivityMeta(c, { name: newTestimonial[0].name || "Anonymous" });
 
+      invalidateTestimonials();
       return c.json({ success: true, testimonial: newTestimonial[0] }, 201)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -143,6 +145,7 @@ const app = new Hono()
       name: `${result.length} testimonials: ${summarizeNames(toDelete.map((t) => t.name || "Anonymous"))}`,
     });
 
+    invalidateTestimonials();
     return c.json({ deleted: result.length })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -170,6 +173,7 @@ const app = new Hono()
 
       setActivityMeta(c, { name: deletedTestimonial[0].name || "Anonymous" });
 
+      invalidateTestimonials();
       return c.json({ success: true, testimonial: deletedTestimonial[0] })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -225,6 +229,7 @@ const app = new Hono()
         setActivityMeta(c, { name: before.name || "Anonymous", changes });
       }
 
+      invalidateTestimonials();
       return c.json({ success: true, testimonial: updatedTestimonial[0] }, 200)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'

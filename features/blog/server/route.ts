@@ -8,6 +8,7 @@ import { sessionMiddleware } from '@/lib/session-middleware';
 import { uploadImage } from '@/lib/cloudinary';
 import { can } from "@/lib/permissions";
 import { zRichText } from '@/lib/sanitize';
+import { invalidateBlog } from '@/lib/content-cache';
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
@@ -142,6 +143,7 @@ const app = new Hono()
 
       setActivityMeta(c, { name: newPost[0].title });
 
+      invalidateBlog();
       return c.json({ success: true, post: newPost[0] }, 201);
     } catch (error) {
       console.error("Create post error:", error);
@@ -218,6 +220,7 @@ const app = new Hono()
         setActivityMeta(c, { name: data.title, changes });
       }
 
+      invalidateBlog();
       return c.json({ success: true, post: updatedPost[0] });
     } catch (error) {
       console.error("Update post error:", error);
@@ -262,6 +265,7 @@ const app = new Hono()
         });
       }
 
+      invalidateBlog();
       return c.json({ success: true, post: updatedPost[0] });
     } catch (error) {
       console.error("Toggle publish error:", error);
@@ -295,6 +299,7 @@ const app = new Hono()
       name: `${result.length} blog posts: ${summarizeNames(toDelete.map((p) => p.title))}`,
     });
 
+    invalidateBlog();
     return c.json({ deleted: result.length })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -325,6 +330,7 @@ const app = new Hono()
 
       setActivityMeta(c, { name: deletedPost[0].title });
 
+      invalidateBlog();
       return c.json({ success: true, post: deletedPost[0] });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

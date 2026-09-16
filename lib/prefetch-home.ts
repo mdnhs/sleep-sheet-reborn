@@ -32,8 +32,10 @@ import productsApp from "@/features/product/server/route";
 // invalidateFeed), so edits still appear immediately — the timer is only the
 // fallback for changes that bypass those paths.
 //
-// Blog and testimonials are the exception and stay short: nothing calls
-// revalidateTag for them, so their timer is the only refresh they get.
+// Blog and testimonials used to be the exception here, kept at 30 minutes
+// because nothing invalidated them on write. Their write routes call
+// invalidateBlog()/invalidateTestimonials() now (lib/content-cache.ts), so
+// they sit with everything else.
 export const getPublicSettings = unstable_cache(
   () => fromRoute<Record<string, string>>(settingsApp, "/"),
   ["prefetch-settings"],
@@ -55,12 +57,10 @@ export const getPublicProducts = unstable_cache(
   { revalidate: 86400, tags: ["products"] }
 );
 
-// Blog and testimonials are the two entries nothing calls revalidateTag for,
-// so this timer is their only refresh path — kept shorter than the rest.
 export const getPublicBlogPosts = unstable_cache(
   () => fromRoute<{ data: BlogPost[] }>(blogApp, "/"),
   ["prefetch-blog"],
-  { revalidate: 1800, tags: ["blog"] }
+  { revalidate: 86400, tags: ["blog"] }
 );
 
 export const getPublicTestimonials = unstable_cache(
@@ -69,5 +69,5 @@ export const getPublicTestimonials = unstable_cache(
     "/?page=1&limit=12",
   ),
   ["prefetch-testimonials"],
-  { revalidate: 1800, tags: ["testimonials"] }
+  { revalidate: 86400, tags: ["testimonials"] }
 );

@@ -1,7 +1,8 @@
-// Kept at half an hour while the rest of the storefront sits at a day: the
-// lowest revalidate across a route's layout and page wins, and nothing calls
-// revalidateTag for blog posts, so this timer is its only path to fresh content.
-export const revalidate = 1800;
+// A day, like the rest of the storefront. The list is read through a cached
+// helper tagged "blog", and every write route now invalidates that tag, so
+// an edit shows up immediately — the timer is only the fallback for changes
+// that bypass those routes.
+export const revalidate = 86400;
 
 import React, { Suspense } from 'react';
 import BlogClientPage from './blog-client';

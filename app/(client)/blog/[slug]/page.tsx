@@ -1,7 +1,8 @@
-// Kept at half an hour while the rest of the storefront sits at a day: the
-// lowest revalidate across a route's layout and page wins, and nothing calls
-// revalidateTag for blog posts, so this timer is its only path to fresh content.
-export const revalidate = 1800;
+// A day, like the rest of the storefront. The post is read through a cached
+// helper tagged "blog", and every write route now calls invalidateBlog(), so
+// an edit drops this entry immediately — the timer is only the fallback for
+// changes that bypass those routes.
+export const revalidate = 86400;
 
 import BlogPostClient from './blog-post-client';
 import type { BlogPost } from '@/app/(client)/blog/blog-client';
@@ -10,6 +11,39 @@ import { db } from "@/db";
 import { posts, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { extractTags } from "@/lib/utils";
+import { unstable_cache } from "next/cache";
+
+// Tagged "blog" so the write routes' invalidateBlog() reaches this page.
+// Without a tag the route-level `revalidate` above would be the only way a
+// published edit ever appeared, which is why it used to sit at 30 minutes —
+// 48 lazy revalidations a day, each able to wake a sleeping Neon compute that
+// bills a five-minute minimum, for content that changes a few times a month.
+const getCachedPost = unstable_cache(
+  async (slug: string) => {
+    const [dbPost] = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        slug: posts.slug,
+        summary: posts.summary,
+        content: posts.content,
+        coverImage: posts.coverImage,
+        isPublished: posts.isPublished,
+        createdAt: posts.createdAt,
+        author: {
+          id: users.id,
+          name: users.name,
+        },
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.authorId, users.id))
+      .where(eq(posts.slug, slug))
+      .limit(1);
+    return dbPost ? { ...dbPost, createdAt: dbPost.createdAt.toISOString() } : undefined;
+  },
+  ["blog-post-by-slug"],
+  { revalidate: 86400, tags: ["blog"] },
+);
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -67,26 +101,7 @@ export default async function BlogPostPage({ params }: Props) {
   let post: BlogPost | undefined;
 
   try {
-    const [dbPost] = await db
-      .select({
-        id: posts.id,
-        title: posts.title,
-        slug: posts.slug,
-        summary: posts.summary,
-        content: posts.content,
-        coverImage: posts.coverImage,
-        isPublished: posts.isPublished,
-        createdAt: posts.createdAt,
-        author: {
-          id: users.id,
-          name: users.name,
-        },
-      })
-      .from(posts)
-      .leftJoin(users, eq(posts.authorId, users.id))
-      .where(eq(posts.slug, slug))
-      .limit(1);
-    post = dbPost ? { ...dbPost, createdAt: dbPost.createdAt.toISOString() } : undefined;
+    post = await getCachedPost(slug);
   } catch {}
 
   return <BlogPostClient slug={slug} initialPost={post} />;
