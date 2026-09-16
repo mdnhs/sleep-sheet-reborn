@@ -9,6 +9,7 @@ import { deleteImageFromStorage } from '@/lib/deleteImage';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { invalidateFeed } from '@/lib/meta-catalog/cache';
 import { can, isAllowed } from "@/lib/permissions";
+import { sanitizeRichText } from "@/lib/sanitize";
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono();
@@ -52,7 +53,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
 
       const [newProduct] = await db.insert(products).values({
         name: formData.get('productName') as string,
-        description: formData.get('productDescription') as string,
+        description: sanitizeRichText(formData.get('productDescription') as string),
         price: Number(formData.get('productPrice')),
         stock: Number(formData.get('productStock')),
         sku: formData.get('productSKU') as string,
@@ -172,7 +173,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       const [newProduct] = await db.update(products)
         .set({
           name: formData.get("productName") as string,
-          description: formData.get("productDescription") as string,
+          description: sanitizeRichText(formData.get("productDescription") as string),
           price: Number(formData.get("productPrice")),
           stock: Number(formData.get("productStock")),
           sku: formData.get("productSKU") as string,
@@ -481,6 +482,10 @@ app.patch(
     const [updated] = await db.update(products)
       .set({
         ...rest,
+        // Rendered with dangerouslySetInnerHTML on the product page.
+        ...(rest.description !== undefined
+          ? { description: sanitizeRichText(rest.description) }
+          : {}),
         ...(category ? { categoryId: category.id } : {}),
         updatedAt: new Date(),
       })
@@ -499,7 +504,7 @@ app.patch(
 
     const changes: ActivityChange[] = [];
     if (rest.name !== undefined && rest.name !== existing.name) changes.push({ label: "Name", from: existing.name, to: rest.name });
-    if (rest.description !== undefined && rest.description !== existing.description) changes.push({ label: "Description", from: existing.description, to: rest.description });
+    if (rest.description !== undefined && sanitizeRichText(rest.description) !== existing.description) changes.push({ label: "Description", from: existing.description, to: sanitizeRichText(rest.description) });
     if (rest.price !== undefined && rest.price !== existing.price) changes.push({ label: "Price", from: existing.price, to: rest.price });
     if (rest.stock !== undefined && rest.stock !== existing.stock) changes.push({ label: "Stock", from: existing.stock, to: rest.stock });
     if (rest.discount !== undefined && rest.discount !== existing.discount) changes.push({ label: "Discount", from: existing.discount, to: rest.discount });

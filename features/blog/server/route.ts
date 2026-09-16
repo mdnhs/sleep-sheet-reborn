@@ -7,6 +7,7 @@ import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { uploadImage } from '@/lib/cloudinary';
 import { can } from "@/lib/permissions";
+import { zRichText } from '@/lib/sanitize';
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
@@ -120,7 +121,7 @@ const app = new Hono()
       title: z.string().min(1, 'Title is required'),
       slug: z.string().min(1, 'Slug is required'),
       summary: z.string().optional(),
-      content: z.string().min(1, 'Content is required'),
+      content: zRichText('Content is required'),
       coverImage: z.string().optional(),
       isPublished: z.boolean().default(false),
     })
@@ -182,7 +183,7 @@ const app = new Hono()
       title: z.string().min(1, 'Title is required'),
       slug: z.string().min(1, 'Slug is required'),
       summary: z.string().optional(),
-      content: z.string().min(1, 'Content is required'),
+      content: zRichText('Content is required'),
       coverImage: z.string().optional(),
       isPublished: z.boolean().default(false),
     })
