@@ -44,10 +44,14 @@ const app = new Hono()
   const sort = c.req.query("sort") || "newest";
   const minPrice = c.req.query("minPrice");
   const maxPrice = c.req.query("maxPrice");
-  const page = parseInt(c.req.query("page") || "1");
   const search = c.req.query("search");
   const admin = c.req.query("admin");
   const limit = Math.min(parseInt(c.req.query("limit") || "8", 10) || 8, 100);
+  // `limit` was already clamped; `page` was not, so `?page=0` produced a
+  // negative OFFSET and `?page=abc` a NaN one — both rejected by Postgres,
+  // both surfacing as a 500 on a public endpoint.
+  const parsedPage = parseInt(c.req.query("page") || "1", 10);
+  const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1;
 
   const filterConditions: SQL[] = [];
 
@@ -169,6 +173,11 @@ const app = new Hono()
     })
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))
+    // Only `sort=bestselling` reads a column from this aggregate. Postgres
+    // removes the join outright for every other sort — the subquery is unique
+    // on productId and nothing references its output, so the planner elides
+    // it (verified with EXPLAIN: identical plan and cost either way). Leaving
+    // it unconditional keeps the builder in one piece at no runtime cost.
     .leftJoin(salesSubquery, eq(products.id, salesSubquery.productId));
 
     if (filterConditions.length > 0) {
