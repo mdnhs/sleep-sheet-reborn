@@ -40,11 +40,20 @@ const app = new Hono()
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Never return the whole row: `.returning()` includes the bcrypt hash,
+      // which then travels to the browser and through every proxy and log on
+      // the way. Name the columns the client actually needs instead.
       const [user] = await db.insert(users).values({
         name,
         email,
         password: hashedPassword,
-      }).returning();
+      }).returning({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        createdAt: users.createdAt,
+      });
 
       return c.json(user, 201);
     } catch (error) {
@@ -186,9 +195,6 @@ const app = new Hono()
       updateData.password = await bcrypt.hash(body.newPassword, 10);
     }
 
-    // Cached session copies name/phone/address, so refresh it after an edit.
-    invalidateSessionUser(user.id);
-
     const [updated] = await db.update(users)
       .set(updateData)
       .where(eq(users.id, user.id))
@@ -200,6 +206,12 @@ const app = new Hono()
         address: users.address,
         role: users.role,
       });
+
+    // Cached session copies name/phone/address, so drop it after an edit —
+    // after the write, not before. Dropping it first left a window in which a
+    // concurrent request could miss the cache, re-read the not-yet-updated
+    // row, and re-cache the stale copy for another full TTL.
+    invalidateSessionUser(user.id);
 
     return c.json({ data: updated });
   }
