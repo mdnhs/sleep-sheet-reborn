@@ -318,7 +318,20 @@ function OrdersPageContent() {
     }
   }, [isUserLoading, currentUser, permRead, router]);
 
-  const { data: rawOrders, isLoading } = useOrders(search, rangeFilter, {
+  // Each distinct search value is its own React Query key, and the query
+  // behind it scans the orders and users tables in full — an ILIKE on a
+  // substring can never use an index. Typing a customer's name straight
+  // through therefore fired one complete round trip per character. The input
+  // below stays bound to `search` so it still responds instantly; only the
+  // fetch waits for typing to pause. Seeded from `search` so a link arriving
+  // with ?search= still queries on the first render rather than 300ms late.
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { data: rawOrders, isLoading } = useOrders(debouncedSearch, rangeFilter, {
     enabled: permRead,
   });
   const { symbol: currencySymbol, formatAmount } = useCurrency();
