@@ -605,6 +605,216 @@ const app = new Hono()
     console.error("Low stock error:", error);
     return c.json({ error: "Failed to fetch low stock" }, 500);
   }
+})
+
+// The dashboard overview page asked for these nine datasets as nine separate
+// HTTP requests. Each one re-ran sessionMiddleware and opened its own
+// database round trip, so a single page load cost thirteen requests (three of
+// them are the parameterised sales-overview) and, underneath, twelve queries
+// — each one waking the Neon compute in turn.
+//
+// db.batch sends every statement in one HTTP round trip and runs them as a
+// single transaction, so the whole set now costs one request and one wake.
+// The individual endpoints above are kept: they are the RPC surface the types
+// are generated from, and nothing forces a caller to use this one.
+.get('/overview', sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!canViewAnalytics(user)) {
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
+
+  try {
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+    const LOW_STOCK_THRESHOLD = 10;
+
+    const [
+      clvRows,
+      turnoverSoldRows,
+      turnoverStockRows,
+      totalCartsRows,
+      convertedCartsRows,
+      cohortRows,
+      clusterRows,
+      mostPurchasedRows,
+      mostWishlistedRows,
+      recentOrderRows,
+      lowStockRows,
+    ] = await db.batch([
+      db.select({ userId: orders.userId, totalAmount: sum(orders.totalAmount) })
+        .from(orders)
+        .where(and(isNotNull(orders.userId), ne(orders.status, "CANCELLED")))
+        .groupBy(orders.userId),
+
+      db.select({ sum: sum(orderItems.quantity) })
+        .from(orderItems)
+        .where(gte(orderItems.createdAt, startOfYear)),
+
+      // The standalone endpoint queried total stock twice and averaged it
+      // with itself; one read is the same number without the second query.
+      db.select({ sum: sum(products.stock) }).from(products),
+
+      db.select({ count: count() }).from(carts),
+
+      db.select({ count: count() })
+        .from(carts)
+        .where(sql`exists (
+          select 1 from ${orders}
+          where ${orders.userId} = ${carts.userId}
+            and ${orders.createdAt} >= ${carts.createdAt}
+        )`),
+
+      db.execute(sql`
+        SELECT
+          DATE_TRUNC('month', u."createdAt") as cohort_month,
+          COUNT(DISTINCT u.id) as total_users,
+          COUNT(DISTINCT o."userId") as retained_users
+        FROM "User" u
+        LEFT JOIN "orders" o
+          ON u.id = o."userId"
+          AND o."createdAt" BETWEEN u."createdAt" AND u."createdAt" + INTERVAL '30 days'
+        GROUP BY cohort_month
+        ORDER BY cohort_month
+      `),
+
+      db.execute(sql`
+        SELECT
+          CASE
+            WHEN total_spent < 100 THEN 'Low'
+            WHEN total_spent BETWEEN 100 AND 500 THEN 'Medium'
+            ELSE 'High'
+          END as segment,
+          COUNT(*) as customers
+        FROM (
+          SELECT u.id, SUM(o."totalAmount") as total_spent
+          FROM "User" u
+          LEFT JOIN "orders" o ON u.id = o."userId"
+          GROUP BY u.id
+        ) as spending
+        GROUP BY segment
+      `),
+
+      db.select({
+        productId: products.id,
+        productName: products.name,
+        productImages: products.images,
+        totalSold: sum(orderItems.quantity),
+      })
+        .from(orderItems)
+        .innerJoin(products, eq(orderItems.productId, products.id))
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(ne(orders.status, "CANCELLED"))
+        .groupBy(products.id, products.name, products.images)
+        .orderBy(desc(sum(orderItems.quantity)))
+        .limit(5),
+
+      db.select({
+        productId: products.id,
+        productName: products.name,
+        productImages: products.images,
+        wishlistCount: count(wishlistItems.productId),
+      })
+        .from(wishlistItems)
+        .innerJoin(products, eq(wishlistItems.productId, products.id))
+        .groupBy(products.id, products.name, products.images)
+        .orderBy(desc(count(wishlistItems.productId)))
+        .limit(5),
+
+      db.select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        createdAt: orders.createdAt,
+        status: orders.status,
+        totalAmount: orders.totalAmount,
+        guestName: orders.guestName,
+        userName: users.name,
+      })
+        .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(5),
+
+      db.select({
+        id: products.id,
+        name: products.name,
+        stock: products.stock,
+        images: products.images,
+      })
+        .from(products)
+        .where(lte(products.stock, LOW_STOCK_THRESHOLD))
+        .orderBy(asc(products.stock))
+        .limit(10),
+    ]);
+
+    const payingCustomers = clvRows.filter((r) => r.totalAmount !== null && r.userId);
+    const averageCLV = payingCustomers.length > 0
+      ? payingCustomers.reduce((acc, r) => acc + Number(r.totalAmount || 0), 0) / payingCustomers.length
+      : 0;
+
+    const totalSold = Number(turnoverSoldRows[0]?.sum || 0);
+    const avgInventory = Number(turnoverStockRows[0]?.sum || 0) || 1;
+
+    const totalCarts = Number(totalCartsRows[0]?.count || 0);
+    const convertedCarts = Number(convertedCartsRows[0]?.count || 0);
+    const abandonmentRate = totalCarts > 0
+      ? ((totalCarts - convertedCarts) / totalCarts) * 100
+      : 0;
+
+    const cohorts = (cohortRows as unknown as {
+      rows: Array<{ cohort_month: string; total_users: string | number; retained_users: string | number }>;
+    }).rows;
+
+    const clusters = (clusterRows as unknown as {
+      rows: Array<{ segment: string; customers: string | number }>;
+    }).rows;
+
+    return c.json({
+      clv: { averageCLV },
+      inventoryTurnover: {
+        turnoverRate: Number((totalSold / avgInventory).toFixed(2)),
+        totalSales: totalSold,
+        avgInventory,
+      },
+      abandonment: {
+        abandonmentRate: Number(abandonmentRate.toFixed(2)),
+        totalCarts,
+        convertedCarts,
+      },
+      cohort: cohorts.map((row) => {
+        const totalUsers = Number(row.total_users);
+        const retainedUsers = Number(row.retained_users);
+        return {
+          cohortMonth: new Date(row.cohort_month).toISOString(),
+          totalUsers,
+          retainedUsers,
+          retentionRate: totalUsers > 0 ? (retainedUsers / totalUsers) * 100 : 0,
+        };
+      }),
+      spendingClusters: clusters.map((row) => ({
+        segment: row.segment,
+        customers: Number(row.customers),
+      })),
+      mostPurchased: mostPurchasedRows.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        productImages: item.productImages || [],
+        totalSold: Number(item.totalSold || 0),
+      })),
+      mostWishlisted: mostWishlistedRows.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        productImages: item.productImages || [],
+        wishlistCount: Number(item.wishlistCount || 0),
+      })),
+      recentOrders: recentOrderRows.map((item) => ({
+        ...item,
+        customerName: item.userName || item.guestName || "Guest",
+      })),
+      lowStock: lowStockRows,
+    });
+  } catch (error) {
+    console.error("Dashboard overview error:", error);
+    return c.json({ error: "Failed to fetch dashboard overview" }, 500);
+  }
 });
 
 export default app;

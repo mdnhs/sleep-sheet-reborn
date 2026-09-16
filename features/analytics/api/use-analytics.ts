@@ -18,16 +18,6 @@ export const useSalesOverview = (period = "month", range?: DateRangeFilter) =>
     },
   });
 
-export const useCustomerLifetimeValue = () =>
-  useQuery({
-    queryKey: ["clv"],
-    queryFn: async () => {
-      const res = await client.api.analytics["clv"].$get();
-      if (!res.ok) throw new Error("Failed to fetch CLV");
-      return res.json();
-    },
-  });
-
 export const useGeographicDistribution = () =>
   useQuery({
     queryKey: ["distribution"],
@@ -48,56 +38,50 @@ export const useGeographicDistribution = () =>
 //     },
 //   });
 
-export const useInventoryTurnover = () =>
+/**
+ * One request for the whole dashboard overview.
+ *
+ * The nine parameterless panels below used to be nine `useQuery` calls
+ * against nine endpoints. React Query fired them all on mount, so a dashboard
+ * load meant nine HTTP requests, nine session lookups and — underneath —
+ * twelve database round trips, each one waking the Neon compute in turn.
+ * They are all read from the same page at the same moment, so they are now
+ * one batched request (see the /overview handler).
+ *
+ * The individual hooks are kept with their original names and return shapes
+ * and are selectors over this one query, so the dashboard did not have to
+ * change and React Query still dedupes them down to a single fetch.
+ */
+export const useDashboardOverview = () =>
   useQuery({
-    queryKey: ["inventory-turnover"],
+    queryKey: ["dashboard-overview"],
     queryFn: async () => {
-      const res = await client.api.analytics["inventory-turnover"].$get();
-      if (!res.ok) throw new Error("Failed to fetch inventory turnover");
+      const res = await client.api.analytics["overview"].$get();
+      if (!res.ok) throw new Error("Failed to fetch dashboard overview");
       return res.json();
     },
   });
 
-export const useCartAbandonment = () =>
-  useQuery({
-    queryKey: ["abandonment"],
-    queryFn: async () => {
-      const res = await client.api.analytics["abandonment"].$get();
-      if (!res.ok) throw new Error("Failed to fetch cart abandonment rate");
-      return res.json();
-    },
-  });
+/** Narrow the shared overview query to one panel, keeping `{ data, isLoading }`. */
+function useOverviewSlice<K extends keyof OverviewData>(key: K) {
+  const { data, isLoading, error } = useDashboardOverview();
+  return { data: data?.[key], isLoading, error };
+}
 
-export const useCohortRetention = () =>
-  useQuery({
-    queryKey: ["cohort"],
-    queryFn: async () => {
-      const res = await client.api.analytics["cohort"].$get();
-      if (!res.ok) throw new Error("Failed to fetch cohort data");
-      return res.json();
-    },
-  });
+type OverviewData = NonNullable<ReturnType<typeof useDashboardOverview>["data"]>;
 
-// export const useDeliveryTimes = () =>
-//   useQuery({
-//     queryKey: ["delivery-times"],
-//     queryFn: async () => {
-//       const res = await client.api.analytics["delivery-times"].$get();
-//       if (!res.ok) throw new Error("Failed to fetch delivery times");
-//       return res.json();
-//     },
-//   });
+export const useCustomerLifetimeValue = () => useOverviewSlice("clv");
+export const useInventoryTurnover = () => useOverviewSlice("inventoryTurnover");
+export const useCartAbandonment = () => useOverviewSlice("abandonment");
+export const useCohortRetention = () => useOverviewSlice("cohort");
+export const useSpendingClusters = () => useOverviewSlice("spendingClusters");
+export const useMostPurchased = () => useOverviewSlice("mostPurchased");
+export const useMostWishlisted = () => useOverviewSlice("mostWishlisted");
+export const useRecentOrders = () => useOverviewSlice("recentOrders");
+export const useLowStock = () => useOverviewSlice("lowStock");
 
-export const useSpendingClusters = () =>
-  useQuery({
-    queryKey: ["spending-clusters"],
-    queryFn: async () => {
-      const res = await client.api.analytics["spending-clusters"].$get();
-      if (!res.ok) throw new Error("Failed to fetch customer segments");
-      return res.json();
-    },
-  });
-
+// Parameterised by the dashboard's period/date-range picker, so it changes
+// independently of the panels above and keeps its own query.
 export const useCustomerAcquisition = (period = "month", range?: DateRangeFilter) =>
   useQuery({
     queryKey: ["acquisition", period, range],
@@ -110,42 +94,3 @@ export const useCustomerAcquisition = (period = "month", range?: DateRangeFilter
     },
   });
 
-  export const useMostPurchased = () =>
-    useQuery({
-      queryKey: ["most-purchased"],
-      queryFn: async () => {
-        const res = await client.api.analytics["most-purchased"].$get();
-        if (!res.ok) throw new Error("Failed to fetch most purchased products");
-        return res.json();
-      },
-    });
-  
-  export const useMostWishlisted = () =>
-    useQuery({
-      queryKey: ["most-wishlisted"],
-      queryFn: async () => {
-        const res = await client.api.analytics["most-wishlisted"].$get();
-        if (!res.ok) throw new Error("Failed to fetch most wishlisted products");
-        return res.json();
-      },
-    });
-
-export const useRecentOrders = () =>
-  useQuery({
-    queryKey: ["recent-orders"],
-    queryFn: async () => {
-      const res = await client.api.analytics["recent-orders"].$get();
-      if (!res.ok) throw new Error("Failed to fetch recent orders");
-      return res.json();
-    },
-  });
-
-export const useLowStock = () =>
-  useQuery({
-    queryKey: ["low-stock"],
-    queryFn: async () => {
-      const res = await client.api.analytics["low-stock"].$get();
-      if (!res.ok) throw new Error("Failed to fetch low stock alerts");
-      return res.json();
-    },
-  });
