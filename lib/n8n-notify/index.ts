@@ -1,6 +1,10 @@
+import { after } from "next/server";
+
 /** Fire-and-forget notification to n8n for realtime Telegram order alerts.
  * No-op unless N8N_ORDER_WEBHOOK_URL is set. Never awaited by callers so a
- * slow/down n8n instance can't add latency to checkout or fail the order. */
+ * slow/down n8n instance can't add latency to checkout or fail the order.
+ * Runs inside after() so Vercel keeps the function alive to finish sending
+ * it instead of freezing the instance the moment the response goes out. */
 
 interface OrderNotifyPayload {
   orderId: string;
@@ -17,11 +21,13 @@ export function notifyNewOrder(payload: OrderNotifyPayload): void {
   const webhookUrl = process.env.N8N_ORDER_WEBHOOK_URL;
   if (!webhookUrl) return;
 
-  fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).catch((error) => {
-    console.error("n8n order notify failed:", error);
-  });
+  after(() =>
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch((error) => {
+      console.error("n8n order notify failed:", error);
+    })
+  );
 }
