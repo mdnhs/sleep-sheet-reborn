@@ -7,6 +7,16 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { isAllowed } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
+import {
+  isPendingSql,
+  isConfirmedSql,
+  isDeliveredSql,
+  isCancelledSql,
+  isReturnedSql,
+  isTodaySqlFor,
+  todayRange,
+  bucketFor,
+} from "./status-buckets";
 
 const app = new Hono()
 
@@ -19,72 +29,12 @@ const app = new Hono()
   const { search, from, to, limit, offset, status, tzOffset } = c.req.query();
 
   try {
-    // The dashboard's status buckets, resolved here instead of in the browser.
-    // They depend on the courier's own delivery_status as well as this table's
-    // status column, which is why they used to be decided client-side; that
-    // value is now persisted on the row (see the Steadfast route), so the
-    // server can answer "which orders are in this bucket" on its own. Until it
-    // could, this list was impossible to paginate — a set the server cannot
-    // define is a set it cannot page through.
-    //
-    // Two things these expressions have to get exactly right, both of which
-    // silently misfile orders when missed:
-    //
-    //   Buckets overlap. isConfirmed returns true for a POS showroom sale
-    //   before it ever considers delivery, so such an order legitimately
-    //   appears under both CONFIRMED and DELIVERED. They are not a partition.
-    //
-    //   NULL is not false. courierStatus is NULL for anything never synced,
-    //   and `NULL IN (...)` is NULL, so `NOT (that)` is NULL too — which drops
-    //   the row rather than keeping it. Every courier test is wrapped in
-    //   coalesce(..., false) for that reason.
-    //
-    // Verified against all 201 production rows: adding the courier terms moves
-    // no order out of the bucket the client already put it in.
-    //
-    // The client only ever held courier status for orders it would have
-    // fetched it for — tracked, and not already finished. Mirroring that here
-    // keeps this classification identical to the one the page used to compute.
-    const courier = sql`(CASE WHEN ${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> ''
-      AND ${orders.status} NOT IN ('DELIVERED','CANCELLED','REFUNDED')
-      THEN ${orders.courierStatus} END)`;
-
-    const isCancelledSql = sql`(${orders.status} = 'CANCELLED'
-      OR coalesce(${courier} IN ('cancelled','cancelled_approval_pending'), false))`;
-
-    const isReturnedSql = sql`(${orders.status} = 'REFUNDED'
-      OR coalesce(${orders.refundedAmount}, 0) > 0
-      OR coalesce(${courier} IN ('returned','partial-return','not_delivered','partial-not-delivered'), false))`;
-
-    const isDeliveredSql = sql`(NOT ${isCancelledSql} AND NOT ${isReturnedSql}
-      AND (${orders.status} = 'DELIVERED'
-        OR coalesce(${courier} IN ('delivered','partial_delivered','delivered_approval_pending','partial_delivered_approval_pending'), false)))`;
-
-    const isConfirmedSql = sql`(NOT ${isCancelledSql} AND NOT ${isReturnedSql}
-      AND ((${orders.saleType} = 'POS'
-            AND (${orders.status} = 'DELIVERED'
-                 OR coalesce(${orders.shippingAddress} ILIKE '%In-store pickup%', false)))
-        OR (${orders.trackingNumber} IS NOT NULL AND ${orders.trackingNumber} <> '')
-        OR ${orders.status} IN ('PROCESSING','SHIPPED')
-        OR coalesce(${courier} IN ('pending','in_review','hold','fast-track','hub-transfer','office-delivery'), false)))`;
-
-    const isPendingSql = sql`(NOT ${isCancelledSql} AND NOT ${isReturnedSql}
-      AND NOT ${isConfirmedSql} AND NOT ${isDeliveredSql}
-      AND ${orders.status} = 'PENDING')`;
-
-    // "Today" belongs to whoever is looking at the screen, and only their
-    // browser knows which day that is — six hours ahead of UTC here, so a UTC
-    // day boundary would hide this morning's orders. The client sends its
-    // getTimezoneOffset(); shifting by it, truncating, and shifting back gives
-    // the instants bracketing the viewer's own day. Absent the offset this
-    // falls back to UTC rather than guessing.
-    const offsetMin = Number.parseInt(tzOffset ?? "", 10);
-    const shift = Number.isFinite(offsetMin) ? offsetMin * 60_000 : 0;
-    const dayStart = new Date(Date.now() - shift);
-    dayStart.setUTCHours(0, 0, 0, 0);
-    const todayFrom = new Date(dayStart.getTime() + shift);
-    const todayTo = new Date(todayFrom.getTime() + 24 * 60 * 60 * 1000);
-    const isTodaySql = sql`(${orders.createdAt} >= ${todayFrom} AND ${orders.createdAt} < ${todayTo})`;
+    // Status buckets and the viewer's "today" window are defined in
+    // ./status-buckets, where they are covered by tests against a real
+    // Postgres — the NULL handling and the deliberate bucket overlap are the
+    // kind of thing a comment cannot keep honest.
+    const { from: todayFrom, to: todayTo } = todayRange(tzOffset);
+    const isTodaySql = isTodaySqlFor({ from: todayFrom, to: todayTo });
 
     // Search and date range narrow what the whole screen is about; the status
     // bucket then picks one slice of that. They are kept apart because the
@@ -129,14 +79,7 @@ const app = new Hono()
     if (fromDate) baseConditions.push(gte(orders.createdAt, fromDate));
     if (toDate) baseConditions.push(lte(orders.createdAt, toDate));
 
-    const bucket =
-      status === "PENDING" ? isPendingSql
-      : status === "CONFIRMED" ? isConfirmedSql
-      : status === "DELIVERED" ? isDeliveredSql
-      : status === "CANCELLED" ? isCancelledSql
-      : status === "RETURNED" ? isReturnedSql
-      : status === "TODAY" ? isTodaySql
-      : undefined;
+    const bucket = bucketFor(status, isTodaySql);
 
     const baseWhere = baseConditions.length > 0 ? and(...baseConditions) : undefined;
     const where = bucket ? and(...baseConditions, bucket) : baseWhere;
