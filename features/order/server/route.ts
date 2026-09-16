@@ -468,7 +468,12 @@ const app = new Hono()
   }
 })
 
-.get("/by-phone", async (c) => {
+.get("/by-phone", sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!isAllowed(user, "orders", "read", ["MODERATOR"])) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const { phone } = c.req.query();
 
   if (!phone) {
