@@ -89,7 +89,7 @@ export function PixelSettings() {
   const form = useForm<PixelFormValues>({
     resolver: zodResolver(pixelSchema),
     defaultValues: {
-      meta_pixel_enabled: "true",
+      meta_pixel_enabled: "false",
       meta_pixel_default_id: "",
       meta_pixel_debug: "false",
     },
@@ -98,7 +98,7 @@ export function PixelSettings() {
   const capiForm = useForm<CapiFormValues>({
     resolver: zodResolver(capiSchema),
     defaultValues: {
-      meta_capi_enabled: "true",
+      meta_capi_enabled: "false",
       meta_capi_pixel_id: "",
       meta_capi_access_token: "",
       meta_capi_test_event_code: "",
@@ -110,12 +110,12 @@ export function PixelSettings() {
   useEffect(() => {
     if (data) {
       form.reset({
-        meta_pixel_enabled: data.meta_pixel_enabled !== "false" ? "true" : "false",
+        meta_pixel_enabled: data.meta_pixel_enabled === "true" ? "true" : "false",
         meta_pixel_default_id: data.meta_pixel_default_id || "",
         meta_pixel_debug: data.meta_pixel_debug === "true" ? "true" : "false",
       });
       capiForm.reset({
-        meta_capi_enabled: data.meta_capi_enabled !== "false" ? "true" : "false",
+        meta_capi_enabled: data.meta_capi_enabled === "true" ? "true" : "false",
         meta_capi_pixel_id: data.meta_capi_pixel_id || "",
         meta_capi_access_token: "",
         meta_capi_test_event_code: data.meta_capi_test_event_code || "",

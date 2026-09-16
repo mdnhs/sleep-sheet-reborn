@@ -31,7 +31,16 @@ export function PixelTrackingProvider({ children }: PixelTrackingProviderProps) 
 
   return (
     <PixelProvider
-      enabled={settings?.meta_pixel_enabled !== "false"}
+      // Explicitly opt-in. This read `!== "false"`, which turns the browser
+      // Pixel ON whenever the setting is missing, empty, misspelt, or the
+      // whole /api/settings fetch fails — and the GTM container already
+      // carries its own Meta Pixel base code plus ViewContent, AddToCart,
+      // InitiateCheckout, Purchase and Search tags. Failing open there means
+      // every one of those events is counted twice, and a second, unmatched
+      // Purchase breaks the event_id deduplication the server CAPI relies on.
+      // The only thing standing between that and production was
+      // meta_pixel_default_id happening to be empty.
+      enabled={settings?.meta_pixel_enabled === "true"}
       defaultPixelId={settings?.meta_pixel_default_id || undefined}
       debug={
         settings?.meta_pixel_debug === "true"

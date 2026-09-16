@@ -51,8 +51,11 @@ async function loadCapiConfig(): Promise<CapiConfig> {
   }
 
   return {
-    // Enabled unless explicitly turned off in the admin panel.
-    enabled: map.meta_capi_enabled !== "false",
+    // Explicitly opt-in. This read `!== "false"`, which means the catch above
+    // — where a failed settings read leaves `map` empty — switched CAPI ON
+    // rather than leaving it as it was. Server-side Purchase events are not
+    // something a database hiccup should start sending on its own.
+    enabled: map.meta_capi_enabled === "true",
     pixelId:
       map.meta_capi_pixel_id ||
       map.meta_pixel_default_id ||
