@@ -95,7 +95,10 @@ async function syncOrderStatus(order: { id: string; orderNumber: string; status:
     });
   }
 
-  return { delivery_status: data.delivery_status, mapped, updated };
+  // orderNumber travels with the result so a caller holding only the response
+  // can say which order moved — the scheduled sync reports into Telegram, and
+  // "order 7 of 23 changed" is not something an id answers.
+  return { orderNumber: order.orderNumber, delivery_status: data.delivery_status, mapped, updated };
 }
 
 // The fan-out both batch routes perform: one Steadfast round trip per order,
@@ -105,7 +108,8 @@ async function syncOrders(
 ) {
   const results: Record<
     string,
-    { delivery_status: string; mapped: OrderStatus | null; updated: boolean } | { error: string }
+    | { orderNumber: string; delivery_status: string; mapped: OrderStatus | null; updated: boolean }
+    | { error: string }
   > = {};
 
   await Promise.allSettled(
