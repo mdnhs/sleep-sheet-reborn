@@ -276,6 +276,7 @@ const app = new Hono()
         paymentMethod: paymentInfo.paymentMethod === "card" ? "CARD" : "COD",
         totalAmount,
         items: cart.items.map((i) => ({
+          productId: i.product.id,
           name: i.product.name,
           quantity: i.quantity,
           price: i.product.price,
@@ -450,7 +451,12 @@ const app = new Hono()
       totalAmount,
       items: guestItems.map((i: { productId: string; quantity: number }) => {
         const product = productMap.get(i.productId);
-        return { name: product?.name ?? "Unknown", quantity: i.quantity, price: product?.price ?? 0 };
+        return {
+          productId: i.productId,
+          name: product?.name ?? "Unknown",
+          quantity: i.quantity,
+          price: product?.price ?? 0,
+        };
       }),
     });
 

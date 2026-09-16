@@ -14,7 +14,7 @@ interface OrderNotifyPayload {
   address: string;
   paymentMethod: string;
   totalAmount: number;
-  items: { name: string; quantity: number; price: number }[];
+  items: { productId: string; name: string; quantity: number; price: number }[];
 }
 
 export function notifyNewOrder(payload: OrderNotifyPayload): void {
