@@ -11,18 +11,8 @@ import { parseUserAgent } from '@/lib/user-agent-parser';
 import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache } from '@/lib/stock';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import { findOrCreateCustomerByPhone } from '@/lib/customers';
+import { withOrderNumber } from '@/lib/order-number';
 import cuid from 'cuid';
-
-async function generateOrderNumber(): Promise<string> {
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2, '0');
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const yy = String(now.getFullYear()).slice(-2);
-
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-  return `POS-${dd}${mm}${yy}-${randomSuffix}`;
-}
 
 const app = new Hono()
 
@@ -72,7 +62,6 @@ const app = new Hono()
 
     const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
     const totalAmount = subtotal + (shippingCost || 0);
-    const orderNumber = await generateOrderNumber();
 
     let finalUserId: string | null = null;
     
@@ -101,64 +90,70 @@ const app = new Hono()
     const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
     const parsedUa = parseUserAgent(userAgentHeader);
 
-    const orderId = cuid();
-    setActivityMeta(c, { name: `#${orderNumber}` });
-
     // Order + its line items + the card payment record + the stock decrement
     // must all succeed or all fail together. db.batch runs every statement as
     // one Postgres transaction in a single HTTP round trip (the neon-http
     // driver has no interactive db.transaction()); stockDecrementQuery raises
-    // if any item is short on stock, which rolls the whole batch back.
-    const orderInsert = db.insert(orders).values({
-      id: orderId,
-      orderNumber,
-      userId: finalUserId,
-      guestName: customerName,
-      guestPhone: customerPhone || null,
-      subtotal,
-      totalAmount,
-      tax: 0,
-      shippingCost: shippingCost || 0,
-      shippingAddress: customerAddress || (shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)'),
-      reference: reference || null,
-      note: note || null,
-      saleType: 'POS',
-      paymentMethod,
-      paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
-      status: shippingType === 'showroom' ? 'DELIVERED' : 'PENDING',
-      ipAddress: clientIp,
-      deviceOs: parsedUa.os,
-      browserName: parsedUa.browser,
-      userAgent: userAgentHeader,
-    }).returning();
+    // if any item is short on stock, which rolls the whole batch back. That is
+    // also what makes the order-number retry safe: a collision rolls the whole
+    // thing back, so the retry starts clean.
+    const order = await withOrderNumber('POS', async (orderNumber) => {
+      const orderId = cuid();
+      setActivityMeta(c, { name: `#${orderNumber}` });
 
-    const orderItemsInsert = db.insert(orderItems).values(
-      items.map(item => ({
-        orderId,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price,
-        costPrice: item.costPrice || null,
-        size: item.size || null,
-        color: item.color || null,
-      }))
-    );
+      const orderInsert = db.insert(orders).values({
+        id: orderId,
+        orderNumber,
+        userId: finalUserId,
+        guestName: customerName,
+        guestPhone: customerPhone || null,
+        subtotal,
+        totalAmount,
+        tax: 0,
+        shippingCost: shippingCost || 0,
+        shippingAddress: customerAddress || (shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)'),
+        reference: reference || null,
+        note: note || null,
+        saleType: 'POS',
+        paymentMethod,
+        paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
+        status: shippingType === 'showroom' ? 'DELIVERED' : 'PENDING',
+        ipAddress: clientIp,
+        deviceOs: parsedUa.os,
+        browserName: parsedUa.browser,
+        userAgent: userAgentHeader,
+      }).returning();
 
-    const stockDecrement = db.execute(stockDecrementQuery(items));
+      const orderItemsInsert = db.insert(orderItems).values(
+        items.map(item => ({
+          orderId,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          costPrice: item.costPrice || null,
+          size: item.size || null,
+          color: item.color || null,
+        }))
+      );
 
-    const [[order]] = paymentMethod === 'CARD'
-      ? await db.batch([
-          orderInsert,
-          orderItemsInsert,
-          db.insert(payments).values({
-            orderId,
-            amount: totalAmount,
-            method: 'CARD',
-            status: 'COMPLETED',
-          }),
-          stockDecrement,
-        ])
-      : await db.batch([orderInsert, orderItemsInsert, stockDecrement]);
+      const stockDecrement = db.execute(stockDecrementQuery(items));
+
+      const [[order]] = paymentMethod === 'CARD'
+        ? await db.batch([
+            orderInsert,
+            orderItemsInsert,
+            db.insert(payments).values({
+              orderId,
+              amount: totalAmount,
+              method: 'CARD',
+              status: 'COMPLETED',
+            }),
+            stockDecrement,
+          ])
+        : await db.batch([orderInsert, orderItemsInsert, stockDecrement]);
+
+      return order;
+    });
 
     invalidateStockCache();
 
