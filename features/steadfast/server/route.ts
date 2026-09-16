@@ -98,6 +98,34 @@ async function syncOrderStatus(order: { id: string; orderNumber: string; status:
   return { delivery_status: data.delivery_status, mapped, updated };
 }
 
+// The fan-out both batch routes perform: one Steadfast round trip per order,
+// concurrently, with a failure on one order isolated from the rest.
+async function syncOrders(
+  targetOrders: { id: string; orderNumber: string; status: string }[],
+) {
+  const results: Record<
+    string,
+    { delivery_status: string; mapped: OrderStatus | null; updated: boolean } | { error: string }
+  > = {};
+
+  await Promise.allSettled(
+    targetOrders.map(async (order) => {
+      try {
+        results[order.id] = await syncOrderStatus(order);
+      } catch (err) {
+        console.error(`Steadfast sync error for order ${order.id}:`, err);
+        results[order.id] = { error: "Failed to sync status" };
+      }
+    })
+  );
+
+  const updatedCount = Object.values(results).filter(
+    (r) => "updated" in r && r.updated
+  ).length;
+
+  return { results, updatedCount, total: targetOrders.length };
+}
+
 const app = new Hono()
 
   .get("/balance", sessionMiddleware, async (c) => {
@@ -336,28 +364,48 @@ const app = new Hono()
         columns: { id: true, orderNumber: true, status: true },
       });
 
-      const results: Record<
-        string,
-        { delivery_status: string; mapped: OrderStatus | null; updated: boolean } | { error: string }
-      > = {};
-
-      await Promise.allSettled(
-        targetOrders.map(async (order) => {
-          try {
-            results[order.id] = await syncOrderStatus(order);
-          } catch (err) {
-            console.error(`Steadfast sync error for order ${order.id}:`, err);
-            results[order.id] = { error: "Failed to sync status" };
-          }
-        })
-      );
-
-      const updatedCount = Object.values(results).filter(
-        (r) => "updated" in r && r.updated
-      ).length;
-
-      return c.json({ results, updatedCount, total: targetOrders.length });
+      return c.json(await syncOrders(targetOrders));
     }
-  );
+  )
+
+  // Everything currently in the courier's hands, chosen server-side.
+  // /sync-batch needs the caller to name the orders, so the dashboard can only
+  // ever refresh the page it happens to be showing, and a scheduled job has no
+  // page at all. That matters more than it used to: the orders list now buckets
+  // on the stored courierStatus rather than refetching it per load, so nothing
+  // moves an order out of CONFIRMED and into RETURNED unless something asks
+  // Steadfast — and with no automatic refresh left, "something" was a person
+  // pressing a button. This is the route a schedule calls.
+  //
+  // Ordered by least-recently-synced, nulls first, and capped: the in-flight
+  // set is small (a couple of dozen) but it is business volume, not a bound,
+  // and an uncapped Promise.allSettled against a third-party API is not
+  // something to leave lying around. The ordering makes the cap rotate — each
+  // run picks up whatever waited longest, so nothing is starved.
+  .post("/sync-inflight", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const targetOrders = await db.query.orders.findMany({
+      where: (o, { and, isNotNull, ne, notInArray }) =>
+        and(
+          isNotNull(o.trackingNumber),
+          ne(o.trackingNumber, ""),
+          notInArray(o.status, TERMINAL_ORDER_STATUSES),
+        ),
+      columns: { id: true, orderNumber: true, status: true },
+      orderBy: (o, { asc, sql }) => [sql`${o.courierStatusAt} asc nulls first`, asc(o.createdAt)],
+      limit: 100,
+    });
+
+    try {
+      return c.json(await syncOrders(targetOrders));
+    } catch (err) {
+      console.error("Steadfast sync-inflight error:", err);
+      return c.json({ error: "Failed to sync statuses" }, 500);
+    }
+  });
 
 export default app;

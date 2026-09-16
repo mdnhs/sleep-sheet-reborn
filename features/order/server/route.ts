@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "@/db";
 import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
-import { eq, and, or, ilike, inArray, desc, asc, gte, lte, sql, count } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, desc, gte, lte, sql, count } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -173,10 +173,32 @@ const app = new Hono()
     const take = limit ? Math.min(Math.max(parseInt(limit, 10) || 0, 1), 200) : undefined;
     const skip = offset ? Math.max(parseInt(offset, 10) || 0, 0) : 0;
 
-    const ordersList = await db.query.orders.findMany({
-      where,
-      ...(take !== undefined ? { limit: take } : {}),
-      ...(skip > 0 ? { offset: skip } : {}),
+    // Two phases, because LIMIT/OFFSET on the joined query is not the cheap
+    // thing it looks like. The user/items joins live in the select list, so
+    // Postgres runs them for every row OFFSET then throws away: measured on
+    // production, page 1 costs 170 buffers while OFFSET 175 costs 1,298 —
+    // about what fetching all 203 orders unpaginated cost. Paging the ids
+    // first touches a narrow 34-byte row instead of a 1,264-byte one, and the
+    // second query joins exactly the rows being returned, so the cost is flat
+    // at any depth: the same OFFSET 175 comes to 186 buffers.
+    //
+    // Only worth it when a page was actually asked for. Without a limit the id
+    // pass would select every id and buy nothing, so that case queries directly.
+    const pageIds =
+      take === undefined
+        ? null
+        : (
+            await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(where)
+              .orderBy(desc(orders.createdAt), desc(orders.id))
+              .limit(take)
+              .offset(skip)
+          ).map((r) => r.id);
+
+    const ordersList = pageIds?.length === 0 ? [] : await db.query.orders.findMany({
+      where: pageIds ? inArray(orders.id, pageIds) : where,
       with: {
         user: {
           columns: { id: true, name: true, email: true, phone: true }
@@ -197,7 +219,10 @@ const app = new Hono()
         shippingMethod: true,
         payment: true
       },
-      orderBy: (fields, { desc }) => [desc(fields.createdAt)]
+      // Same key as the id pass above, id included: createdAt alone is not
+      // unique, and two rows sharing a millisecond could otherwise land on two
+      // pages or on none.
+      orderBy: (fields, { desc }) => [desc(fields.createdAt), desc(fields.id)]
     });
 
     return c.json({ orders: ordersList, total, counts });
