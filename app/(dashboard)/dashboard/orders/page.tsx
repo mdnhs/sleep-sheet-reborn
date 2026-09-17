@@ -67,7 +67,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useOrders } from "@/features/order/api/use-order";
 import { useGetProducts } from "@/features/product/api/use-get-products";
-import { useActivityLogs } from "@/features/activity/api/use-activity-logs";
+import { OrderActivityDialog } from "@/components/order/order-activity-dialog";
 import {
   useBlockedIps,
   useBlockIpMutations,
@@ -568,6 +568,7 @@ function OrdersPageContent() {
   };
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [logDetailsOrder, setLogDetailsOrder] = useState<ShippingOrder | null>(null);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [showAllOrderItems, setShowAllOrderItems] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [courierOrder, setCourierOrder] = useState<ShippingOrder | null>(null);
@@ -1636,6 +1637,11 @@ function OrdersPageContent() {
   const deliveredCount = bucketCounts?.delivered ?? 0;
   const cancelledCount = bucketCounts?.cancelled ?? 0;
   const returnedCount = bucketCounts?.returned ?? 0;
+  const allCount =
+    bucketCounts?.all != null && Number(bucketCounts.all) > 0
+      ? Number(bucketCounts.all)
+      : (pendingCount + confirmedCount + deliveredCount + cancelledCount + returnedCount) ||
+        (statusFilter === "ALL" ? totalOrders : 0);
 
   const columns: ColumnDef<ShippingOrder>[] = [
     {
@@ -2238,7 +2244,7 @@ function OrdersPageContent() {
               value="ALL"
               className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold capitalize cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
             >
-              All ({orders?.length ?? 0})
+              All ({allCount})
             </TabsTrigger>
             <TabsTrigger
               value="TODAY"
@@ -2460,18 +2466,31 @@ function OrdersPageContent() {
 
       <Dialog
         open={!!selectedOrder}
-        onOpenChange={() => {
-          setSelectedOrder(null);
-          setShowAllOrderItems(false);
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedOrder(null);
+            setShowAllOrderItems(false);
+            setActivityOpen(false);
+          }
         }}
       >
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-y-auto">
           {selectedOrder && (
             <>
-              <DialogHeader>
-                <DialogTitle>
+              <DialogHeader className="flex flex-row items-center justify-between gap-3 pb-3 border-b border-border/60 pr-8">
+                <DialogTitle className="text-base sm:text-lg font-bold">
                   Order Details - {selectedOrder.orderNumber}
                 </DialogTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActivityOpen(true)}
+                  className="gap-1.5 text-xs h-8 shadow-xs font-medium cursor-pointer shrink-0"
+                >
+                  <History className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  Activity Log
+                </Button>
               </DialogHeader>
 
               <div className="space-y-6 shrink-0">
@@ -2777,6 +2796,12 @@ function OrdersPageContent() {
           )}
         </DialogContent>
       </Dialog>
+
+      <OrderActivityDialog
+        orderNumber={selectedOrder?.orderNumber ?? ""}
+        open={activityOpen}
+        onOpenChange={setActivityOpen}
+      />
 
       {courierOrder && (
         <BookCourierDialog
@@ -4055,8 +4080,8 @@ function OrdersPageContent() {
         </DialogContent>
       </Dialog>
 
-      <OrderLogDetailsDialog
-        order={logDetailsOrder}
+      <OrderActivityDialog
+        orderNumber={logDetailsOrder?.orderNumber ?? ""}
         open={!!logDetailsOrder}
         onOpenChange={(open) => !open && setLogDetailsOrder(null)}
       />
@@ -4076,130 +4101,5 @@ export default function OrdersPage() {
     >
       <OrdersPageContent />
     </Suspense>
-  );
-}
-
-function OrderLogDetailsDialog({
-  order,
-  open,
-  onOpenChange,
-}: {
-  order: ShippingOrder | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const { data: logsData, isLoading } = useActivityLogs(
-    order && open
-      ? { search: order.orderNumber, orderId: order.id, limit: "50" }
-      : undefined,
-    { enabled: !!(order && open) }
-  );
-
-  if (!order) return null;
-
-  const logs = logsData?.data || [];
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[580px] max-h-[85vh] flex flex-col p-6 rounded-3xl">
-        <DialogHeader className="pb-2 border-b border-slate-100 dark:border-slate-800">
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-            <History className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            Activity Logs — Order #{order.orderNumber}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto pr-1 space-y-3 py-2 flex flex-col">
-          {isLoading ? (
-            <div className="space-y-3 py-4">
-              <Skeleton className="h-20 w-full rounded-2xl" />
-              <Skeleton className="h-20 w-full rounded-2xl" />
-              <Skeleton className="h-20 w-full rounded-2xl" />
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-12 text-muted-foreground text-xs font-medium space-y-1 text-center">
-              <p>No activity logs recorded for order #{order.orderNumber} yet.</p>
-              <p className="text-[11px] text-slate-400">Activity logs are captured automatically whenever orders are created or updated.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {logs.map((log) => (
-                <div
-                  key={log.id}
-                  className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 p-4 space-y-2 text-xs"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                        {log.action}
-                      </span>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
-                        By{" "}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
-                          {log.userName}
-                        </span>{" "}
-                        ({log.userEmail})
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span
-                        className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                          log.status < 300
-                            ? "bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
-                            : "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
-                        )}
-                      >
-                        {log.method} {log.status}
-                      </span>
-                      <span className="text-[11px] font-medium text-slate-400">
-                        {formatDate(log.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {log.targetName && (
-                    <div className="text-slate-600 dark:text-slate-300 text-xs bg-white dark:bg-card px-2.5 py-1 rounded-lg border border-slate-100 dark:border-slate-800 inline-block font-mono">
-                      Target: {log.targetName}
-                    </div>
-                  )}
-
-                  {Array.isArray(log.changes) && log.changes.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5">
-                      <p className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">
-                        Recorded Changes:
-                      </p>
-                      <div className="space-y-1">
-                        {log.changes?.map((change, idx: number) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 bg-white/70 dark:bg-card/50 px-2 py-1 rounded-md"
-                          >
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              {change.label}:
-                            </span>
-                            {change.from && (
-                              <span className="line-through text-red-500/80">
-                                {change.from}
-                              </span>
-                            )}
-                            {change.from && change.to && <span>&rarr;</span>}
-                            {change.to && (
-                              <span className="text-green-600 dark:text-green-400 font-bold">
-                                {change.to}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

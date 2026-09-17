@@ -7,13 +7,16 @@ import { NavMain, type NavGroup } from "@/components/nav-main"
 import {
   Sidebar,
   SidebarContent,
+  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   IconArticle,
   IconBed,
@@ -120,9 +123,86 @@ function filterGroups(
     .filter((group) => group.items.length > 0)
 }
 
+export function AppSidebarSkeleton() {
+  return (
+    <div className="space-y-3 py-1 animate-pulse" data-slot="sidebar-skeleton">
+      <SidebarGroup className="py-1">
+        <div className="px-3 mb-1.5 group-data-[collapsible=icon]:hidden">
+          <Skeleton className="h-3 w-12 rounded-md bg-muted/80" />
+        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="72%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="60%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="80%" />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+
+      <SidebarGroup className="py-1">
+        <div className="px-3 mb-1.5 group-data-[collapsible=icon]:hidden">
+          <Skeleton className="h-3 w-20 rounded-md bg-muted/80" />
+        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="65%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="55%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="75%" />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+
+      <SidebarGroup className="py-1">
+        <div className="px-3 mb-1.5 group-data-[collapsible=icon]:hidden">
+          <Skeleton className="h-3 w-28 rounded-md bg-muted/80" />
+        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="78%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="68%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="58%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="72%" />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+
+      <SidebarGroup className="py-1">
+        <div className="px-3 mb-1.5 group-data-[collapsible=icon]:hidden">
+          <Skeleton className="h-3 w-24 rounded-md bg-muted/80" />
+        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="64%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="56%" />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon width="70%" />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+    </div>
+  )
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { setOpenMobile } = useSidebar()
-  const { data: user } = useCurrent()
+  const { data: user, isLoading } = useCurrent()
 
   const groups = React.useMemo(() => filterGroups(navGroups, user), [user])
 
@@ -144,7 +224,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain groups={groups} />
+        {isLoading ? (
+          <AppSidebarSkeleton />
+        ) : (
+          <NavMain groups={groups} />
+        )}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
