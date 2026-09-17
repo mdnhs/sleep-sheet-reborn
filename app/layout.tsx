@@ -136,6 +136,7 @@ export const viewport = {
 
 import GoogleAnalytics from "@/components/google-analytics";
 import SeoVerification from "@/components/seo-verification";
+import { Analytics } from "@vercel/analytics/next";
 
 export default function RootLayout({
   children,
@@ -169,6 +170,7 @@ export default function RootLayout({
             <QueryProvider>
               <SeoVerification />
               <GoogleAnalytics />
+              <Analytics />
               <FbcCapture />
               <NuqsAdapter>
                 {children}
