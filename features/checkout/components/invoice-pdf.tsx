@@ -374,14 +374,56 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
         </View>
 
         {/* Totals */}
-        <View style={styles.totalsSection}>
-          <View style={styles.totalsTable}>
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>{t("total")}:</Text>
-              <Text style={styles.grandTotalValue}>৳{order.totalAmount}</Text>
+        {(() => {
+          const itemsSubtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          const subtotal = order.subtotal || itemsSubtotal;
+          const shippingCost = order.shippingCost || 0;
+          const expectedTotal = subtotal + shippingCost;
+          const discount = expectedTotal - order.totalAmount;
+
+          return (
+            <View style={styles.totalsSection}>
+              <View style={styles.totalsTable}>
+                {subtotal > 0 && (
+                  <View style={styles.totalsRow}>
+                    <Text style={styles.totalsLabel}>{language === "bn" ? "সাবটোটাল:" : "Subtotal:"}</Text>
+                    <Text style={styles.totalsValue}>৳{subtotal}</Text>
+                  </View>
+                )}
+                {shippingCost > 0 && (
+                  <View style={styles.totalsRow}>
+                    <Text style={styles.totalsLabel}>{language === "bn" ? "ডেলিভারি চার্জ:" : "Delivery:"}</Text>
+                    <Text style={styles.totalsValue}>৳{shippingCost}</Text>
+                  </View>
+                )}
+                {discount > 0 && (
+                  <View style={styles.totalsRow}>
+                    <Text style={[styles.totalsLabel, { color: "#dc2626", fontWeight: "bold" }]}>
+                      {language === "bn" ? "ডিসকাউন্ট / ছাড়:" : "Discount:"}
+                    </Text>
+                    <Text style={[styles.totalsValue, { color: "#dc2626", fontWeight: "bold" }]}>
+                      -৳{discount}
+                    </Text>
+                  </View>
+                )}
+                {discount < 0 && (
+                  <View style={styles.totalsRow}>
+                    <Text style={styles.totalsLabel}>
+                      {language === "bn" ? "অ্যাডজাস্টমেন্ট:" : "Adjustment:"}
+                    </Text>
+                    <Text style={[styles.totalsValue, { color: "#d97706", fontWeight: "bold" }]}>
+                      +৳{Math.abs(discount)}
+                    </Text>
+                  </View>
+                )}
+                <View style={[styles.grandTotalRow, { marginTop: 2, paddingTop: 2, borderTopWidth: 1, borderTopColor: "#e2e8f0" }]}>
+                  <Text style={styles.grandTotalLabel}>{t("total")}:</Text>
+                  <Text style={styles.grandTotalValue}>৳{order.totalAmount}</Text>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
+          );
+        })()}
       </View>
     </Page>
   );

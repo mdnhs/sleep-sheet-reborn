@@ -156,7 +156,7 @@ const app = new Hono()
           // the add-on bought-price fields in the order cost dialogs.
           with: {
             product: {
-              columns: { id: true, name: true, images: true, price: true, sku: true, addOns: true }
+              columns: { id: true, name: true, images: true, price: true, sku: true, addOns: true, variants: true, sizes: true, stock: true }
             }
           }
         },
@@ -181,9 +181,17 @@ const app = new Hono()
   paymentStatus: z.enum(["PENDING", "COMPLETED", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED"]).optional(),
   shippingCost: z.number().min(0).optional(),
   totalAmount: z.number().min(0).optional(),
+  guestName: z.string().optional(),
+  guestPhone: z.string().optional(),
+  shippingAddress: z.string().optional(),
   items: z.array(z.object({
-    id: z.string(),
-    costPrice: z.number().min(0)
+    id: z.string().optional(),
+    productId: z.string(),
+    quantity: z.number().int().min(1),
+    price: z.number().min(0),
+    costPrice: z.number().min(0).nullable().optional(),
+    size: z.string().nullable().optional(),
+    color: z.string().nullable().optional()
   })).optional()
 })), async (c) => {
   const user = c.get("user");
@@ -192,11 +200,11 @@ const app = new Hono()
   }
 
   const id = c.req.param("id");
-  const { status, paymentStatus, shippingCost, totalAmount, items } = c.req.valid("json");
+  const { status, paymentStatus, shippingCost, totalAmount, guestName, guestPhone, shippingAddress, items } = c.req.valid("json");
 
-  // Changing money (shipping, total, item cost) needs the refund/amounts perm.
+  // Changing money (shipping, total, item cost) or modifying items needs the refund/amounts perm.
   const changesAmounts =
-    shippingCost !== undefined || totalAmount !== undefined || (items?.length ?? 0) > 0;
+    shippingCost !== undefined || totalAmount !== undefined || items !== undefined;
   if (changesAmounts && !isAllowed(user, "orders", "refund", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
@@ -212,37 +220,129 @@ const app = new Hono()
   try {
     const currentOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
+      with: {
+        items: true
+      }
     });
     
     if (!currentOrder) {
       return c.json({ error: "Order not found" }, 404);
     }
 
+    if (items !== undefined && items.length === 0) {
+      return c.json({ error: "Order must have at least one product" }, 400);
+    }
+
     const updateFields: Partial<typeof orders.$inferInsert> = {};
     if (status !== undefined) updateFields.status = status;
     if (paymentStatus !== undefined) updateFields.paymentStatus = paymentStatus;
+    if (guestName !== undefined) updateFields.guestName = guestName;
+    if (guestPhone !== undefined) updateFields.guestPhone = guestPhone;
+    if (shippingAddress !== undefined) updateFields.shippingAddress = shippingAddress;
     
     const effectiveShippingCost = shippingCost !== undefined ? shippingCost : currentOrder.shippingCost;
     if (shippingCost !== undefined) {
       updateFields.shippingCost = shippingCost;
     }
-    if (totalAmount !== undefined) {
-      updateFields.totalAmount = totalAmount;
-      updateFields.subtotal = Math.max(0, totalAmount - effectiveShippingCost);
-    } else if (shippingCost !== undefined) {
-      updateFields.totalAmount = currentOrder.subtotal + shippingCost;
+
+    // Inventory & item adjustments
+    if (items !== undefined) {
+      const existingItemsMap = new Map(currentOrder.items.map((it) => [it.id, it]));
+      const stockDeltas = new Map<string, number>();
+
+      const addDelta = (productId: string | null | undefined, delta: number) => {
+        if (!productId || delta === 0) return;
+        stockDeltas.set(productId, (stockDeltas.get(productId) ?? 0) + delta);
+      };
+
+      const keptItemIds = new Set<string>();
+
+      for (const item of items) {
+        if (item.id && existingItemsMap.has(item.id)) {
+          keptItemIds.add(item.id);
+          const existing = existingItemsMap.get(item.id)!;
+
+          if (existing.productId === item.productId) {
+            // Same product: delta = oldQty - newQty (positive restores stock, negative deducts)
+            addDelta(item.productId, existing.quantity - item.quantity);
+          } else {
+            // Product switched: restore old product stock, deduct new product stock
+            addDelta(existing.productId, existing.quantity);
+            addDelta(item.productId, -item.quantity);
+          }
+
+          await db.update(orderItems)
+            .set({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              costPrice: item.costPrice !== undefined ? item.costPrice : null,
+              size: item.size ?? null,
+              color: item.color ?? null,
+            })
+            .where(eq(orderItems.id, item.id));
+        } else {
+          // Brand new item in this order
+          addDelta(item.productId, -item.quantity);
+
+          await db.insert(orderItems).values({
+            orderId: id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            costPrice: item.costPrice !== undefined ? item.costPrice : null,
+            size: item.size ?? null,
+            color: item.color ?? null,
+          });
+        }
+      }
+
+      // Check for removed items
+      for (const existing of currentOrder.items) {
+        if (!keptItemIds.has(existing.id)) {
+          addDelta(existing.productId, existing.quantity);
+          await db.delete(orderItems).where(eq(orderItems.id, existing.id));
+        }
+      }
+
+      // Apply inventory stock adjustments
+      for (const [productId, delta] of stockDeltas.entries()) {
+        if (delta !== 0) {
+          await db.update(products)
+            .set({
+              stock: sql`GREATEST(0, ${products.stock} + ${delta})`,
+            })
+            .where(eq(products.id, productId));
+        }
+      }
+
+      const newSubtotal = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+      updateFields.subtotal = newSubtotal;
+
+      if (totalAmount !== undefined) {
+        updateFields.totalAmount = totalAmount;
+      } else {
+        updateFields.totalAmount = newSubtotal + effectiveShippingCost;
+      }
+    } else {
+      if (totalAmount !== undefined) {
+        updateFields.totalAmount = totalAmount;
+        updateFields.subtotal = Math.max(0, totalAmount - effectiveShippingCost);
+      } else if (shippingCost !== undefined) {
+        updateFields.totalAmount = currentOrder.subtotal + shippingCost;
+      }
     }
 
     await db.update(orders)
       .set(updateFields)
       .where(eq(orders.id, id));
 
-    if (items && items.length > 0) {
-      await Promise.all(items.map(item =>
-        db.update(orderItems)
-          .set({ costPrice: item.costPrice })
-          .where(eq(orderItems.id, item.id))
-      ));
+    // Keep user record in sync if user exists
+    if (currentOrder.userId && (guestName !== undefined || guestPhone !== undefined)) {
+      const userUpdate: { name?: string; phone?: string } = {};
+      if (guestName !== undefined) userUpdate.name = guestName;
+      if (guestPhone !== undefined) userUpdate.phone = guestPhone;
+      await db.update(users).set(userUpdate).where(eq(users.id, currentOrder.userId));
     }
 
     if (status !== undefined || paymentStatus !== undefined) {
@@ -253,13 +353,27 @@ const app = new Hono()
         status: newStatus,
         message: `${statusMessages[newStatus] || `Status changed to ${newStatus}`}, payment status is now ${newPaymentStatus.toLowerCase()}.`
       });
+    } else if (items !== undefined || guestName !== undefined || guestPhone !== undefined || shippingAddress !== undefined) {
+      await db.insert(orderTimelineEvents).values({
+        orderId: id,
+        status: currentOrder.status,
+        message: `Order details updated by admin${items ? ` (${items.length} item${items.length > 1 ? "s" : ""})` : ""}.`
+      });
     }
 
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
       with: {
         user: true,
-        items: true
+        items: {
+          with: {
+            product: {
+              columns: { id: true, name: true, images: true, price: true, sku: true, addOns: true, variants: true, sizes: true, stock: true }
+            }
+          }
+        },
+        shippingMethod: true,
+        payment: true
       }
     });
 
@@ -275,6 +389,18 @@ const app = new Hono()
     }
     if (totalAmount !== undefined && totalAmount !== currentOrder.totalAmount) {
       changes.push({ label: "Total amount", from: currentOrder.totalAmount, to: totalAmount });
+    }
+    if (guestName !== undefined && guestName !== currentOrder.guestName) {
+      changes.push({ label: "Customer name", from: currentOrder.guestName ?? "None", to: guestName });
+    }
+    if (guestPhone !== undefined && guestPhone !== currentOrder.guestPhone) {
+      changes.push({ label: "Customer phone", from: currentOrder.guestPhone ?? "None", to: guestPhone });
+    }
+    if (shippingAddress !== undefined && shippingAddress !== currentOrder.shippingAddress) {
+      changes.push({ label: "Shipping address", from: currentOrder.shippingAddress, to: shippingAddress });
+    }
+    if (items !== undefined) {
+      changes.push({ label: "Items count", from: currentOrder.items?.length ?? 0, to: items.length });
     }
     setActivityMeta(c, { name: `#${currentOrder.orderNumber}`, changes });
 

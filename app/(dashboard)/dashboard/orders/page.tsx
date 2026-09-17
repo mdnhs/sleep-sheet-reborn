@@ -16,7 +16,23 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +44,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,9 +63,10 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useOrders } from "@/features/order/api/use-order";
+import { useGetProducts } from "@/features/product/api/use-get-products";
 import { useActivityLogs } from "@/features/activity/api/use-activity-logs";
 import {
   useBlockedIps,
@@ -73,6 +97,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ChevronsUpDown,
   Copy,
   FileText,
   FilterX,
@@ -98,6 +123,12 @@ import {
   ShieldBan,
   ShieldCheck,
   Sheet as SheetIcon,
+  Plus,
+  Minus,
+  User,
+  Phone,
+  MapPin,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -106,6 +137,69 @@ import { toast } from "sonner";
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
 };
+
+interface EditingItem {
+  id?: string;
+  productId: string;
+  productName: string;
+  productSku?: string;
+  productImage?: string;
+  quantity: number;
+  price: number;
+  costPrice: string;
+  addOnCostPrice: string;
+  size: string;
+  selectedVariant: string;
+  selectedAddOns: Record<string, number>;
+  availableVariants: Array<{ name: string; price: number | null }>;
+  availableSizes: string[];
+  availableAddOns: Array<{ name: string; price: number; costPrice?: number }>;
+  basePrice: number;
+}
+
+function normalizeProductVariants(variants: any): Array<{ name: string; price: number | null }> {
+  if (!Array.isArray(variants)) return [];
+  return variants.map((v) => {
+    if (typeof v === "string") return { name: v, price: null };
+    if (v && typeof v === "object" && "name" in v) {
+      return { name: String(v.name), price: typeof v.price === "number" ? v.price : null };
+    }
+    return { name: String(v), price: null };
+  });
+}
+
+function parseAddOnsFromColor(
+  color: string | null | undefined,
+  availableAddOns: Array<{ name: string; price: number; costPrice?: number }>
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  if (!color || !availableAddOns || availableAddOns.length === 0) return result;
+
+  for (const addOn of availableAddOns) {
+    if (!addOn.name) continue;
+    const escaped = addOn.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`${escaped}\\s+x(\\d+)`);
+    const match = color.match(regex);
+    if (match && match[1]) {
+      const qty = parseInt(match[1], 10);
+      if (!isNaN(qty) && qty > 0) {
+        result[addOn.name] = qty;
+      }
+    }
+  }
+  return result;
+}
+
+function parseBaseVariantFromColor(color: string | null | undefined): string {
+  if (!color) return "";
+  if (color.includes(" (+ ")) {
+    return color.split(" (+ ")[0].trim();
+  }
+  if (color.trim().startsWith("Add-ons:")) {
+    return "";
+  }
+  return color.trim();
+}
 
 // Once an order reaches one of these, Steadfast will never move it again
 // (mapSteadfastStatus can't produce REFUNDED, and DELIVERED/CANCELLED are
@@ -194,6 +288,239 @@ type StatusFilter =
   | "CANCELLED"
   | "RETURNED";
 
+interface ComboboxProduct {
+  id: string;
+  name: string;
+  sku?: string | null;
+  price: number;
+  stock: number;
+  images?: string[];
+}
+
+interface ProductComboboxProps {
+  products: ComboboxProduct[];
+  selectedProductId?: string;
+  fallbackProduct?: {
+    id: string;
+    name: string;
+    sku?: string | null;
+    images?: string[];
+    price?: number;
+  };
+  onSelectProduct: (productId: string) => void;
+  currencySymbol?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+function ProductCombobox({
+  products,
+  selectedProductId,
+  fallbackProduct,
+  onSelectProduct,
+  currencySymbol = "৳",
+  placeholder = "Select product...",
+  disabled = false,
+  className,
+}: ProductComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const selectedProduct =
+    products.find((p) => p.id === selectedProductId) ||
+    (fallbackProduct && fallbackProduct.id === selectedProductId
+      ? fallbackProduct
+      : undefined);
+
+  const displayList = React.useMemo(() => {
+    const list: ComboboxProduct[] = [...products];
+    if (
+      fallbackProduct &&
+      fallbackProduct.id &&
+      !list.some((p) => p.id === fallbackProduct.id)
+    ) {
+      list.unshift({
+        id: fallbackProduct.id,
+        name: fallbackProduct.name,
+        sku: fallbackProduct.sku || null,
+        price: fallbackProduct.price || 0,
+        stock: 0,
+        images: fallbackProduct.images,
+      });
+    }
+
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter((p) => {
+      const nameMatch = p.name?.toLowerCase().includes(q);
+      const skuMatch = p.sku ? p.sku.toLowerCase().includes(q) : false;
+      return Boolean(nameMatch || skuMatch);
+    });
+  }, [products, fallbackProduct, searchQuery]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            disabled={disabled}
+            className={cn(
+              "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs transition-colors hover:bg-accent/40 focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-left",
+              className
+            )}
+          />
+        }
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {selectedProduct?.images?.[0] ? (
+            <div className="w-5 h-5 rounded overflow-hidden relative shrink-0 border bg-muted">
+              <Image
+                src={selectedProduct.images[0]}
+                alt={selectedProduct.name}
+                fill
+                sizes="20px"
+                className="object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-5 h-5 rounded border bg-muted flex items-center justify-center shrink-0">
+              <Package className="w-3 h-3 text-muted-foreground" />
+            </div>
+          )}
+          <span className="truncate font-medium text-foreground">
+            {selectedProduct ? selectedProduct.name : placeholder}
+          </span>
+          {selectedProduct?.sku && (
+            <Badge
+              variant="outline"
+              className="text-[9px] px-1 py-0 h-3.5 font-mono shrink-0 hidden sm:inline-flex"
+            >
+              {selectedProduct.sku}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
+          {selectedProduct && selectedProduct.price !== undefined && (
+            <span className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap">
+              {currencySymbol} {selectedProduct.price}
+            </span>
+          )}
+          <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-60 shrink-0" />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        positionerClassName="z-[100]"
+        className="w-[300px] sm:w-[360px] p-2 bg-popover text-popover-foreground shadow-2xl border rounded-xl z-[100]"
+        align="start"
+        sideOffset={4}
+      >
+        {/* Search header */}
+        <div className="flex items-center border-b pb-1.5 px-1 gap-1.5">
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search product or SKU..."
+            className="w-full text-xs bg-transparent outline-none placeholder:text-muted-foreground py-0.5"
+            autoFocus
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="text-muted-foreground hover:text-foreground text-[11px] px-1 rounded hover:bg-muted"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Product list */}
+        <div className="max-h-56 overflow-y-auto mt-1 space-y-0.5 divide-y divide-border/20">
+          {displayList.length === 0 ? (
+            <div className="py-6 text-center text-xs text-muted-foreground">
+              No products found
+            </div>
+          ) : (
+            displayList.map((prod) => {
+              const isSelected = prod.id === selectedProductId;
+              return (
+                <button
+                  key={prod.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectProduct(prod.id);
+                    setOpen(false);
+                    setSearchQuery("");
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between p-1.5 rounded-md text-left transition-colors text-xs gap-2 group hover:bg-accent/70",
+                    isSelected && "bg-accent/80 font-medium"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {prod.images?.[0] ? (
+                      <div className="w-7 h-7 rounded overflow-hidden relative shrink-0 border bg-muted">
+                        <Image
+                          src={prod.images[0]}
+                          alt={prod.name}
+                          fill
+                          sizes="28px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-7 h-7 rounded border bg-muted flex items-center justify-center shrink-0">
+                        <Package className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-medium text-foreground">
+                          {prod.name}
+                        </span>
+                        {prod.sku && (
+                          <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1 rounded shrink-0">
+                            {prod.sku}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                        <span
+                          className={cn(
+                            prod.stock > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-destructive"
+                          )}
+                        >
+                          Stock: {prod.stock}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs font-bold text-foreground">
+                      {currencySymbol} {prod.price}
+                    </span>
+                    {isSelected ? (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0 stroke-[2.5]" />
+                    ) : (
+                      <span className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function OrdersPageContent() {
   const [search, setSearch] = useQueryState(
     "search",
@@ -258,11 +585,33 @@ function OrdersPageContent() {
   const [showBalance, setShowBalance] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const [isGeneratingPackingList, setIsGeneratingPackingList] = useState(false);
+  const { data: allProductsData } = useGetProducts({ admin: "true", limit: "100" });
+  const storeProducts = (((allProductsData as any)?.data || (allProductsData as any)?.products || []) as Array<{
+    id: string;
+    name: string;
+    price: number;
+    stock: number;
+    sku: string;
+    variants?: any;
+    colors?: Array<{ name: string; price: number | null }>;
+    addOns?: Array<{ name: string; price: number; costPrice?: number }>;
+    sizes?: string[];
+    images?: string[];
+    defaultVariantName?: string | null;
+  }>).map((p) => ({
+    ...p,
+    variants: p.variants || p.colors,
+  }));
+
   const [editingOrder, setEditingOrder] = useState<ShippingOrder | null>(null);
   const [newTotalAmount, setNewTotalAmount] = useState("");
   const [newShippingCost, setNewShippingCost] = useState("");
-  const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
-  const [itemAddOnCosts, setItemAddOnCosts] = useState<Record<string, string>>({});
+  const [editGuestName, setEditGuestName] = useState("");
+  const [editGuestPhone, setEditGuestPhone] = useState("");
+  const [editShippingAddress, setEditShippingAddress] = useState("");
+  const [editingItems, setEditingItems] = useState<EditingItem[]>([]);
+  const [selectedProductToAdd, setSelectedProductToAdd] = useState("");
+  const [itemToDeleteIndex, setItemToDeleteIndex] = useState<number | null>(null);
   const [profitBreakdownOrder, setProfitBreakdownOrder] =
     useState<ShippingOrder | null>(null);
   const [cancelTarget, setCancelTarget] = useState<ShippingOrder | null>(null);
@@ -400,21 +749,262 @@ function OrdersPageContent() {
 
   const handleOpenEditOrder = (order: ShippingOrder) => {
     setEditingOrder(order);
-    setNewTotalAmount(order.totalAmount.toString());
+    setEditGuestName(order.guestName || order.user?.name || "");
+    setEditGuestPhone(order.guestPhone || order.user?.phone || "");
+    setEditShippingAddress(order.shippingAddress || "");
     setNewShippingCost(order.shippingCost.toString());
-    const costs: Record<string, string> = {};
-    const addOnCosts: Record<string, string> = {};
-    order.items.forEach((item) => {
-      costs[item.id] = item.costPrice?.toString() || "";
-      const suggestedAddOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
-      addOnCosts[item.id] = suggestedAddOnCost > 0 ? suggestedAddOnCost.toString() : "";
+    setNewTotalAmount(order.totalAmount.toString());
+    setSelectedProductToAdd("");
+
+    const parsedItems: EditingItem[] = (order.items || []).map((item) => {
+      const itemProductId = item.productId || item.product?.id;
+      const catalogProduct = storeProducts.find((p) => p.id === itemProductId) || item.product;
+      const availableVariants = normalizeProductVariants(catalogProduct?.variants);
+      const availableSizes = catalogProduct?.sizes || [];
+      const availableAddOns = catalogProduct?.addOns || [];
+      const basePrice = catalogProduct?.price ?? item.price;
+
+      const baseVariant = parseBaseVariantFromColor(item.color);
+      const addOns = parseAddOnsFromColor(item.color, availableAddOns);
+      const suggestedAddOnCost = calculateItemAddOnCost(item.color, availableAddOns);
+
+      let itemBaseCost = "";
+      if (item.costPrice !== null && item.costPrice !== undefined) {
+        const remaining = Math.max(0, item.costPrice - suggestedAddOnCost);
+        itemBaseCost = remaining > 0 ? remaining.toString() : (suggestedAddOnCost === 0 && item.costPrice > 0 ? item.costPrice.toString() : "");
+      }
+
+      return {
+        id: item.id,
+        productId: itemProductId,
+        productName: catalogProduct?.name || item.product?.name || "Product",
+        productSku: catalogProduct?.sku || (item.product as any)?.sku || "",
+        productImage: catalogProduct?.images?.[0] || item.product?.images?.[0] || "",
+        quantity: item.quantity || 1,
+        price: item.price,
+        costPrice: itemBaseCost,
+        addOnCostPrice: suggestedAddOnCost > 0 ? suggestedAddOnCost.toString() : "",
+        size: item.size || (availableSizes[0] || ""),
+        selectedVariant: baseVariant || (availableVariants[0]?.name || ""),
+        selectedAddOns: addOns,
+        availableVariants,
+        availableSizes,
+        availableAddOns,
+        basePrice,
+      };
     });
-    setItemCosts(costs);
-    setItemAddOnCosts(addOnCosts);
+
+    setEditingItems(parsedItems);
+  };
+
+  const handleItemProductChange = (index: number, newProductId: string) => {
+    const newProduct = storeProducts.find((p) => p.id === newProductId);
+    if (!newProduct) return;
+
+    const availableVariants = normalizeProductVariants(newProduct.variants);
+    const availableSizes = newProduct.sizes || [];
+    const availableAddOns = newProduct.addOns || [];
+    const basePrice = newProduct.price;
+
+    const defaultVariant = newProduct.defaultVariantName || availableVariants[0]?.name || "";
+    const matchedVariant = availableVariants.find((v) => v.name === defaultVariant);
+    const initPrice = matchedVariant?.price ?? basePrice;
+
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        productId: newProduct.id,
+        productName: newProduct.name,
+        productSku: newProduct.sku,
+        productImage: newProduct.images?.[0] || "",
+        availableVariants,
+        availableSizes,
+        availableAddOns,
+        basePrice,
+        selectedVariant: defaultVariant,
+        size: availableSizes[0] || "",
+        selectedAddOns: {},
+        price: initPrice,
+        costPrice: "",
+        addOnCostPrice: "",
+      };
+      return copy;
+    });
+  };
+
+  const handleItemVariantChange = (index: number, variantName: string) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      const item = copy[index];
+      const matched = item.availableVariants.find((v) => v.name === variantName);
+      const variantBasePrice = matched?.price ?? item.basePrice;
+
+      const addOnsTotal = Object.entries(item.selectedAddOns).reduce((sum, [name, qty]) => {
+        const a = item.availableAddOns.find((x) => x.name === name);
+        return sum + (a ? a.price * qty : 0);
+      }, 0);
+
+      copy[index] = {
+        ...item,
+        selectedVariant: variantName,
+        price: variantBasePrice + addOnsTotal,
+      };
+      return copy;
+    });
+  };
+
+  const handleItemSizeChange = (index: number, newSize: string) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], size: newSize };
+      return copy;
+    });
+  };
+
+  const handleItemAddOnDelta = (index: number, addOnName: string, delta: number) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      const item = copy[index];
+      const currentCount = item.selectedAddOns[addOnName] || 0;
+      const nextCount = Math.max(0, currentCount + delta);
+
+      const nextAddOns = { ...item.selectedAddOns };
+      if (nextCount > 0) {
+        nextAddOns[addOnName] = nextCount;
+      } else {
+        delete nextAddOns[addOnName];
+      }
+
+      const matchedVariant = item.availableVariants.find((v) => v.name === item.selectedVariant);
+      const variantBasePrice = matchedVariant?.price ?? item.basePrice;
+
+      const addOnsTotal = Object.entries(nextAddOns).reduce((sum, [name, qty]) => {
+        const a = item.availableAddOns.find((x) => x.name === name);
+        return sum + (a ? a.price * qty : 0);
+      }, 0);
+
+      const suggestedAddOnCost = Object.entries(nextAddOns).reduce((sum, [name, qty]) => {
+        const a = item.availableAddOns.find((x) => x.name === name);
+        return sum + (a?.costPrice ? a.costPrice * qty : 0);
+      }, 0);
+
+      copy[index] = {
+        ...item,
+        selectedAddOns: nextAddOns,
+        price: variantBasePrice + addOnsTotal,
+        addOnCostPrice: suggestedAddOnCost > 0 ? suggestedAddOnCost.toString() : (item.addOnCostPrice || ""),
+      };
+      return copy;
+    });
+  };
+
+  const handleItemQuantityDelta = (index: number, delta: number) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        quantity: Math.max(1, copy[index].quantity + delta),
+      };
+      return copy;
+    });
+  };
+
+  const handleItemQuantitySet = (index: number, quantity: number) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        quantity: Math.max(1, quantity),
+      };
+      return copy;
+    });
+  };
+
+  const handleItemPriceChange = (index: number, price: number) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], price: Math.max(0, price) };
+      return copy;
+    });
+  };
+
+  const handleItemCostChange = (index: number, costPrice: string) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], costPrice };
+      return copy;
+    });
+  };
+
+  const handleItemAddOnCostChange = (index: number, addOnCostPrice: string) => {
+    setEditingItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], addOnCostPrice };
+      return copy;
+    });
+  };
+
+  const handleRemoveItem = (index: number) => {
+    if (editingItems.length <= 1) {
+      toast.error("Order must contain at least one item");
+      return;
+    }
+    setEditingItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddNewProduct = (productId: string) => {
+    const newProduct = storeProducts.find((p) => p.id === productId);
+    if (!newProduct) return;
+
+    const availableVariants = normalizeProductVariants(newProduct.variants);
+    const availableSizes = newProduct.sizes || [];
+    const availableAddOns = newProduct.addOns || [];
+    const basePrice = newProduct.price;
+
+    const defaultVariant = newProduct.defaultVariantName || availableVariants[0]?.name || "";
+    const matchedVariant = availableVariants.find((v) => v.name === defaultVariant);
+    const initPrice = matchedVariant?.price ?? basePrice;
+
+    const newItem: EditingItem = {
+      productId: newProduct.id,
+      productName: newProduct.name,
+      productSku: newProduct.sku,
+      productImage: newProduct.images?.[0] || "",
+      quantity: 1,
+      price: initPrice,
+      costPrice: "",
+      addOnCostPrice: "",
+      size: availableSizes[0] || "",
+      selectedVariant: defaultVariant,
+      selectedAddOns: {},
+      availableVariants,
+      availableSizes,
+      availableAddOns,
+      basePrice,
+    };
+
+    setEditingItems((prev) => [...prev, newItem]);
+    setSelectedProductToAdd("");
+  };
+
+  const editingSubtotal = React.useMemo(() => {
+    return editingItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
+  }, [editingItems]);
+
+  const handleRecalculateTotal = () => {
+    const ship = parseFloat(newShippingCost) || 0;
+    setNewTotalAmount((editingSubtotal + ship).toString());
   };
 
   const handleSaveEditOrder = async () => {
     if (!editingOrder) return;
+
+    if (editingItems.length === 0) {
+      toast.error("Order must contain at least one item");
+      return;
+    }
+
     const totalAmount = parseFloat(newTotalAmount);
     if (isNaN(totalAmount) || totalAmount < 0) {
       toast.error("Please enter a valid total amount");
@@ -426,16 +1016,47 @@ function OrdersPageContent() {
       return;
     }
 
-    const itemsToUpdate = editingOrder.items.map((item) => ({
-      id: item.id,
-      costPrice:
-        (parseFloat(itemCosts[item.id] || "0") || 0) +
-        (parseFloat(itemAddOnCosts[item.id] || "0") || 0),
-    }));
+    if (!editShippingAddress.trim()) {
+      toast.error("Shipping address is required");
+      return;
+    }
+
+    const itemsToUpdate = editingItems.map((item) => {
+      const selectedAddOnsSummary = Object.entries(item.selectedAddOns)
+        .filter(([, qty]) => qty > 0)
+        .map(([name, qty]) => {
+          const addOn = item.availableAddOns.find((a) => a.name === name);
+          return addOn ? `${name} x${qty} (${addOn.price} TK)` : `${name} x${qty}`;
+        })
+        .join(", ");
+
+      let finalColor: string | null = null;
+      if (item.selectedVariant) {
+        finalColor = selectedAddOnsSummary ? `${item.selectedVariant} (+ ${selectedAddOnsSummary})` : item.selectedVariant;
+      } else if (selectedAddOnsSummary) {
+        finalColor = `Add-ons: ${selectedAddOnsSummary}`;
+      }
+
+      const parsedCost = (parseFloat(item.costPrice || "0") || 0) + (parseFloat(item.addOnCostPrice || "0") || 0);
+      const finalCostPrice = item.costPrice !== "" || item.addOnCostPrice !== "" ? parsedCost : null;
+
+      return {
+        id: item.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        costPrice: finalCostPrice,
+        size: item.size || null,
+        color: finalColor,
+      };
+    });
 
     try {
       await updateOrder.mutateAsync({
         id: editingOrder.id,
+        guestName: editGuestName.trim() || undefined,
+        guestPhone: editGuestPhone.trim() || undefined,
+        shippingAddress: editShippingAddress.trim(),
         totalAmount,
         shippingCost,
         items: itemsToUpdate,
@@ -2262,168 +2883,771 @@ function OrdersPageContent() {
       />
       <Dialog
         open={!!editingOrder}
-        onOpenChange={(open) => !open && !updateOrder.isPending && setEditingOrder(null)}
+        onOpenChange={(open) => {
+          if (!open && !updateOrder.isPending) {
+            setEditingOrder(null);
+            setItemToDeleteIndex(null);
+          }
+        }}
       >
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Pencil className="h-4 w-4 text-primary" />
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 flex flex-col gap-0 overflow-hidden bg-background">
+          <DialogHeader className="px-6 py-4 border-b bg-muted/20">
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Pencil className="h-5 w-5 text-primary" />
               Edit Order
               {editingOrder && (
-                <span className="text-xs font-mono text-muted-foreground ml-1">
-                  ({editingOrder.orderNumber})
-                </span>
+                <Badge variant="outline" className="font-mono text-xs font-semibold">
+                  #{editingOrder.orderNumber}
+                </Badge>
               )}
             </DialogTitle>
-            <DialogDescription>
-              Update total sale amount, shipping cost, and item cost prices.
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+              প্রোডাক্ট বা কাস্টমার ইনফো ট্যাব সিলেক্ট করে তথ্য আপডেট করুন।
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2 max-h-[65vh] overflow-y-auto pr-1">
-            {/* Order Pricing & Delivery */}
-            <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Order Pricing
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium">Total Amount (৳)</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={newTotalAmount}
-                    onChange={(e) => setNewTotalAmount(e.target.value)}
-                    placeholder="Enter total amount"
-                  />
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    Final customer payable
-                  </p>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium">Shipping Cost (৳)</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={newShippingCost}
-                    onChange={(e) => setNewShippingCost(e.target.value)}
-                    placeholder="Enter shipping cost"
-                  />
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    Delivery charge
-                  </p>
-                </div>
-              </div>
-              {editingOrder && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
-                  <span>Items Subtotal:</span>
-                  <span className="font-medium text-foreground">{currencySymbol} {editingOrder.subtotal}</span>
-                </div>
-              )}
+
+          <Tabs defaultValue="products" className="flex flex-col flex-1 overflow-hidden">
+            <div className="px-6 pt-3 pb-2 border-b bg-muted/10">
+              <TabsList className="grid grid-cols-2 w-full max-w-sm h-9">
+                <TabsTrigger value="products" className="flex items-center justify-center gap-1.5 text-xs font-semibold">
+                  <Package className="w-3.5 h-3.5" />
+                  Product Management ({editingItems.length})
+                </TabsTrigger>
+                <TabsTrigger value="customer" className="flex items-center justify-center gap-1.5 text-xs font-semibold">
+                  <User className="w-3.5 h-3.5" />
+                  Customer Info
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            {/* Item Cost Prices (COGS) */}
-            <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Item Buying Costs (COGS)
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  For profit calculation
-                </span>
-              </div>
-              <div className="space-y-3">
-                {editingOrder?.items.map((item) => {
-                  const hasAddOn = colorHasAddOn(item.color);
-                  return (
-                    <div key={item.id} className="space-y-2 p-2.5 rounded-md border bg-background text-xs">
-                      <div className="font-medium text-foreground truncate">
-                        {item.product?.name || "Item"}
-                        {item.color && (
-                          <span className="text-muted-foreground ml-1">({item.color})</span>
-                        )}
-                        {item.quantity > 1 && (
-                          <span className="text-muted-foreground ml-1">× {item.quantity}</span>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[11px] text-muted-foreground block font-medium">
-                            {item.quantity > 1
-                              ? "Unit Bought Price (প্রতি পিস কেনা দাম)"
-                              : "Bought Price (Cost)"}
-                          </label>
-                          {item.quantity > 1 && (
-                            <span className="text-[11px] text-muted-foreground">
-                              Total:{" "}
-                              <span className="font-semibold text-foreground">
-                                {formatAmount(
-                                  ((parseFloat(itemCosts[item.id] || "0") || 0) +
-                                    (parseFloat(itemAddOnCosts[item.id] || "0") || 0)) *
-                                    item.quantity,
-                                )}
-                              </span>
-                            </span>
-                          )}
-                        </div>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={itemCosts[item.id] || ""}
-                          onChange={(e) =>
-                            setItemCosts({ ...itemCosts, [item.id]: e.target.value })
-                          }
-                          placeholder={
-                            item.quantity > 1
-                              ? `Cost per 1 piece (× ${item.quantity})`
-                              : "Enter bought price"
-                          }
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      {hasAddOn && (
+            {/* TAB 1: PRODUCT MANAGEMENT */}
+            <TabsContent value="products" className="flex-1 overflow-y-auto px-5 py-3 space-y-3 m-0 focus-visible:outline-none">
+              {/* Order Items */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Package className="w-3.5 h-3.5 text-primary" />
+                    Order Items ({editingItems.length})
+                  </div>
+                  {editingItems.length === 1 && (
+                    <span className="text-[11px] text-muted-foreground">
+                      কমপক্ষে ১টি আইটেম থাকা আবশ্যক
+                    </span>
+                  )}
+                </div>
+
+                {/* Items List */}
+                <div className="space-y-3">
+                  {editingItems.map((item, idx) => (
+                    <div
+                      key={item.id || `new-item-${idx}`}
+                      className="rounded-lg border p-3 bg-card/70 hover:border-border/90 transition-colors space-y-2.5 text-xs shadow-xs"
+                    >
+                      {/* Product (Col 1) & Variant/Size (Col 2) in the SAME ROW (2 columns) */}
+                      {(() => {
+                        const hasVariantsOrSizes = item.availableVariants.length > 0 || item.availableSizes.length > 0;
+
+                        return (
+                          <div className="flex items-start gap-2">
+                            <div className={cn(
+                              "grid gap-2.5 flex-1 min-w-0",
+                              hasVariantsOrSizes ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+                            )}>
+                              {/* Col 1: Product Selector */}
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex items-center gap-1.5 h-5">
+                                  <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0 border border-primary/20 leading-none">
+                                    #{idx + 1}
+                                  </span>
+                                  <label className="text-[11px] font-medium text-muted-foreground block truncate">
+                                    Product (প্রোডাক্ট)
+                                  </label>
+                                </div>
+                                <ProductCombobox
+                                  products={storeProducts}
+                                  selectedProductId={item.productId}
+                                  fallbackProduct={{
+                                    id: item.productId,
+                                    name: item.productName,
+                                    sku: item.productSku,
+                                    images: item.productImage ? [item.productImage] : [],
+                                    price: item.price,
+                                  }}
+                                  onSelectProduct={(newId) => handleItemProductChange(idx, newId)}
+                                  currencySymbol={currencySymbol}
+                                  placeholder="Select product..."
+                                />
+                              </div>
+
+                              {/* Col 2: Variant / Size */}
+                              {hasVariantsOrSizes && (
+                                <div className={cn(
+                                  "grid gap-2 min-w-0",
+                                  item.availableVariants.length > 0 && item.availableSizes.length > 0
+                                    ? "grid-cols-2"
+                                    : "grid-cols-1"
+                                )}>
+                                  {item.availableVariants.length > 0 && (
+                                    <div className="space-y-1 min-w-0">
+                                      <div className="flex items-center h-5">
+                                        <label className="text-[11px] font-medium text-muted-foreground block truncate">
+                                          Variant (কালার/ভেরিয়েন্ট)
+                                        </label>
+                                      </div>
+                                      <Select
+                                        value={item.selectedVariant || "__none__"}
+                                        onValueChange={(val) => {
+                                          const nextVal = val === "__none__" ? "" : (val ?? "");
+                                          handleItemVariantChange(idx, nextVal);
+                                        }}
+                                      >
+                                        <SelectTrigger
+                                          size="sm"
+                                          className="w-full h-8 px-2.5 text-xs rounded-md border border-input bg-background text-foreground shadow-xs hover:bg-accent/30 transition-colors"
+                                        >
+                                          <SelectValue placeholder="Select variant" />
+                                        </SelectTrigger>
+                                        <SelectContent
+                                          positionerClassName="z-[150]"
+                                          alignItemWithTrigger={false}
+                                          align="start"
+                                          className="rounded-xl border bg-popover text-popover-foreground shadow-2xl p-1 z-[150] min-w-[200px]"
+                                        >
+                                          <SelectItem value="__none__" className="text-xs rounded-lg cursor-pointer">
+                                            None / Default
+                                          </SelectItem>
+                                          {item.availableVariants.map((v) => (
+                                            <SelectItem key={v.name} value={v.name} className="text-xs rounded-lg cursor-pointer">
+                                              {v.name} {v.price !== null ? `(${currencySymbol} ${v.price})` : ""}
+                                            </SelectItem>
+                                          ))}
+                                          {item.selectedVariant && !item.availableVariants.some((v) => v.name === item.selectedVariant) && (
+                                            <SelectItem value={item.selectedVariant} className="text-xs rounded-lg cursor-pointer">
+                                              {item.selectedVariant}
+                                            </SelectItem>
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  )}
+
+                                  {item.availableSizes.length > 0 && (
+                                    <div className="space-y-1 min-w-0">
+                                      <div className="flex items-center h-5">
+                                        <label className="text-[11px] font-medium text-muted-foreground block truncate">
+                                          Size (সাইজ)
+                                        </label>
+                                      </div>
+                                      <Select
+                                        value={item.size || "__none__"}
+                                        onValueChange={(val) => {
+                                          const nextVal = val === "__none__" ? "" : (val ?? "");
+                                          handleItemSizeChange(idx, nextVal);
+                                        }}
+                                      >
+                                        <SelectTrigger
+                                          size="sm"
+                                          className="w-full h-8 px-2.5 text-xs rounded-md border border-input bg-background text-foreground shadow-xs hover:bg-accent/30 transition-colors"
+                                        >
+                                          <SelectValue placeholder="Select size" />
+                                        </SelectTrigger>
+                                        <SelectContent
+                                          positionerClassName="z-[150]"
+                                          alignItemWithTrigger={false}
+                                          align="start"
+                                          className="rounded-xl border bg-popover text-popover-foreground shadow-2xl p-1 z-[150] min-w-[140px]"
+                                        >
+                                          <SelectItem value="__none__" className="text-xs rounded-lg cursor-pointer">
+                                            None
+                                          </SelectItem>
+                                          {item.availableSizes.map((s) => (
+                                            <SelectItem key={s} value={s} className="text-xs rounded-lg cursor-pointer">
+                                              {s}
+                                            </SelectItem>
+                                          ))}
+                                          {item.size && !item.availableSizes.includes(item.size) && (
+                                            <SelectItem value={item.size} className="text-xs rounded-lg cursor-pointer">
+                                              {item.size}
+                                            </SelectItem>
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Delete item button with matching vertical alignment */}
+                            {editingItems.length > 1 && (
+                              <div className="space-y-1 shrink-0">
+                                <div className="h-5" />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setItemToDeleteIndex(idx)}
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                                  title="Remove item"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Dedicated & Crystal Clear Add-ons Section */}
+                      {item.availableAddOns.length > 0 && (() => {
+                        const totalSelectedCount = Object.values(item.selectedAddOns).reduce((sum, q) => sum + q, 0);
+                        const totalAddOnsPrice = Object.entries(item.selectedAddOns).reduce((sum, [name, qty]) => {
+                          const a = item.availableAddOns.find((x) => x.name === name);
+                          return sum + (a ? a.price * qty : 0);
+                        }, 0);
+
+                        return (
+                          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 p-2.5 space-y-2">
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <span>Add-ons (সংযোজনী সিলেক্ট করুন):</span>
+                              </div>
+                              {totalSelectedCount > 0 ? (
+                                <Badge variant="outline" className="text-[10px] font-semibold border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-200">
+                                  Selected: {totalSelectedCount} pcs (+{currencySymbol}{totalAddOnsPrice})
+                                </Badge>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">
+                                  (ঐচ্ছিক)
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Grid of Add-ons */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {item.availableAddOns.map((addOn) => {
+                                const count = item.selectedAddOns[addOn.name] || 0;
+                                const isSelected = count > 0;
+
+                                return (
+                                  <div
+                                    key={addOn.name}
+                                    className={cn(
+                                      "flex items-center justify-between p-2 rounded-lg border transition-all text-xs",
+                                      isSelected
+                                        ? "bg-white dark:bg-card border-amber-500/80 shadow-xs ring-1 ring-amber-500/25"
+                                        : "bg-white dark:bg-card border-border hover:border-amber-500/50 hover:shadow-xs"
+                                    )}
+                                  >
+                                    {/* Left: Checkbox + Name + Price per pc */}
+                                    <div
+                                      className="flex items-center gap-2 min-w-0 flex-1 mr-2 cursor-pointer select-none"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          handleItemAddOnDelta(idx, addOn.name, -count);
+                                        } else {
+                                          handleItemAddOnDelta(idx, addOn.name, 1);
+                                        }
+                                      }}
+                                    >
+                                      <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            handleItemAddOnDelta(idx, addOn.name, 1);
+                                          } else {
+                                            handleItemAddOnDelta(idx, addOn.name, -count);
+                                          }
+                                        }}
+                                        className="data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
+                                      />
+                                      <div className="min-w-0 flex-1">
+                                        <span className="font-semibold text-foreground block truncate">
+                                          {addOn.name}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground block font-medium">
+                                          +{currencySymbol}{addOn.price} / piece
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Right: Stepper (when selected) or "+ Add" Button */}
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {isSelected ? (
+                                        <div className="flex items-center border border-amber-500/30 rounded-md bg-white dark:bg-zinc-800 h-7 shadow-2xs">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleItemAddOnDelta(idx, addOn.name, -1);
+                                            }}
+                                            className="px-2 h-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-amber-500/10 rounded-l-md transition-colors flex items-center justify-center"
+                                            title="Decrease"
+                                          >
+                                            −
+                                          </button>
+                                          <span className="px-2 text-xs font-bold text-amber-900 dark:text-amber-100 min-w-[20px] text-center">
+                                            {count}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleItemAddOnDelta(idx, addOn.name, 1);
+                                            }}
+                                            className="px-2 h-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-amber-500/10 rounded-r-md transition-colors flex items-center justify-center"
+                                            title="Increase"
+                                          >
+                                            +
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleItemAddOnDelta(idx, addOn.name, 1);
+                                          }}
+                                          className="h-7 px-2.5 text-xs bg-white dark:bg-zinc-800 text-muted-foreground hover:text-foreground hover:border-amber-500/60 font-medium shadow-2xs"
+                                        >
+                                          <Plus className="w-3 h-3 mr-1 text-primary" />
+                                          Add
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Add-on Unit Cost (In Context) */}
+                            {totalSelectedCount > 0 && (
+                              <div className="flex items-center justify-between pt-1.5 border-t border-amber-500/20 text-xs">
+                                <div className="flex flex-col">
+                                  <span className="text-[11px] font-medium text-amber-900 dark:text-amber-200">
+                                    Add-on Unit Cost (সংযোজনী কেনা দাম প্রতি পিস):
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    অর্ডারের সঠিক প্রফিট হিসাবের জন্য প্রয়োজন
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-[11px] font-semibold text-muted-foreground">{currencySymbol}</span>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={item.addOnCostPrice}
+                                    onChange={(e) => handleItemAddOnCostChange(idx, e.target.value)}
+                                    placeholder="0"
+                                    className="h-7 w-24 text-xs bg-white dark:bg-card text-right font-semibold"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Quantity, Unit Selling Price, Unit Cost, Line Total */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t items-end">
                         <div className="space-y-1">
-                          <label className="text-[11px] text-amber-600 dark:text-amber-400 block font-medium">
-                            Add-on Bought Price ({item.color})
+                          <label className="text-[11px] font-medium text-muted-foreground block">
+                            Qty (পরিমাণ)
                           </label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={itemAddOnCosts[item.id] || ""}
-                            onChange={(e) =>
-                              setItemAddOnCosts({ ...itemAddOnCosts, [item.id]: e.target.value })
-                            }
-                            placeholder="Enter add-on bought price"
-                            className="h-8 text-xs"
-                          />
+                          <div className="flex items-center border rounded-md h-7.5 bg-background shadow-2xs">
+                            <button
+                              type="button"
+                              disabled={item.quantity <= 1}
+                              onClick={() => handleItemQuantityDelta(idx, -1)}
+                              className="px-2.5 h-full hover:bg-muted text-muted-foreground disabled:opacity-25 transition-colors font-bold text-xs"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleItemQuantitySet(idx, parseInt(e.target.value, 10) || 1)
+                              }
+                              className="w-full text-center text-xs font-semibold bg-transparent focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleItemQuantityDelta(idx, 1)}
+                              className="px-2.5 h-full hover:bg-muted text-muted-foreground transition-colors font-bold text-xs"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium text-muted-foreground block">
+                            Selling Price (বিক্রয়)
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={item.price}
+                              onChange={(e) =>
+                                handleItemPriceChange(idx, parseFloat(e.target.value) || 0)
+                              }
+                              className="h-7.5 text-xs font-semibold bg-background pr-2 pl-5 shadow-2xs"
+                            />
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">
+                              {currencySymbol}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium text-muted-foreground block">
+                            Unit Cost (কেনা)
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={item.costPrice}
+                              onChange={(e) => handleItemCostChange(idx, e.target.value)}
+                              placeholder="Cost"
+                              className="h-7.5 text-xs bg-background pr-2 pl-5 shadow-2xs"
+                            />
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                              {currencySymbol}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 text-right sm:text-right">
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>Line Total:</span>
+                            <span className="text-[10px]">({item.quantity} × {currencySymbol}{item.price})</span>
+                          </div>
+                          <div className="h-7.5 flex items-center justify-end font-bold text-xs text-foreground px-2.5 bg-muted/30 rounded-md border border-border/50 shadow-2xs">
+                            {currencySymbol} {formatAmount(item.price * item.quantity)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Product to Order (Compact Combobox) */}
+                <div className="rounded-lg border border-dashed p-2.5 bg-muted/10 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Plus className="w-3.5 h-3.5 text-primary" />
+                    Add Product to Order (নতুন প্রোডাক্ট যোগ করুন)
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <ProductCombobox
+                        products={storeProducts}
+                        selectedProductId={selectedProductToAdd}
+                        onSelectProduct={(id) => setSelectedProductToAdd(id)}
+                        currencySymbol={currencySymbol}
+                        placeholder="Search & select product to add..."
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={!selectedProductToAdd}
+                      onClick={() => handleAddNewProduct(selectedProductToAdd)}
+                      className="h-8 text-xs font-semibold shrink-0 gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing & Shipping Cost (Compact) */}
+              <div className="space-y-2.5 rounded-lg border p-3 bg-muted/20 text-xs">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span>Order Summary & Delivery</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRecalculateTotal}
+                    className="h-6.5 text-[11px] px-2 text-primary hover:bg-primary/10 gap-1 font-medium"
+                    title="Reset Total to Subtotal + Shipping"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Auto-Calculate Total
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      Delivery Charge (ডেলিভারি খরচ)
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newShippingCost}
+                        onChange={(e) => setNewShippingCost(e.target.value)}
+                        placeholder="0"
+                        className="h-8 text-xs bg-background pl-5 shadow-2xs"
+                      />
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">
+                        {currencySymbol}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      Total Amount (মোট প্রদেয়)
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newTotalAmount}
+                        onChange={(e) => setNewTotalAmount(e.target.value)}
+                        placeholder="0"
+                        className="h-8 text-xs bg-background font-bold text-foreground pl-5 shadow-2xs"
+                      />
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-foreground pointer-events-none">
+                        {currencySymbol}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 space-y-1 text-[11px]">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Items Subtotal (পণ্য মূল্য):</span>
+                    <span className="font-semibold text-foreground">
+                      {currencySymbol} {formatAmount(editingSubtotal)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Calculated Payable (পণ্য + ডেলিভারি):</span>
+                    <span className="font-semibold text-foreground">
+                      {currencySymbol}{" "}
+                      {formatAmount(editingSubtotal + (parseFloat(newShippingCost) || 0))}
+                    </span>
+                  </div>
+                  {parseFloat(newTotalAmount) !== editingSubtotal + (parseFloat(newShippingCost) || 0) && (
+                    <div className="flex items-center justify-between text-[11px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/30 mt-1">
+                      <span>Custom Adjustment / Discount:</span>
+                      <span>
+                        {parseFloat(newTotalAmount) < editingSubtotal + (parseFloat(newShippingCost) || 0) ? "Discount: -" : "Extra: +"}
+                        {currencySymbol}{" "}
+                        {formatAmount(
+                          Math.abs(
+                            parseFloat(newTotalAmount || "0") -
+                              (editingSubtotal + (parseFloat(newShippingCost) || 0))
+                          )
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* TAB 2: CUSTOMER INFO */}
+            <TabsContent value="customer" className="flex-1 overflow-y-auto px-6 py-4 space-y-4 m-0 focus-visible:outline-none">
+              <div className="rounded-lg border p-4 bg-card space-y-4">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <User className="w-3.5 h-3.5 text-primary" />
+                  Customer Information (গ্রাহকের বিবরণ)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
+                      <User className="w-3 h-3" /> Customer Name
+                    </label>
+                    <Input
+                      value={editGuestName}
+                      onChange={(e) => setEditGuestName(e.target.value)}
+                      placeholder="Customer Name"
+                      className="h-9 text-xs bg-background"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
+                      <Phone className="w-3 h-3" /> Phone Number
+                    </label>
+                    <Input
+                      value={editGuestPhone}
+                      onChange={(e) => setEditGuestPhone(e.target.value)}
+                      placeholder="017xxxxxxxx"
+                      className="h-9 text-xs bg-background"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium flex items-center gap-1 text-muted-foreground">
+                    <MapPin className="w-3 h-3" /> Delivery Address
+                  </label>
+                  <Textarea
+                    value={editShippingAddress}
+                    onChange={(e) => setEditShippingAddress(e.target.value)}
+                    placeholder="Full Delivery Address"
+                    rows={3}
+                    className="text-xs resize-none bg-background leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {editingOrder && (
+                <div className="rounded-lg border p-4 bg-muted/15 space-y-3">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Order Overview & Details
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] text-muted-foreground block">Order Number</span>
+                      <span className="font-mono font-semibold text-foreground">#{editingOrder.orderNumber}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] text-muted-foreground block">Status</span>
+                      <Badge variant="outline" className={cn("text-[10px] font-semibold uppercase", STATUS_COLORS[editingOrder.status])}>
+                        {editingOrder.status}
+                      </Badge>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] text-muted-foreground block">Payment Status</span>
+                      <span className="font-semibold capitalize text-foreground">{editingOrder.paymentStatus.toLowerCase()}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] text-muted-foreground block">Payment Method</span>
+                      <span className="font-medium text-foreground">{editingOrder.paymentMethod || "COD"}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] text-muted-foreground block">Order Date</span>
+                      <span className="text-muted-foreground">{formatDate(editingOrder.createdAt)}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] text-muted-foreground block">Channel</span>
+                      <Badge variant="secondary" className="text-[10px] font-medium">
+                        {editingOrder.saleType || "WEBSITE"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter className="px-6 py-3 border-t bg-muted/20 flex flex-row items-center justify-between sm:justify-between">
+            <div className="text-left">
+              {(() => {
+                const calculatedExpected = editingSubtotal + (parseFloat(newShippingCost) || 0);
+                const currentTotal = parseFloat(newTotalAmount) || 0;
+                const discountDiff = calculatedExpected - currentTotal;
+                if (Math.abs(discountDiff) > 0.01) {
+                  return (
+                    <div className="text-[11px] font-semibold mb-0.5">
+                      {discountDiff > 0 ? (
+                        <span className="text-red-600 dark:text-red-400">
+                          Discount (ছাড়): -{currencySymbol} {formatAmount(discountDiff)}
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          Extra (চার্জ): +{currencySymbol} {formatAmount(Math.abs(discountDiff))}
+                        </span>
                       )}
                     </div>
                   );
-                })}
-              </div>
+                }
+                return null;
+              })()}
+              <span className="text-[10px] text-muted-foreground block uppercase font-semibold">Total Payable:</span>
+              <span className="text-base font-bold text-primary">
+                {currencySymbol} {formatAmount(parseFloat(newTotalAmount) || 0)}
+              </span>
             </div>
-
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 disabled={updateOrder.isPending}
-                onClick={() => setEditingOrder(null)}
+                onClick={() => {
+                  setEditingOrder(null);
+                  setItemToDeleteIndex(null);
+                }}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveEditOrder}
                 disabled={updateOrder.isPending}
+                className="gap-1.5"
               >
                 {updateOrder.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 )}
                 Save Changes
               </Button>
             </div>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Alert Dialog for confirming product removal from order */}
+      <AlertDialog
+        open={itemToDeleteIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setItemToDeleteIndex(null);
+        }}
+      >
+        <AlertDialogContent
+          overlayClassName="z-[190]"
+          className="z-[200] max-w-sm rounded-2xl p-5"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-semibold text-foreground">
+              প্রোডাক্টটি মুছে ফেলতে চান?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
+              {itemToDeleteIndex !== null && editingItems[itemToDeleteIndex] ? (
+                <>
+                  আপনি কি নিশ্চিত যে{" "}
+                  <span className="font-semibold text-foreground">
+                    "{editingItems[itemToDeleteIndex].productName || "এই প্রোডাক্টটি"}"
+                  </span>{" "}
+                  অর্ডার থেকে মুছে ফেলতে চান? এটি অর্ডার তালিকা থেকে বাদ দেওয়া হবে।
+                </>
+              ) : (
+                "আপনি কি নিশ্চিত যে এই প্রোডাক্টটি অর্ডার থেকে মুছে ফেলতে চান?"
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2 mt-4">
+            <AlertDialogCancel
+              onClick={() => setItemToDeleteIndex(null)}
+              className="h-8 text-xs rounded-lg cursor-pointer"
+            >
+              বাতিল (Cancel)
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (itemToDeleteIndex !== null) {
+                  handleRemoveItem(itemToDeleteIndex);
+                  setItemToDeleteIndex(null);
+                }
+              }}
+              className="h-8 text-xs rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground cursor-pointer"
+            >
+              মুছে ফেলুন (Remove)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog
         open={!!profitBreakdownOrder}
@@ -2595,13 +3819,25 @@ function OrdersPageContent() {
                             <TableRow className="hover:bg-transparent border-0">
                               <TableCell
                                 colSpan={4}
-                                className="text-right font-medium text-muted-foreground"
+                                className={cn(
+                                  "text-right font-semibold",
+                                  priceAdjustment < 0
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-amber-600 dark:text-amber-400"
+                                )}
                               >
                                 {priceAdjustment > 0
-                                  ? "Order Price Adjustment / Custom Amount"
-                                  : "Discount / Price Adjustment"}
+                                  ? "Order Price Adjustment / Extra Charge:"
+                                  : "Discount (ডিসকাউন্ট / ছাড়):"}
                               </TableCell>
-                              <TableCell className="text-right tabular-nums font-medium text-muted-foreground">
+                              <TableCell
+                                className={cn(
+                                  "text-right tabular-nums font-semibold",
+                                  priceAdjustment < 0
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-amber-600 dark:text-amber-400"
+                                )}
+                              >
                                 {priceAdjustment > 0 ? "+" : ""}
                                 {formatAmount(priceAdjustment)}
                               </TableCell>

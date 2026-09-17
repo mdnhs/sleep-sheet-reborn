@@ -13,6 +13,8 @@ export interface OrderUser {
 // types/order.ts
 export interface OrderItem {
     id: string;
+    orderId: string;
+    productId?: string;
     quantity: number;
     price: number;
     costPrice?: number | null;
@@ -21,17 +23,16 @@ export interface OrderItem {
     images?: string[];
     product: OrderProduct;
     createdAt: string;
-    orderId: string;
   }
   
   export interface OrderProduct {
     id: string;
     name: string;
+    sku?: string;
     description: string;
     price: number;
     stock: number;
-    sku: string;
-    variants: string[];
+    variants: Array<{ name: string; price: number | null }> | string[];
     addOns?: { name: string; price: number; costPrice?: number }[];
     tags: string[];
     sizes: string[];

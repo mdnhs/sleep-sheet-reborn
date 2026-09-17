@@ -11,15 +11,29 @@ export const useOrderMutations = () => {
       id: string;
       status?: OrderStatus;
       paymentStatus?: PaymentStatus;
+      guestName?: string;
+      guestPhone?: string;
+      shippingAddress?: string;
       shippingCost?: number;
       totalAmount?: number;
-      items?: { id: string; costPrice: number }[];
+      items?: {
+        id?: string;
+        productId: string;
+        quantity: number;
+        price: number;
+        costPrice?: number | null;
+        size?: string | null;
+        color?: string | null;
+      }[];
     }) => {
       const response = await client.api.orders[":id"].$patch({
         param: { id: data.id },
         json: {
           status: data.status,
           paymentStatus: data.paymentStatus,
+          guestName: data.guestName,
+          guestPhone: data.guestPhone,
+          shippingAddress: data.shippingAddress,
           shippingCost: data.shippingCost,
           totalAmount: data.totalAmount,
           items: data.items,
