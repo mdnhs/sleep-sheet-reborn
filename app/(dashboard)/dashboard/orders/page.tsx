@@ -1135,9 +1135,10 @@ function OrdersPageContent() {
           ? Number(order.trackingNumber)
           : null);
 
+      const itemsSubtotal = (order.items || []).reduce((sum, i) => sum + (i.price * i.quantity), 0);
       const placedOrderData: PlacedOrder = {
         orderNumber: order.orderNumber,
-        subtotal: order.subtotal,
+        subtotal: itemsSubtotal > 0 ? itemsSubtotal : order.subtotal,
         shippingCost: order.shippingCost,
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,
@@ -1224,9 +1225,10 @@ function OrdersPageContent() {
             ? Number(order.trackingNumber)
             : null);
 
+        const itemsSubtotal = (order.items || []).reduce((sum, i) => sum + (i.price * i.quantity), 0);
         const placedOrderData: PlacedOrder = {
           orderNumber: order.orderNumber,
-          subtotal: order.subtotal,
+          subtotal: itemsSubtotal > 0 ? itemsSubtotal : order.subtotal,
           shippingCost: order.shippingCost,
           totalAmount: order.totalAmount,
           createdAt: order.createdAt,
@@ -3739,13 +3741,25 @@ function OrdersPageContent() {
                                       >
                                         {item.product.name}
                                       </span>
-                                      <span className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                        {item.size ? `Size: ${item.size}` : ""}
-                                        {item.size && item.color ? " | " : ""}
-                                        {item.color
-                                          ? `Color: ${item.color}`
-                                          : ""}
-                                      </span>
+                                      <div className="text-xs text-muted-foreground mt-0.5 space-y-0.5">
+                                        {item.size && <div>Size: {item.size}</div>}
+                                        {(() => {
+                                          if (!item.color) return null;
+                                          const base = parseBaseVariantFromColor(item.color);
+                                          let addOns = "";
+                                          if (item.color.includes(" (+ ")) {
+                                            addOns = item.color.split(" (+ ")[1]?.replace(/\)$/, "") || "";
+                                          } else if (item.color.startsWith("Add-ons: ")) {
+                                            addOns = item.color.replace(/^Add-ons:\s*/, "");
+                                          }
+                                          return (
+                                            <>
+                                              {base && <div>Variant: {base}</div>}
+                                              {addOns && <div className="text-amber-600 dark:text-amber-400 font-medium">Add-ons: {addOns}</div>}
+                                            </>
+                                          );
+                                        })()}
+                                      </div>
                                     </div>
                                   </div>
                                 </TableCell>

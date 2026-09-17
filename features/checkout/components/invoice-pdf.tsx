@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   table: {
     width: "100%",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   tableHeader: {
     flexDirection: "row",
@@ -143,26 +143,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     alignItems: "flex-start",
   },
-  thItem: { flex: 2.5, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textTransform: "uppercase" },
+  thItem: { flex: 2.8, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textTransform: "uppercase" },
   thQty: { flex: 0.5, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "center", textTransform: "uppercase" },
-  thPrice: { flex: 1, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
-  thTotal: { flex: 1, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
+  thPrice: { flex: 0.85, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
+  thTotal: { flex: 0.85, fontFamily: "Space Grotesk", fontSize: 8, fontWeight: "bold", color: "#64748b", textAlign: "right", textTransform: "uppercase" },
 
-  tdItem: { flex: 2.5, flexDirection: "row", alignItems: "flex-start" },
+  tdItem: { flex: 2.8, flexDirection: "row", alignItems: "flex-start" },
   tdItemTitle: {
     fontSize: 8.5,
     color: "#1e293b",
     fontWeight: "bold",
+    lineHeight: 1.25,
   },
-  tdItemDesc: { fontSize: 7, color: "#64748b", marginTop: 0 },
+  tdItemDesc: { fontSize: 7, color: "#64748b", marginTop: 1 },
   tdQty: { flex: 0.5, fontSize: 8, color: "#475569", textAlign: "center" },
-  tdPrice: { flex: 1, fontSize: 8, color: "#475569", textAlign: "right" },
-  tdTotal: { flex: 1, fontSize: 8, color: "#1e293b", fontWeight: "bold", textAlign: "right" },
+  tdPrice: { flex: 0.85, fontSize: 8, color: "#475569", textAlign: "right" },
+  tdTotal: { flex: 0.85, fontSize: 8, color: "#1e293b", fontWeight: "bold", textAlign: "right" },
 
-  totalsSection: {
+  bottomSection: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 4,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginTop: 2,
   },
   totalsTable: {
     width: 180,
@@ -202,11 +204,9 @@ const styles = StyleSheet.create({
     color: "#10b981", // elegant emerald for total
   },
   thankYou: {
-    textAlign: "left",
-    fontSize: 8,
-    color: "#64748b",
-    marginTop: 6,
-    lineHeight: 1.5,
+    paddingTop: 5,
+    fontSize: 8.5,
+    color: "#475569",
   }
 });
 
@@ -238,9 +238,25 @@ const getPdfFriendlyImageUrl = (url: string, isLogo = false) => {
       : friendlyUrl);
 };
 
-const clampText = (text: string, maxLength = 20) => {
+const clampText = (text: string, maxLength = 70) => {
   if (!text) return "";
   return text.length > maxLength ? text.slice(0, maxLength - 3) + "..." : text;
+};
+
+const parseItemVariantAndAddOns = (colorStr?: string | null) => {
+  if (!colorStr) return { variant: null, addOns: null };
+  const trimmed = colorStr.trim();
+  if (trimmed.includes(" (+ ")) {
+    const parts = trimmed.split(" (+ ");
+    const variant = parts[0].trim();
+    const addOns = parts[1].replace(/\)$/, "").trim();
+    return { variant: variant || null, addOns: addOns || null };
+  }
+  if (trimmed.startsWith("Add-ons:")) {
+    const addOns = trimmed.replace(/^Add-ons:\s*/, "").trim();
+    return { variant: null, addOns: addOns || null };
+  }
+  return { variant: trimmed, addOns: null };
 };
 
 interface InvoicePDFProps {
@@ -297,17 +313,31 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
         {/* Customer Info */}
         <View style={styles.infoBox}>
           <View style={styles.infoRow}>
-            <View style={[styles.infoCol, codeValue ? { width: "34%" } : {}]}>
-              <Text style={styles.label}>Customer / ক্রেতা</Text>
-              <Text style={styles.value}>{shippingInfo?.fullName || "Customer"}</Text>
-              {shippingInfo?.phone && (
-                <Text style={[styles.value, { marginTop: 0 }]}>{shippingInfo.phone}</Text>
+            <View style={{ width: codeValue ? "70%" : "100%", flexDirection: "column", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <View style={{ width: "48%" }}>
+                  <Text style={styles.label}>Customer / ক্রেতা</Text>
+                  <Text style={styles.value}>{shippingInfo?.fullName || "Customer"}</Text>
+                  {shippingInfo?.phone && (
+                    <Text style={[styles.value, { marginTop: 0 }]}>{shippingInfo.phone}</Text>
+                  )}
+                </View>
+                <View style={{ width: "48%" }}>
+                  <Text style={styles.label}>Shipping to / ঠিকানা</Text>
+                  <Text style={styles.value}>{shippingInfo?.address || ""}</Text>
+                </View>
+              </View>
+
+              {shippingInfo?.notes && (
+                <View style={{ marginTop: 2, paddingTop: 2, borderTopWidth: 1, borderTopColor: "#e2e8f0", flexDirection: "row", alignItems: "flex-start" }}>
+                  <Text style={[styles.label, { marginRight: 3, marginTop: 0.5, color: "#64748b" }]}>Note / নোট:</Text>
+                  <Text style={[styles.value, { flex: 1, fontSize: 7, fontWeight: "normal", color: "#334155", lineHeight: 1.2 }]}>
+                    {clampText(shippingInfo.notes.replace(/\r?\n+/g, " ").replace(/\s+/g, " ").trim(), 110)}
+                  </Text>
+                </View>
               )}
             </View>
-            <View style={[styles.infoCol, codeValue ? { width: "34%" } : {}]}>
-              <Text style={styles.label}>Shipping to / ঠিকানা</Text>
-              <Text style={styles.value}>{shippingInfo?.address || ""}</Text>
-            </View>
+
             {codeValue && (
               <View style={styles.infoColCourier}>
                 <Text style={[styles.value, { fontSize: 7, marginBottom: 2 }]}>
@@ -324,12 +354,6 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
               </View>
             )}
           </View>
-          {shippingInfo?.notes && (
-            <View style={[styles.metaItem, { marginTop: 4 }]}>
-              <Text style={styles.label}>Note / নোট</Text>
-              <Text style={styles.value}>{shippingInfo.notes}</Text>
-            </View>
-          )}
         </View>
 
         {/* Items */}
@@ -351,13 +375,25 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
                   />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.tdItemTitle}>{clampText(item.name)}</Text>
-                  {(item.color || item.size) && (
-                    <Text style={styles.tdItemDesc}>
-                      {item.color ? `Variant: ${item.color}` : ""}
-                      {item.size ? `${item.color ? " | " : ""}Size: ${item.size}` : ""}
-                    </Text>
-                  )}
+                  <Text style={styles.tdItemTitle}>{clampText(item.name, 70)}</Text>
+                  {(() => {
+                    const { variant, addOns } = parseItemVariantAndAddOns(item.color);
+                    return (
+                      <View style={{ marginTop: 1 }}>
+                        {(variant || item.size) && (
+                          <Text style={styles.tdItemDesc}>
+                            {variant ? `${language === "bn" ? "ভ্যারিয়েন্ট: " : "Variant: "}${variant}` : ""}
+                            {item.size ? `${variant ? " | " : ""}${language === "bn" ? "সাইজ: " : "Size: "}${item.size}` : ""}
+                          </Text>
+                        )}
+                        {addOns && (
+                          <Text style={[styles.tdItemDesc, { color: "#b45309", fontWeight: "bold", marginTop: 1 }]}>
+                            {language === "bn" ? "অ্যাড-অনস: " : "Add-ons: "}{addOns}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })()}
                 </View>
               </View>
               <Text style={styles.tdQty}>{item.quantity}</Text>
@@ -367,55 +403,59 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
           ))}
         </View>
 
-        <View style={styles.thankYou}>
-          <Text style={{ fontWeight: "bold", color: "#475569", marginBottom: 2 }}>
-            {language === "bn" ? "অর্ডারের জন্য আপনাকে ধন্যবাদ!" : "Thank you for your order!"}
-          </Text>
-        </View>
-
-        {/* Totals */}
+        {/* Bottom Section: Thank You on Left, Price Summary on Right (Same Row) */}
         {(() => {
-          const itemsSubtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-          const subtotal = order.subtotal || itemsSubtotal;
-          const shippingCost = order.shippingCost || 0;
+          const itemsSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          const subtotal = itemsSubtotal > 0 ? itemsSubtotal : (order.subtotal || 0);
+          const shippingCost = order.shippingCost ?? 0;
           const expectedTotal = subtotal + shippingCost;
-          const discount = expectedTotal - order.totalAmount;
+          const diff = expectedTotal - order.totalAmount;
+          const isDiscount = diff > 0.01;
+          const isExtra = diff < -0.01;
 
           return (
-            <View style={styles.totalsSection}>
+            <View style={styles.bottomSection}>
+              <View style={styles.thankYou}>
+                <Text style={{ fontWeight: "bold", color: "#475569" }}>
+                  {language === "bn" ? "অর্ডারের জন্য আপনাকে ধন্যবাদ!" : "Thank you for your order!"}
+                </Text>
+              </View>
+
               <View style={styles.totalsTable}>
-                {subtotal > 0 && (
-                  <View style={styles.totalsRow}>
-                    <Text style={styles.totalsLabel}>{language === "bn" ? "সাবটোটাল:" : "Subtotal:"}</Text>
-                    <Text style={styles.totalsValue}>৳{subtotal}</Text>
-                  </View>
-                )}
-                {shippingCost > 0 && (
-                  <View style={styles.totalsRow}>
-                    <Text style={styles.totalsLabel}>{language === "bn" ? "ডেলিভারি চার্জ:" : "Delivery:"}</Text>
-                    <Text style={styles.totalsValue}>৳{shippingCost}</Text>
-                  </View>
-                )}
-                {discount > 0 && (
+                <View style={styles.totalsRow}>
+                  <Text style={styles.totalsLabel}>{language === "bn" ? "সাবটোটাল:" : "Subtotal:"}</Text>
+                  <Text style={styles.totalsValue}>৳{subtotal}</Text>
+                </View>
+
+                <View style={styles.totalsRow}>
+                  <Text style={styles.totalsLabel}>{language === "bn" ? "ডেলিভারি চার্জ:" : "Delivery:"}</Text>
+                  <Text style={styles.totalsValue}>
+                    {shippingCost > 0 ? `৳${shippingCost}` : (language === "bn" ? "৳০ (ফ্রি)" : "৳0 (Free)")}
+                  </Text>
+                </View>
+
+                {isDiscount && (
                   <View style={styles.totalsRow}>
                     <Text style={[styles.totalsLabel, { color: "#dc2626", fontWeight: "bold" }]}>
                       {language === "bn" ? "ডিসকাউন্ট / ছাড়:" : "Discount:"}
                     </Text>
                     <Text style={[styles.totalsValue, { color: "#dc2626", fontWeight: "bold" }]}>
-                      -৳{discount}
+                      -৳{Math.round(diff)}
                     </Text>
                   </View>
                 )}
-                {discount < 0 && (
+
+                {isExtra && (
                   <View style={styles.totalsRow}>
-                    <Text style={styles.totalsLabel}>
-                      {language === "bn" ? "অ্যাডজাস্টমেন্ট:" : "Adjustment:"}
+                    <Text style={[styles.totalsLabel, { color: "#d97706", fontWeight: "bold" }]}>
+                      {language === "bn" ? "কাস্টম অ্যাডজাস্টমেন্ট:" : "Adjustment:"}
                     </Text>
                     <Text style={[styles.totalsValue, { color: "#d97706", fontWeight: "bold" }]}>
-                      +৳{Math.abs(discount)}
+                      +৳{Math.round(Math.abs(diff))}
                     </Text>
                   </View>
                 )}
+
                 <View style={[styles.grandTotalRow, { marginTop: 2, paddingTop: 2, borderTopWidth: 1, borderTopColor: "#e2e8f0" }]}>
                   <Text style={styles.grandTotalLabel}>{t("total")}:</Text>
                   <Text style={styles.grandTotalValue}>৳{order.totalAmount}</Text>
