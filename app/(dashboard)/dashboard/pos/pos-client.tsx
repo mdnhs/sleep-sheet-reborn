@@ -23,7 +23,7 @@ interface POSProduct {
   price: number
   stock: number
   images: string[]
-  colors: { name: string; price: number | null }[]
+  colors: { name: string; price?: number | null }[]
   sizes: string[]
   addOns?: { name: string; price: number }[]
   category: string
@@ -157,7 +157,7 @@ export default function PosClientPage() {
     return () => clearTimeout(timeout)
   }, [searchQuery])
 
-  const addToCart = (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity: number = 1) => {
+  const addToCart = (product: POSProduct, variant?: { name: string; price?: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity: number = 1) => {
     setCart(prev => {
       const price = variant?.price ?? product.price
       const color = variant?.name || null
@@ -611,7 +611,7 @@ function ProductCard({
   onAdd,
 }: {
   product: POSProduct
-  onAdd: (product: POSProduct, variant?: { name: string; price: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity?: number) => void
+  onAdd: (product: POSProduct, variant?: { name: string; price?: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity?: number) => void
 }) {
   const { formatAmount } = useCurrency()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -629,9 +629,7 @@ function ProductCard({
   const hasVariants = hasColors || hasSizes || hasAddOns
 
   const currentVariant = product.colors?.find(c => c.name === selectedColor)
-  const basePrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
-    ? currentVariant.price
-    : product.price
+  const basePrice = (currentVariant?.price ?? product.price) ?? 0
 
   const addOnsTotalPerUnit = Object.entries(selectedAddOns).reduce((sum, [name, qty]) => {
     const addOn = product.addOns?.find((a) => a.name === name)
@@ -808,7 +806,7 @@ function ProductCard({
                           : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
-                      {color.name} ({formatAmount(color.price !== null ? color.price : product.price)})
+                      {color.name} ({formatAmount(color.price ?? product.price ?? 0)})
                     </button>
                   ))}
                 </div>

@@ -44,9 +44,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   const hasVariants = hasColors || hasSizes || hasAddOns;
 
   const currentVariant = product.colors?.find(c => c.name === selectedColor);
-  const baseDisplayPrice = currentVariant && (currentVariant.price !== null && currentVariant.price !== undefined)
-    ? currentVariant.price
-    : product.price;
+  const baseDisplayPrice = (currentVariant?.price ?? product.price) ?? 0;
 
   const addOnsTotalPerUnit = Object.entries(selectedAddOns).reduce((sum, [name, qty]) => {
     const addOn = product.addOns?.find((a) => a.name === name);
@@ -363,7 +361,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
                           : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
-                      {color.name} ({formatAmount(color.price !== null ? color.price : product.price)})
+                      {color.name} ({formatAmount(color.price ?? product.price ?? 0)})
                     </button>
                   ))}
                 </div>

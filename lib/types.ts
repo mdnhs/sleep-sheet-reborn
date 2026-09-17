@@ -21,7 +21,7 @@ export interface Review {
     description: string;
     features: string[];
     images: string[];
-    colors: { name: string; price: number | null }[];
+    colors: { name: string; price?: number | null }[];
     // costPrice is only ever populated for the admin-authenticated product
     // fetch (features/dashboard/server/route.ts GET /:id) — the public
     // product routes strip it before responding.

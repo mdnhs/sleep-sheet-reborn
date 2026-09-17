@@ -20,8 +20,10 @@ export function useCurrency() {
   const code = settings?.currency ?? "BDT";
   const symbol = SYMBOL_MAP[code] ?? code;
 
-  const formatAmount = (value: number) =>
-    `${symbol}${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  const formatAmount = (value?: number | null) => {
+    const num = typeof value === "number" && !isNaN(value) ? value : Number(value) || 0;
+    return `${symbol}${num.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  };
 
   return { code, symbol, formatAmount };
 }
