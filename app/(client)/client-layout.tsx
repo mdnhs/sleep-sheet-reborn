@@ -12,6 +12,7 @@ import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import Testimonials from "@/components/home/testimonials";
 import Newsletter from "@/components/home/newsletter";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -35,6 +36,7 @@ function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <CartProvider>
       <TrafficTracker />
+      <Analytics />
       <div className="flex flex-col min-h-screen">
         <React.Suspense fallback={null}>
           <Navbar />
