@@ -120,6 +120,7 @@ export interface CapiPurchaseInput {
   value: number;
   currency: string;
   orderId: string;
+  orderNumber?: string;
   contents: { id: string; quantity: number; item_price: number }[];
   numItems: number;
   customer?: {
@@ -140,11 +141,16 @@ export interface CapiPurchaseInput {
 
 /** Build the request context from a Hono/Fetch request's headers. */
 export function capiContextFromHeaders(headers: Headers): CapiRequestContext {
+  const cfIp = headers.get("cf-connecting-ip")?.trim();
+  const realIp = headers.get("x-real-ip")?.trim();
   const forwarded = headers.get("x-forwarded-for") || "";
+  const forwardedIp = forwarded.split(",")[0]?.trim();
+  const ipAddress = cfIp || realIp || forwardedIp || undefined;
+
   return {
     cookieHeader: headers.get("cookie") || undefined,
     userAgent: headers.get("user-agent") || undefined,
-    ipAddress: forwarded.split(",")[0]?.trim() || undefined,
+    ipAddress,
     sourceUrl: headers.get("referer") || undefined,
   };
 }
@@ -182,6 +188,14 @@ export async function sendPurchaseEvent(
     if (userData[k] === undefined) delete userData[k];
   }
 
+  const safeCurrency = (input.currency || "BDT")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 3) || "BDT";
+  const numVal = Number(input.value);
+  const safeValue = !isNaN(numVal) && numVal > 0 ? Number(numVal.toFixed(2)) : 0.01;
+
   const payload: Record<string, unknown> = {
     data: [
       {
@@ -195,8 +209,8 @@ export async function sendPurchaseEvent(
         action_source: "website",
         user_data: userData,
         custom_data: {
-          currency: input.currency,
-          value: input.value,
+          currency: safeCurrency,
+          value: safeValue,
           order_id: input.orderId,
           content_type: "product",
           content_ids: input.contents.map((c) => c.id),
@@ -272,8 +286,9 @@ export async function sendPurchaseEventOnce(
   // Someone already sent (or is sending) the Purchase for this order.
   if (claimed.length === 0) return false;
 
+  const dedupKey = input.eventId || purchaseEventId(input.orderNumber || input.orderId);
   const ok = await sendPurchaseEvent(
-    { ...input, eventId: purchaseEventId(input.orderId) },
+    { ...input, eventId: dedupKey },
     ctx,
   );
 

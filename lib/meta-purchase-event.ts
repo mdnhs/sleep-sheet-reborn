@@ -2,6 +2,7 @@ export interface PurchaseTrackingPayload {
   value: number;
   currency: string;
   orderId: string;
+  orderNumber?: string;
   eventId: string;
   contents: { id: string; quantity: number; item_price: number }[];
   numItems: number;

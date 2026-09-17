@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/traffic-tracker";
-import { trackGtmViewItem } from "@/lib/gtm";
+import { trackGtmViewItem, splitFullName } from "@/lib/gtm";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { getCapturedFbc } from "@/lib/meta-fbc";
 import type { Product } from "@/lib/types";
 
 /**
@@ -15,16 +17,28 @@ import type { Product } from "@/lib/types";
  */
 export function ProductViewTracker({ product }: { product: Product }) {
   const firedForProduct = useRef<string | null>(null);
+  const { data: currentUser } = useCurrent();
 
   useEffect(() => {
-    // This used to wait on the Pixel SDK being initialized, which also held
-    // the GA4 push back for no reason — the dataLayer needs nothing from the
-    // Pixel. With the Pixel gone the push happens on mount.
-    //
     // Guards against React StrictMode's dev-mode double-invoke of this
     // effect, which otherwise fires view_item twice per page load.
     if (firedForProduct.current === product.id) return;
     firedForProduct.current = product.id;
+
+    const { first_name, last_name } = currentUser?.name ? splitFullName(currentUser.name) : {};
+    const fbc = getCapturedFbc();
+
+    const userData = (currentUser || fbc) ? {
+      email: currentUser?.email || undefined,
+      phone_number: currentUser?.phone || undefined,
+      address: (first_name || last_name || currentUser?.address) ? {
+        first_name,
+        last_name,
+        street: currentUser?.address || undefined,
+        country: "BD",
+      } : undefined,
+      fbc,
+    } : undefined;
 
     trackGtmViewItem({
       currency: "BDT",
@@ -38,9 +52,10 @@ export function ProductViewTracker({ product }: { product: Product }) {
           quantity: 1,
         },
       ],
+      user_data: userData,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id]);
+  }, [product.id, currentUser]);
 
   useEffect(() => {
     const guardKey = `traffic_pv_tracked_${product.id}`;

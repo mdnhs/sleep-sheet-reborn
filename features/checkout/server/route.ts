@@ -243,10 +243,11 @@ const app = new Hono()
       // Pixel via a shared event_id. No-op unless CAPI env is configured.
       await sendPurchaseEventOnce(
         {
-          eventId: order.id,
+          eventId: purchaseEventId(orderNumber || order.id),
           value: totalAmount,
           currency: "BDT",
           orderId: order.id,
+          orderNumber,
           contents: cartItemsForOrder.map((i) => ({
             id: i.productId,
             quantity: i.quantity,
@@ -275,7 +276,8 @@ const app = new Hono()
           value: totalAmount,
           currency: "BDT",
           orderId: order.id,
-          eventId: purchaseEventId(order.id),
+          orderNumber,
+          eventId: purchaseEventId(orderNumber || order.id),
           contents: cartItemsForOrder.map((i) => ({
             id: i.productId,
             quantity: i.quantity,
@@ -290,9 +292,29 @@ const app = new Hono()
       if (idempotencyKey && isUniqueViolation(error)) {
         const existing = await db.query.orders.findFirst({
           where: eq(orders.idempotencyKey, idempotencyKey),
+          with: {
+            items: true,
+          },
         });
         if (existing) {
-          return c.json({ message: "Order already placed", order: existing, orderId: existing.id });
+          return c.json({
+            message: "Order already placed",
+            order: existing,
+            orderId: existing.id,
+            purchase: {
+              value: existing.totalAmount,
+              currency: "BDT",
+              orderId: existing.id,
+              orderNumber: existing.orderNumber,
+              eventId: purchaseEventId(existing.orderNumber || existing.id),
+              contents: (existing.items || []).map((i) => ({
+                id: i.productId,
+                quantity: i.quantity,
+                item_price: i.price,
+              })),
+              numItems: (existing.items || []).reduce((s, i) => s + i.quantity, 0),
+            },
+          });
         }
       }
       const shortProductId = insufficientStockProductId(error);
@@ -421,10 +443,11 @@ const app = new Hono()
     // orders.metaPurchaseEventSentAt) and deduplicated against the browser Pixel.
     await sendPurchaseEventOnce(
       {
-        eventId: order.id,
+        eventId: purchaseEventId(orderNumber || order.id),
         value: totalAmount,
         currency: "BDT",
         orderId: order.id,
+        orderNumber,
         contents: cartItemsForOrder.map((i) => ({
           id: i.productId,
           quantity: i.quantity,
@@ -449,7 +472,8 @@ const app = new Hono()
         value: totalAmount,
         currency: "BDT",
         orderId: order.id,
-        eventId: purchaseEventId(order.id),
+        orderNumber,
+        eventId: purchaseEventId(orderNumber || order.id),
         contents: cartItemsForOrder.map((i) => ({
           id: i.productId,
           quantity: i.quantity,
@@ -464,9 +488,28 @@ const app = new Hono()
     if (idempotencyKey && isUniqueViolation(error)) {
       const existing = await db.query.orders.findFirst({
         where: eq(orders.idempotencyKey, idempotencyKey),
+        with: {
+          items: true,
+        },
       });
       if (existing) {
-        return c.json({ message: "Order already placed", order: existing, orderId: existing.id });
+        return c.json({
+          message: "Order already placed",
+          order: existing,
+          orderId: existing.id,
+          purchase: {
+            value: existing.totalAmount,
+            currency: "BDT",
+            orderId: existing.id,
+            eventId: purchaseEventId(existing.id),
+            contents: (existing.items || []).map((i) => ({
+              id: i.productId,
+              quantity: i.quantity,
+              item_price: i.price,
+            })),
+            numItems: (existing.items || []).reduce((s, i) => s + i.quantity, 0),
+          },
+        });
       }
     }
     const shortProductId = insufficientStockProductId(error);

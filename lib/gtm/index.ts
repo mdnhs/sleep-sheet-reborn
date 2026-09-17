@@ -178,7 +178,7 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
     .replace(/[^A-Z]/g, "")
     .slice(0, 3) || "BDT";
   const rawValue = Number(payload.value);
-  const safeValue = !isNaN(rawValue) && rawValue > 0 ? Number(rawValue.toFixed(2)) : 0;
+  const safeValue = !isNaN(rawValue) && rawValue > 0 ? Number(rawValue.toFixed(2)) : 0.01;
 
   const ecommerceData = {
     transaction_id: orderId,
@@ -330,10 +330,13 @@ export function trackGtmBeginCheckout(payload: GtmBeginCheckoutPayload): void {
 export function trackGtmViewItem(payload: GtmViewItemPayload): void {
   if (!payload || !payload.items?.length) return;
 
-  const currency = payload.currency || "BDT";
+  const currency = (payload.currency || "BDT").trim().toUpperCase().slice(0, 3) || "BDT";
+  const numValue = payload.value !== undefined ? Number(payload.value) : undefined;
+  const safeValue = numValue !== undefined && !isNaN(numValue) && numValue > 0 ? Number(numValue.toFixed(2)) : undefined;
+
   const ecommerceData = {
     currency,
-    value: payload.value !== undefined ? Number(payload.value) : undefined,
+    value: safeValue,
     items: payload.items.map((item, idx) => ({
       item_id: String(item.item_id),
       item_name: item.item_name,
@@ -346,7 +349,20 @@ export function trackGtmViewItem(payload: GtmViewItemPayload): void {
     })),
   };
 
-  trackGtmEcommerce("view_item", ecommerceData);
+  const userData: Record<string, unknown> | undefined = payload.user_data
+    ? {
+        email: payload.user_data.email || undefined,
+        phone_number: formatE164Phone(payload.user_data.phone_number),
+        address: payload.user_data.address || undefined,
+        fbc: payload.user_data.fbc || undefined,
+      }
+    : undefined;
+
+  trackGtmEcommerce(
+    "view_item",
+    ecommerceData,
+    userData ? { user_data: userData } : undefined,
+  );
 }
 
 /**

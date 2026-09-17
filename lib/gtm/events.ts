@@ -74,4 +74,5 @@ export interface GtmViewItemPayload {
   value?: number;
   currency?: string;
   items: GtmEcommerceItem[];
+  user_data?: GtmUserData;
 }

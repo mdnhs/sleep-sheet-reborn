@@ -92,18 +92,27 @@ export const UseCheckout = () => {
 
       const purchase = (data as { purchase?: PurchaseTrackingPayload }).purchase;
       if (purchase?.orderId && purchase.eventId) {
+        const transactionId = purchase.orderNumber || purchase.orderId;
         const guardKey = `fb_purchase_tracked_${purchase.orderId}`;
-        let alreadyTracked = trackedBrowserPurchaseOrderIds.has(purchase.orderId);
+        const numGuardKey = purchase.orderNumber ? `fb_purchase_tracked_${purchase.orderNumber}` : null;
+        let alreadyTracked =
+          trackedBrowserPurchaseOrderIds.has(purchase.orderId) ||
+          (purchase.orderNumber ? trackedBrowserPurchaseOrderIds.has(purchase.orderNumber) : false);
         try {
-          alreadyTracked = alreadyTracked || sessionStorage.getItem(guardKey) === "1";
+          alreadyTracked =
+            alreadyTracked ||
+            sessionStorage.getItem(guardKey) === "1" ||
+            (numGuardKey ? sessionStorage.getItem(numGuardKey) === "1" : false);
         } catch {
           /* sessionStorage unavailable */
         }
 
         if (!alreadyTracked) {
           trackedBrowserPurchaseOrderIds.add(purchase.orderId);
+          if (purchase.orderNumber) trackedBrowserPurchaseOrderIds.add(purchase.orderNumber);
           try {
             sessionStorage.setItem(guardKey, "1");
+            if (numGuardKey) sessionStorage.setItem(numGuardKey, "1");
           } catch {
             /* sessionStorage unavailable */
           }
@@ -113,10 +122,13 @@ export const UseCheckout = () => {
           // server container's CAPI tag by the shared event_id. The app
           // firing its own was a second, uncoordinated copy.
           const { first_name, last_name } = splitFullName(variables.shippingInfo.fullName);
+          const rawValue = Number(purchase.value);
+          const safeValue = !isNaN(rawValue) && rawValue > 0 ? Number(rawValue.toFixed(2)) : 0.01;
+
           trackGtmPurchase({
-            transaction_id: purchase.orderId,
+            transaction_id: transactionId,
             order_id: purchase.orderId,
-            value: purchase.value,
+            value: safeValue,
             currency: purchase.currency || "BDT",
             user_data: {
               email: variables.shippingInfo.email || undefined,
