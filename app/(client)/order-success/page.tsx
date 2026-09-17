@@ -33,6 +33,8 @@ interface Order {
   paymentMethod: string;
   guestName?: string | null;
   guestPhone?: string | null;
+  guestEmail?: string | null;
+  userId?: string | null;
   shippingAddress: string;
   items: OrderItem[];
 }
@@ -92,6 +94,7 @@ function OrderSuccessContent() {
       user_data: {
         email: order.guestEmail || undefined,
         phone_number: order.guestPhone || undefined,
+        external_id: order.userId || undefined,
         address: {
           first_name,
           last_name,

@@ -37,6 +37,8 @@ export interface GtmUserData {
   // pick it up for the Facebook Pixel tag's Advanced Matching, once that
   // variable is wired up in the GTM container.
   fbc?: string;
+  // Stable unique customer ID for Meta & Google Enhanced Conversions / CAPI.
+  external_id?: string;
 }
 
 export interface GtmPurchasePayload {

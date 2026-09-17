@@ -166,8 +166,10 @@ export async function sendPurchaseEvent(
   const config = await loadCapiConfig();
   if (!config.enabled || !config.pixelId || !config.accessToken) return false;
 
-  const [firstName, ...rest] = (input.customer?.fullName || "").trim().split(/\s+/);
-  const lastName = rest.join(" ");
+  const words = (input.customer?.fullName || "").trim().split(/\s+/).filter(Boolean);
+  const lastName = words.length > 1 ? words.pop() : undefined;
+  const firstName = words.join(" ") || undefined;
+
 
   // Meta expects each hashed field as an array of hashes.
   const arr = (h: string | undefined) => (h ? [h] : undefined);

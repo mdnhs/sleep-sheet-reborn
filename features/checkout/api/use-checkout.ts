@@ -10,6 +10,7 @@ import {
   getOrCreateCheckoutIdempotencyKey,
   clearCheckoutIdempotencyKey,
 } from "@/lib/checkout-idempotency";
+import { getCapturedFbc } from "@/lib/meta-fbc";
 
 interface useCheckoutProps {
   paymentInfo: Partial<PaymentInformationFormValues>;

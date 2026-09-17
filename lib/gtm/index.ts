@@ -37,14 +37,18 @@ export function formatE164Phone(rawPhone?: string | null): string | undefined {
  */
 export function splitFullName(name?: string | null): { first_name?: string; last_name?: string } {
   if (!name) return {};
-  const trimmed = name.trim();
-  const spaceIdx = trimmed.indexOf(" ");
-  if (spaceIdx === -1) return { first_name: trimmed };
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return {};
+  if (words.length === 1) return { first_name: words[0] };
+
+  const lastName = words.pop();
+  const firstName = words.join(" ");
   return {
-    first_name: trimmed.substring(0, spaceIdx).trim(),
-    last_name: trimmed.substring(spaceIdx + 1).trim(),
+    first_name: firstName,
+    last_name: lastName,
   };
 }
+
 
 /**
  * A deduplication key for one occurrence of a tracking event.
@@ -219,6 +223,7 @@ export function trackGtmPurchase(payload: GtmPurchasePayload): boolean {
             }
           : undefined,
         fbc: payload.user_data.fbc || undefined,
+        external_id: payload.user_data.external_id || undefined,
       }
     : undefined;
 
