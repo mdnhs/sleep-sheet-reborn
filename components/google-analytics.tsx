@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 import { useSettings } from "@/features/settings/api/use-settings";
 
 declare global {
@@ -11,7 +12,11 @@ declare global {
 }
 
 export default function GoogleAnalytics() {
+  const pathname = usePathname();
   const { data: settings } = useSettings();
+
+  // Prevent GTM container from loading on dashboard and its subroutes
+  if (pathname?.startsWith("/dashboard")) return null;
 
   // GTM Web Container ID from DB settings (fallback to env)
   const gtmWebId =

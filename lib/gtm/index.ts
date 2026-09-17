@@ -96,6 +96,7 @@ export function purchaseGtmEventId(transactionId: string): string {
  */
 export function pushToDataLayer(payload: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
+  if (window.location?.pathname?.startsWith("/dashboard")) return;
   try {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push(payload);

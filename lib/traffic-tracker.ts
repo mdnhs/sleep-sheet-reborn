@@ -23,6 +23,7 @@ export function trackEvent(
 ) {
   try {
     if (typeof window === "undefined") return;
+    if (path.startsWith("/dashboard") || window.location?.pathname?.startsWith("/dashboard")) return;
 
     const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag;
     if (typeof gtag !== "function") return;
