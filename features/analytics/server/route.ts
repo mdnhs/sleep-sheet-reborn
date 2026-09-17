@@ -134,7 +134,7 @@ const app = new Hono()
     const totalOrders = Number(currRes[0]?.orders || 0);
     const totalExpenses = Number(currExpenses[0]?.sum || 0);
     const totalCost = Number(currCost[0]?.sum || 0);
-    const netProfit = subtotalRevenue - totalCost - totalShipping - totalExpenses;
+    const netProfit = totalRevenue - totalCost - totalShipping - totalExpenses;
     const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     const totalCancelledOrders = Number(currCancelled[0]?.count || 0);
@@ -151,7 +151,7 @@ const app = new Hono()
     const prevReturnedAmount = Number(prevReturned[0]?.amount || 0);
     const prevGrossSales = prevRevenue + prevCancelledAmount + prevReturnedAmount;
     const prevNetProfit =
-      prevSubtotalRevenue - Number(prevCost[0]?.sum || 0) - prevShipping - Number(prevExpenses[0]?.sum || 0);
+      prevRevenue - Number(prevCost[0]?.sum || 0) - prevShipping - Number(prevExpenses[0]?.sum || 0);
     const prevAov = prevOrders > 0 ? prevRevenue / prevOrders : 0;
 
     const pctChange = (curr: number, prev: number) =>

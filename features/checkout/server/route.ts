@@ -4,7 +4,6 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { calculateItemUnitPrice } from "@/lib/utils";
 import { parseUserAgent } from "@/lib/user-agent-parser";
-import { isIpBlocked } from "@/lib/blocked-ip";
 import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache, soldOutProductIds } from "@/lib/stock";
 import { getSetting } from "@/lib/settings-cache";
 import { rateLimit } from "@/lib/rate-limit";
@@ -13,7 +12,6 @@ import cuid from "cuid";
 import { db } from "@/db";
 import { carts, cartItems, products, orders, orderItems, shippingMethods } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { sendPurchaseEventOnce, capiContextFromHeaders } from "@/lib/meta-capi";
 import { notifyNewOrder } from "@/lib/n8n-notify";
 import { findOrCreateCustomerByPhone } from "@/lib/customers";
 import { withOrderNumber } from "@/lib/order-number";
@@ -84,15 +82,6 @@ const app = new Hono()
 
 .post("/", rateLimit("checkout", 20, 5 * 60_000), sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
-
-  // Fraud control: an IP blocked from the order action menu can never create
-  // another order. Checked before anything is written, and before the
-  // idempotency lookup, so both the logged-in and guest paths below are covered.
-  const requestIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
-  if (await isIpBlocked(requestIp)) {
-    // Deliberately vague: don't tell the blocked party why it failed.
-    return c.json({ message: "Order could not be placed. Please contact support." }, 403);
-  }
 
   const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey, fbc } = c.req.valid("json");
 
@@ -238,35 +227,9 @@ const app = new Hono()
         })),
       });
 
-      // Server-side Purchase (CAPI). Fires at most once per order (guarded by
-      // orders.metaPurchaseEventSentAt) and is deduplicated against the browser
-      // Pixel via a shared event_id. No-op unless CAPI env is configured.
-      await sendPurchaseEventOnce(
-        {
-          eventId: purchaseEventId(orderNumber || order.id),
-          value: totalAmount,
-          currency: "BDT",
-          orderId: order.id,
-          orderNumber,
-          contents: cartItemsForOrder.map((i) => ({
-            id: i.productId,
-            quantity: i.quantity,
-            item_price: i.price,
-          })),
-          numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
-          customer: {
-            email: shippingInfo.email,
-            phone: shippingInfo.phone,
-            fullName: shippingInfo.fullName,
-          },
-          // Stable per-customer id (reused across repeat orders by the same
-          // account) and the click-id captured at landing — see
-          // lib/meta-capi's userData builder for how these get hashed/sent.
-          externalId: user.id,
-          fbc: fbc || null,
-        },
-        capiContextFromHeaders(c.req.raw.headers),
-      );
+      // Server-side Meta Purchase (CAPI) is deferred until order confirmation
+      // (status moves to PROCESSING/SHIPPED or Steadfast booking) to prevent
+      // fake/spam orders from polluting Meta Ads optimization.
 
       return c.json({
         message: "Order placed successfully",
@@ -439,31 +402,9 @@ const app = new Hono()
       }),
     });
 
-    // Server-side Purchase (CAPI). Fires at most once per order (guarded by
-    // orders.metaPurchaseEventSentAt) and deduplicated against the browser Pixel.
-    await sendPurchaseEventOnce(
-      {
-        eventId: purchaseEventId(orderNumber || order.id),
-        value: totalAmount,
-        currency: "BDT",
-        orderId: order.id,
-        orderNumber,
-        contents: cartItemsForOrder.map((i) => ({
-          id: i.productId,
-          quantity: i.quantity,
-          item_price: i.price,
-        })),
-        numItems: cartItemsForOrder.reduce((s, i) => s + i.quantity, 0),
-        customer: {
-          email: shippingInfo.email,
-          phone: shippingInfo.phone,
-          fullName: shippingInfo.fullName,
-        },
-        externalId: guestUserId,
-        fbc: fbc || null,
-      },
-      capiContextFromHeaders(c.req.raw.headers),
-    );
+    // Server-side Meta Purchase (CAPI) is deferred until order confirmation
+    // (status moves to PROCESSING/SHIPPED or Steadfast booking) to prevent
+    // fake/spam orders from polluting Meta Ads optimization.
 
     return c.json({
       message: "Order placed successfully",

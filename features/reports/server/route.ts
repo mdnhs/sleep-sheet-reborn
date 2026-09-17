@@ -73,10 +73,7 @@ const app = new Hono()
       const [monthlyOrders, monthlyCosts, monthlyExpenses] = await db.batch([
         db.select({
             month: monthOf(orders.createdAt),
-            // subtotal, not totalAmount — totalAmount is subtotal +
-            // shippingCost, so using it here would cancel out the
-            // shippingCost subtraction in the profit calc below.
-            revenue: sum(sql<number>`${orders.subtotal} - COALESCE(${orders.refundedAmount}, 0)`),
+            revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
             shippingCost: sum(orders.shippingCost),
           })
           .from(orders)
@@ -352,7 +349,7 @@ const app = new Hono()
       const cancelledCost = grossCost - totalCost;
       const totalItemsSold = Number(itemTotals[0]?.items || 0);
 
-      const grossProfit = subtotalRevenue - (totalCost + totalShippingCost);
+      const grossProfit = totalRevenue - (totalCost + totalShippingCost);
       const netProfit = grossProfit - totalExpenseAmount;
 
       return c.json({

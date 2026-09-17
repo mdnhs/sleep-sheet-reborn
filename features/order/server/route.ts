@@ -17,6 +17,7 @@ import {
   todayRange,
   bucketFor,
 } from "./status-buckets";
+import { triggerMetaPurchaseOnConfirmation } from "./meta-purchase-trigger";
 
 const app = new Hono()
 
@@ -221,11 +222,16 @@ const app = new Hono()
     if (status !== undefined) updateFields.status = status;
     if (paymentStatus !== undefined) updateFields.paymentStatus = paymentStatus;
     
+    const effectiveShippingCost = shippingCost !== undefined ? shippingCost : currentOrder.shippingCost;
     if (shippingCost !== undefined) {
       updateFields.shippingCost = shippingCost;
+    }
+    if (totalAmount !== undefined) {
+      updateFields.totalAmount = totalAmount;
+      updateFields.subtotal = Math.max(0, totalAmount - effectiveShippingCost);
+    } else if (shippingCost !== undefined) {
       updateFields.totalAmount = currentOrder.subtotal + shippingCost;
     }
-    if (totalAmount !== undefined) updateFields.totalAmount = totalAmount;
 
     await db.update(orders)
       .set(updateFields)
@@ -276,6 +282,65 @@ const app = new Hono()
   } catch (error) {
     console.error("Failed to update order:", error);
     return c.json({ error: "Failed to update order" }, 500);
+  }
+})
+
+.post("/:id/confirm-purchase", sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!isAllowed(user, "orders", "update", ["MODERATOR"])) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const id = c.req.param("id");
+
+  try {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+    });
+
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    if (order.metaPurchaseEventSentAt) {
+      return c.json({
+        error: "Meta Purchase event has already been sent for this order",
+        alreadySent: true,
+        metaPurchaseEventSentAt: order.metaPurchaseEventSentAt,
+      }, 400);
+    }
+
+    if (order.saleType === "POS") {
+      return c.json({
+        error: "POS orders cannot be confirmed for Meta Purchase",
+      }, 400);
+    }
+
+    if (order.status === "CANCELLED" || order.status === "REFUNDED") {
+      return c.json({
+        error: "Cannot confirm a cancelled or refunded order",
+      }, 400);
+    }
+
+    const sent = await triggerMetaPurchaseOnConfirmation(id);
+    if (!sent) {
+      return c.json({ error: "Failed to dispatch Purchase event to Meta or order not eligible" }, 500);
+    }
+
+    await db.insert(orderTimelineEvents).values({
+      orderId: id,
+      status: order.status,
+      message: `Meta Purchase event triggered manually by ${user?.name || user?.email || "staff"}.`,
+    });
+
+    return c.json({
+      success: true,
+      sent: true,
+      message: `Purchase event dispatched to Meta for #${order.orderNumber || order.id}`,
+    });
+  } catch (error) {
+    console.error("Failed to confirm order for Meta Purchase:", error);
+    return c.json({ error: "Failed to confirm purchase event" }, 500);
   }
 })
 

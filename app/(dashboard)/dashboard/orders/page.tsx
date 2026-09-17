@@ -13,6 +13,7 @@ import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -69,6 +70,7 @@ import { ColumnDef, PaginationState, RowSelectionState, Updater } from "@tanstac
 import {
   Ban,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Copy,
@@ -78,12 +80,14 @@ import {
   Loader2,
   MoreVertical,
   Package,
+  Pencil,
   Pointer,
   Printer,
   RefreshCw,
   RotateCcw,
   Search,
   Trash,
+  Trash2,
   Truck,
   TrendingUp,
   TrendingDown,
@@ -254,13 +258,11 @@ function OrdersPageContent() {
   const [showBalance, setShowBalance] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const [isGeneratingPackingList, setIsGeneratingPackingList] = useState(false);
-  const [shippingCostOrder, setShippingCostOrder] =
-    useState<ShippingOrder | null>(null);
+  const [editingOrder, setEditingOrder] = useState<ShippingOrder | null>(null);
+  const [newTotalAmount, setNewTotalAmount] = useState("");
   const [newShippingCost, setNewShippingCost] = useState("");
   const [itemCosts, setItemCosts] = useState<Record<string, string>>({});
   const [itemAddOnCosts, setItemAddOnCosts] = useState<Record<string, string>>({});
-  const [amountOrder, setAmountOrder] = useState<ShippingOrder | null>(null);
-  const [newTotalAmount, setNewTotalAmount] = useState("");
   const [profitBreakdownOrder, setProfitBreakdownOrder] =
     useState<ShippingOrder | null>(null);
   const [cancelTarget, setCancelTarget] = useState<ShippingOrder | null>(null);
@@ -370,8 +372,81 @@ function OrdersPageContent() {
   const pageCount = Math.max(1, Math.ceil(totalOrders / pagination.pageSize));
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
-  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
+  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders, confirmPurchase } =
     useOrderMutations();
+  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+  const [confirmMetaTarget, setConfirmMetaTarget] = useState<ShippingOrder | null>(null);
+
+  const handleConfirmPurchase = async (order: ShippingOrder) => {
+    if (order.saleType === "POS") {
+      toast.error("POS orders cannot be confirmed for Meta Purchase.");
+      return;
+    }
+    if (order.metaPurchaseEventSentAt) {
+      toast.info(`Order #${order.orderNumber} is already confirmed for Meta Purchase.`);
+      return;
+    }
+    setConfirmingOrderId(order.id);
+    try {
+      await confirmPurchase.mutateAsync(order.id);
+      toast.success(`Order #${order.orderNumber} confirmed! Meta Purchase event sent.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to confirm order for Meta";
+      toast.error(msg);
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  };
+
+  const handleOpenEditOrder = (order: ShippingOrder) => {
+    setEditingOrder(order);
+    setNewTotalAmount(order.totalAmount.toString());
+    setNewShippingCost(order.shippingCost.toString());
+    const costs: Record<string, string> = {};
+    const addOnCosts: Record<string, string> = {};
+    order.items.forEach((item) => {
+      costs[item.id] = item.costPrice?.toString() || "";
+      const suggestedAddOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
+      addOnCosts[item.id] = suggestedAddOnCost > 0 ? suggestedAddOnCost.toString() : "";
+    });
+    setItemCosts(costs);
+    setItemAddOnCosts(addOnCosts);
+  };
+
+  const handleSaveEditOrder = async () => {
+    if (!editingOrder) return;
+    const totalAmount = parseFloat(newTotalAmount);
+    if (isNaN(totalAmount) || totalAmount < 0) {
+      toast.error("Please enter a valid total amount");
+      return;
+    }
+    const shippingCost = parseFloat(newShippingCost);
+    if (isNaN(shippingCost) || shippingCost < 0) {
+      toast.error("Please enter a valid shipping cost");
+      return;
+    }
+
+    const itemsToUpdate = editingOrder.items.map((item) => ({
+      id: item.id,
+      costPrice:
+        (parseFloat(itemCosts[item.id] || "0") || 0) +
+        (parseFloat(itemAddOnCosts[item.id] || "0") || 0),
+    }));
+
+    try {
+      await updateOrder.mutateAsync({
+        id: editingOrder.id,
+        totalAmount,
+        shippingCost,
+        items: itemsToUpdate,
+      });
+      toast.success("Order updated successfully");
+      setEditingOrder(null);
+    } catch (error) {
+      toast.error("Failed to update order");
+    }
+  };
+
   // Blocked IPs decide whether an order's menu offers "Block" or "Unblock".
   const { data: blockedIpList } = useBlockedIps(permRead);
   const blockedIpSet = React.useMemo(
@@ -734,20 +809,15 @@ function OrdersPageContent() {
   const getPhone = (order: ShippingOrder) =>
     (order.user?.phone ?? order.guestPhone ?? "").replace(/\D/g, "");
 
-  // Revenue is subtotal (net of any refund), not totalAmount — totalAmount
-  // is subtotal + shippingCost (see "Edit Order Costs" and the POS route),
-  // so using it here would add the delivery cost into revenue and then
-  // subtract it right back out below, silently cancelling it out and making
-  // shippingCost have no real effect on profit no matter what it's set to.
-  // Basing revenue on subtotal instead means the shippingCost subtraction
-  // always actually lowers profit, regardless of who ends up paying for it.
+  // Net profit is total net revenue (totalAmount minus refunds) minus total item
+  // costs (bought price) and shipping costs (delivery charge).
   const getProfit = (order: ShippingOrder) => {
     const totalCost = order.items.reduce(
       (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
       0,
     );
-    const revenue = order.subtotal - (order.refundedAmount ?? 0);
-    return revenue - totalCost - order.shippingCost;
+    const netRevenue = (order.totalAmount ?? 0) - (order.refundedAmount ?? 0);
+    return netRevenue - totalCost - (order.shippingCost ?? 0);
   };
 
   const isCancelled = (o: ShippingOrder) => {
@@ -1020,8 +1090,20 @@ function OrdersPageContent() {
         const order = row.original;
         const phone = getPhone(order);
         const hasNotes = !!order.note;
+        const isWebsiteOrder = order.saleType !== "POS";
+        const orderIsCancelled = isCancelled(order);
+        const orderIsReturned = isReturned(order);
+
+        const isPendingOrTodayTab = statusFilter === "PENDING" || statusFilter === "TODAY";
+        const canShowMetaConfirm =
+          isPendingOrTodayTab &&
+          permWrite &&
+          isWebsiteOrder &&
+          !orderIsCancelled &&
+          !orderIsReturned;
+
         return (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
               <span className="font-medium">
                 {order.user?.name ?? order.guestName ?? "Guest"}
@@ -1052,6 +1134,55 @@ function OrdersPageContent() {
                 </button>
               )}
             </div>
+            {(canShowMetaConfirm || permRefund || permDelete) && (
+              <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                {canShowMetaConfirm && (
+                  order.metaPurchaseEventSentAt ? (
+                    <span
+                      className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"
+                      title={`Meta Purchase Confirmed (${new Date(order.metaPurchaseEventSentAt).toLocaleString()})`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </span>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => setConfirmMetaTarget(order)}
+                      disabled={confirmingOrderId === order.id}
+                      className="h-7 w-7 p-0 shrink-0 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-none transition-transform active:scale-95"
+                      title="Confirm Meta Purchase"
+                    >
+                      {confirmingOrderId === order.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4 stroke-[2.5]" />
+                      )}
+                    </Button>
+                  )
+                )}
+                {permRefund && (
+                  <Button
+                    type="button"
+                    onClick={() => handleOpenEditOrder(order)}
+                    className="h-7 w-7 p-0 shrink-0 rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow-none transition-transform active:scale-95"
+                    title="Edit Order"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {permDelete && (
+                  <Button
+                    type="button"
+                    onClick={() => setDeleteOrderId(order.id)}
+                    disabled={deleteOrder.isPending && deleteOrderId === order.id}
+                    className="h-7 w-7 p-0 shrink-0 rounded-md bg-rose-600 hover:bg-rose-700 text-white shadow-none transition-transform active:scale-95"
+                    title="Delete Order"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         );
       },
@@ -1204,24 +1335,13 @@ function OrdersPageContent() {
           orderIsDelivered &&
           (order.refundedAmount ?? 0) < order.totalAmount;
 
+        const isWebsiteOrder = order.saleType !== "POS";
+
         return (
           <div
             className="flex items-center justify-end gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            {canBook && permWrite && (
-              <Button
-                type="button"
-                size="sm"
-                variant="default"
-                onClick={() => setCourierOrder(order)}
-                className="gap-1.5 shrink-0"
-                title="Book Steadfast Courier"
-              >
-                <Truck className="h-3.5 w-3.5" />
-                Book
-              </Button>
-            )}
             <Button
               type="button"
               size="sm"
@@ -1250,6 +1370,16 @@ function OrdersPageContent() {
                 >
                   Download Invoice
                 </DropdownMenuItem>
+                {permWrite && isWebsiteOrder && !orderIsCancelled && !orderIsReturned && (
+                  <DropdownMenuItem
+                    disabled={Boolean(order.metaPurchaseEventSentAt) || confirmingOrderId === order.id}
+                    onClick={() => setConfirmMetaTarget(order)}
+                    className={order.metaPurchaseEventSentAt ? "text-muted-foreground" : "text-emerald-600 focus:text-emerald-600 font-medium"}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {order.metaPurchaseEventSentAt ? "Meta Purchase Confirmed" : "Confirm (Meta Purchase)"}
+                  </DropdownMenuItem>
+                )}
                 {canBook && permWrite && (
                   <DropdownMenuItem onClick={() => setCourierOrder(order)}>
                     Book Courier (Steadfast)
@@ -1277,35 +1407,7 @@ function OrdersPageContent() {
                     {order.sheetBookedAt ? "Re-book to Google Sheet" : "Book to Google Sheet"}
                   </DropdownMenuItem>
                 )}
-                {permRefund && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setShippingCostOrder(order);
-                      setNewShippingCost(order.shippingCost.toString());
-                      const costs: Record<string, string> = {};
-                      const addOnCosts: Record<string, string> = {};
-                      order.items.forEach((item) => {
-                        costs[item.id] = item.costPrice?.toString() || "";
-                        const suggestedAddOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
-                        addOnCosts[item.id] = suggestedAddOnCost > 0 ? suggestedAddOnCost.toString() : "";
-                      });
-                      setItemCosts(costs);
-                      setItemAddOnCosts(addOnCosts);
-                    }}
-                  >
-                    Edit Order Costs
-                  </DropdownMenuItem>
-                )}
-                {permRefund && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setAmountOrder(order);
-                      setNewTotalAmount(order.totalAmount.toString());
-                    }}
-                  >
-                    Edit Order Amount
-                  </DropdownMenuItem>
-                )}
+
                 <DropdownMenuItem onClick={() => setLogDetailsOrder(order)}>
                   <History className="h-4 w-4 mr-2" />
                   Log Details
@@ -1340,36 +1442,7 @@ function OrdersPageContent() {
                       : "Refund Order"}
                   </DropdownMenuItem>
                 )}
-                {permBlockIp && order.ipAddress && (
-                  <>
-                    <DropdownMenuSeparator />
-                    {blockedIpSet.has(order.ipAddress) ? (
-                      <DropdownMenuItem onClick={() => setUnblockIpTarget(order)}>
-                        <ShieldCheck className="h-4 w-4 mr-2" />
-                        Unblock Customer IP
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        onClick={() => setBlockIpTarget(order)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <ShieldBan className="h-4 w-4 mr-2" />
-                        Block Customer IP
-                      </DropdownMenuItem>
-                    )}
-                  </>
-                )}
-                {permDelete && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setDeleteOrderId(order.id)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      Delete Order
-                    </DropdownMenuItem>
-                  </>
-                )}
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1624,33 +1697,31 @@ function OrdersPageContent() {
                 type="button"
                 onClick={handleBulkBook}
                 disabled={isBulkBooking}
-                className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700"
+                className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700"
               >
                 {isBulkBooking ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Truck className="h-3.5 w-3.5" />
                 )}
-                Book Selected ({selectedOrders.length})
+                Book ({selectedOrders.length})
               </Button>
             )}
-          {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
-            selectedOrders.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleDownloadPackingList}
-                disabled={isGeneratingPackingList}
-                className="rounded-full gap-1.5 shrink-0 text-xs font-semibold border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-              >
-                {isGeneratingPackingList ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Package className="h-3.5 w-3.5" />
-                )}
-                Packing List ({selectedOrders.length})
-              </Button>
-            )}
+          {selectedOrders.length > 0 && (
+            <Button
+              type="button"
+              onClick={() => handleBulkPrint("print")}
+              disabled={isBulkPrinting}
+              className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-sky-500 text-white hover:bg-sky-600"
+            >
+              {isBulkPrinting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Printer className="h-3.5 w-3.5" />
+              )}
+              Print ({selectedOrders.length})
+            </Button>
+          )}
           {permWrite && selectedOrders.length > 0 && (
             <Button
               type="button"
@@ -1663,39 +1734,38 @@ function OrdersPageContent() {
               ) : (
                 <SheetIcon className="h-3.5 w-3.5" />
               )}
-              Book to Sheet ({selectedOrders.length})
+              Sheet ({selectedOrders.length})
             </Button>
           )}
-          {selectedOrders.length > 0 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleBulkPrint("print")}
-              disabled={isBulkPrinting}
-              className="rounded-full gap-1 shrink-0 text-xs font-semibold border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
-            >
-              {isBulkPrinting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Printer className="h-3.5 w-3.5" />
-              )}
-              Print Selected ({selectedOrders.length})
-            </Button>
-          )}
+          {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
+            selectedOrders.length > 0 && (
+              <Button
+                type="button"
+                onClick={handleDownloadPackingList}
+                disabled={isGeneratingPackingList}
+                className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700"
+              >
+                {isGeneratingPackingList ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Package className="h-3.5 w-3.5" />
+                )}
+                Package ({selectedOrders.length})
+              </Button>
+            )}
           {permDelete && selectedOrders.length > 0 && (
             <Button
               type="button"
-              variant="destructive"
               onClick={() => setConfirmBulkDelete(true)}
               disabled={bulkDeleteOrders.isPending}
-              className="rounded-full gap-1 shrink-0 text-xs font-semibold"
+              className="gap-1.5 shrink-0 rounded-full text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700"
             >
               {bulkDeleteOrders.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Trash className="h-3.5 w-3.5" />
               )}
-              Delete Selected ({selectedOrders.length})
+              Delete ({selectedOrders.length})
             </Button>
           )}
           {selectedOrders.filter(isTrackable).length > 0 && (
@@ -1834,6 +1904,12 @@ function OrdersPageContent() {
                         <span className="font-medium">{selectedOrder.browserName || "Unknown Browser"}</span>
                       </p>
                     </div>
+                    {selectedOrder.metaPurchaseEventSentAt && (
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-2.5 py-1.5 font-medium mt-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        Meta Purchase Sent: {new Date(selectedOrder.metaPurchaseEventSentAt).toLocaleString()}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1981,21 +2057,31 @@ function OrdersPageContent() {
                     (i) => i.costPrice !== null && i.costPrice !== undefined,
                   );
                   if (!hasCostData) return null;
+                  const totalBoughtPrice = selectedOrder.items.reduce(
+                    (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
+                    0,
+                  );
                   return (
-                    <div
-                      className={cn(
-                        "flex justify-between font-medium pt-1 border-t",
-                        profit >= 0
-                          ? "text-green-600 dark:text-green-400"
-                          : "text-red-600 dark:text-red-400",
-                      )}
-                    >
-                      <span>Profit:</span>
-                      <span>
-                        {profit >= 0 ? "+" : ""}
-                        {formatAmount(profit)}
-                      </span>
-                    </div>
+                    <>
+                      <div className="flex justify-between text-muted-foreground pt-1 border-t">
+                        <span>Total Bought Price:</span>
+                        <span>{formatAmount(totalBoughtPrice)}</span>
+                      </div>
+                      <div
+                        className={cn(
+                          "flex justify-between font-medium pt-1 border-t",
+                          profit >= 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400",
+                        )}
+                      >
+                        <span>Profit:</span>
+                        <span>
+                          {profit >= 0 ? "+" : ""}
+                          {formatAmount(profit)}
+                        </span>
+                      </div>
+                    </>
                   );
                 })()}
               </div>
@@ -2006,35 +2092,36 @@ function OrdersPageContent() {
                 const orderIsReturned = isReturned(target);
                 const orderIsDelivered = isDelivered(target);
 
-                const canCancel =
-                  permCancel &&
-                  !orderIsCancelled && !orderIsReturned && !orderIsDelivered;
-
                 const canRefund =
                   permRefund &&
                   orderIsDelivered &&
                   (target.refundedAmount ?? 0) < target.totalAmount;
 
-                if (!canCancel && !canRefund) return null;
+                const showConfirm =
+                  (statusFilter === "PENDING" || statusFilter === "TODAY") &&
+                  permWrite &&
+                  target.saleType !== "POS" &&
+                  !orderIsCancelled &&
+                  !orderIsReturned &&
+                  !target.metaPurchaseEventSentAt;
 
                 return (
                   <div className="flex gap-2 pt-2">
-                    {canCancel && (
+                    {showConfirm && (
                       <Button
-                        variant="outline"
-                        className="flex-1 gap-1.5 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-900 dark:text-orange-400 dark:hover:bg-orange-950/40"
-                        onClick={() => {
-                          setSelectedOrder(null);
-                          setShowAllOrderItems(false);
-                          setCancelTarget(target);
-                        }}
+                        type="button"
+                        variant="default"
+                        className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        disabled={confirmingOrderId === target.id}
+                        onClick={() => setConfirmMetaTarget(target)}
                       >
-                        <Ban className="h-4 w-4" />
-                        Cancel Order
+                        <CheckCircle2 className="h-4 w-4" />
+                        Confirm Meta Purchase
                       </Button>
                     )}
                     {canRefund && (
                       <Button
+                        type="button"
                         variant="outline"
                         className="flex-1 gap-1.5 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400 dark:hover:bg-rose-950/40"
                         onClick={() => {
@@ -2049,6 +2136,17 @@ function OrdersPageContent() {
                           : "Refund Order"}
                       </Button>
                     )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 gap-1.5"
+                      onClick={() => {
+                        setSelectedOrder(null);
+                        setShowAllOrderItems(false);
+                      }}
+                    >
+                      Close
+                    </Button>
                   </div>
                 );
               })()}
@@ -2067,18 +2165,23 @@ function OrdersPageContent() {
 
       <ConfirmDialog
         open={!!deleteOrderId}
-        onOpenChange={() => setDeleteOrderId(null)}
+        onOpenChange={() => !deleteOrder.isPending && setDeleteOrderId(null)}
         onConfirm={() => {
           if (deleteOrderId) {
             deleteOrder.mutate(deleteOrderId, {
-              onSuccess: () => toast.success("Order deleted successfully"),
+              onSuccess: () => {
+                toast.success("Order deleted successfully");
+                setDeleteOrderId(null);
+              },
               onError: (err: Error) => {
                 toast.error(err.message || "Failed to delete order");
               },
             });
-            setDeleteOrderId(null);
           }
         }}
+        isLoading={deleteOrder.isPending}
+        confirmVariant="destructive"
+        confirmText="Delete"
         title="Delete Order"
         description="Are you sure you want to delete this order? This action cannot be undone."
       />
@@ -2115,6 +2218,29 @@ function OrdersPageContent() {
         description={`Are you sure you want to delete ${selectedOrders.length} selected orders? This action cannot be undone.`}
       />
 
+      <ConfirmDialog
+        open={!!confirmMetaTarget}
+        onOpenChange={(open) => !open && !confirmingOrderId && setConfirmMetaTarget(null)}
+        onConfirm={async () => {
+          if (confirmMetaTarget) {
+            const target = confirmMetaTarget;
+            await handleConfirmPurchase(target);
+            if (selectedOrder && selectedOrder.id === target.id) {
+              setSelectedOrder((prev) =>
+                prev ? { ...prev, metaPurchaseEventSentAt: new Date().toISOString() } : null
+              );
+            }
+            setConfirmMetaTarget(null);
+          }
+        }}
+        title={`Confirm Order #${confirmMetaTarget?.orderNumber ?? ""} for Meta?`}
+        description={`Are you sure you want to confirm this order? Clicking "Yes, Confirm" will report this order (${confirmMetaTarget ? formatAmount(confirmMetaTarget.totalAmount) : ""}) as a verified Purchase event to Meta Ads (Facebook Pixel & Conversions API). This action cannot be undone.`}
+        confirmText="Yes, Confirm"
+        cancelText="Cancel"
+        confirmVariant="default"
+        isLoading={!!confirmingOrderId}
+      />
+
       <BulkBookCourierDialog
         open={isBulkBookDialogOpen}
         onOpenChange={setIsBulkBookDialogOpen}
@@ -2135,157 +2261,163 @@ function OrdersPageContent() {
         })()}
       />
       <Dialog
-        open={!!shippingCostOrder}
-        onOpenChange={(open) => !open && setShippingCostOrder(null)}
+        open={!!editingOrder}
+        onOpenChange={(open) => !open && !updateOrder.isPending && setEditingOrder(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>Edit Order Costs</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-primary" />
+              Edit Order
+              {editingOrder && (
+                <span className="text-xs font-mono text-muted-foreground ml-1">
+                  ({editingOrder.orderNumber})
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Update total sale amount, shipping cost, and item cost prices.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Shipping Cost (৳)</label>
-              <Input
-                type="number"
-                min="0"
-                value={newShippingCost}
-                onChange={(e) => setNewShippingCost(e.target.value)}
-                placeholder="Enter shipping cost"
-              />
-            </div>
-            {shippingCostOrder?.items.map((item) => {
-              const addOnCost = calculateItemAddOnCost(item.color, item.product?.addOns);
-              return (
-                <div key={item.id} className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground truncate block">
-                    Bought Price (Cost) for: {item.product?.name || "Item"}
-                  </label>
+          <div className="space-y-4 py-2 max-h-[65vh] overflow-y-auto pr-1">
+            {/* Order Pricing & Delivery */}
+            <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Order Pricing
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Total Amount (৳)</label>
                   <Input
                     type="number"
                     min="0"
-                    value={itemCosts[item.id] || ""}
-                    onChange={(e) =>
-                      setItemCosts({ ...itemCosts, [item.id]: e.target.value })
-                    }
-                    placeholder="Enter bought price (excluding add-ons)"
+                    value={newTotalAmount}
+                    onChange={(e) => setNewTotalAmount(e.target.value)}
+                    placeholder="Enter total amount"
                   />
-                  {colorHasAddOn(item.color) && (
-                    <>
-                      <label className="text-xs font-medium text-amber-600 dark:text-amber-400 block">
-                        Add-on Bought Price (from {item.color})
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={itemAddOnCosts[item.id] || ""}
-                        onChange={(e) =>
-                          setItemAddOnCosts({ ...itemAddOnCosts, [item.id]: e.target.value })
-                        }
-                        placeholder="Enter add-on bought price"
-                      />
-                    </>
-                  )}
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Final customer payable
+                  </p>
                 </div>
-              );
-            })}
-            <div className="flex justify-end gap-2 pt-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Shipping Cost (৳)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={newShippingCost}
+                    onChange={(e) => setNewShippingCost(e.target.value)}
+                    placeholder="Enter shipping cost"
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Delivery charge
+                  </p>
+                </div>
+              </div>
+              {editingOrder && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
+                  <span>Items Subtotal:</span>
+                  <span className="font-medium text-foreground">{currencySymbol} {editingOrder.subtotal}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Item Cost Prices (COGS) */}
+            <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Item Buying Costs (COGS)
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  For profit calculation
+                </span>
+              </div>
+              <div className="space-y-3">
+                {editingOrder?.items.map((item) => {
+                  const hasAddOn = colorHasAddOn(item.color);
+                  return (
+                    <div key={item.id} className="space-y-2 p-2.5 rounded-md border bg-background text-xs">
+                      <div className="font-medium text-foreground truncate">
+                        {item.product?.name || "Item"}
+                        {item.color && (
+                          <span className="text-muted-foreground ml-1">({item.color})</span>
+                        )}
+                        {item.quantity > 1 && (
+                          <span className="text-muted-foreground ml-1">× {item.quantity}</span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] text-muted-foreground block font-medium">
+                            {item.quantity > 1
+                              ? "Unit Bought Price (প্রতি পিস কেনা দাম)"
+                              : "Bought Price (Cost)"}
+                          </label>
+                          {item.quantity > 1 && (
+                            <span className="text-[11px] text-muted-foreground">
+                              Total:{" "}
+                              <span className="font-semibold text-foreground">
+                                {formatAmount(
+                                  ((parseFloat(itemCosts[item.id] || "0") || 0) +
+                                    (parseFloat(itemAddOnCosts[item.id] || "0") || 0)) *
+                                    item.quantity,
+                                )}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={itemCosts[item.id] || ""}
+                          onChange={(e) =>
+                            setItemCosts({ ...itemCosts, [item.id]: e.target.value })
+                          }
+                          placeholder={
+                            item.quantity > 1
+                              ? `Cost per 1 piece (× ${item.quantity})`
+                              : "Enter bought price"
+                          }
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      {hasAddOn && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-amber-600 dark:text-amber-400 block font-medium">
+                            Add-on Bought Price ({item.color})
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={itemAddOnCosts[item.id] || ""}
+                            onChange={(e) =>
+                              setItemAddOnCosts({ ...itemAddOnCosts, [item.id]: e.target.value })
+                            }
+                            placeholder="Enter add-on bought price"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
-                onClick={() => setShippingCostOrder(null)}
+                disabled={updateOrder.isPending}
+                onClick={() => setEditingOrder(null)}
               >
                 Cancel
               </Button>
               <Button
-                onClick={async () => {
-                  if (!shippingCostOrder) return;
-                  const cost = parseFloat(newShippingCost);
-                  if (isNaN(cost) || cost < 0) {
-                    toast.error("Please enter a valid shipping cost");
-                    return;
-                  }
-
-                  const itemsToUpdate = shippingCostOrder.items.map((item) => ({
-                    id: item.id,
-                    costPrice:
-                      (parseFloat(itemCosts[item.id] || "0") || 0) +
-                      (parseFloat(itemAddOnCosts[item.id] || "0") || 0),
-                  }));
-
-                  try {
-                    await updateOrder.mutateAsync({
-                      id: shippingCostOrder.id,
-                      shippingCost: cost,
-                      items: itemsToUpdate,
-                    });
-                    toast.success("Order costs updated successfully");
-                    setShippingCostOrder(null);
-                  } catch (error) {
-                    toast.error("Failed to update order costs");
-                  }
-                }}
+                onClick={handleSaveEditOrder}
                 disabled={updateOrder.isPending}
               >
-                {updateOrder.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : null}
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!amountOrder}
-        onOpenChange={(open) => !open && setAmountOrder(null)}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Order Amount</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Total Amount (৳)</label>
-              <Input
-                type="number"
-                min="0"
-                value={newTotalAmount}
-                onChange={(e) => setNewTotalAmount(e.target.value)}
-                placeholder="Enter total amount"
-              />
-              <p className="text-xs text-muted-foreground">
-                Overrides the order&apos;s total sale amount directly (subtotal + shipping cost are left as-is).
-              </p>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setAmountOrder(null)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={async () => {
-                  if (!amountOrder) return;
-                  const amount = parseFloat(newTotalAmount);
-                  if (isNaN(amount) || amount < 0) {
-                    toast.error("Please enter a valid total amount");
-                    return;
-                  }
-
-                  try {
-                    await updateOrder.mutateAsync({
-                      id: amountOrder.id,
-                      totalAmount: amount,
-                    });
-                    toast.success("Order amount updated successfully");
-                    setAmountOrder(null);
-                  } catch (error) {
-                    toast.error("Failed to update order amount");
-                  }
-                }}
-                disabled={updateOrder.isPending}
-              >
-                {updateOrder.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : null}
+                {updateOrder.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                )}
                 Save Changes
               </Button>
             </div>
@@ -2309,18 +2441,20 @@ function OrdersPageContent() {
               (() => {
                 const order = profitBreakdownOrder;
                 const refundedAmount = order.refundedAmount ?? 0;
-                // Revenue is subtotal (net of refunds), not totalAmount — see
-                // getProfit() above for why: totalAmount already has
-                // shippingCost folded in, which would cancel out the
-                // "Shipping Cost" deduction shown further down.
-                const itemsRevenue = order.subtotal - refundedAmount;
+                const netRevenue = (order.totalAmount ?? 0) - refundedAmount;
                 const itemsCost = order.items.reduce(
                   (sum, item) => sum + (item.costPrice ?? 0) * item.quantity,
                   0,
                 );
-                const shippingCost = order.shippingCost;
+                const shippingCost = order.shippingCost ?? 0;
                 const totalCost = itemsCost + shippingCost;
-                const profit = itemsRevenue - totalCost;
+                const profit = netRevenue - totalCost;
+                const catalogItemsSum = order.items.reduce(
+                  (sum, item) => sum + item.price * item.quantity,
+                  0,
+                );
+                const priceAdjustment =
+                  netRevenue - shippingCost - catalogItemsSum;
 
                 return (
                   <div className="p-6">
@@ -2338,7 +2472,7 @@ function OrdersPageContent() {
                               Revenue
                             </TableHead>
                             <TableHead className="text-right font-medium h-10">
-                              Unit Cost
+                              Bought Price
                             </TableHead>
                             <TableHead className="text-right font-medium h-10">
                               Profit
@@ -2395,22 +2529,36 @@ function OrdersPageContent() {
                                   {item.quantity}
                                 </TableCell>
                                 <TableCell className="text-right py-4 align-middle tabular-nums">
-                                  {formatAmount(revenue)}
+                                  <span className="font-medium">{formatAmount(revenue)}</span>
+                                  {item.quantity > 1 && (
+                                    <div className="text-[11px] text-muted-foreground font-normal">
+                                      ({formatAmount(item.price)}/pc)
+                                    </div>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-right py-4 align-middle tabular-nums text-red-600 dark:text-red-400">
-                                  {item.costPrice != null
-                                    ? formatAmount(item.costPrice)
-                                    : "—"}
+                                  {item.costPrice != null ? (
+                                    <>
+                                      <span className="font-medium">{formatAmount(cost)}</span>
+                                      {item.quantity > 1 && (
+                                        <div className="text-[11px] text-muted-foreground font-normal">
+                                          ({formatAmount(item.costPrice)}/pc)
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    "—"
+                                  )}
                                   {addOnCost > 0 && (
                                     <div className="text-[10px] text-amber-600 dark:text-amber-400 font-normal normal-case">
-                                      + add-on cost {formatAmount(addOnCost)}?
+                                      + add-on {formatAmount(addOnCost * item.quantity)}?
                                     </div>
                                   )}
                                 </TableCell>
                                 <TableCell className="text-right py-4 align-middle">
                                   <span
                                     className={cn(
-                                      "font-semibold tabular-nums",
+                                      "font-semibold tabular-nums block",
                                       itemProfit >= 0
                                         ? "text-emerald-600 dark:text-emerald-400"
                                         : "text-red-600 dark:text-red-400",
@@ -2419,6 +2567,11 @@ function OrdersPageContent() {
                                     {itemProfit >= 0 ? "+" : ""}
                                     {formatAmount(itemProfit)}
                                   </span>
+                                  {item.quantity > 1 && (
+                                    <div className="text-[11px] text-muted-foreground font-normal tabular-nums">
+                                      ({itemProfit >= 0 ? "+" : ""}{formatAmount(Math.round(itemProfit / item.quantity))}/pc)
+                                    </div>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             );
@@ -2438,15 +2591,33 @@ function OrdersPageContent() {
                               </TableCell>
                             </TableRow>
                           )}
+                          {priceAdjustment !== 0 && (
+                            <TableRow className="hover:bg-transparent border-0">
+                              <TableCell
+                                colSpan={4}
+                                className="text-right font-medium text-muted-foreground"
+                              >
+                                {priceAdjustment > 0
+                                  ? "Order Price Adjustment / Custom Amount"
+                                  : "Discount / Price Adjustment"}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums font-medium text-muted-foreground">
+                                {priceAdjustment > 0 ? "+" : ""}
+                                {formatAmount(priceAdjustment)}
+                              </TableCell>
+                            </TableRow>
+                          )}
                           <TableRow className="hover:bg-transparent border-0">
                             <TableCell
                               colSpan={4}
                               className={cn(
                                 "text-right font-medium text-muted-foreground",
-                                refundedAmount > 0 ? "" : "pt-6",
+                                refundedAmount > 0 || priceAdjustment !== 0
+                                  ? ""
+                                  : "pt-6",
                               )}
                             >
-                              Net Sale − Product Cost
+                              Total Received
                             </TableCell>
                             <TableCell
                               className={cn(
@@ -2454,16 +2625,18 @@ function OrdersPageContent() {
                                 refundedAmount > 0 ? "" : "pt-6",
                               )}
                             >
-                              <span
-                                className={cn(
-                                  itemsRevenue - itemsCost >= 0
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : "text-red-600 dark:text-red-400",
-                                )}
-                              >
-                                {itemsRevenue - itemsCost >= 0 ? "+" : ""}
-                                {formatAmount(itemsRevenue - itemsCost)}
-                              </span>
+                              {formatAmount(netRevenue)}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="hover:bg-transparent border-0">
+                            <TableCell
+                              colSpan={4}
+                              className="text-right font-medium text-muted-foreground"
+                            >
+                              Product Cost (Bought Price)
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums font-medium text-red-600 dark:text-red-400">
+                              -{formatAmount(itemsCost)}
                             </TableCell>
                           </TableRow>
                           <TableRow className="hover:bg-transparent border-0">
@@ -2471,7 +2644,7 @@ function OrdersPageContent() {
                               colSpan={4}
                               className="text-right font-medium text-muted-foreground pb-4"
                             >
-                              Shipping Cost
+                              Shipping Cost (Delivery)
                             </TableCell>
                             <TableCell className="text-right tabular-nums font-medium text-red-600 dark:text-red-400 pb-4">
                               -{formatAmount(shippingCost)}

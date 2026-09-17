@@ -70,6 +70,7 @@ export interface OrderItem {
     // Null until an order has been synced at least once.
     courierStatus?: string | null;
     sheetBookedAt?: string | null;
+    metaPurchaseEventSentAt?: string | null;
     cancellationReason?: string | null;
     refundedAmount?: number | null;
     refundReason?: string | null;
