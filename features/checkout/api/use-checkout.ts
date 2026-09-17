@@ -10,11 +10,6 @@ import {
   getOrCreateCheckoutIdempotencyKey,
   clearCheckoutIdempotencyKey,
 } from "@/lib/checkout-idempotency";
-import { getCapturedFbc } from "@/lib/meta-fbc";
-import type { PurchaseTrackingPayload } from "@/lib/meta-purchase-event";
-import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
-
-const trackedBrowserPurchaseOrderIds = new Set<string>();
 
 interface useCheckoutProps {
   paymentInfo: Partial<PaymentInformationFormValues>;
@@ -90,79 +85,8 @@ export const UseCheckout = () => {
         (data as { orderId?: string }).orderId ??
         (data as { order?: { id?: string } }).order?.id;
 
-      const purchase = (data as { purchase?: PurchaseTrackingPayload }).purchase;
-      if (purchase?.orderId && purchase.eventId) {
-        const transactionId = purchase.orderNumber || purchase.orderId;
-        const guardKey = `fb_purchase_tracked_${purchase.orderId}`;
-        const numGuardKey = purchase.orderNumber ? `fb_purchase_tracked_${purchase.orderNumber}` : null;
-        let alreadyTracked =
-          trackedBrowserPurchaseOrderIds.has(purchase.orderId) ||
-          (purchase.orderNumber ? trackedBrowserPurchaseOrderIds.has(purchase.orderNumber) : false);
-        try {
-          alreadyTracked =
-            alreadyTracked ||
-            sessionStorage.getItem(guardKey) === "1" ||
-            (numGuardKey ? sessionStorage.getItem(numGuardKey) === "1" : false);
-        } catch {
-          /* sessionStorage unavailable */
-        }
-
-        if (!alreadyTracked) {
-          trackedBrowserPurchaseOrderIds.add(purchase.orderId);
-          if (purchase.orderNumber) trackedBrowserPurchaseOrderIds.add(purchase.orderNumber);
-          try {
-            sessionStorage.setItem(guardKey, "1");
-            if (numGuardKey) sessionStorage.setItem(numGuardKey, "1");
-          } catch {
-            /* sessionStorage unavailable */
-          }
-
-          // The browser Purchase is fired by the GTM web container's Meta
-          // Pixel tag off the dataLayer push below, deduplicated against the
-          // server container's CAPI tag by the shared event_id. The app
-          // firing its own was a second, uncoordinated copy.
-          const { first_name, last_name } = splitFullName(variables.shippingInfo.fullName);
-          const rawValue = Number(purchase.value);
-          const safeValue = !isNaN(rawValue) && rawValue > 0 ? Number(rawValue.toFixed(2)) : 0.01;
-
-          trackGtmPurchase({
-            transaction_id: transactionId,
-            order_id: purchase.orderId,
-            value: safeValue,
-            currency: purchase.currency || "BDT",
-            user_data: {
-              email: variables.shippingInfo.email || undefined,
-              phone_number: variables.shippingInfo.phone,
-              address: {
-                first_name,
-                last_name,
-                street: variables.shippingInfo.address,
-                country: "BD",
-              },
-              fbc: getCapturedFbc(),
-            },
-            items: purchase.contents.map((c, idx) => {
-              const matched = cartSnapshot.find(
-                (item) => item.productId === c.id || item.id === c.id
-              );
-              return {
-                item_id: c.id,
-                item_name: matched?.name || `Product ${c.id}`,
-                price: c.item_price,
-                quantity: c.quantity,
-                item_variant: [matched?.size, matched?.color].filter(Boolean).join(" / ") || undefined,
-                index: idx + 1,
-              };
-            }),
-          });
-        }
-      }
-
       if (orderId) {
-        // Brief delay so the Pixel beacon can enqueue before full-page navigation.
-        setTimeout(() => {
-          window.location.href = `/order-success?orderId=${orderId}&phone=${encodeURIComponent(variables.shippingInfo.phone)}`;
-        }, 300);
+        window.location.href = `/order-success?orderId=${orderId}&phone=${encodeURIComponent(variables.shippingInfo.phone)}`;
       }
     },
 

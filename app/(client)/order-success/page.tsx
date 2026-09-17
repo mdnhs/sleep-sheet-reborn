@@ -12,6 +12,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
+import { getCapturedFbc } from "@/lib/meta-fbc";
 
 interface OrderItem {
   id: string;
@@ -76,59 +77,38 @@ function OrderSuccessContent() {
   useEffect(() => {
     if (!order || !orderId) return;
 
-    // Check if the purchase was already tracked at checkout submission
-    const guardKey = `fb_purchase_tracked_${order.id}`;
-    const numGuardKey = order.orderNumber ? `fb_purchase_tracked_${order.orderNumber}` : null;
-    let alreadyTracked = false;
-    try {
-      alreadyTracked =
-        sessionStorage.getItem(guardKey) === "1" ||
-        (numGuardKey ? sessionStorage.getItem(numGuardKey) === "1" : false);
-    } catch {
-      /* ignore */
-    }
+    const { first_name, last_name } = splitFullName(order.guestName);
+    const rawVal = Number(order.totalAmount);
+    const purchaseVal = !isNaN(rawVal) && rawVal > 0 ? Number(rawVal.toFixed(2)) : 0.01;
 
-    if (!alreadyTracked) {
-      const { first_name, last_name } = splitFullName(order.guestName);
-      const rawVal = Number(order.totalAmount);
-      const purchaseVal = !isNaN(rawVal) && rawVal > 0 ? Number(rawVal.toFixed(2)) : 0.01;
-
-      // Track standard GA4 & Google Ads Ecommerce purchase event with Enhanced Conversions
-      const tracked = trackGtmPurchase({
-        transaction_id: order.orderNumber || order.id,
-        order_id: order.id,
-        value: purchaseVal,
-        currency: "BDT",
-        shipping: Number(order.shippingCost) || 0,
-        tax: 0,
-        user_data: {
-          phone_number: order.guestPhone || undefined,
-          address: {
-            first_name,
-            last_name,
-            street: order.shippingAddress,
-            country: "BD",
-          },
+    // Track standard GA4, Google Ads & Meta Pixel (via GTM) purchase event
+    trackGtmPurchase({
+      transaction_id: order.orderNumber || order.id,
+      order_id: order.id,
+      value: purchaseVal,
+      currency: "BDT",
+      shipping: Number(order.shippingCost) || 0,
+      tax: 0,
+      user_data: {
+        email: order.guestEmail || undefined,
+        phone_number: order.guestPhone || undefined,
+        address: {
+          first_name,
+          last_name,
+          street: order.shippingAddress,
+          country: "BD",
         },
-        items: order.items.map((item, idx) => ({
-          item_id: item.product?.id || item.id,
-          item_name: item.product?.name || "Product",
-          price: Number(item.price) || 0,
-          quantity: item.quantity,
-          item_variant: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
-          index: idx + 1,
-        })),
-      });
-
-      if (tracked) {
-        try {
-          sessionStorage.setItem(guardKey, "1");
-          if (numGuardKey) sessionStorage.setItem(numGuardKey, "1");
-        } catch {
-          /* ignore */
-        }
-      }
-    }
+        fbc: getCapturedFbc(),
+      },
+      items: order.items.map((item, idx) => ({
+        item_id: item.product?.id || item.id,
+        item_name: item.product?.name || "Product",
+        price: Number(item.price) || 0,
+        quantity: item.quantity,
+        item_variant: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
+        index: idx + 1,
+      })),
+    });
 
     const orderGuardKey = `traffic_order_tracked_${orderId}`;
     if (typeof window !== "undefined" && !sessionStorage.getItem(orderGuardKey)) {
