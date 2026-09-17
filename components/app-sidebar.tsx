@@ -29,7 +29,8 @@ import {
   IconUsers,
   IconUserHeart,
   IconShield,
-  IconHistory
+  IconHistory,
+  IconBrandGoogleAnalytics,
 } from "@tabler/icons-react"
 import { useCurrent } from "@/features/auth/api/use-current"
 import { can, type ModuleKey } from "@/lib/permissions"
@@ -51,6 +52,7 @@ const navGroups: GatedGroup[] = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: <IconLayoutDashboard />, module: "dashboard" },
       { title: "Reports", url: "/dashboard/reports", icon: <IconChartBar />, module: "reports" },
+      { title: "Analytics", url: "/dashboard/analytics", icon: <IconBrandGoogleAnalytics />, module: "reports" },
     ],
   },
   {
