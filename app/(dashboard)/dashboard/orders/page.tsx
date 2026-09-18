@@ -722,32 +722,8 @@ function OrdersPageContent() {
   const pageCount = Math.max(1, Math.ceil(totalOrders / pagination.pageSize));
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
-  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders, confirmPurchase } =
+  const { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders } =
     useOrderMutations();
-  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
-  const [confirmMetaTarget, setConfirmMetaTarget] = useState<ShippingOrder | null>(null);
-
-  const handleConfirmPurchase = async (order: ShippingOrder) => {
-    if (order.saleType === "POS") {
-      toast.error("POS orders cannot be confirmed for Meta Purchase.");
-      return;
-    }
-    if (order.metaPurchaseEventSentAt) {
-      toast.info(`Order #${order.orderNumber} is already confirmed for Meta Purchase.`);
-      return;
-    }
-    setConfirmingOrderId(order.id);
-    try {
-      await confirmPurchase.mutateAsync(order.id);
-      toast.success(`Order #${order.orderNumber} confirmed! Meta Purchase event sent.`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to confirm order for Meta";
-      toast.error(msg);
-    } finally {
-      setConfirmingOrderId(null);
-    }
-  };
-
   const handleOpenEditOrder = (order: ShippingOrder) => {
     setEditingOrder(order);
     setEditGuestName(order.guestName || order.user?.name || "");
@@ -1723,14 +1699,6 @@ function OrdersPageContent() {
         const orderIsCancelled = isCancelled(order);
         const orderIsReturned = isReturned(order);
 
-        const isPendingOrTodayTab = statusFilter === "PENDING" || statusFilter === "TODAY";
-        const canShowMetaConfirm =
-          isPendingOrTodayTab &&
-          permWrite &&
-          isWebsiteOrder &&
-          !orderIsCancelled &&
-          !orderIsReturned;
-
         return (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
@@ -1763,32 +1731,8 @@ function OrdersPageContent() {
                 </button>
               )}
             </div>
-            {(canShowMetaConfirm || permRefund || permDelete) && (
+            {(permRefund || permDelete) && (
               <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                {canShowMetaConfirm && (
-                  order.metaPurchaseEventSentAt ? (
-                    <span
-                      className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"
-                      title={`Meta Purchase Confirmed (${new Date(order.metaPurchaseEventSentAt).toLocaleString()})`}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                    </span>
-                  ) : (
-                    <Button
-                      type="button"
-                      onClick={() => setConfirmMetaTarget(order)}
-                      disabled={confirmingOrderId === order.id}
-                      className="h-7 w-7 p-0 shrink-0 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-none transition-transform active:scale-95"
-                      title="Confirm Meta Purchase"
-                    >
-                      {confirmingOrderId === order.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Check className="h-4 w-4 stroke-[2.5]" />
-                      )}
-                    </Button>
-                  )
-                )}
                 {permRefund && (
                   <Button
                     type="button"
@@ -1999,16 +1943,6 @@ function OrdersPageContent() {
                 >
                   Download Invoice
                 </DropdownMenuItem>
-                {permWrite && isWebsiteOrder && !orderIsCancelled && !orderIsReturned && (
-                  <DropdownMenuItem
-                    disabled={Boolean(order.metaPurchaseEventSentAt) || confirmingOrderId === order.id}
-                    onClick={() => setConfirmMetaTarget(order)}
-                    className={order.metaPurchaseEventSentAt ? "text-muted-foreground" : "text-emerald-600 focus:text-emerald-600 font-medium"}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    {order.metaPurchaseEventSentAt ? "Meta Purchase Confirmed" : "Confirm (Meta Purchase)"}
-                  </DropdownMenuItem>
-                )}
                 {canBook && permWrite && (
                   <DropdownMenuItem onClick={() => setCourierOrder(order)}>
                     Book Courier (Steadfast)
@@ -2546,12 +2480,6 @@ function OrdersPageContent() {
                         <span className="font-medium">{selectedOrder.browserName || "Unknown Browser"}</span>
                       </p>
                     </div>
-                    {selectedOrder.metaPurchaseEventSentAt && (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-2.5 py-1.5 font-medium mt-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                        Meta Purchase Sent: {new Date(selectedOrder.metaPurchaseEventSentAt).toLocaleString()}
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -2739,28 +2667,8 @@ function OrdersPageContent() {
                   orderIsDelivered &&
                   (target.refundedAmount ?? 0) < target.totalAmount;
 
-                const showConfirm =
-                  (statusFilter === "PENDING" || statusFilter === "TODAY") &&
-                  permWrite &&
-                  target.saleType !== "POS" &&
-                  !orderIsCancelled &&
-                  !orderIsReturned &&
-                  !target.metaPurchaseEventSentAt;
-
                 return (
                   <div className="flex gap-2 pt-2">
-                    {showConfirm && (
-                      <Button
-                        type="button"
-                        variant="default"
-                        className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        disabled={confirmingOrderId === target.id}
-                        onClick={() => setConfirmMetaTarget(target)}
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Confirm Meta Purchase
-                      </Button>
-                    )}
                     {canRefund && (
                       <Button
                         type="button"
@@ -2864,29 +2772,6 @@ function OrdersPageContent() {
         onConfirm={handleBulkDelete}
         title="Delete Selected Orders"
         description={`Are you sure you want to delete ${selectedOrders.length} selected orders? This action cannot be undone.`}
-      />
-
-      <ConfirmDialog
-        open={!!confirmMetaTarget}
-        onOpenChange={(open) => !open && !confirmingOrderId && setConfirmMetaTarget(null)}
-        onConfirm={async () => {
-          if (confirmMetaTarget) {
-            const target = confirmMetaTarget;
-            await handleConfirmPurchase(target);
-            if (selectedOrder && selectedOrder.id === target.id) {
-              setSelectedOrder((prev) =>
-                prev ? { ...prev, metaPurchaseEventSentAt: new Date().toISOString() } : null
-              );
-            }
-            setConfirmMetaTarget(null);
-          }
-        }}
-        title={`Confirm Order #${confirmMetaTarget?.orderNumber ?? ""} for Meta?`}
-        description={`Are you sure you want to confirm this order? Clicking "Yes, Confirm" will report this order (${confirmMetaTarget ? formatAmount(confirmMetaTarget.totalAmount) : ""}) as a verified Purchase event to Meta Ads (Facebook Pixel & Conversions API). This action cannot be undone.`}
-        confirmText="Yes, Confirm"
-        cancelText="Cancel"
-        confirmVariant="default"
-        isLoading={!!confirmingOrderId}
       />
 
       <BulkBookCourierDialog

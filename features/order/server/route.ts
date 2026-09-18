@@ -17,7 +17,6 @@ import {
   todayRange,
   bucketFor,
 } from "./status-buckets";
-import { triggerPurchaseOnConfirmation } from "./meta-purchase-trigger";
 
 const app = new Hono()
 
@@ -408,75 +407,6 @@ const app = new Hono()
   } catch (error) {
     console.error("Failed to update order:", error);
     return c.json({ error: "Failed to update order" }, 500);
-  }
-})
-
-.post("/:id/confirm-purchase", sessionMiddleware, async (c) => {
-  const user = c.get("user");
-  // "write", not "update": lib/permissions.ts only knows read/write plus a
-  // module's named extras, and orders has no "update". expandPermissions()
-  // therefore never produced `orders:update` for anyone, so this guard passed
-  // ADMIN (who bypasses every check) and MODERATOR (explicit bypass) only —
-  // a role holding orders:write, such as the store's own Owner role, got a 401.
-  if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  const id = c.req.param("id");
-
-  try {
-    const order = await db.query.orders.findFirst({
-      where: eq(orders.id, id),
-    });
-
-    if (!order) {
-      return c.json({ error: "Order not found" }, 404);
-    }
-
-    if (order.metaPurchaseEventSentAt) {
-      return c.json({
-        error: "Meta Purchase event has already been sent for this order",
-        alreadySent: true,
-        metaPurchaseEventSentAt: order.metaPurchaseEventSentAt,
-      }, 400);
-    }
-
-    if (order.saleType === "POS") {
-      return c.json({
-        error: "POS orders cannot be confirmed for Meta Purchase",
-      }, 400);
-    }
-
-    if (order.status === "CANCELLED" || order.status === "REFUNDED") {
-      return c.json({
-        error: "Cannot confirm a cancelled or refunded order",
-      }, 400);
-    }
-
-    // The destination (GTM server container, or direct Meta CAPI as a fallback)
-    // is chosen inside the trigger, which also says exactly what is wrong when
-    // nothing is set up. That used to be one generic 500 for every cause.
-    const result = await triggerPurchaseOnConfirmation(id, {
-      sourceUrl: `${new URL(c.req.url).origin}/`,
-    });
-    if (!result.ok) {
-      return c.json({ error: result.message, code: result.code }, result.status);
-    }
-
-    await db.insert(orderTimelineEvents).values({
-      orderId: id,
-      status: order.status,
-      message: `Purchase event sent ${result.via === "gtm" ? "through the GTM server container (GA4 + Meta)" : "directly to Meta CAPI"} by ${user?.name || user?.email || "staff"}.`,
-    });
-
-    return c.json({
-      success: true,
-      sent: true,
-      message: `Purchase event sent for #${order.orderNumber || order.id}`,
-    });
-  } catch (error) {
-    console.error("Failed to confirm order for Meta Purchase:", error);
-    return c.json({ error: "Failed to confirm purchase event" }, 500);
   }
 })
 

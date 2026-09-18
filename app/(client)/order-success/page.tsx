@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { trackEvent } from "@/lib/traffic-tracker";
-import { trackGtmPurchase, trackGtmEcommerce, purchaseGtmEventId, splitFullName } from "@/lib/gtm";
+import { trackGtmPurchase, splitFullName } from "@/lib/gtm";
 import { getCapturedFbc } from "@/lib/meta-fbc";
 
 interface OrderItem {
@@ -71,33 +71,11 @@ function OrderSuccessContent() {
     fetchOrder();
   }, [orderId, router]);
 
-  // NOTE: The Meta Pixel Purchase event is intentionally NOT fired here.
-  // Purchase is tracked earlier in the funnel (on the checkout page) plus
-  // server-side via the Conversions API at order creation, so firing it again
-  // on this success page double-counted the conversion in Meta.
-  // Here we fire Google Analytics / GTM / Google Ads standard ecommerce `purchase`
-  // with deduplication guard so it reliably captures all items and order totals.
+  // Push the ecommerce `purchase` to the dataLayer for every order. GTM fans it
+  // out to GA4, Google Ads and Meta (browser Pixel + server CAPI, deduplicated
+  // by the shared event_id), with a guard so a reload does not count it twice.
   useEffect(() => {
     if (!order || !orderId) return;
-
-    // For COD / pending orders, defer Meta Purchase event until admin verification.
-    // Pushes order_placed instead of purchase to prevent fake orders from triggering Meta Pixel.
-    if (order.paymentMethod === "COD" || order.status === "PENDING") {
-      const rawVal = Number(order.totalAmount);
-      const purchaseVal = !isNaN(rawVal) && rawVal > 0 ? Number(rawVal.toFixed(2)) : 0.01;
-      trackGtmEcommerce(
-        "order_placed",
-        {
-          transaction_id: order.orderNumber || order.id,
-          value: purchaseVal,
-          currency: "BDT",
-          shipping: Number(order.shippingCost) || 0,
-        },
-        undefined,
-        purchaseGtmEventId(order.orderNumber || order.id),
-      );
-      return;
-    }
 
     const { first_name, last_name } = splitFullName(order.guestName);
     const rawVal = Number(order.totalAmount);

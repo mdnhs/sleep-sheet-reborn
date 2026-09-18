@@ -14,7 +14,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings, useUpdateSettings, useSettingsSecrets } from "@/features/settings/api/use-settings";
@@ -29,23 +28,10 @@ const capiSchema = z.object({
 
 type CapiFormValues = z.infer<typeof capiSchema>;
 
-const gtmSchema = z.object({
-  gtm_purchase_endpoint: z
-    .string()
-    .trim()
-    .refine((v) => v === "" || /^https:\/\/[^\s/]+$/i.test(v.replace(/\/+$/, "")), {
-      message: "Must be an https URL such as https://ss.example.com",
-    }),
-  gtm_purchase_api_secret: z.string().optional(),
-});
-
-type GtmFormValues = z.infer<typeof gtmSchema>;
-
 export function PixelSettings() {
   const { data, isLoading } = useSettings();
   const { data: secrets } = useSettingsSecrets();
   const capiMutation = useUpdateSettings();
-  const gtmMutation = useUpdateSettings();
 
   const [showToken, setShowToken] = useState(false);
 
@@ -60,39 +46,6 @@ export function PixelSettings() {
   });
 
   const tokenSet = data?.meta_capi_access_token_set === "true";
-  const secretSet = data?.gtm_purchase_api_secret_set === "true";
-
-  const gtmForm = useForm<GtmFormValues>({
-    resolver: zodResolver(gtmSchema),
-    defaultValues: { gtm_purchase_endpoint: "", gtm_purchase_api_secret: "" },
-  });
-
-  useEffect(() => {
-    if (data) {
-      gtmForm.reset({
-        gtm_purchase_endpoint: data.gtm_purchase_endpoint || "",
-        gtm_purchase_api_secret: "",
-      });
-    }
-  }, [data, gtmForm]);
-
-  useEffect(() => {
-    if (secrets?.gtm_purchase_api_secret) {
-      gtmForm.setValue("gtm_purchase_api_secret", secrets.gtm_purchase_api_secret);
-    }
-  }, [secrets, gtmForm]);
-
-  const handleSaveGtm = useCallback(
-    (values: GtmFormValues) => {
-      const payload: GtmFormValues = { ...values };
-      // Blank means "keep the saved secret", as with the CAPI token below.
-      if (!payload.gtm_purchase_api_secret?.trim()) {
-        delete payload.gtm_purchase_api_secret;
-      }
-      gtmMutation.mutate(payload);
-    },
-    [gtmMutation],
-  );
 
   useEffect(() => {
     if (data) {
@@ -128,83 +81,21 @@ export function PixelSettings() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Purchase events</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Meta Conversions API</h1>
         <p className="text-muted-foreground text-sm">
-          Where a confirmed order&apos;s Purchase is sent. Browser events (page views, add to cart, checkout) are managed in Google Tag Manager.
+          Server-side event tracking configuration (Browser Meta Pixel is managed via Google Tag Manager)
         </p>
       </div>
 
       <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
         <div>
-          <h2 className="text-base font-bold tracking-tight">GTM server container (recommended)</h2>
+          <h2 className="text-base font-bold tracking-tight">Conversions API (Server-Side)</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            When staff confirm an order, the Purchase is sent to your GTM server container, which passes it on to
-            GA4 and to Meta through the tags it already has. One event, both destinations. Cash-on-delivery orders
-            send nothing at checkout, so fake orders never reach either. While this is set, direct Meta CAPI below is
-            not used, so a sale is never counted twice.
-          </p>
-        </div>
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full rounded-2xl" />
-            <Skeleton className="h-10 w-full rounded-2xl" />
-          </div>
-        ) : (
-          <Form {...gtmForm}>
-            <form onSubmit={gtmForm.handleSubmit(handleSaveGtm)} className="space-y-6">
-              <FormField
-                name="gtm_purchase_endpoint"
-                control={gtmForm.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-semibold">Server container URL</FormLabel>
-                    <FormDescription className="text-xs">
-                      The tagging server address, for example https://ss.sleepsheetbd.com. Uses the GA4 Measurement ID from Settings &gt; SEO.
-                    </FormDescription>
-                    <FormControl>
-                      <Input placeholder="https://ss.example.com" autoComplete="off" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                name="gtm_purchase_api_secret"
-                control={gtmForm.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-semibold">GA4 API secret (optional)</FormLabel>
-                    <FormDescription className="text-xs">
-                      {secretSet
-                        ? "A secret is saved. Leave blank to keep it, or paste a new one to replace."
-                        : "Only needed if your server container checks it. GA4 Admin > Data streams > Measurement Protocol API secrets."}
-                    </FormDescription>
-                    <FormControl>
-                      <Input type="password" autoComplete="off" placeholder={secretSet ? "•••••••••• (saved)" : ""} {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={gtmMutation.isPending} className="gap-2 rounded-full text-xs font-semibold">
-                  {gtmMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save server container
-                </Button>
-              </div>
-            </form>
-          </Form>
-        )}
-      </div>
-
-      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
-        <div>
-          <h2 className="text-base font-bold tracking-tight">Direct Meta Conversions API (fallback)</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Sends the Purchase straight to Meta, skipping GTM, and only when no server container URL is set above.
-            It reaches Meta only, not Google. The test event code applies to both routes: set it only while
-            checking Events Manager&apos;s Test Events tab, and clear it afterwards.
+            Sends the Meta Purchase event when staff confirm an order (Orders page, Confirm Meta Purchase).
+            COD orders no longer send a Purchase from the browser or from the GTM server container at
+            checkout, so this is the only way a Purchase reaches Meta: while it is off, confirming an
+            order fails. Turn it on with your Pixel ID and access token. Add a test event code only while
+            testing, and clear it afterwards.
           </p>
         </div>
         {isLoading ? (

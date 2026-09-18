@@ -16,7 +16,6 @@ import { revalidateTag, unstable_cache } from "next/cache";
 // (cloudinary_cloud_name stays public — it is visible in every image URL.)
 const SECRET_SETTING_KEYS = [
   "meta_capi_access_token",
-  "gtm_purchase_api_secret",
   "steadfast_api_key",
   "steadfast_secret_key",
   "cloudinary_api_key",
@@ -122,17 +121,6 @@ const app = new Hono()
         meta_capi_pixel_id: z.string().optional(),
         meta_capi_access_token: z.string().optional(),
         meta_capi_test_event_code: z.string().optional(),
-        // Where the app sends a confirmed order's Purchase: the GTM server
-        // container's base URL (e.g. https://ss.sleepsheetbd.com). Validated
-        // as https so a typo cannot point order data at a plain-http host.
-        gtm_purchase_endpoint: z
-          .string()
-          .trim()
-          .refine((v) => v === "" || /^https:\/\/[^\s/]+$/i.test(v.replace(/\/+$/, "")), {
-            message: "Must be an https URL such as https://ss.example.com",
-          })
-          .optional(),
-        gtm_purchase_api_secret: z.string().trim().optional(),
         seo_site_name: z.string().optional(),
         seo_default_title: z.string().optional(),
         seo_default_description: z.string().optional(),

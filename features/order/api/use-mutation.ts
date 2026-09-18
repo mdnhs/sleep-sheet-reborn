@@ -106,19 +106,5 @@ export const useOrderMutations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
-  const confirmPurchase = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await client.api.orders[":id"]["confirm-purchase"].$post({
-        param: { id },
-      });
-      if (!response.ok) {
-        const body = (await response.json()) as { error?: string };
-        throw new Error(body.error || "Failed to confirm purchase event");
-      }
-      return response.json();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
-  });
-
-  return { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders, confirmPurchase };
+  return { updateOrder, cancelOrder, refundOrder, deleteOrder, bulkDeleteOrders };
 };
