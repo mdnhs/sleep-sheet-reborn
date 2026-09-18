@@ -16,7 +16,10 @@ import { purchaseEventId } from "@/lib/meta-purchase-event";
  * - Fully idempotent: orders.metaPurchaseEventSentAt ensures an order conversion is
  *   reported to Meta exactly once.
  */
-export async function triggerMetaPurchaseOnConfirmation(orderId: string): Promise<boolean> {
+export async function triggerMetaPurchaseOnConfirmation(
+  orderId: string,
+  opts: { sourceUrl?: string } = {},
+): Promise<boolean> {
   try {
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
@@ -51,6 +54,7 @@ export async function triggerMetaPurchaseOnConfirmation(orderId: string): Promis
     const ctx: CapiRequestContext = {
       ipAddress: order.ipAddress || undefined,
       userAgent: order.userAgent || undefined,
+      sourceUrl: opts.sourceUrl,
     };
 
     const sent = await sendPurchaseEventOnce(

@@ -18,6 +18,7 @@ import {
   bucketFor,
 } from "./status-buckets";
 import { triggerMetaPurchaseOnConfirmation } from "./meta-purchase-trigger";
+import { getCapiReadiness } from "@/lib/meta-capi";
 
 const app = new Hono()
 
@@ -413,7 +414,12 @@ const app = new Hono()
 
 .post("/:id/confirm-purchase", sessionMiddleware, async (c) => {
   const user = c.get("user");
-  if (!isAllowed(user, "orders", "update", ["MODERATOR"])) {
+  // "write", not "update": lib/permissions.ts only knows read/write plus a
+  // module's named extras, and orders has no "update". expandPermissions()
+  // therefore never produced `orders:update` for anyone, so this guard passed
+  // ADMIN (who bypasses every check) and MODERATOR (explicit bypass) only —
+  // a role holding orders:write, such as the store's own Owner role, got a 401.
+  if (!isAllowed(user, "orders", "write", ["MODERATOR"])) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
@@ -448,9 +454,24 @@ const app = new Hono()
       }, 400);
     }
 
-    const sent = await triggerMetaPurchaseOnConfirmation(id);
+    // Say what is wrong instead of failing later with a message that fits every
+    // cause. This path used to return one generic 500 for "CAPI is switched
+    // off", "no Pixel ID", "no token" and "Meta rejected the event" alike,
+    // which cost real time to untangle when CAPI turned out to be disabled.
+    const readiness = await getCapiReadiness();
+    if (!readiness.ready) {
+      return c.json({ error: readiness.message, code: "capi_not_ready", reason: readiness.reason }, 400);
+    }
+
+    const sent = await triggerMetaPurchaseOnConfirmation(id, { sourceUrl: `${new URL(c.req.url).origin}/` });
     if (!sent) {
-      return c.json({ error: "Failed to dispatch Purchase event to Meta or order not eligible" }, 500);
+      // Eligibility was checked above and CAPI is configured, so what is left
+      // is Meta refusing the event or the request failing. The cause is in the
+      // server log ([MetaCAPI] Purchase failed ...).
+      return c.json({
+        error: "Meta did not accept the Purchase event. Check the Pixel ID and access token under Settings > Meta CAPI (and Test Events in Events Manager if a test code is set).",
+        code: "capi_rejected",
+      }, 502);
     }
 
     await db.insert(orderTimelineEvents).values({

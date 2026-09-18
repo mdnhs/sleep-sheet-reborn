@@ -139,6 +139,55 @@ export interface CapiPurchaseInput {
   fbc?: string | null;
 }
 
+export type CapiReadiness =
+  | { ready: true }
+  | {
+      ready: false;
+      reason: "disabled" | "missing_pixel_id" | "missing_access_token";
+      /** Written for the staff member who pressed the button, not for logs. */
+      message: string;
+    };
+
+/**
+ * Whether a server-side Purchase can be sent, and if not, why.
+ *
+ * sendPurchaseEvent used to answer this with a bare `false`, so every cause —
+ * CAPI switched off, no Pixel ID, no token — looked the same to a caller, and
+ * the orders route could only say "failed to dispatch ... or order not
+ * eligible". Splitting the check out lets the route name the actual problem.
+ * Same conditions as before, in the same order.
+ */
+export function evaluateCapiConfig(
+  config: Pick<CapiConfig, "enabled" | "pixelId" | "accessToken">,
+): CapiReadiness {
+  if (!config.enabled) {
+    return {
+      ready: false,
+      reason: "disabled",
+      message: "Meta Conversions API is turned off. Turn it on under Settings > Meta CAPI, then try again.",
+    };
+  }
+  if (!config.pixelId) {
+    return {
+      ready: false,
+      reason: "missing_pixel_id",
+      message: "Meta Conversions API has no Pixel ID. Add it under Settings > Meta CAPI, then try again.",
+    };
+  }
+  if (!config.accessToken) {
+    return {
+      ready: false,
+      reason: "missing_access_token",
+      message: "Meta Conversions API has no access token. Add it under Settings > Meta CAPI, then try again.",
+    };
+  }
+  return { ready: true };
+}
+
+export async function getCapiReadiness(): Promise<CapiReadiness> {
+  return evaluateCapiConfig(await loadCapiConfig());
+}
+
 /** Build the request context from a Hono/Fetch request's headers. */
 export function capiContextFromHeaders(headers: Headers): CapiRequestContext {
   const cfIp = headers.get("cf-connecting-ip")?.trim();
@@ -164,7 +213,7 @@ export async function sendPurchaseEvent(
   ctx: CapiRequestContext = {},
 ): Promise<boolean> {
   const config = await loadCapiConfig();
-  if (!config.enabled || !config.pixelId || !config.accessToken) return false;
+  if (!evaluateCapiConfig(config).ready) return false;
 
   const words = (input.customer?.fullName || "").trim().split(/\s+/).filter(Boolean);
   const lastName = words.length > 1 ? words.pop() : undefined;
@@ -204,6 +253,9 @@ export async function sendPurchaseEvent(
         event_name: "Purchase",
         event_time: Math.floor(Date.now() / 1000),
         event_id: input.eventId,
+        // Meta requires this on website events. The confirmation path has no
+        // browser request to take it from, so callers pass the origin they were
+        // reached on; the env vars are only the last resort.
         event_source_url:
           ctx.sourceUrl ||
           process.env.NEXT_PUBLIC_SITE_URL ||

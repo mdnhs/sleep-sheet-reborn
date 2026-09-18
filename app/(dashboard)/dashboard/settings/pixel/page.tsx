@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { PixelSettings } from "./pixel-client";
 
 export default function PixelSettingsPage() {
-  redirect("/dashboard/settings/seo");
+  return <PixelSettings />;
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, DollarSign, CreditCard, Truck, Search, Image as ImageIcon, Globe, ArrowRight, Shield, KeyRound } from "lucide-react";
+import { Settings, DollarSign, CreditCard, Truck, Search, Image as ImageIcon, Globe, ArrowRight, Shield, KeyRound, Eye } from "lucide-react";
 
 const sections = [
   {
@@ -41,6 +41,12 @@ const sections = [
     description: "Configure homepage hero, features, newsletter, footer, and site-wide content",
     href: "/dashboard/settings/website",
     icon: Globe,
+  },
+  {
+    title: "Meta Conversions API",
+    description: "Server-side Meta Purchase event sent when an order is confirmed",
+    href: "/dashboard/settings/pixel",
+    icon: Eye,
   },
   {
     title: "Roles & Permissions",
