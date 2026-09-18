@@ -43,12 +43,6 @@ const sections = [
     icon: Globe,
   },
   {
-    title: "Meta Conversions API",
-    description: "Server-side Meta Purchase event sent when an order is confirmed",
-    href: "/dashboard/settings/pixel",
-    icon: Eye,
-  },
-  {
     title: "Roles & Permissions",
     description: "Manage system access levels and create custom roles for your team",
     href: "/dashboard/settings/roles",

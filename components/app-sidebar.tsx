@@ -99,7 +99,6 @@ const navGroups: GatedGroup[] = [
           { title: "Shipping", url: "/dashboard/settings/shipping" },
           { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
           { title: "SEO", url: "/dashboard/settings/seo" },
-          { title: "Meta CAPI", url: "/dashboard/settings/pixel" },
           { title: "CDN", url: "/dashboard/settings/cdn" },
           { title: "Website", url: "/dashboard/settings/website" },
           { title: "API Keys", url: "/dashboard/settings/api-keys" },

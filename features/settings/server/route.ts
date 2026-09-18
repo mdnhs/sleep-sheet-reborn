@@ -15,7 +15,6 @@ import { revalidateTag, unstable_cache } from "next/cache";
 // UI can show configured state; raw values are served by /secrets below.
 // (cloudinary_cloud_name stays public — it is visible in every image URL.)
 const SECRET_SETTING_KEYS = [
-  "meta_capi_access_token",
   "steadfast_api_key",
   "steadfast_secret_key",
   "cloudinary_api_key",
@@ -113,14 +112,6 @@ const app = new Hono()
         payment_method_cod: z.enum(["true", "false"]).optional(),
         payment_method_due: z.enum(["true", "false"]).optional(),
         pos_payment_methods: z.string().optional(),
-        meta_pixel_enabled: z.enum(["true", "false"]).optional(),
-        meta_pixel_default_id: z.string().optional(),
-        meta_pixel_debug: z.enum(["true", "false"]).optional(),
-        meta_pixel_mappings: z.string().optional(),
-        meta_capi_enabled: z.enum(["true", "false"]).optional(),
-        meta_capi_pixel_id: z.string().optional(),
-        meta_capi_access_token: z.string().optional(),
-        meta_capi_test_event_code: z.string().optional(),
         seo_site_name: z.string().optional(),
         seo_default_title: z.string().optional(),
         seo_default_description: z.string().optional(),

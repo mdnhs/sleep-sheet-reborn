@@ -25,7 +25,6 @@ export function useSettingsSecrets() {
       const res = await client.api.settings.secrets.$get();
       if (!res.ok) throw new Error("Failed to fetch settings secrets");
       return res.json() as Promise<{
-        meta_capi_access_token: string;
         steadfast_api_key: string;
         steadfast_secret_key: string;
         cloudinary_api_key: string;
@@ -50,14 +49,6 @@ export function useUpdateSettings() {
       payment_method_cod?: "true" | "false";
       payment_method_due?: "true" | "false";
       pos_payment_methods?: string;
-      meta_pixel_enabled?: "true" | "false";
-      meta_pixel_default_id?: string;
-      meta_pixel_debug?: "true" | "false";
-      meta_pixel_mappings?: string;
-      meta_capi_enabled?: "true" | "false";
-      meta_capi_pixel_id?: string;
-      meta_capi_access_token?: string;
-      meta_capi_test_event_code?: string;
       seo_site_name?: string;
       seo_default_title?: string;
       seo_default_description?: string;
