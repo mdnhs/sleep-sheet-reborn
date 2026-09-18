@@ -17,8 +17,7 @@ import {
   todayRange,
   bucketFor,
 } from "./status-buckets";
-import { triggerMetaPurchaseOnConfirmation } from "./meta-purchase-trigger";
-import { getCapiReadiness } from "@/lib/meta-capi";
+import { triggerPurchaseOnConfirmation } from "./meta-purchase-trigger";
 
 const app = new Hono()
 
@@ -454,36 +453,26 @@ const app = new Hono()
       }, 400);
     }
 
-    // Say what is wrong instead of failing later with a message that fits every
-    // cause. This path used to return one generic 500 for "CAPI is switched
-    // off", "no Pixel ID", "no token" and "Meta rejected the event" alike,
-    // which cost real time to untangle when CAPI turned out to be disabled.
-    const readiness = await getCapiReadiness();
-    if (!readiness.ready) {
-      return c.json({ error: readiness.message, code: "capi_not_ready", reason: readiness.reason }, 400);
-    }
-
-    const sent = await triggerMetaPurchaseOnConfirmation(id, { sourceUrl: `${new URL(c.req.url).origin}/` });
-    if (!sent) {
-      // Eligibility was checked above and CAPI is configured, so what is left
-      // is Meta refusing the event or the request failing. The cause is in the
-      // server log ([MetaCAPI] Purchase failed ...).
-      return c.json({
-        error: "Meta did not accept the Purchase event. Check the Pixel ID and access token under Settings > Meta CAPI (and Test Events in Events Manager if a test code is set).",
-        code: "capi_rejected",
-      }, 502);
+    // The destination (GTM server container, or direct Meta CAPI as a fallback)
+    // is chosen inside the trigger, which also says exactly what is wrong when
+    // nothing is set up. That used to be one generic 500 for every cause.
+    const result = await triggerPurchaseOnConfirmation(id, {
+      sourceUrl: `${new URL(c.req.url).origin}/`,
+    });
+    if (!result.ok) {
+      return c.json({ error: result.message, code: result.code }, result.status);
     }
 
     await db.insert(orderTimelineEvents).values({
       orderId: id,
       status: order.status,
-      message: `Meta Purchase event triggered manually by ${user?.name || user?.email || "staff"}.`,
+      message: `Purchase event sent ${result.via === "gtm" ? "through the GTM server container (GA4 + Meta)" : "directly to Meta CAPI"} by ${user?.name || user?.email || "staff"}.`,
     });
 
     return c.json({
       success: true,
       sent: true,
-      message: `Purchase event dispatched to Meta for #${order.orderNumber || order.id}`,
+      message: `Purchase event sent for #${order.orderNumber || order.id}`,
     });
   } catch (error) {
     console.error("Failed to confirm order for Meta Purchase:", error);

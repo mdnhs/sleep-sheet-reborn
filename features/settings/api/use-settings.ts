@@ -26,6 +26,7 @@ export function useSettingsSecrets() {
       if (!res.ok) throw new Error("Failed to fetch settings secrets");
       return res.json() as Promise<{
         meta_capi_access_token: string;
+        gtm_purchase_api_secret: string;
         steadfast_api_key: string;
         steadfast_secret_key: string;
         cloudinary_api_key: string;
@@ -58,6 +59,8 @@ export function useUpdateSettings() {
       meta_capi_pixel_id?: string;
       meta_capi_access_token?: string;
       meta_capi_test_event_code?: string;
+      gtm_purchase_endpoint?: string;
+      gtm_purchase_api_secret?: string;
       seo_site_name?: string;
       seo_default_title?: string;
       seo_default_description?: string;

@@ -72,7 +72,7 @@ async function loadCapiConfig(): Promise<CapiConfig> {
 }
 
 /** SHA-256 hash a normalized string, per Meta's PII hashing spec. */
-function hash(value: string | null | undefined): string | undefined {
+export function hash(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
   const normalized = value.trim().toLowerCase();
   if (!normalized) return undefined;
@@ -95,7 +95,7 @@ function normalizePhone(phone: string | null | undefined): string | undefined {
   return digits;
 }
 
-function hashPhone(phone: string | null | undefined): string | undefined {
+export function hashPhone(phone: string | null | undefined): string | undefined {
   const normalized = normalizePhone(phone);
   if (!normalized) return undefined;
   return createHash("sha256").update(normalized).digest("hex");
@@ -164,21 +164,21 @@ export function evaluateCapiConfig(
     return {
       ready: false,
       reason: "disabled",
-      message: "Meta Conversions API is turned off. Turn it on under Settings > Meta CAPI, then try again.",
+      message: "Meta Conversions API is turned off. Turn it on under Settings > Purchase events, then try again.",
     };
   }
   if (!config.pixelId) {
     return {
       ready: false,
       reason: "missing_pixel_id",
-      message: "Meta Conversions API has no Pixel ID. Add it under Settings > Meta CAPI, then try again.",
+      message: "Meta Conversions API has no Pixel ID. Add it under Settings > Purchase events, then try again.",
     };
   }
   if (!config.accessToken) {
     return {
       ready: false,
       reason: "missing_access_token",
-      message: "Meta Conversions API has no access token. Add it under Settings > Meta CAPI, then try again.",
+      message: "Meta Conversions API has no access token. Add it under Settings > Purchase events, then try again.",
     };
   }
   return { ready: true };

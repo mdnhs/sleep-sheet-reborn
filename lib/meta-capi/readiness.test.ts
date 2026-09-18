@@ -47,7 +47,7 @@ describe("evaluateCapiConfig", () => {
       { ...ready, accessToken: "" },
     ]) {
       const r = evaluateCapiConfig(cfg);
-      if (!r.ready) expect(r.message).toContain("Settings > Meta CAPI");
+      if (!r.ready) expect(r.message).toContain("Settings > Purchase events");
     }
   });
 });

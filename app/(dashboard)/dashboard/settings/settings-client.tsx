@@ -43,8 +43,8 @@ const sections = [
     icon: Globe,
   },
   {
-    title: "Meta Conversions API",
-    description: "Server-side Meta Purchase event sent when an order is confirmed",
+    title: "Purchase events",
+    description: "Where a confirmed order's Purchase goes: GTM server container (GA4 + Meta) or direct Meta CAPI",
     href: "/dashboard/settings/pixel",
     icon: Eye,
   },
