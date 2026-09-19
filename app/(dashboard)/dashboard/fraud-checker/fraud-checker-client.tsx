@@ -13,9 +13,13 @@ import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 import { cn } from "@/lib/utils";
 
 export function FraudCheckerClient() {
-  // The phone lives in the URL so the Orders page can deep-link here and the
-  // result survives a refresh.
+  // The phone stays in the URL so a reload keeps the number in the box — but
+  // a check never runs on its own. React Query's cache doesn't survive a
+  // reload, so auto-running whatever sits in `?phone=` would bill a fresh BD
+  // Courier call on every refresh, bookmark or pasted link. `requested` is
+  // that gate: only a click starts a lookup.
   const [urlPhone, setUrlPhone] = useQueryState("phone", parseAsString.withDefault(""));
+  const [requested, setRequested] = useState(false);
   const [tab, setTab] = useState("check");
   const [input, setInput] = useState(urlPhone);
   const [inputError, setInputError] = useState<string | null>(null);
@@ -24,7 +28,7 @@ export function FraudCheckerClient() {
   const submitted = normalizeBdPhone(urlPhone);
   const { data, error, isFetching, dataUpdatedAt } = useFraudCheckLookup(
     submitted ?? "",
-    !!submitted
+    !!submitted && requested
   );
 
   // Keep a short history so re-opening a number costs nothing — the cached
@@ -32,6 +36,7 @@ export function FraudCheckerClient() {
   function lookup(phone: string) {
     setInput(phone);
     setInputError(null);
+    setRequested(true);
     setUrlPhone(phone);
     setRecent((prev) => [phone, ...prev.filter((p) => p !== phone)].slice(0, 6));
   }

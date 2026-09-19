@@ -38,12 +38,16 @@ export default async function FraudCheckerPage() {
   //
   // prefetchQuery never throws, and dehydrate() drops failed queries, so a
   // missing API key or a slow BD Courier just leaves the client to fetch and
-  // show its own error. Hence the short timeout — this runs inside the page
-  // render, and a hanging request would hold the whole page.
+  // show its own error (PlanCard has both states).
+  //
+  // The timeout is deliberately tight: this await sits in front of the page's
+  // own render, so it is pure TTFB for a tab that isn't even the default one.
+  // Better to give up quickly and let the client fill it in than to hold the
+  // Check tab hostage to BD Courier having a slow day.
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: ["fraud-check-plan"],
-    queryFn: () => getMyPlan(6_000),
+    queryFn: () => getMyPlan(2_500),
   });
 
   return (

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { translations } from "@/hooks/use-language";
+import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 
 type TranslateFn = (key: keyof typeof translations["en"]) => string;
 
@@ -17,10 +18,7 @@ export function createShippingInformationSchema(t: TranslateFn) {
       .string()
       .trim()
       .min(1, t("errorPhoneRequired"))
-      .refine(
-        (val) => /^(?:\+?8801|8801|01)[3-9]\d{8}$/.test(val.replace(/[\s-]/g, "")),
-        t("errorInvalidPhone"),
-      ),
+      .refine((val) => normalizeBdPhone(val) !== null, t("errorInvalidPhone")),
     email: z.string().email(t("errorInvalidEmail")).optional().or(z.literal("")),
     address: z.string().trim().min(1, t("errorAddressRequired")),
     shippingZone: z.enum(["inside_dhaka", "outside_dhaka"], {

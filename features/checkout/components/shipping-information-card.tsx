@@ -29,6 +29,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { UseCheckout } from "../api/use-checkout";
 import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
+import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 
 interface ShippingInformationCardProps {
   initialSettings?: Record<string, string> | null;
@@ -121,7 +122,9 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
     mutate({
       shippingInfo: {
         fullName: values.fullName,
-        phone: values.phone,
+        // Send the canonical 01XXXXXXXXX form (validation already guaranteed it
+        // normalizes) so the courier and fraud checker get ASCII digits.
+        phone: normalizeBdPhone(values.phone) ?? values.phone,
         email: values.email,
         address: values.address,
         shippingZone: values.shippingZone,

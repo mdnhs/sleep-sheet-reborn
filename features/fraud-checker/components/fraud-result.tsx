@@ -176,7 +176,7 @@ export function FraudResult({
                 )}
               >
                 <RiskIcon className="h-3.5 w-3.5" />
-                {idle ? "চেক করা হয়নি" : riskStyle.bn.label}
+                {idle ? "চেক করা হয়নি" : riskStyle.label}
               </span>
               <span className="text-xs text-muted-foreground">
                 নম্বর:{" "}
@@ -196,7 +196,7 @@ export function FraudResult({
               <p className="text-sm">
                 {idle
                   ? "উপরে কাস্টমারের মোবাইল নম্বর দিয়ে চেক করুন।"
-                  : riskStyle.bn.verdict}
+                  : riskStyle.verdict}
               </p>
             </div>
 
@@ -311,11 +311,17 @@ export function FraudResult({
               BD Courier-এ অন্য মার্চেন্টদের করা অভিযোগ। এগুলো দাবি, প্রমাণ নয়।
             </p>
             <div className="space-y-2">
-              {data.reports.map((report) => {
-                const filed = parseISO(report.created_at);
+              {data.reports.map((report, i) => {
+                // BD Courier's payload is typed but never validated, so treat
+                // every field as possibly missing: parseISO(undefined) throws
+                // and would take the whole dialog down.
+                const filed =
+                  typeof report.created_at === "string"
+                    ? parseISO(report.created_at)
+                    : null;
                 return (
                   <div
-                    key={report.id}
+                    key={report.id ?? i}
                     className="rounded-xl bg-red-50/60 px-4 py-3 text-sm dark:bg-red-950/20"
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -332,9 +338,9 @@ export function FraudResult({
                         {report.courierName} থেকে
                       </span>
                       <span className="ml-auto text-xs text-muted-foreground">
-                        {Number.isNaN(filed.getTime())
-                          ? ""
-                          : format(filed, "dd MMM yyyy")}
+                        {filed && !Number.isNaN(filed.getTime())
+                          ? format(filed, "dd MMM yyyy")
+                          : ""}
                       </span>
                     </div>
                     <p className="mt-1 text-muted-foreground">
