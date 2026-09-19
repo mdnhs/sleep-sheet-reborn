@@ -95,6 +95,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   wishlist: "wishlist",
   cart: "cart",
   steadfast: "courier booking",
+  "fraud-check": "fraud check",
   settings: "settings",
   blog: "blog post",
   pos: "POS sale",

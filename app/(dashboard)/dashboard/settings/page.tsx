@@ -1,5 +1,6 @@
-import { SettingsOverview } from "./settings-client";
+import { redirect } from "next/navigation";
 
+// The old card overview is replaced by the tabs in settings/layout.tsx.
 export default function SettingsPage() {
-  return <SettingsOverview />;
+  redirect("/dashboard/settings/currency");
 }

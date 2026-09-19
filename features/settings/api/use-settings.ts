@@ -27,6 +27,7 @@ export function useSettingsSecrets() {
       return res.json() as Promise<{
         steadfast_api_key: string;
         steadfast_secret_key: string;
+        bdcourier_api_key: string;
         cloudinary_api_key: string;
         cloudinary_api_secret: string;
         google_sheets_client_email: string;
@@ -67,6 +68,7 @@ export function useUpdateSettings() {
       cloudinary_api_secret?: string;
       steadfast_api_key?: string;
       steadfast_secret_key?: string;
+      bdcourier_api_key?: string;
       google_sheets_client_email?: string;
       google_sheets_private_key?: string;
       google_sheets_spreadsheet_id?: string;

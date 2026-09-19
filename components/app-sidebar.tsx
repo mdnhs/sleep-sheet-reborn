@@ -32,6 +32,7 @@ import {
   IconUsers,
   IconUserHeart,
   IconShield,
+  IconShieldSearch,
   IconHistory,
   IconBrandGoogleAnalytics,
 } from "@tabler/icons-react"
@@ -62,6 +63,7 @@ const navGroups: GatedGroup[] = [
     label: "Sales & POS",
     items: [
       { title: "Orders", url: "/dashboard/orders", icon: <IconShoppingCart />, module: "orders" },
+      { title: "Fraud Checker", url: "/dashboard/fraud-checker", icon: <IconShieldSearch />, module: "orders" },
       { title: "POS", url: "/dashboard/pos", icon: <IconCashRegister />, module: "pos" },
       { title: "Expenses", url: "/dashboard/expenses", icon: <IconReceipt2 />, module: "expenses" },
     ],
@@ -93,16 +95,6 @@ const navGroups: GatedGroup[] = [
         url: "/dashboard/settings",
         icon: <IconSettings />,
         module: "settings",
-        items: [
-          { title: "Currency", url: "/dashboard/settings/currency" },
-          { title: "Payments", url: "/dashboard/settings/payments" },
-          { title: "Shipping", url: "/dashboard/settings/shipping" },
-          { title: "Meta Catalog", url: "/dashboard/settings/catalog" },
-          { title: "SEO", url: "/dashboard/settings/seo" },
-          { title: "CDN", url: "/dashboard/settings/cdn" },
-          { title: "Website", url: "/dashboard/settings/website" },
-          { title: "API Keys", url: "/dashboard/settings/api-keys" },
-        ],
       },
     ],
   },

@@ -141,7 +141,7 @@ export function ApiKeysClient() {
   ];
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">API Keys</h1>

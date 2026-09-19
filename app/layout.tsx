@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Figtree, Space_Grotesk } from "next/font/google";
+import { Geist_Mono, Figtree, Hind_Siliguri, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -30,6 +30,18 @@ const figtree = Figtree({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+// Bengali glyphs, for the dashboard screens written in Bengali (the
+// `font-bengali` class). Same deal as Geist Mono: available but not
+// preloaded, so the storefront's critical path is untouched — the browser
+// only fetches it on a page that actually renders Bengali text.
+const hindSiliguri = Hind_Siliguri({
+  variable: "--font-bengali",
+  subsets: ["bengali"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
   preload: false,
 });
@@ -153,6 +165,7 @@ export default function RootLayout({
         "font-sans",
         figtree.variable,
         spaceGroteskHeading.variable,
+        hindSiliguri.variable,
       )}
     >
       <body className="min-h-full flex flex-col">

@@ -17,6 +17,7 @@ import { revalidateTag, unstable_cache } from "next/cache";
 const SECRET_SETTING_KEYS = [
   "steadfast_api_key",
   "steadfast_secret_key",
+  "bdcourier_api_key",
   "cloudinary_api_key",
   "cloudinary_api_secret",
   "google_sheets_client_email",
@@ -130,6 +131,7 @@ const app = new Hono()
         cloudinary_api_secret: z.string().optional(),
         steadfast_api_key: z.string().optional(),
         steadfast_secret_key: z.string().optional(),
+        bdcourier_api_key: z.string().optional(),
         google_sheets_client_email: z.string().optional(),
         google_sheets_private_key: z.string().optional(),
         google_sheets_spreadsheet_id: z.string().optional(),

@@ -80,6 +80,7 @@ import {
   useSyncBatchOrderStatus,
   useTrackSingleOrder,
 } from "@/features/steadfast/api/use-steadfast";
+import { FraudCheckDialog } from "@/features/fraud-checker/components/fraud-check-dialog";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
 import { useBookToSheet, useBulkBookToSheet } from "@/features/google-sheets/api/use-google-sheets";
@@ -113,6 +114,7 @@ import {
   Search,
   Trash,
   Trash2,
+  UserSearch,
   Truck,
   TrendingUp,
   TrendingDown,
@@ -1057,6 +1059,9 @@ function OrdersPageContent() {
   const syncBatch = useSyncBatchOrderStatus();
   const trackSingleOrder = useTrackSingleOrder();
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+  // Lives here, not in the table cell: a cell remounts on every table
+  // re-render, which would close the dialog.
+  const [fraudCheckPhone, setFraudCheckPhone] = useState<string | null>(null);
   const [isRefetchingSteadfast, setIsRefetchingSteadfast] = useState(false);
 
   const handleRefreshAllSteadfast = async () => {
@@ -1731,8 +1736,18 @@ function OrdersPageContent() {
                 </button>
               )}
             </div>
-            {(permRefund || permDelete) && (
+            {(permRefund || permDelete || !!phone) && (
               <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                {!!phone && (
+                  <Button
+                    type="button"
+                    onClick={() => setFraudCheckPhone(phone)}
+                    className="h-7 w-7 p-0 shrink-0 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-none transition-transform active:scale-95"
+                    title="Fraud check — courier delivery history"
+                  >
+                    <UserSearch className="h-3.5 w-3.5" />
+                  </Button>
+                )}
                 {permRefund && (
                   <Button
                     type="button"
@@ -2718,6 +2733,11 @@ function OrdersPageContent() {
           onOpenChange={(open) => !open && setCourierOrder(null)}
         />
       )}
+
+      <FraudCheckDialog
+        phone={fraudCheckPhone}
+        onOpenChange={(open) => !open && setFraudCheckPhone(null)}
+      />
 
       <ConfirmDialog
         open={!!deleteOrderId}
